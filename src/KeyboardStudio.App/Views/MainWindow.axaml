@@ -45,7 +45,7 @@
           <TextBlock Text="{Binding Editor.SelectedKey.KeyId}" />
           <TextBlock Text="{Binding Editor.SelectedKey.ScanCode}" Opacity="0.7" />
           <TextBlock Text="Output for active layer" Margin="0,8,0,0" />
-          <TextBox Text="{Binding Editor.SelectedOutput, Mode=TwoWay}" Watermark="Character output" />
+          <TextBox Text="{Binding Editor.SelectedOutput, Mode=TwoWay}" PlaceholderText="Character output" />
         </StackPanel>
       </Border>
 
