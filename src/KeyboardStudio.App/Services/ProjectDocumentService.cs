@@ -3,39 +3,6 @@ using KeyboardStudio.Persistence;
 
 namespace KeyboardStudio.App;
 
-public enum ProjectDocumentErrorKind
-{
-    InvalidPath,
-    NoProject,
-    SaveAsRequired,
-    InvalidProject,
-    AccessDenied,
-    Io
-}
-
-public sealed record ProjectDocumentError(ProjectDocumentErrorKind Kind, string Message);
-
-public readonly record struct ProjectDocumentOperationResult(bool Success, ProjectDocumentError? Error)
-{
-    public static ProjectDocumentOperationResult Succeeded() => new(true, null);
-
-    public static ProjectDocumentOperationResult Failed(ProjectDocumentError error) => new(false, error);
-}
-
-public interface IProjectDocumentService
-{
-    KeyboardProject? CurrentProject { get; }
-    string? CurrentFilePath { get; }
-    bool IsDirty { get; }
-    ProjectDocumentError? LastError { get; }
-
-    KeyboardProject CreateNew();
-    void MarkDirty();
-    Task<ProjectDocumentOperationResult> OpenAsync(string path, CancellationToken cancellationToken = default);
-    Task<ProjectDocumentOperationResult> SaveAsync(CancellationToken cancellationToken = default);
-    Task<ProjectDocumentOperationResult> SaveAsAsync(string path, CancellationToken cancellationToken = default);
-}
-
 public sealed class ProjectDocumentService : IProjectDocumentService
 {
     private readonly IKeyboardProjectStore _store;

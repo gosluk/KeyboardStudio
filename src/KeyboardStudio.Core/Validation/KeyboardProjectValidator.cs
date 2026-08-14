@@ -1,23 +1,5 @@
 namespace KeyboardStudio.Core;
 
-public enum ValidationSeverity
-{
-    Info,
-    Warning,
-    Error
-}
-
-public sealed record ValidationIssue(
-    ValidationSeverity Severity,
-    string Code,
-    string Message,
-    string? KeyId = null);
-
-public interface IKeyboardProjectValidator
-{
-    IReadOnlyList<ValidationIssue> Validate(KeyboardProject project);
-}
-
 public sealed class KeyboardProjectValidator : IKeyboardProjectValidator
 {
     public IReadOnlyList<ValidationIssue> Validate(KeyboardProject project)
