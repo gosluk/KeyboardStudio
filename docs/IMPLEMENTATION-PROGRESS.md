@@ -2,10 +2,10 @@
 
 This file tracks execution of [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
 
-- Current work branch: `agent/p2.2-template-provider`
+- Current work branch: `agent/p2.3-iso-105-template`
 - Last updated: 2026-08-14
 - Current phase: Phase 2 — Physical keyboard templates and geometry
-- Next work item: **P2.3 — Build ISO-105 template**
+- Next work item: **P2.4 — Build ANSI-104 template**
 
 Legend: `[x]` complete, `[ ]` not yet complete.
 
@@ -33,12 +33,12 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 
 - [x] **P2.1** Define template schema
 - [x] **P2.2** Implement `IKeyboardTemplateProvider`
-- [ ] **P2.3** Build ISO-105 template
+- [x] **P2.3** Build ISO-105 template
 - [ ] **P2.4** Build ANSI-104 template
 - [ ] **P2.5** Render geometry in Avalonia
 - [ ] **P2.6** Create reusable `KeyControl`
 
-**Phase status:** 2/6 work items complete.
+**Phase status:** 3/6 work items complete.
 
 ## Phase 3 — Editor interaction and project lifecycle
 
@@ -126,8 +126,8 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 
 ## Progress summary
 
-- Completed work items: **12**
+- Completed work items: **13**
 - Total planned work items: **73**
-- Overall checklist progress: **12/73**
+- Overall checklist progress: **13/73**
 
 The checklist records work-item completion only. Phase-level acceptance criteria and test gates in `IMPLEMENTATION-PLAN.md` still apply before a phase is considered complete.
