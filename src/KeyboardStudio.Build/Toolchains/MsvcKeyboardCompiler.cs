@@ -3,8 +3,8 @@ namespace KeyboardStudio.Build;
 public sealed class MsvcKeyboardCompiler : INativeCompiler
 {
     public Task<CompilationResult> CompileAsync(
-        GeneratedSource source,
-        BuildTarget target,
+        GeneratedArtifact artifact,
+        BuildOptions options,
         CancellationToken cancellationToken = default)
     {
         var result = new CompilationResult(

@@ -89,8 +89,8 @@ public sealed class BuildOrchestratorValidationTests
         public bool WasCalled { get; private set; }
 
         public Task<CompilationResult> CompileAsync(
-            GeneratedSource source,
-            BuildTarget target,
+            GeneratedArtifact artifact,
+            BuildOptions options,
             CancellationToken cancellationToken = default)
         {
             WasCalled = true;
