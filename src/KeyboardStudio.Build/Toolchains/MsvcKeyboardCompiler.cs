@@ -226,6 +226,7 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
             $"/PDB:{Path.ChangeExtension(outputPath, ".pdb")}",
             "/OPT:REF",
             "/OPT:ICF",
+            "/Brepro",
             objectPath,
             resourcePath
         };

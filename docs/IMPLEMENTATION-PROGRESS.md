@@ -2,10 +2,10 @@
 
 This file tracks execution of [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
 
-- Current work branch: `main`
-- Last updated: 2026-08-14
-- Current phase: Phase 8 — Artifact verification
-- Next work item: **P8.1 — PE verification**
+- Current work branch: `agent/phase-8-artifact-verification`
+- Last updated: 2026-08-15
+- Current phase: Phase 9 — Support for Linux XKB Layout File Generation
+- Next work item: **P9.1 — Generalize orchestration for heterogeneous artifact targets**
 
 Legend: `[x]` complete, `[ ]` not yet complete.
 
@@ -108,7 +108,9 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 - [x] **P8.2** Export verification
 - [x] **P8.3** Load-level smoke test
 - [x] **P8.4** Generated/source manifest
-- [ ] **P8.5** Reproducibility check
+- [x] **P8.5** Reproducibility check
+
+**Phase status:** 5/5 work items complete. Phase complete.
 
 ## Phase 9 — Support for Linux XKB Layout File Generation
 
@@ -148,8 +150,8 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 
 ## Progress summary
 
-- Completed work items: **53**
+- Completed work items: **58**
 - Total planned work items: **82**
-- Overall checklist progress: **53/82**
+- Overall checklist progress: **58/82**
 
 The checklist records work-item completion only. Phase-level acceptance criteria and test gates in `IMPLEMENTATION-PLAN.md` still apply before a phase is considered complete.

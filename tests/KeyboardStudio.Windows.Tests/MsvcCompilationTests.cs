@@ -52,6 +52,7 @@ public sealed class MsvcCompilationTests
                 target == BuildTarget.WindowsX64 ? "/MACHINE:X64" : "/MACHINE:ARM64",
                 linkRequest.Arguments);
             Assert.Contains(linkRequest.Arguments, argument => argument.EndsWith("keyboard.def", StringComparison.Ordinal));
+            Assert.Contains("/Brepro", linkRequest.Arguments);
             Assert.EndsWith("kbd-demo.dll", result.ArtifactPath, StringComparison.Ordinal);
             Assert.Contains(@"C:\toolchain\cl.exe", result.RawLog, StringComparison.Ordinal);
             Assert.NotNull(result.LogPath);

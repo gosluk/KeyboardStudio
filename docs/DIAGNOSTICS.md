@@ -33,6 +33,26 @@ Windows codes are declared in `KeyboardStudio.Windows`; Core does not depend on 
 The translator raises `WindowsTranslationException` with the complete structured issue list if any
 Core structural or Windows compatibility error reaches the translation boundary.
 
+## Windows build and artifact diagnostics
+
+| Code | Severity | Meaning |
+|---|---|---|
+| `PE_FILE` | Error | The linked artifact is missing. |
+| `PE_HEADER` | Error | The output lacks a PE optional header. |
+| `PE_TARGET` | Error | The selected target is unsupported by the PE verifier. |
+| `PE_INVALID` | Error | The output is not a readable PE image or has malformed export data. |
+| `PE_ARCH` | Error | The PE machine does not match the requested target. |
+| `PE_DLL` | Error | The PE image lacks the DLL characteristic. |
+| `PE_EXPORT` | Error | The exact `KbdLayerDescriptor` export is absent. |
+| `PE_LOAD` | Error | The matching-host Windows loader rejected the DLL or export. |
+| `MANIFEST_WRITE` | Error | The verified artifact manifest could not be written. |
+| `REPRO_BUILD` | Error | The comparison build failed. |
+| `REPRO_SOURCE` | Error | Repeated generation produced different source. |
+| `REPRO_BINARY` | Error | Repeated builds produced different DLL hashes. |
+
+Load-level verification records a structured not-run state rather than a diagnostic when the host is
+not Windows or the process architecture cannot load the requested target.
+
 ## Compatibility policy
 
 - Existing code meanings are not reassigned.

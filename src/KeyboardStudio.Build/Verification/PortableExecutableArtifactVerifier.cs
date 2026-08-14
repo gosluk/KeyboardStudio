@@ -125,7 +125,12 @@ public sealed class PortableExecutableArtifactVerifier : IArtifactVerifier
                 messages);
         }
         catch (Exception exception) when (
-            exception is BadImageFormatException or IOException or UnauthorizedAccessException)
+            exception is BadImageFormatException or
+                IOException or
+                UnauthorizedAccessException or
+                InvalidOperationException or
+                ArgumentOutOfRangeException or
+                OverflowException)
         {
             return Failure(
                 target,

@@ -28,6 +28,7 @@ public sealed class JsonBuildManifestWriter : IBuildManifestWriter
         GeneratedArtifact generatedArtifact,
         BuildOptions options,
         CompilationResult compilation,
+        BuildReproducibilityResult? reproducibility,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(project);
@@ -67,6 +68,14 @@ public sealed class JsonBuildManifestWriter : IBuildManifestWriter
                 verification.IsDll,
                 verification.ExpectedExportFound,
                 verification.LoadTest.Status),
+            reproducibility is null
+                ? null
+                : new BuildReproducibilityManifest(
+                    reproducibility.Success,
+                    reproducibility.GeneratedSourcesMatch,
+                    reproducibility.BinaryOutputsMatch,
+                    reproducibility.FirstArtifactSha256,
+                    reproducibility.SecondArtifactSha256),
             _timeProvider.GetUtcNow());
 
         var outputDirectory = Path.GetDirectoryName(Path.GetFullPath(compilation.ArtifactPath)) ??

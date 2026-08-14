@@ -207,6 +207,12 @@ records the project name, target, ordered generated-source names and SHA-256 has
 SDK versions, verified output path and hash, verification state, and the UTC build timestamp. The
 timestamp is confined to the manifest and never changes generated source.
 
+Set `BuildOptions.VerifyReproducibility` to build the same project twice. The checker compares the
+two generated source dictionaries exactly and the verified DLLs by SHA-256. `link.exe` receives
+`/Brepro` so supported MSVC toolchains suppress nondeterministic PE content. A mismatch fails the
+overall build with `REPRO_SOURCE` or `REPRO_BINARY`, retains the comparison workspace for diagnosis,
+and is recorded in the primary manifest.
+
 Each invocation receives a unique workspace and never compiles in a source directory. With the
 default `KeepFailedBuild` policy, successful builds remove `generated/` and `obj/` but retain the DLL
 and log; failures and cancellations retain all diagnostic files. `DeleteFailedBuild` removes a
@@ -218,3 +224,9 @@ the child process tree before applying that policy and writes `logs/cancellation
 Microsoft publishes keyboard-layout source examples in the Windows Driver Samples repository:
 
 https://github.com/microsoft/Windows-driver-samples/tree/main/input/layout
+
+Artifact verification follows Microsoft's PE/COFF header and export-directory format and uses the
+.NET native-library API for the matching-host loader smoke test:
+
+- https://learn.microsoft.com/windows/win32/debug/pe-format
+- https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.nativelibrary

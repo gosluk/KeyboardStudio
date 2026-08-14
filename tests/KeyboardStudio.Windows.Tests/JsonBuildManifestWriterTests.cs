@@ -42,12 +42,21 @@ public sealed class JsonBuildManifestWriterTests
                 Verification: verification,
                 ToolchainVersions: new BuildToolchainVersions("14.50", "10.0.26100"));
             var writer = new JsonBuildManifestWriter(new FixedTimeProvider(timestamp));
+            var reproducibility = new BuildReproducibilityResult(
+                true,
+                true,
+                true,
+                Hash(outputBytes),
+                Hash(outputBytes),
+                "comparison-workspace",
+                []);
 
             var result = await writer.WriteAsync(
                 DemoProjectFactory.Create(),
                 new GeneratedArtifact(source, "kbd-demo.dll"),
                 new BuildOptions(BuildTarget.WindowsX64, outputDirectory),
-                compilation);
+                compilation,
+                reproducibility);
 
             Assert.Equal(Path.Combine(outputDirectory, "build-manifest.json"), result.ManifestPath);
             Assert.Equal(timestamp, result.Manifest.BuildTimestampUtc);
@@ -58,6 +67,7 @@ public sealed class JsonBuildManifestWriterTests
                 Hash(Encoding.UTF8.GetBytes("/* deterministic */\n")),
                 result.Manifest.GeneratedSources[0].Sha256);
             Assert.Equal("keyboard.c", result.Manifest.GeneratedSources[0].Path);
+            Assert.True(result.Manifest.Reproducibility?.Success);
 
             using var json = JsonDocument.Parse(await File.ReadAllTextAsync(result.ManifestPath));
             Assert.Equal("WindowsX64", json.RootElement.GetProperty("target").GetString());
@@ -67,6 +77,11 @@ public sealed class JsonBuildManifestWriterTests
                     .GetProperty("verification")
                     .GetProperty("loadTestStatus")
                     .GetString());
+            Assert.True(
+                json.RootElement
+                    .GetProperty("reproducibility")
+                    .GetProperty("binaryOutputsMatch")
+                    .GetBoolean());
             Assert.Equal(
                 timestamp,
                 json.RootElement.GetProperty("buildTimestampUtc").GetDateTimeOffset());

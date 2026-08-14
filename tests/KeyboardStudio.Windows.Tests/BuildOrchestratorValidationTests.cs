@@ -118,6 +118,7 @@ public sealed class BuildOrchestratorValidationTests
             GeneratedArtifact generatedArtifact,
             BuildOptions options,
             CompilationResult compilation,
+            BuildReproducibilityResult? reproducibility,
             CancellationToken cancellationToken = default)
         {
             WasCalled = true;
@@ -133,6 +134,9 @@ public sealed class BuildOrchestratorValidationTests
                     true,
                     true,
                     ArtifactLoadTestStatus.NotRun),
+                reproducibility is null
+                    ? null
+                    : new BuildReproducibilityManifest(true, true, true, "hash", "hash"),
                 DateTimeOffset.UnixEpoch);
             return Task.FromResult(new BuildManifestWriteResult(manifest, "build-manifest.json"));
         }

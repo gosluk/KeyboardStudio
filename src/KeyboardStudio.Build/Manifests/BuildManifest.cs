@@ -8,4 +8,5 @@ public sealed record BuildManifest(
     BuildToolchainVersions Toolchain,
     BuildManifestFile Output,
     BuildVerificationManifest Verification,
+    BuildReproducibilityManifest? Reproducibility,
     DateTimeOffset BuildTimestampUtc);

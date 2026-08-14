@@ -4,9 +4,9 @@
 
 This document is the executable implementation plan for KeyboardStudio. The completed phases provide
 the solution, Avalonia editor, versioned project persistence, validation, Windows semantic translation,
-deterministic native source generation, and MSVC/WDK compile/link pipeline. The remaining work adds
-artifact verification, a Linux XKB output backend, target-aware build UX, platform integration CI, and
-release stabilization.
+deterministic native source generation, the MSVC/WDK compile/link pipeline, and structural artifact
+verification. The remaining work adds a Linux XKB output backend, target-aware build UX, platform
+integration CI, and release stabilization.
 
 The goal is to move from that bootstrap state to a usable first release that can:
 
@@ -24,21 +24,23 @@ The plan intentionally keeps installation/registry registration, dead keys, liga
 
 ## 2. Current baseline
 
-The current Phase 7-complete baseline provides:
+The current Phase 8-complete baseline provides:
 
 - `KeyboardStudio.sln` targeting .NET 10;
 - `KeyboardStudio.App` using Avalonia;
 - `KeyboardStudio.Core` with keyboard/project domain objects, editing, templates, and validation;
 - `KeyboardStudio.Persistence` with versioned DTO-based JSON persistence and migrations;
-- `KeyboardStudio.Build` with orchestration, isolated workspaces, process execution, and MSVC/SDK discovery;
+- `KeyboardStudio.Build` with orchestration, isolated workspaces, process execution, MSVC/SDK
+  discovery, PE/export/load verification, manifests, and opt-in reproducibility checks;
 - `KeyboardStudio.Windows` with semantic translation and deterministic `KBDTABLES` source generation;
 - complete ISO-105 and ANSI-104 templates;
 - Core, Windows, and App test projects;
 - Linux-hosted restore/build/test validation;
 - an Avalonia editor with project lifecycle, mapping controls, and diagnostics.
 
-Phases 0-7 are complete. The Windows path generates real `KBDTABLES` source and compiles x64 or ARM64
-DLLs through a discovered MSVC/Windows SDK toolchain. The current `BuildOrchestrator` still assumes
+Phases 0-8 are complete. The Windows path generates real `KBDTABLES` source, compiles x64 or ARM64
+DLLs through a discovered MSVC/Windows SDK toolchain, and verifies the resulting artifact beyond the
+linker exit code. The current `BuildOrchestrator` still assumes
 every target has one generator, one build environment, and one native compiler. That shape must be
 generalized before adding XKB because an XKB symbols component is already the distributable artifact;
 it does not have a native compile/link stage.
@@ -1742,16 +1744,15 @@ The architecture should not block these features, but MVP code should not pay th
 
 The recommended next work from the current Phase 7-complete baseline is:
 
-1. **Verify the Windows PE structure, export, manifest, and reproducibility (Phase 8).**
-2. **Generalize orchestration around target backends without changing Windows behavior (P9.1).**
-3. **Introduce target profiles and the `KeyboardStudio.Linux` boundary (P9.2).**
-4. **Add explicit template-key to XKB-key-name mappings (P9.3).**
-5. **Translate core mappings into typed XKB keysyms and levels (P9.4).**
-6. **Generate and materialize deterministic XKB symbols components (P9.5-P9.6).**
-7. **Verify XKB output with `xkbcli` and Linux CI fixtures (P9.7-P9.9).**
-8. **Build the target-aware Avalonia workflow (Phase 10).**
-9. **Add the Windows native integration job (Phase 11).**
-10. **Run multi-target end-to-end stabilization and prepare the MVP release (Phase 12).**
+1. **Generalize orchestration around target backends without changing Windows behavior (P9.1).**
+2. **Introduce target profiles and the `KeyboardStudio.Linux` boundary (P9.2).**
+3. **Add explicit template-key to XKB-key-name mappings (P9.3).**
+4. **Translate core mappings into typed XKB keysyms and levels (P9.4).**
+5. **Generate and materialize deterministic XKB symbols components (P9.5-P9.6).**
+6. **Verify XKB output with `xkbcli` and Linux CI fixtures (P9.7-P9.9).**
+7. **Build the target-aware Avalonia workflow (Phase 10).**
+8. **Add the Windows native integration job (Phase 11).**
+9. **Run multi-target end-to-end stabilization and prepare the MVP release (Phase 12).**
 
 This ordering completes proof of the existing Windows artifact before changing orchestration, then
 establishes both backend contracts before the UI and release workflow are finalized.

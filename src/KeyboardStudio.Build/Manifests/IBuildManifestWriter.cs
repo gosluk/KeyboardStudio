@@ -9,5 +9,6 @@ public interface IBuildManifestWriter
         GeneratedArtifact generatedArtifact,
         BuildOptions options,
         CompilationResult compilation,
+        BuildReproducibilityResult? reproducibility,
         CancellationToken cancellationToken = default);
 }

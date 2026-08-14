@@ -4,8 +4,8 @@ KeyboardStudio is a modern Avalonia-based editor for defining platform-neutral c
 layouts. The implemented backend produces native Windows keyboard-layout DLLs; the roadmap now adds
 Linux XKB symbols-file generation before the target-aware build UI is finalized.
 
-The repository contains the working editor/domain/persistence foundation and the Windows source and
-native build backend. The implementation is focused on this core workflow:
+The repository contains the working editor/domain/persistence foundation and a verified Windows
+source/native build backend. The implementation is focused on this core workflow:
 
 1. Display a physical keyboard.
 2. Select a key and define its mapping for supported modifier layers.
@@ -13,6 +13,10 @@ native build backend. The implementation is focused on this core workflow:
 4. Validate the project.
 5. Select an artifact target.
 6. Generate a native Windows keyboard-layout DLL or, in planned Phase 9, a Linux XKB symbols file.
+
+Windows builds now verify PE architecture, DLL characteristics, the exact `KbdLayerDescriptor`
+export, and—on a matching Windows host—loader resolution. Successful orchestration writes a hashed
+build manifest, with an opt-in double-build reproducibility check.
 
 ## Current editor and diagnostics workflow
 
