@@ -122,19 +122,53 @@ internal static class KeyboardProjectDtoMapper
 
     private static KeyOutputDto ToDto(KeyOutput output) => output switch
     {
-        CharacterOutput character => new CharacterOutputDto(character.Value),
-        SpecialKeyOutput specialKey => new SpecialKeyOutputDto(FormatEnum(specialKey.Key)),
-        NoOutput => new NoOutputDto(),
+        CharacterOutput character => new KeyOutputDto
+        {
+            Kind = KeyOutputKinds.Character,
+            Value = character.Value
+        },
+        SpecialKeyOutput specialKey => new KeyOutputDto
+        {
+            Kind = KeyOutputKinds.SpecialKey,
+            Key = FormatEnum(specialKey.Key)
+        },
+        NoOutput => new KeyOutputDto
+        {
+            Kind = KeyOutputKinds.None
+        },
         _ => throw new NotSupportedException($"Key output type '{output.GetType().Name}' is not supported by the project format.")
     };
 
-    private static KeyOutput ToDomain(KeyOutputDto dto) => dto switch
+    private static KeyOutput ToDomain(KeyOutputDto dto)
     {
-        CharacterOutputDto character => new CharacterOutput(RequireText(character.Value, "character output value")),
-        SpecialKeyOutputDto specialKey => new SpecialKeyOutput(ParseEnum<LogicalKey>(specialKey.Key, "special-key output key")),
-        NoOutputDto => new NoOutput(),
-        _ => throw new InvalidDataException($"Key output DTO type '{dto.GetType().Name}' is not supported.")
-    };
+        var kind = RequireText(dto.Kind, "layout.mappings[].outputs[].kind");
+        return kind switch
+        {
+            KeyOutputKinds.Character => ToCharacterOutput(dto),
+            KeyOutputKinds.SpecialKey => ToSpecialKeyOutput(dto),
+            KeyOutputKinds.None => ToNoOutput(dto),
+            _ => throw new InvalidDataException($"Output kind '{kind}' is not supported by the project format.")
+        };
+    }
+
+    private static CharacterOutput ToCharacterOutput(KeyOutputDto dto)
+    {
+        RequireAbsent(dto.Key, "key", KeyOutputKinds.Character);
+        return new CharacterOutput(RequireNonEmpty(dto.Value, "character output value"));
+    }
+
+    private static SpecialKeyOutput ToSpecialKeyOutput(KeyOutputDto dto)
+    {
+        RequireAbsent(dto.Value, "value", KeyOutputKinds.SpecialKey);
+        return new SpecialKeyOutput(ParseEnum<LogicalKey>(dto.Key, "special-key output key"));
+    }
+
+    private static NoOutput ToNoOutput(KeyOutputDto dto)
+    {
+        RequireAbsent(dto.Value, "value", KeyOutputKinds.None);
+        RequireAbsent(dto.Key, "key", KeyOutputKinds.None);
+        return new NoOutput();
+    }
 
     private static string FormatEnum<TEnum>(TEnum value)
         where TEnum : struct, Enum => EnumNamingPolicy.ConvertName(value.ToString());
@@ -161,4 +195,17 @@ internal static class KeyboardProjectDtoMapper
         string.IsNullOrWhiteSpace(value)
             ? throw new InvalidDataException($"Required project field '{fieldName}' must not be empty.")
             : value;
+
+    private static string RequireNonEmpty(string? value, string fieldName) =>
+        string.IsNullOrEmpty(value)
+            ? throw new InvalidDataException($"Required project field '{fieldName}' must not be empty.")
+            : value;
+
+    private static void RequireAbsent(string? value, string fieldName, string kind)
+    {
+        if (value is not null)
+        {
+            throw new InvalidDataException($"Output kind '{kind}' must not define '{fieldName}'.");
+        }
+    }
 }
