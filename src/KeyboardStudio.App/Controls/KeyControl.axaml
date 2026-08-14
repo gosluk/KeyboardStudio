@@ -1,0 +1,49 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="KeyboardStudio.App.Controls.KeyControl"
+             x:Name="Root">
+  <UserControl.Styles>
+    <Style Selector="Button.key-control">
+      <Setter Property="Padding" Value="4,2" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="Button.key-control.unmapped">
+      <Setter Property="Opacity" Value="0.65" />
+    </Style>
+    <Style Selector="Button.key-control.selected">
+      <Setter Property="Background" Value="#334A90E2" />
+      <Setter Property="BorderBrush" Value="#4A90E2" />
+      <Setter Property="BorderThickness" Value="2" />
+    </Style>
+    <Style Selector="Button.key-control.error">
+      <Setter Property="Background" Value="#33D13438" />
+      <Setter Property="BorderBrush" Value="#D13438" />
+      <Setter Property="BorderThickness" Value="2" />
+    </Style>
+  </UserControl.Styles>
+
+  <Button Classes="key-control"
+          Classes.selected="{Binding IsSelected, ElementName=Root}"
+          Classes.unmapped="{Binding IsUnmapped, ElementName=Root}"
+          Classes.error="{Binding HasError, ElementName=Root}"
+          Command="{Binding SelectCommand, ElementName=Root}"
+          ToolTip.Tip="{Binding KeyId, ElementName=Root}">
+    <Grid RowDefinitions="*,Auto">
+      <TextBlock Text="{Binding Label, ElementName=Root}"
+                 HorizontalAlignment="Center"
+                 VerticalAlignment="Center"
+                 TextAlignment="Center"
+                 TextTrimming="CharacterEllipsis"
+                 FontSize="12" />
+      <TextBlock Grid.Row="1"
+                 Text="{Binding Hint, ElementName=Root}"
+                 IsVisible="{Binding ShowHint, ElementName=Root}"
+                 HorizontalAlignment="Center"
+                 TextAlignment="Center"
+                 TextTrimming="CharacterEllipsis"
+                 FontSize="8"
+                 Opacity="0.7" />
+    </Grid>
+  </Button>
+</UserControl>

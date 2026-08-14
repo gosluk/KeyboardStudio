@@ -1,5 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:KeyboardStudio.App.Controls"
         x:Class="KeyboardStudio.App.MainWindow"
         Title="KeyboardStudio"
         Width="1180"
@@ -51,12 +52,16 @@
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <Button Content="{Binding Label}"
-                          Command="{Binding SelectCommand}"
-                          Width="{Binding Width}"
-                          Height="{Binding Height}"
-                          Padding="2"
-                          FontSize="12" />
+                  <controls:KeyControl KeyId="{Binding KeyId}"
+                                       Label="{Binding Label}"
+                                       Hint="{Binding Hint}"
+                                       ShowHint="True"
+                                       IsSelected="{Binding IsSelected}"
+                                       IsUnmapped="{Binding IsUnmapped}"
+                                       HasError="{Binding HasError}"
+                                       SelectCommand="{Binding SelectCommand}"
+                                       Width="{Binding Width}"
+                                       Height="{Binding Height}" />
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
