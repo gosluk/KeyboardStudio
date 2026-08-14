@@ -70,6 +70,12 @@ Keyboard layout DLL
 
 This keeps source generation deterministic and unit-testable without requiring a Windows compiler installation.
 
+The Phase 6 generator emits the WDK-native `VSC_VK`, `VSC_LPWSTR`, `VK_TO_BIT`, `MODIFIERS`,
+`VK_TO_WCHARS<n>`, `VK_TO_WCHAR_TABLE`, and `KBDTABLES` structures. The exported
+`KbdLayerDescriptor` returns that descriptor, while `.def` and `.rc` companions provide the DLL
+export and deterministic version metadata. See
+[`WINDOWS-KBDTABLES-REFERENCE.md`](WINDOWS-KBDTABLES-REFERENCE.md) for the supported ABI subset.
+
 ### 2.4 All project mutations flow through the editor service
 
 ViewModels should not directly mutate arbitrary nested domain objects. Editing operations are concentrated behind `KeyboardEditor` so validation, dirty tracking and future undo/redo can be introduced without redesigning the UI.

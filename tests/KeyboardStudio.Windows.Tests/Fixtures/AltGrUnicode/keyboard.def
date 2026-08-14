@@ -1,0 +1,4 @@
+LIBRARY KBD_ALTGR
+
+EXPORTS
+    KbdLayerDescriptor @1

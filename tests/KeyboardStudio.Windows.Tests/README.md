@@ -10,6 +10,12 @@ Coverage includes:
 - Unicode output mappings;
 - scan-only special keys and explicit unmapped outputs;
 - structured failures for unsupported Windows mappings;
-- deterministic generated source;
+- deterministic four-file native source generation;
+- primary, E0, and E1 scan-code tables and WDK flags;
+- normal and extended native key names;
+- `KBDTABLES`, `KbdLayerDescriptor`, module exports, and resource metadata;
+- exact MinimalUs, AltGrUnicode, and IsoExample golden fixtures;
 
-Golden/source snapshot coverage for real native tables begins in Phase 6.
+Golden fixtures are copied to the test output and compared after newline normalization. Set
+`KEYBOARDSTUDIO_UPDATE_GOLDENS=1` only during an intentional fixture refresh; review every resulting
+source diff before committing it.
