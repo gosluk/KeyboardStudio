@@ -11,6 +11,25 @@ The repository now contains a buildable source skeleton. The implementation is i
 5. Generate native Windows keyboard-layout source.
 6. Compile the generated source into a Windows keyboard-layout DLL.
 
+## Current editor workflow
+
+The Phase 3 editor supports one selected physical key at a time and displays its physical ID,
+scan code, logical-key assignment, and all four modifier outputs together. Choose the active
+`Default`, `Shift`, `AltGr`, or `Shift + AltGr` layer to control the labels rendered on the keyboard.
+
+Character outputs accept exactly one Unicode scalar value. Clear one layer, clear every output on
+the selected key, or unmap its logical key with the controls in the details panel.
+
+Projects use the `.kbdproj` format. The File menu and shortcuts provide:
+
+- New — `Ctrl+N`;
+- Open — `Ctrl+O`;
+- Save — `Ctrl+S`;
+- Save As — `Ctrl+Shift+S`.
+
+Mapping changes mark the document as dirty. New and Open prompt to save or discard unsaved changes
+before replacing the current document.
+
 ## Architecture
 
 The application uses a clean separation between the cross-platform editor and the Windows-specific compiler backend.

@@ -1,0 +1,16 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="KeyboardStudio.App.ProjectErrorDialog"
+        Width="480"
+        SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+  <StackPanel Margin="24" Spacing="16">
+    <TextBlock x:Name="MessageText" TextWrapping="Wrap" />
+    <Button Content="OK"
+            HorizontalAlignment="Right"
+            IsDefault="True"
+            Click="OkClicked" />
+  </StackPanel>
+</Window>

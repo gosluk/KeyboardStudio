@@ -71,7 +71,11 @@ The payload is strict:
 - `none` must define neither `value` nor `key`;
 - unknown `kind` values are rejected as invalid projects.
 
-A character value may itself be whitespace, such as a literal space. Scalar-count validation belongs to the editor/validation layer rather than the persistence transport.
+A character value may itself be whitespace, such as a literal space. Version 1 requires exactly one
+Unicode scalar value. Supplementary-plane characters such as emoji are accepted as one scalar even
+though UTF-16 represents them with a surrogate pair. Empty values, isolated surrogates, and
+multi-scalar sequences (including decomposed grapheme sequences) are rejected. Multi-scalar
+ligatures and macros remain explicitly deferred beyond the MVP.
 
 ## Project metadata
 

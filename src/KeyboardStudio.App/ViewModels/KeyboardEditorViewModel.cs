@@ -1,22 +1,41 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using KeyboardStudio.Core;
 
 namespace KeyboardStudio.App;
 
 public sealed class KeyboardEditorViewModel : ObservableObject
 {
+    private static readonly IReadOnlyList<ModifierLayerOptionViewModel> ModifierLayers =
+    [
+        new(ModifierLayer.Default, "Default"),
+        new(ModifierLayer.Shift, "Shift"),
+        new(ModifierLayer.AltGr, "AltGr"),
+        new(ModifierLayer.ShiftAltGr, "Shift + AltGr")
+    ];
+
+    private static readonly IReadOnlyList<LogicalKey> EditableLogicalKeys =
+        Enum.GetValues<LogicalKey>();
+
+    private readonly Action _documentChanged;
     private readonly KeyboardEditor _editor;
     private ModifierLayer _activeLayer;
+    private IReadOnlyList<LayerMappingViewModel> _layerMappings = [];
     private KeyViewModel? _selectedKey;
 
-    public KeyboardEditorViewModel(KeyboardEditor editor, KeyboardTemplateDescriptor template)
+    public KeyboardEditorViewModel(
+        KeyboardEditor editor,
+        KeyboardTemplateDescriptor template,
+        Action? documentChanged = null)
     {
         ArgumentNullException.ThrowIfNull(editor);
         ArgumentNullException.ThrowIfNull(template);
 
         _editor = editor;
-        Layers = Enum.GetValues<ModifierLayer>();
+        _documentChanged = documentChanged ?? (() => { });
+        Layers = ModifierLayers;
+        LogicalKeys = EditableLogicalKeys;
         Keys = new ObservableCollection<KeyViewModel>(
             editor.Project.Keyboard.Keys.Select(key =>
                 new KeyViewModel(
@@ -28,15 +47,46 @@ public sealed class KeyboardEditorViewModel : ObservableObject
 
         KeyboardWidth = Keys.Select(key => key.Left + key.Width).DefaultIfEmpty().Max();
         KeyboardHeight = Keys.Select(key => key.Top + key.Height).DefaultIfEmpty().Max();
+        ClearAllOutputsCommand = new RelayCommand(ClearAllOutputs, () => SelectedKey is not null);
+        UnmapLogicalKeyCommand = new RelayCommand(UnmapLogicalKey, () => SelectedKey is not null);
 
         RefreshLabels();
         SelectedKey = Keys.FirstOrDefault();
     }
 
     public ObservableCollection<KeyViewModel> Keys { get; }
-    public IReadOnlyList<ModifierLayer> Layers { get; }
+    public IReadOnlyList<ModifierLayerOptionViewModel> Layers { get; }
+    public IReadOnlyList<LogicalKey> LogicalKeys { get; }
     public double KeyboardWidth { get; }
     public double KeyboardHeight { get; }
+    public IRelayCommand ClearAllOutputsCommand { get; }
+    public IRelayCommand UnmapLogicalKeyCommand { get; }
+
+    public IReadOnlyList<LayerMappingViewModel> LayerMappings
+    {
+        get => _layerMappings;
+        private set => SetProperty(ref _layerMappings, value);
+    }
+
+    public LogicalKey SelectedLogicalKey
+    {
+        get => SelectedKey?.Mapping?.LogicalKey ?? LogicalKey.None;
+        set
+        {
+            if (SelectedKey is null || value == SelectedLogicalKey)
+            {
+                return;
+            }
+
+            if (_editor.MapLogicalKey(SelectedKey.KeyId, value))
+            {
+                _documentChanged();
+            }
+            SelectedKey.Mapping = _editor.Project.Layout.Find(SelectedKey.KeyId);
+            SelectedKey.Refresh(ActiveLayer);
+            OnPropertyChanged();
+        }
+    }
 
     public ModifierLayer ActiveLayer
     {
@@ -46,8 +96,19 @@ public sealed class KeyboardEditorViewModel : ObservableObject
             if (SetProperty(ref _activeLayer, value))
             {
                 RefreshLabels();
+                OnPropertyChanged(nameof(ActiveLayerOption));
                 OnPropertyChanged(nameof(SelectedOutput));
             }
+        }
+    }
+
+    public ModifierLayerOptionViewModel ActiveLayerOption
+    {
+        get => Layers.Single(option => option.Value == ActiveLayer);
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            ActiveLayer = value.Value;
         }
     }
 
@@ -69,9 +130,28 @@ public sealed class KeyboardEditorViewModel : ObservableObject
                     value.IsSelected = true;
                 }
 
+                RefreshMappingPanel();
+                OnPropertyChanged(nameof(SelectedLogicalKey));
                 OnPropertyChanged(nameof(SelectedOutput));
+                ClearAllOutputsCommand.NotifyCanExecuteChanged();
+                UnmapLogicalKeyCommand.NotifyCanExecuteChanged();
             }
         }
+    }
+
+    public bool SelectKey(string keyId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(keyId);
+
+        var key = Keys.FirstOrDefault(candidate =>
+            string.Equals(candidate.KeyId, keyId, StringComparison.Ordinal));
+        if (key is null)
+        {
+            return false;
+        }
+
+        SelectedKey = key;
+        return true;
     }
 
     public string SelectedOutput
@@ -95,11 +175,17 @@ public sealed class KeyboardEditorViewModel : ObservableObject
 
             if (string.IsNullOrEmpty(value))
             {
-                _editor.ClearMapping(SelectedKey.KeyId, ActiveLayer);
+                if (_editor.ClearMapping(SelectedKey.KeyId, ActiveLayer))
+                {
+                    _documentChanged();
+                }
             }
             else
             {
-                _editor.MapCharacter(SelectedKey.KeyId, ActiveLayer, value);
+                if (_editor.MapCharacter(SelectedKey.KeyId, ActiveLayer, value))
+                {
+                    _documentChanged();
+                }
             }
 
             SelectedKey.Mapping = _editor.Project.Layout.Find(SelectedKey.KeyId);
@@ -111,6 +197,72 @@ public sealed class KeyboardEditorViewModel : ObservableObject
     private void SelectKey(KeyViewModel key)
     {
         SelectedKey = key;
+    }
+
+    private void RefreshMappingPanel()
+    {
+        LayerMappings = Layers
+            .Select(layer => new LayerMappingViewModel(
+                layer,
+                GetCharacterOutput(layer.Value),
+                UpdateOutput))
+            .ToArray();
+    }
+
+    private string GetCharacterOutput(ModifierLayer layer) =>
+        SelectedKey?.Mapping?.Outputs.TryGetValue(layer, out var output) == true &&
+        output is CharacterOutput characterOutput
+            ? characterOutput.Value
+            : string.Empty;
+
+    private void UpdateOutput(ModifierLayer layer, string output)
+    {
+        if (SelectedKey is null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrEmpty(output))
+        {
+            if (_editor.ClearMapping(SelectedKey.KeyId, layer))
+            {
+                _documentChanged();
+            }
+        }
+        else
+        {
+            if (_editor.MapCharacter(SelectedKey.KeyId, layer, output))
+            {
+                _documentChanged();
+            }
+        }
+
+        SelectedKey.Mapping = _editor.Project.Layout.Find(SelectedKey.KeyId);
+        SelectedKey.Refresh(ActiveLayer);
+        OnPropertyChanged(nameof(SelectedLogicalKey));
+        OnPropertyChanged(nameof(SelectedOutput));
+    }
+
+    private void ClearAllOutputs()
+    {
+        if (SelectedKey is null)
+        {
+            return;
+        }
+
+        if (_editor.ClearAllOutputs(SelectedKey.KeyId))
+        {
+            _documentChanged();
+        }
+        SelectedKey.Mapping = _editor.Project.Layout.Find(SelectedKey.KeyId);
+        SelectedKey.Refresh(ActiveLayer);
+        RefreshMappingPanel();
+        OnPropertyChanged(nameof(SelectedOutput));
+    }
+
+    private void UnmapLogicalKey()
+    {
+        SelectedLogicalKey = LogicalKey.None;
     }
 
     private void RefreshLabels()

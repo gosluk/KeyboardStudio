@@ -122,6 +122,18 @@ public sealed class ProjectPersistenceTests
     }
 
     [Fact]
+    public async Task LoadAsync_WhenCharacterContainsMultipleScalars_ReportsInvalidProject()
+    {
+        var json = CreateProjectJson("{ \"kind\": \"character\", \"value\": \"ab\" }");
+        var store = new JsonKeyboardProjectStore();
+        using var stream = CreateStream(json);
+
+        var exception = await Assert.ThrowsAsync<ProjectLoadException>(() => store.LoadAsync(stream));
+
+        Assert.Equal(ProjectLoadErrorCode.InvalidProject, exception.ErrorCode);
+    }
+
+    [Fact]
     public async Task LoadAsync_WhenSchemaVersionIsMissing_ReportsMissingSchemaVersion()
     {
         var store = new JsonKeyboardProjectStore();

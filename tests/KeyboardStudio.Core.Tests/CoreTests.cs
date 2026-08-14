@@ -19,6 +19,120 @@ public sealed class KeyboardEditorTests
         Assert.Equal("ą", output.Value);
     }
 
+    [Theory]
+    [InlineData(LogicalKey.A)]
+    [InlineData(LogicalKey.Digit7)]
+    [InlineData(LogicalKey.Semicolon)]
+    [InlineData(LogicalKey.Enter)]
+    [InlineData(LogicalKey.NumpadEnter)]
+    [InlineData(LogicalKey.ArrowLeft)]
+    public void MapLogicalKey_WhenSupportedConceptIsAssigned_UpdatesMapping(LogicalKey logicalKey)
+    {
+        var project = DemoProjectFactory.Create();
+        var editor = new KeyboardEditor(project);
+
+        editor.MapLogicalKey("KeyA", logicalKey);
+
+        Assert.Equal(logicalKey, project.Layout.Find("KeyA")?.LogicalKey);
+    }
+
+    [Fact]
+    public void MapCharacter_WhenSupplementaryUnicodeScalarIsAssigned_AcceptsOutput()
+    {
+        var project = DemoProjectFactory.Create();
+        var editor = new KeyboardEditor(project);
+
+        editor.MapCharacter("KeyA", ModifierLayer.AltGr, "😀");
+
+        var output = Assert.IsType<CharacterOutput>(
+            project.Layout.Find("KeyA")?.Outputs[ModifierLayer.AltGr]);
+        Assert.Equal("😀", output.Value);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("ab")]
+    [InlineData("a\u0301")]
+    [InlineData("\uD800")]
+    public void MapCharacter_WhenValueIsNotOneUnicodeScalar_RejectsOutput(string value)
+    {
+        var project = DemoProjectFactory.Create();
+        var editor = new KeyboardEditor(project);
+
+        var exception = Assert.Throws<ArgumentException>(() =>
+            editor.MapCharacter("KeyA", ModifierLayer.AltGr, value));
+
+        Assert.Contains("one Unicode scalar", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.False(project.Layout.Find("KeyA")!.Outputs.ContainsKey(ModifierLayer.AltGr));
+    }
+
+    [Fact]
+    public void ClearMapping_WhenLayerIsMapped_RemovesOnlySelectedLayer()
+    {
+        var project = DemoProjectFactory.Create();
+        var editor = new KeyboardEditor(project);
+
+        editor.ClearMapping("KeyA", ModifierLayer.Default);
+
+        var mapping = project.Layout.Find("KeyA")!;
+        Assert.False(mapping.Outputs.ContainsKey(ModifierLayer.Default));
+        Assert.True(mapping.Outputs.ContainsKey(ModifierLayer.Shift));
+    }
+
+    [Fact]
+    public void ClearAllOutputs_WhenKeyHasMappings_RemovesEveryLayerButKeepsLogicalKey()
+    {
+        var project = DemoProjectFactory.Create();
+        var editor = new KeyboardEditor(project);
+        editor.MapCharacter("KeyA", ModifierLayer.AltGr, "ą");
+
+        editor.ClearAllOutputs("KeyA");
+
+        var mapping = project.Layout.Find("KeyA")!;
+        Assert.Empty(mapping.Outputs);
+        Assert.Equal(LogicalKey.A, mapping.LogicalKey);
+    }
+
+    [Fact]
+    public void Mutations_WhenValueChanges_ReturnChangeInformation()
+    {
+        var editor = new KeyboardEditor(DemoProjectFactory.Create());
+
+        Assert.True(editor.MapCharacter("KeyA", ModifierLayer.AltGr, "ą"));
+        Assert.False(editor.MapCharacter("KeyA", ModifierLayer.AltGr, "ą"));
+        Assert.True(editor.MapLogicalKey("KeyA", LogicalKey.Enter));
+        Assert.False(editor.MapLogicalKey("KeyA", LogicalKey.Enter));
+        Assert.True(editor.ClearMapping("KeyA", ModifierLayer.AltGr));
+        Assert.False(editor.ClearMapping("KeyA", ModifierLayer.AltGr));
+        Assert.True(editor.ClearAllOutputs("KeyA"));
+        Assert.False(editor.ClearAllOutputs("KeyA"));
+    }
+
+    [Theory]
+    [InlineData("Map")]
+    [InlineData("Clear")]
+    [InlineData("ClearAll")]
+    public void Mutation_WhenPhysicalKeyIdIsUnknown_RejectsOperation(string operation)
+    {
+        var editor = new KeyboardEditor(DemoProjectFactory.Create());
+
+        Assert.Throws<ArgumentException>(() =>
+        {
+            switch (operation)
+            {
+                case "Map":
+                    editor.MapLogicalKey("MissingKey", LogicalKey.A);
+                    break;
+                case "Clear":
+                    editor.ClearMapping("MissingKey", ModifierLayer.Default);
+                    break;
+                case "ClearAll":
+                    editor.ClearAllOutputs("MissingKey");
+                    break;
+            }
+        });
+    }
+
     [Fact]
     public void Validate_WhenPhysicalKeyIdIsDuplicated_ReportsKey001Error()
     {

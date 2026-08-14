@@ -2,10 +2,10 @@
 
 This file tracks execution of [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
 
-- Current work branch: `agent/p2.6-reusable-key-control`
+- Current work branch: `agent/phase-3-editor-lifecycle`
 - Last updated: 2026-08-14
-- Current phase: Phase 3 — Editor interaction and project lifecycle
-- Next work item: **P3.1 — Key selection state**
+- Current phase: Phase 4 — Validation and diagnostics
+- Next work item: **P4.1 — Validation pipeline**
 
 Legend: `[x]` complete, `[ ]` not yet complete.
 
@@ -42,14 +42,16 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 
 ## Phase 3 — Editor interaction and project lifecycle
 
-- [ ] **P3.1** Key selection state
-- [ ] **P3.2** Modifier layer selection
-- [ ] **P3.3** Mapping panel
-- [ ] **P3.4** Logical key editing
-- [ ] **P3.5** Character input validation
-- [ ] **P3.6** Clear/unmap operations
-- [ ] **P3.7** Dirty tracking
-- [ ] **P3.8** New/Open/Save/Save As
+- [x] **P3.1** Key selection state
+- [x] **P3.2** Modifier layer selection
+- [x] **P3.3** Mapping panel
+- [x] **P3.4** Logical key editing
+- [x] **P3.5** Character input validation
+- [x] **P3.6** Clear/unmap operations
+- [x] **P3.7** Dirty tracking
+- [x] **P3.8** New/Open/Save/Save As
+
+**Phase status:** 8/8 work items complete. Phase complete.
 
 ## Phase 4 — Validation and diagnostics
 
@@ -126,8 +128,8 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 
 ## Progress summary
 
-- Completed work items: **16**
+- Completed work items: **24**
 - Total planned work items: **73**
-- Overall checklist progress: **16/73**
+- Overall checklist progress: **24/73**
 
 The checklist records work-item completion only. Phase-level acceptance criteria and test gates in `IMPLEMENTATION-PLAN.md` still apply before a phase is considered complete.
