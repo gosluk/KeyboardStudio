@@ -1,7 +1,6 @@
 namespace KeyboardStudio.Build;
 
-public interface IWindowsBuildEnvironmentProbe
+public interface IWindowsToolchainResolver
 {
-    BuildEnvironmentStatus Probe();
     ResolvedBuildEnvironment? Resolve(BuildTarget target);
 }

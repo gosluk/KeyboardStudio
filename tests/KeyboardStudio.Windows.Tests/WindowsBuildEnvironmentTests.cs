@@ -39,5 +39,7 @@ public sealed class WindowsBuildEnvironmentTests
     private sealed class StaticProbe(BuildEnvironmentStatus status) : IWindowsBuildEnvironmentProbe
     {
         public BuildEnvironmentStatus Probe() => status;
+
+        public ResolvedBuildEnvironment? Resolve(BuildTarget target) => null;
     }
 }

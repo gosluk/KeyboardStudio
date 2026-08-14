@@ -2,6 +2,7 @@ namespace KeyboardStudio.Build;
 
 public sealed class WindowsBuildEnvironment : IBuildEnvironment
 {
+    private readonly IWindowsBuildEnvironmentProbe _probe;
     private readonly BuildEnvironmentStatus _status;
 
     public WindowsBuildEnvironment()
@@ -12,6 +13,7 @@ public sealed class WindowsBuildEnvironment : IBuildEnvironment
     public WindowsBuildEnvironment(IWindowsBuildEnvironmentProbe probe)
     {
         ArgumentNullException.ThrowIfNull(probe);
+        _probe = probe;
         _status = probe.Probe();
     }
 
@@ -31,4 +33,7 @@ public sealed class WindowsBuildEnvironment : IBuildEnvironment
 
         return _status;
     }
+
+    public ResolvedBuildEnvironment? Resolve(BuildTarget target) =>
+        CanBuild(target) ? _probe.Resolve(target) : null;
 }

@@ -2,6 +2,31 @@ namespace KeyboardStudio.Build;
 
 public sealed class WindowsBuildEnvironmentProbe : IWindowsBuildEnvironmentProbe
 {
+    private readonly IReadOnlyDictionary<BuildTarget, ResolvedBuildEnvironment> _resolutions;
+
+    public WindowsBuildEnvironmentProbe()
+        : this(new WindowsToolchainResolver())
+    {
+    }
+
+    public WindowsBuildEnvironmentProbe(IWindowsToolchainResolver resolver)
+    {
+        ArgumentNullException.ThrowIfNull(resolver);
+        var resolutions = new Dictionary<BuildTarget, ResolvedBuildEnvironment>();
+        if (OperatingSystem.IsWindows())
+        {
+            foreach (var target in Enum.GetValues<BuildTarget>())
+            {
+                if (resolver.Resolve(target) is { } resolution)
+                {
+                    resolutions.Add(target, resolution);
+                }
+            }
+        }
+
+        _resolutions = resolutions;
+    }
+
     public BuildEnvironmentStatus Probe()
     {
         if (!OperatingSystem.IsWindows())
@@ -12,34 +37,14 @@ public sealed class WindowsBuildEnvironmentProbe : IWindowsBuildEnvironmentProbe
                     "Native Windows keyboard DLL compilation requires a Windows host."));
         }
 
-        var diagnostics = new List<BuildEnvironmentDiagnostic>();
-        var toolsDirectory = Environment.GetEnvironmentVariable("VCToolsInstallDir");
-        var sdkDirectory = Environment.GetEnvironmentVariable("WindowsSdkDir");
-        var sdkBinDirectory = Environment.GetEnvironmentVariable("WindowsSdkVerBinPath");
-
-        if (string.IsNullOrWhiteSpace(toolsDirectory) || !Directory.Exists(toolsDirectory))
+        var supportedTargets = _resolutions.Keys.Order().ToArray();
+        if (supportedTargets.Length == 0)
         {
-            diagnostics.Add(new BuildEnvironmentDiagnostic(
-                "ENV_MSVC",
-                "MSVC was not found. Run from a Visual Studio developer environment or install Visual Studio Build Tools."));
-        }
-
-        if (string.IsNullOrWhiteSpace(sdkDirectory) || !Directory.Exists(sdkDirectory))
-        {
-            diagnostics.Add(new BuildEnvironmentDiagnostic(
-                "ENV_SDK",
-                "The Windows SDK/WDK was not found. Install its headers and libraries."));
-        }
-
-        var supportedTargets = new List<BuildTarget>();
-        if (!string.IsNullOrWhiteSpace(toolsDirectory))
-        {
-            DetectTarget(toolsDirectory, sdkBinDirectory, "x64", BuildTarget.WindowsX64, supportedTargets, diagnostics);
-            DetectTarget(toolsDirectory, sdkBinDirectory, "arm64", BuildTarget.WindowsArm64, supportedTargets, diagnostics);
-        }
-
-        if (diagnostics.Count > 0 || supportedTargets.Count == 0)
-        {
+            BuildEnvironmentDiagnostic[] diagnostics =
+            [
+                new("ENV_MSVC", "A complete MSVC installation with cl.exe and link.exe was not found."),
+                new("ENV_SDK", "A complete Windows SDK/WDK installation with headers, libraries, and rc.exe was not found.")
+            ];
             return new BuildEnvironmentStatus(
                 false,
                 "The Windows native build environment is incomplete.",
@@ -54,46 +59,8 @@ public sealed class WindowsBuildEnvironmentProbe : IWindowsBuildEnvironmentProbe
             supportedTargets);
     }
 
-    private static void DetectTarget(
-        string toolsDirectory,
-        string? sdkBinDirectory,
-        string architecture,
-        BuildTarget target,
-        ICollection<BuildTarget> supportedTargets,
-        ICollection<BuildEnvironmentDiagnostic> diagnostics)
-    {
-        var compilerPath = Path.Combine(toolsDirectory, "bin", "Hostx64", architecture, "cl.exe");
-        var linkerPath = Path.Combine(toolsDirectory, "bin", "Hostx64", architecture, "link.exe");
-        var resourceCompilerPath = string.IsNullOrWhiteSpace(sdkBinDirectory)
-            ? string.Empty
-            : Path.Combine(sdkBinDirectory, architecture, "rc.exe");
-
-        var missingTools = new List<string>();
-        if (!File.Exists(compilerPath))
-        {
-            missingTools.Add("cl.exe");
-        }
-
-        if (!File.Exists(linkerPath))
-        {
-            missingTools.Add("link.exe");
-        }
-
-        if (!File.Exists(resourceCompilerPath))
-        {
-            missingTools.Add("rc.exe");
-        }
-
-        if (missingTools.Count == 0)
-        {
-            supportedTargets.Add(target);
-            return;
-        }
-
-        diagnostics.Add(new BuildEnvironmentDiagnostic(
-            $"ENV_TOOLS_{architecture.ToUpperInvariant()}",
-            $"{target} is unavailable because these tools are missing: {string.Join(", ", missingTools)}."));
-    }
+    public ResolvedBuildEnvironment? Resolve(BuildTarget target) =>
+        _resolutions.GetValueOrDefault(target);
 
     private static BuildEnvironmentStatus Unavailable(BuildEnvironmentDiagnostic diagnostic) =>
         new(false, diagnostic.Message, [diagnostic], []);

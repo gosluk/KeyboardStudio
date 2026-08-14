@@ -80,6 +80,8 @@ public sealed class BuildOrchestratorValidationTests
 
         public BuildEnvironmentStatus GetStatus(BuildTarget target) =>
             new(true, "Available", [], [BuildTarget.WindowsX64]);
+
+        public ResolvedBuildEnvironment? Resolve(BuildTarget target) => null;
     }
 
     private sealed class TrackingNativeCompiler : INativeCompiler
