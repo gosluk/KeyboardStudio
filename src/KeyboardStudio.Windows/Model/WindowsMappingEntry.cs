@@ -2,7 +2,7 @@ using KeyboardStudio.Core;
 
 namespace KeyboardStudio.Windows;
 
-internal sealed record WindowsMappingEntry(
+public sealed record WindowsMappingEntry(
     byte ScanCode,
     ModifierLayer Modifier,
     int UnicodeScalar);

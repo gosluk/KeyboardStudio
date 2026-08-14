@@ -1,3 +1,6 @@
 namespace KeyboardStudio.Windows;
 
-internal sealed record WindowsKeyboardLayout(IReadOnlyList<WindowsMappingEntry> Entries);
+public sealed record WindowsKeyboardLayout(
+    IReadOnlyList<VscToVkMapping> VscToVkMappings,
+    IReadOnlyList<ExtendedVscToVkMapping> ExtendedVscToVkMappings,
+    IReadOnlyList<WindowsMappingEntry> Entries);
