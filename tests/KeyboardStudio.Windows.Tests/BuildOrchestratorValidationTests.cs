@@ -79,7 +79,7 @@ public sealed class BuildOrchestratorValidationTests
         public bool CanBuild(BuildTarget target) => true;
 
         public BuildEnvironmentStatus GetStatus(BuildTarget target) =>
-            new(true, "Available");
+            new(true, "Available", [], [BuildTarget.WindowsX64]);
     }
 
     private sealed class TrackingNativeCompiler : INativeCompiler
