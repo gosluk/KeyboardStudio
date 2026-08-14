@@ -7,6 +7,7 @@ public sealed class LayerMappingViewModel : ObservableObject
 {
     private readonly Action<ModifierLayer, string> _updateOutput;
     private string _output;
+    private string? _validationMessage;
 
     public LayerMappingViewModel(
         ModifierLayerOptionViewModel layer,
@@ -27,6 +28,20 @@ public sealed class LayerMappingViewModel : ObservableObject
 
     public string Label { get; }
 
+    public string? ValidationMessage
+    {
+        get => _validationMessage;
+        private set
+        {
+            if (SetProperty(ref _validationMessage, value))
+            {
+                OnPropertyChanged(nameof(HasValidationError));
+            }
+        }
+    }
+
+    public bool HasValidationError => ValidationMessage is not null;
+
     public string Output
     {
         get => _output;
@@ -35,7 +50,15 @@ public sealed class LayerMappingViewModel : ObservableObject
             value ??= string.Empty;
             if (SetProperty(ref _output, value))
             {
-                _updateOutput(Layer, value);
+                try
+                {
+                    _updateOutput(Layer, value);
+                    ValidationMessage = null;
+                }
+                catch (ArgumentException exception)
+                {
+                    ValidationMessage = exception.Message;
+                }
             }
         }
     }

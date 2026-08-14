@@ -154,7 +154,17 @@ internal static class KeyboardProjectDtoMapper
     private static CharacterOutput ToCharacterOutput(KeyOutputDto dto)
     {
         RequireAbsent(dto.Key, "key", KeyOutputKinds.Character);
-        return new CharacterOutput(RequireNonEmpty(dto.Value, "character output value"));
+        var value = RequireNonEmpty(dto.Value, "character output value");
+        try
+        {
+            return new CharacterOutput(value);
+        }
+        catch (ArgumentException exception)
+        {
+            throw new InvalidDataException(
+                "A persisted character output must contain exactly one Unicode scalar value.",
+                exception);
+        }
     }
 
     private static SpecialKeyOutput ToSpecialKeyOutput(KeyOutputDto dto)

@@ -30,7 +30,6 @@ public sealed class KeyboardEditor
 
     public void MapCharacter(string keyId, ModifierLayer layer, string character)
     {
-        ArgumentException.ThrowIfNullOrEmpty(character);
         GetOrCreateMapping(keyId).Outputs[layer] = new CharacterOutput(character);
     }
 

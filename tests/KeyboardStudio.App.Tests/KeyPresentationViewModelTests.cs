@@ -150,4 +150,22 @@ public sealed class KeyPresentationViewModelTests
         Assert.Equal(LogicalKey.Enter, editor.SelectedKey?.Mapping?.LogicalKey);
         Assert.Equal("Enter", editor.SelectedKey?.Hint);
     }
+
+    [Fact]
+    public void LayerMapping_WhenMultipleScalarsAreEntered_ShowsErrorAndPreservesDomainOutput()
+    {
+        var viewModel = new MainWindowViewModel();
+        var editor = viewModel.Editor;
+        Assert.True(editor.SelectKey("KeyA"));
+        var mapping = editor.LayerMappings.Single(item => item.Layer == ModifierLayer.Default);
+        mapping.Output = "a";
+
+        mapping.Output = "ab";
+
+        Assert.True(mapping.HasValidationError);
+        Assert.Contains("one Unicode scalar", mapping.ValidationMessage, StringComparison.OrdinalIgnoreCase);
+        var output = Assert.IsType<CharacterOutput>(
+            viewModel.Project.Layout.Find("KeyA")?.Outputs[ModifierLayer.Default]);
+        Assert.Equal("a", output.Value);
+    }
 }

@@ -37,6 +37,36 @@ public sealed class KeyboardEditorTests
     }
 
     [Fact]
+    public void MapCharacter_WhenSupplementaryUnicodeScalarIsAssigned_AcceptsOutput()
+    {
+        var project = DemoProjectFactory.Create();
+        var editor = new KeyboardEditor(project);
+
+        editor.MapCharacter("KeyA", ModifierLayer.AltGr, "😀");
+
+        var output = Assert.IsType<CharacterOutput>(
+            project.Layout.Find("KeyA")?.Outputs[ModifierLayer.AltGr]);
+        Assert.Equal("😀", output.Value);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("ab")]
+    [InlineData("a\u0301")]
+    [InlineData("\uD800")]
+    public void MapCharacter_WhenValueIsNotOneUnicodeScalar_RejectsOutput(string value)
+    {
+        var project = DemoProjectFactory.Create();
+        var editor = new KeyboardEditor(project);
+
+        var exception = Assert.Throws<ArgumentException>(() =>
+            editor.MapCharacter("KeyA", ModifierLayer.AltGr, value));
+
+        Assert.Contains("one Unicode scalar", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.False(project.Layout.Find("KeyA")!.Outputs.ContainsKey(ModifierLayer.AltGr));
+    }
+
+    [Fact]
     public void Validate_WhenPhysicalKeyIdIsDuplicated_ReportsKey001Error()
     {
         var project = DemoProjectFactory.Create();

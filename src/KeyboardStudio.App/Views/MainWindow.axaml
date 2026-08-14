@@ -92,11 +92,18 @@
           <ItemsControl ItemsSource="{Binding Editor.LayerMappings}">
             <ItemsControl.ItemTemplate>
               <DataTemplate>
-                <Grid ColumnDefinitions="110,*" ColumnSpacing="8" Margin="0,2">
+                <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="110,*" ColumnSpacing="8" Margin="0,2">
                   <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
                   <TextBox Grid.Column="1"
                            Text="{Binding Output, Mode=TwoWay}"
                            PlaceholderText="No output" />
+                  <TextBlock Grid.Row="1"
+                             Grid.Column="1"
+                             Text="{Binding ValidationMessage}"
+                             Foreground="#D32F2F"
+                             FontSize="11"
+                             TextWrapping="Wrap"
+                             IsVisible="{Binding HasValidationError}" />
                 </Grid>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
