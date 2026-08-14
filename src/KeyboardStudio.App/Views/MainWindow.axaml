@@ -84,7 +84,9 @@
           <TextBlock Text="{Binding Editor.SelectedKey.ScanCode}" Opacity="0.7" />
           <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
             <TextBlock Text="Logical key" />
-            <TextBlock Grid.Column="1" Text="{Binding Editor.SelectedLogicalKey}" />
+            <ComboBox Grid.Column="1"
+                      ItemsSource="{Binding Editor.LogicalKeys}"
+                      SelectedItem="{Binding Editor.SelectedLogicalKey}" />
           </Grid>
           <TextBlock Text="Layer outputs" Margin="0,8,0,0" FontWeight="SemiBold" />
           <ItemsControl ItemsSource="{Binding Editor.LayerMappings}">

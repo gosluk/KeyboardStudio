@@ -14,6 +14,9 @@ public sealed class KeyboardEditorViewModel : ObservableObject
         new(ModifierLayer.ShiftAltGr, "Shift + AltGr")
     ];
 
+    private static readonly IReadOnlyList<LogicalKey> EditableLogicalKeys =
+        Enum.GetValues<LogicalKey>();
+
     private readonly KeyboardEditor _editor;
     private ModifierLayer _activeLayer;
     private IReadOnlyList<LayerMappingViewModel> _layerMappings = [];
@@ -44,6 +47,7 @@ public sealed class KeyboardEditorViewModel : ObservableObject
 
     public ObservableCollection<KeyViewModel> Keys { get; }
     public IReadOnlyList<ModifierLayerOptionViewModel> Layers { get; }
+    public IReadOnlyList<LogicalKey> LogicalKeys => EditableLogicalKeys;
     public double KeyboardWidth { get; }
     public double KeyboardHeight { get; }
 
@@ -53,8 +57,22 @@ public sealed class KeyboardEditorViewModel : ObservableObject
         private set => SetProperty(ref _layerMappings, value);
     }
 
-    public string SelectedLogicalKey =>
-        SelectedKey?.Mapping?.LogicalKey.ToString() ?? LogicalKey.None.ToString();
+    public LogicalKey SelectedLogicalKey
+    {
+        get => SelectedKey?.Mapping?.LogicalKey ?? LogicalKey.None;
+        set
+        {
+            if (SelectedKey is null || value == SelectedLogicalKey)
+            {
+                return;
+            }
+
+            _editor.MapLogicalKey(SelectedKey.KeyId, value);
+            SelectedKey.Mapping = _editor.Project.Layout.Find(SelectedKey.KeyId);
+            SelectedKey.Refresh(ActiveLayer);
+            OnPropertyChanged();
+        }
+    }
 
     public ModifierLayer ActiveLayer
     {

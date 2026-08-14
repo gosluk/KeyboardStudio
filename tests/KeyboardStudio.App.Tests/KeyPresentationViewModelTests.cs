@@ -135,7 +135,19 @@ public sealed class KeyPresentationViewModelTests
 
         Assert.Equal("KeyB", editor.SelectedKey?.KeyId);
         Assert.Equal("0x30", editor.SelectedKey?.ScanCode);
-        Assert.Equal("None", editor.SelectedLogicalKey);
+        Assert.Equal(LogicalKey.None, editor.SelectedLogicalKey);
         Assert.All(editor.LayerMappings, mapping => Assert.Empty(mapping.Output));
+    }
+
+    [Fact]
+    public void SelectedLogicalKey_WhenChanged_UpdatesSelectedKeyMapping()
+    {
+        var editor = new MainWindowViewModel().Editor;
+        Assert.True(editor.SelectKey("Enter"));
+
+        editor.SelectedLogicalKey = LogicalKey.Enter;
+
+        Assert.Equal(LogicalKey.Enter, editor.SelectedKey?.Mapping?.LogicalKey);
+        Assert.Equal("Enter", editor.SelectedKey?.Hint);
     }
 }

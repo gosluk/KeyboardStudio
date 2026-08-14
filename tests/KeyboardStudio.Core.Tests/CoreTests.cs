@@ -19,6 +19,23 @@ public sealed class KeyboardEditorTests
         Assert.Equal("ą", output.Value);
     }
 
+    [Theory]
+    [InlineData(LogicalKey.A)]
+    [InlineData(LogicalKey.Digit7)]
+    [InlineData(LogicalKey.Semicolon)]
+    [InlineData(LogicalKey.Enter)]
+    [InlineData(LogicalKey.NumpadEnter)]
+    [InlineData(LogicalKey.ArrowLeft)]
+    public void MapLogicalKey_WhenSupportedConceptIsAssigned_UpdatesMapping(LogicalKey logicalKey)
+    {
+        var project = DemoProjectFactory.Create();
+        var editor = new KeyboardEditor(project);
+
+        editor.MapLogicalKey("KeyA", logicalKey);
+
+        Assert.Equal(logicalKey, project.Layout.Find("KeyA")?.LogicalKey);
+    }
+
     [Fact]
     public void Validate_WhenPhysicalKeyIdIsDuplicated_ReportsKey001Error()
     {
