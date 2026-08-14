@@ -195,11 +195,17 @@ build/
       keyboard.res
     output/
       <layout>.dll
+      build-manifest.json
     logs/
       build.log
 ```
 
 Generated files are build output and are not part of the `.kbdproj` source model.
+
+After artifact verification, `BuildOrchestrator` writes a versioned JSON manifest beside the DLL. It
+records the project name, target, ordered generated-source names and SHA-256 hashes, MSVC and Windows
+SDK versions, verified output path and hash, verification state, and the UTC build timestamp. The
+timestamp is confined to the manifest and never changes generated source.
 
 Each invocation receives a unique workspace and never compiles in a source directory. With the
 default `KeepFailedBuild` policy, successful builds remove `generated/` and `obj/` but retain the DLL

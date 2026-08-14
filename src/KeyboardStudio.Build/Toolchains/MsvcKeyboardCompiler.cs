@@ -48,6 +48,10 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
                 [new CompilerMessage("ENV001", status.Message)]);
         }
 
+        var toolchainVersions = new BuildToolchainVersions(
+            toolchain.ToolVersion,
+            toolchain.SdkVersion);
+
         var requiredSourceFiles = new[] { "keyboard.c", "keyboard.def", "keyboard.rc" };
         var missingSourceFiles = requiredSourceFiles
             .Where(fileName => !artifact.Source.Files.ContainsKey(fileName))
@@ -83,6 +87,7 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
                     "MSVC_CL",
                     options.CleanupPolicy,
                     null,
+                    toolchainVersions,
                     cancellationToken);
             }
 
@@ -101,6 +106,7 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
                     "MSVC_RC",
                     options.CleanupPolicy,
                     null,
+                    toolchainVersions,
                     cancellationToken);
             }
 
@@ -119,6 +125,7 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
                     "MSVC_LINK",
                     options.CleanupPolicy,
                     null,
+                    toolchainVersions,
                     cancellationToken);
             }
 
@@ -134,6 +141,7 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
                 null,
                 options.CleanupPolicy,
                 verification,
+                toolchainVersions,
                 cancellationToken);
         }
         catch (OperationCanceledException)
@@ -260,6 +268,7 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
         string? fallbackCode,
         BuildCleanupPolicy cleanupPolicy,
         ArtifactVerificationResult? verification,
+        BuildToolchainVersions toolchainVersions,
         CancellationToken cancellationToken)
     {
         var messages = MsvcCompilerMessageParser.Parse(processResults.ToArray()).ToList();
@@ -298,7 +307,8 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
             rawLog,
             retainedLogPath,
             retainedWorkspacePath,
-            verification);
+            verification,
+            toolchainVersions);
     }
 
     private static async Task HandleCancellationAsync(

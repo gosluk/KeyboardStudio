@@ -57,6 +57,8 @@ public sealed class MsvcCompilationTests
             Assert.NotNull(result.LogPath);
             Assert.True(File.Exists(result.LogPath));
             Assert.NotNull(result.WorkspacePath);
+            Assert.Equal("14.50", result.ToolchainVersions?.Compiler);
+            Assert.Equal("10.0", result.ToolchainVersions?.WindowsSdk);
             Assert.False(Directory.Exists(Path.Combine(result.WorkspacePath, "generated")));
             Assert.False(Directory.Exists(Path.Combine(result.WorkspacePath, "obj")));
             Assert.True(Directory.Exists(Path.Combine(result.WorkspacePath, "output")));

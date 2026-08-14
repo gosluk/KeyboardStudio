@@ -11,7 +11,12 @@ public sealed class BuildOrchestratorValidationTests
     {
         var generator = new TrackingArtifactGenerator();
         var compiler = new TrackingNativeCompiler();
-        var orchestrator = CreateOrchestrator(ValidationSeverity.Error, generator, compiler);
+        var manifestWriter = new TrackingBuildManifestWriter();
+        var orchestrator = CreateOrchestrator(
+            ValidationSeverity.Error,
+            generator,
+            compiler,
+            manifestWriter);
 
         var result = await orchestrator.BuildAsync(
             DemoProjectFactory.Create(),
@@ -20,6 +25,7 @@ public sealed class BuildOrchestratorValidationTests
         Assert.False(result.Success);
         Assert.False(generator.WasCalled);
         Assert.False(compiler.WasCalled);
+        Assert.False(manifestWriter.WasCalled);
         Assert.Contains(result.ValidationIssues, issue => issue.Severity == ValidationSeverity.Error);
     }
 
@@ -31,7 +37,8 @@ public sealed class BuildOrchestratorValidationTests
     {
         var generator = new TrackingArtifactGenerator();
         var compiler = new TrackingNativeCompiler();
-        var orchestrator = CreateOrchestrator(severity, generator, compiler);
+        var manifestWriter = new TrackingBuildManifestWriter();
+        var orchestrator = CreateOrchestrator(severity, generator, compiler, manifestWriter);
 
         var result = await orchestrator.BuildAsync(
             DemoProjectFactory.Create(),
@@ -40,18 +47,22 @@ public sealed class BuildOrchestratorValidationTests
         Assert.True(result.Success);
         Assert.True(generator.WasCalled);
         Assert.True(compiler.WasCalled);
+        Assert.True(manifestWriter.WasCalled);
+        Assert.NotNull(result.Compilation?.Manifest);
         Assert.Contains(result.ValidationIssues, issue => issue.Severity == severity);
     }
 
     private static BuildOrchestrator CreateOrchestrator(
         ValidationSeverity severity,
         TrackingArtifactGenerator generator,
-        TrackingNativeCompiler compiler) =>
+        TrackingNativeCompiler compiler,
+        TrackingBuildManifestWriter manifestWriter) =>
         new(
             new KeyboardProjectValidator([new StaticValidationRule(severity)]),
             generator,
             new AvailableBuildEnvironment(),
-            compiler);
+            compiler,
+            manifestWriter);
 
     private sealed class StaticValidationRule(ValidationSeverity severity) : IKeyboardProjectValidationRule
     {
@@ -95,6 +106,35 @@ public sealed class BuildOrchestratorValidationTests
         {
             WasCalled = true;
             return Task.FromResult(new CompilationResult(true, "keyboard.dll", []));
+        }
+    }
+
+    private sealed class TrackingBuildManifestWriter : IBuildManifestWriter
+    {
+        public bool WasCalled { get; private set; }
+
+        public Task<BuildManifestWriteResult> WriteAsync(
+            KeyboardProject project,
+            GeneratedArtifact generatedArtifact,
+            BuildOptions options,
+            CompilationResult compilation,
+            CancellationToken cancellationToken = default)
+        {
+            WasCalled = true;
+            var manifest = new BuildManifest(
+                1,
+                project.Metadata.Name,
+                options.Target,
+                [],
+                new BuildToolchainVersions("test", "test"),
+                new BuildManifestFile("keyboard.dll", "hash"),
+                new BuildVerificationManifest(
+                    "Amd64",
+                    true,
+                    true,
+                    ArtifactLoadTestStatus.NotRun),
+                DateTimeOffset.UnixEpoch);
+            return Task.FromResult(new BuildManifestWriteResult(manifest, "build-manifest.json"));
         }
     }
 }

@@ -7,4 +7,8 @@ public sealed record CompilationResult(
     string RawLog = "",
     string? LogPath = null,
     string? WorkspacePath = null,
-    ArtifactVerificationResult? Verification = null);
+    ArtifactVerificationResult? Verification = null,
+    BuildToolchainVersions? ToolchainVersions = null,
+    BuildManifest? Manifest = null,
+    string? ManifestPath = null,
+    string? ArtifactSha256 = null);
