@@ -255,7 +255,7 @@ public sealed class MainWindowViewModel : ObservableObject
         Editor.ApplyDiagnostics(result.Issues);
     }
 
-    private static IKeyboardProjectValidator CreateDefaultValidator() =>
+    private static KeyboardProjectValidator CreateDefaultValidator() =>
         new KeyboardProjectValidator([
             new MetadataValidationRule(),
             new PhysicalKeyboardValidationRule(),
