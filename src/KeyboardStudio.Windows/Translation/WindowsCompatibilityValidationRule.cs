@@ -16,7 +16,7 @@ public sealed class WindowsCompatibilityValidationRule : IKeyboardProjectValidat
             {
                 issues.Add(new ValidationIssue(
                     ValidationSeverity.Error,
-                    "WIN001",
+                    WindowsDiagnosticCodes.UnsupportedLogicalKeyMapping,
                     $"Physical key '{mapping.KeyId}' has output mappings without a supported logical key.",
                     mapping.KeyId));
             }
@@ -25,7 +25,7 @@ public sealed class WindowsCompatibilityValidationRule : IKeyboardProjectValidat
             {
                 issues.Add(new ValidationIssue(
                     ValidationSeverity.Error,
-                    "WIN002",
+                    WindowsDiagnosticCodes.UnsupportedModifierCombination,
                     $"Modifier layer value '{(int)layer}' is not supported by the Windows backend.",
                     mapping.KeyId));
             }

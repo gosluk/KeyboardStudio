@@ -6,6 +6,22 @@ namespace KeyboardStudio.Core.Tests;
 public sealed class ValidationRuleTests
 {
     [Fact]
+    public void KeyboardProjectDiagnosticCodes_WhenRead_HaveStableValues()
+    {
+        Assert.Equal("KSP001", KeyboardProjectDiagnosticCodes.DuplicatePhysicalKeyId);
+        Assert.Equal("KSP002", KeyboardProjectDiagnosticCodes.InvalidScanCode);
+        Assert.Equal("KSP003", KeyboardProjectDiagnosticCodes.DuplicateScanCodeIdentity);
+        Assert.Equal("KSP101", KeyboardProjectDiagnosticCodes.MissingProjectName);
+        Assert.Equal("KSP102", KeyboardProjectDiagnosticCodes.MissingProjectVersion);
+        Assert.Equal("KSP103", KeyboardProjectDiagnosticCodes.MissingProjectLanguage);
+        Assert.Equal("KSP104", KeyboardProjectDiagnosticCodes.MissingProjectDescription);
+        Assert.Equal("KSM001", KeyboardProjectDiagnosticCodes.MappingReferencesMissingKey);
+        Assert.Equal("KSM002", KeyboardProjectDiagnosticCodes.InvalidCharacterOutput);
+        Assert.Equal("KSM003", KeyboardProjectDiagnosticCodes.DuplicateKeyMapping);
+        Assert.Equal("KSM100", KeyboardProjectDiagnosticCodes.OutputWithoutLogicalKey);
+    }
+
+    [Fact]
     public void MetadataValidationRule_WhenRequiredFieldsAreEmpty_ReportsEachField()
     {
         var source = DemoProjectFactory.Create();
@@ -24,7 +40,13 @@ public sealed class ValidationRuleTests
 
         var issues = new MetadataValidationRule().Validate(project);
 
-        Assert.Equal(["META001", "META002", "META003"], issues.Select(issue => issue.Code));
+        Assert.Equal(
+            [
+                KeyboardProjectDiagnosticCodes.MissingProjectName,
+                KeyboardProjectDiagnosticCodes.MissingProjectVersion,
+                KeyboardProjectDiagnosticCodes.MissingProjectLanguage
+            ],
+            issues.Select(issue => issue.Code));
     }
 
     [Fact]
@@ -36,9 +58,12 @@ public sealed class ValidationRuleTests
 
         var issues = new PhysicalKeyboardValidationRule().Validate(project);
 
-        Assert.Contains(issues, issue => issue.Code == "KEY001" && issue.KeyId == "KeyA");
-        Assert.Contains(issues, issue => issue.Code == "KEY002" && issue.KeyId == "OutOfRange");
-        Assert.Contains(issues, issue => issue.Code == "KEY003");
+        Assert.Contains(issues, issue =>
+            issue.Code == KeyboardProjectDiagnosticCodes.DuplicatePhysicalKeyId && issue.KeyId == "KeyA");
+        Assert.Contains(issues, issue =>
+            issue.Code == KeyboardProjectDiagnosticCodes.InvalidScanCode && issue.KeyId == "OutOfRange");
+        Assert.Contains(issues, issue =>
+            issue.Code == KeyboardProjectDiagnosticCodes.DuplicateScanCodeIdentity);
     }
 
     [Fact]
@@ -59,9 +84,13 @@ public sealed class ValidationRuleTests
 
         var issues = new MappingValidationRule().Validate(project);
 
-        Assert.Contains(issues, issue => issue.Code == "MAP001" && issue.KeyId == "MissingKey");
-        Assert.Contains(issues, issue => issue.Code == "MAP002" && issue.KeyId == "KeyB");
-        Assert.Contains(issues, issue => issue.Code == "MAP003" && issue.KeyId == "KeyA");
+        Assert.Contains(issues, issue =>
+            issue.Code == KeyboardProjectDiagnosticCodes.MappingReferencesMissingKey &&
+            issue.KeyId == "MissingKey");
+        Assert.Contains(issues, issue =>
+            issue.Code == KeyboardProjectDiagnosticCodes.InvalidCharacterOutput && issue.KeyId == "KeyB");
+        Assert.Contains(issues, issue =>
+            issue.Code == KeyboardProjectDiagnosticCodes.DuplicateKeyMapping && issue.KeyId == "KeyA");
     }
 
     [Fact]

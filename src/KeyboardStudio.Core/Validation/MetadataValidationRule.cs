@@ -11,7 +11,7 @@ public sealed class MetadataValidationRule : IKeyboardProjectValidationRule
         {
             issues.Add(new ValidationIssue(
                 ValidationSeverity.Error,
-                "META001",
+                KeyboardProjectDiagnosticCodes.MissingProjectName,
                 "Project display name must not be empty."));
         }
 
@@ -19,7 +19,7 @@ public sealed class MetadataValidationRule : IKeyboardProjectValidationRule
         {
             issues.Add(new ValidationIssue(
                 ValidationSeverity.Error,
-                "META002",
+                KeyboardProjectDiagnosticCodes.MissingProjectVersion,
                 "Project version must not be empty."));
         }
 
@@ -27,7 +27,7 @@ public sealed class MetadataValidationRule : IKeyboardProjectValidationRule
         {
             issues.Add(new ValidationIssue(
                 ValidationSeverity.Error,
-                "META003",
+                KeyboardProjectDiagnosticCodes.MissingProjectLanguage,
                 "Project language or locale must not be empty."));
         }
 

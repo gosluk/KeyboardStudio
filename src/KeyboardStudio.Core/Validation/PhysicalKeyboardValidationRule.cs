@@ -13,7 +13,7 @@ public sealed class PhysicalKeyboardValidationRule : IKeyboardProjectValidationR
         {
             issues.Add(new ValidationIssue(
                 ValidationSeverity.Error,
-                "KEY001",
+                KeyboardProjectDiagnosticCodes.DuplicatePhysicalKeyId,
                 $"Physical key id '{group.Key}' is duplicated.",
                 group.Key));
         }
@@ -22,7 +22,7 @@ public sealed class PhysicalKeyboardValidationRule : IKeyboardProjectValidationR
         {
             issues.Add(new ValidationIssue(
                 ValidationSeverity.Error,
-                "KEY002",
+                KeyboardProjectDiagnosticCodes.InvalidScanCode,
                 $"Scan code {key.ScanCode} is outside the supported byte range.",
                 key.Id));
         }
@@ -33,7 +33,7 @@ public sealed class PhysicalKeyboardValidationRule : IKeyboardProjectValidationR
         {
             issues.Add(new ValidationIssue(
                 ValidationSeverity.Error,
-                "KEY003",
+                KeyboardProjectDiagnosticCodes.DuplicateScanCodeIdentity,
                 $"Scan code 0x{group.Key.ScanCode:X2} is mapped by more than one physical key."));
         }
 

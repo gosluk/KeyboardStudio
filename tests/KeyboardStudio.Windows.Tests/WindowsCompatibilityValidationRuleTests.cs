@@ -7,6 +7,13 @@ namespace KeyboardStudio.Windows.Tests;
 public sealed class WindowsCompatibilityValidationRuleTests
 {
     [Fact]
+    public void WindowsDiagnosticCodes_WhenRead_HaveStableValues()
+    {
+        Assert.Equal("KSW001", WindowsDiagnosticCodes.UnsupportedLogicalKeyMapping);
+        Assert.Equal("KSW002", WindowsDiagnosticCodes.UnsupportedModifierCombination);
+    }
+
+    [Fact]
     public void Validate_WhenOutputHasNoLogicalKey_ReportsWindowsCompatibilityIssue()
     {
         var project = DemoProjectFactory.Create();
@@ -15,7 +22,8 @@ public sealed class WindowsCompatibilityValidationRuleTests
 
         var issues = new WindowsCompatibilityValidationRule().Validate(project);
 
-        Assert.Contains(issues, issue => issue.Code == "WIN001" && issue.KeyId == "KeyA");
+        Assert.Contains(issues, issue =>
+            issue.Code == WindowsDiagnosticCodes.UnsupportedLogicalKeyMapping && issue.KeyId == "KeyA");
     }
 
     [Fact]
@@ -26,6 +34,7 @@ public sealed class WindowsCompatibilityValidationRuleTests
 
         var issues = new WindowsCompatibilityValidationRule().Validate(project);
 
-        Assert.Contains(issues, issue => issue.Code == "WIN002" && issue.KeyId == "KeyA");
+        Assert.Contains(issues, issue =>
+            issue.Code == WindowsDiagnosticCodes.UnsupportedModifierCombination && issue.KeyId == "KeyA");
     }
 }

@@ -17,7 +17,7 @@ public sealed class MappingValidationRule : IKeyboardProjectValidationRule
         {
             issues.Add(new ValidationIssue(
                 ValidationSeverity.Error,
-                "MAP001",
+                KeyboardProjectDiagnosticCodes.MappingReferencesMissingKey,
                 $"Mapping references unknown physical key '{mapping.KeyId}'.",
                 mapping.KeyId));
         }
@@ -31,7 +31,7 @@ public sealed class MappingValidationRule : IKeyboardProjectValidationRule
                 {
                     issues.Add(new ValidationIssue(
                         ValidationSeverity.Error,
-                        "MAP002",
+                        KeyboardProjectDiagnosticCodes.InvalidCharacterOutput,
                         $"Mapping for physical key '{mapping.KeyId}' contains an invalid character output.",
                         mapping.KeyId));
                 }
@@ -44,7 +44,7 @@ public sealed class MappingValidationRule : IKeyboardProjectValidationRule
         {
             issues.Add(new ValidationIssue(
                 ValidationSeverity.Error,
-                "MAP003",
+                KeyboardProjectDiagnosticCodes.DuplicateKeyMapping,
                 $"Physical key '{group.Key}' has more than one mapping.",
                 group.Key));
         }

@@ -145,7 +145,9 @@ public sealed class KeyboardEditorTests
 
         var issues = new KeyboardProjectValidator().Validate(project);
 
-        Assert.Contains(issues, issue => issue.Code == "KEY001" && issue.Severity == ValidationSeverity.Error);
+        Assert.Contains(issues, issue =>
+            issue.Code == KeyboardProjectDiagnosticCodes.DuplicatePhysicalKeyId &&
+            issue.Severity == ValidationSeverity.Error);
     }
 
     [Fact]
@@ -167,7 +169,9 @@ public sealed class KeyboardEditorTests
 
         var issues = new KeyboardProjectValidator().Validate(project);
 
-        Assert.Contains(issues, issue => issue.Code == "META002" && issue.Severity == ValidationSeverity.Error);
+        Assert.Contains(issues, issue =>
+            issue.Code == KeyboardProjectDiagnosticCodes.MissingProjectVersion &&
+            issue.Severity == ValidationSeverity.Error);
     }
 
     [Fact]
@@ -189,7 +193,9 @@ public sealed class KeyboardEditorTests
 
         var issues = new KeyboardProjectValidator().Validate(project);
 
-        Assert.Contains(issues, issue => issue.Code == "META003" && issue.Severity == ValidationSeverity.Error);
+        Assert.Contains(issues, issue =>
+            issue.Code == KeyboardProjectDiagnosticCodes.MissingProjectLanguage &&
+            issue.Severity == ValidationSeverity.Error);
     }
 
     [Fact]
