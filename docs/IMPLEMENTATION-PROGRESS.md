@@ -2,10 +2,10 @@
 
 This file tracks execution of [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
 
-- Branch: `architecture`
+- Current work branch: `agent/p1.1-project-metadata`
 - Last updated: 2026-08-14
 - Current phase: Phase 1 — Complete project model and persistence
-- Next work item: **P1.1 — Finalize project metadata**
+- Next work item: **P1.4 — Define polymorphic output encoding**
 
 Legend: `[x]` complete, `[ ]` not yet complete.
 
@@ -20,12 +20,14 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 
 ## Phase 1 — Complete project model and persistence
 
-- [ ] **P1.1** Finalize project metadata
-- [ ] **P1.2** Formalize schema versioning
-- [ ] **P1.3** Introduce persistence DTOs
+- [x] **P1.1** Finalize project metadata
+- [x] **P1.2** Formalize schema versioning
+- [x] **P1.3** Introduce persistence DTOs
 - [ ] **P1.4** Define polymorphic output encoding
 - [ ] **P1.5** File service abstraction for the application
 - [ ] **P1.6** Project migrations
+
+**Phase status:** 3/6 work items complete.
 
 ## Phase 2 — Physical keyboard templates and geometry
 
@@ -122,8 +124,8 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 
 ## Progress summary
 
-- Completed work items: **4**
+- Completed work items: **7**
 - Total planned work items: **73**
-- Overall checklist progress: **4/73**
+- Overall checklist progress: **7/73**
 
 The checklist records work-item completion only. Phase-level acceptance criteria and test gates in `IMPLEMENTATION-PLAN.md` still apply before a phase is considered complete.

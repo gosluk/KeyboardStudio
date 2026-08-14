@@ -33,3 +33,15 @@ The first release supports `Default`, `Shift`, `AltGr`, and `ShiftAltGr`. More a
 ## AD-008 - All editing mutations pass through KeyboardEditor
 
 ViewModels orchestrate UI state but do not directly mutate arbitrary nested project state. This leaves room for validation, dirty tracking and undo/redo.
+
+## AD-009 - General and Windows metadata are separate
+
+`ProjectMetadata` contains only cross-platform information: display name, description, user-managed project version, and language/locale. Windows layout identity is represented by `WindowsLayoutMetadata` in `KeyboardStudio.Windows` and must not be added to `KeyboardStudio.Core`.
+
+Persistence DTOs must not solve target metadata by making `KeyboardStudio.Persistence` depend on the Windows backend or by putting Windows fields into the core aggregate. The current `IKeyboardProjectStore` transports only the platform-neutral `KeyboardProject`; target-specific document/settings persistence must be introduced through a boundary that can preserve Windows metadata without reversing dependency direction.
+
+## AD-010 - Persistence DTOs own the wire contract
+
+`JsonKeyboardProjectStore` serializes persistence DTOs and maps them explicitly to and from the domain model. JSON attributes, wire discriminators and persistence-specific enum names belong in `KeyboardStudio.Persistence`, not in `KeyboardStudio.Core`.
+
+This allows the domain model to evolve independently while schema migrations and wire-format compatibility remain explicit persistence responsibilities.
