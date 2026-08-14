@@ -8,7 +8,9 @@ public sealed record CharacterOutput : KeyOutput
     {
         ArgumentNullException.ThrowIfNull(value);
 
-        if (!Rune.TryGetRuneAt(value, 0, out var rune) || rune.Utf16SequenceLength != value.Length)
+        if (value.Length == 0 ||
+            !Rune.TryGetRuneAt(value, 0, out var rune) ||
+            rune.Utf16SequenceLength != value.Length)
         {
             throw new ArgumentException(
                 "A character output must contain exactly one Unicode scalar value.",
