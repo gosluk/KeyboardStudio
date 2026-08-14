@@ -56,8 +56,19 @@ public sealed class KeyboardEditorViewModel : ObservableObject
         get => _selectedKey;
         private set
         {
+            var previousKey = _selectedKey;
             if (SetProperty(ref _selectedKey, value))
             {
+                if (previousKey is not null)
+                {
+                    previousKey.IsSelected = false;
+                }
+
+                if (value is not null)
+                {
+                    value.IsSelected = true;
+                }
+
                 OnPropertyChanged(nameof(SelectedOutput));
             }
         }
