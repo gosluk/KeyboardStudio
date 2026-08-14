@@ -35,6 +35,7 @@ public sealed class KeyboardEditorViewModel : ObservableObject
         _editor = editor;
         _documentChanged = documentChanged ?? (() => { });
         Layers = ModifierLayers;
+        LogicalKeys = EditableLogicalKeys;
         Keys = new ObservableCollection<KeyViewModel>(
             editor.Project.Keyboard.Keys.Select(key =>
                 new KeyViewModel(
@@ -55,7 +56,7 @@ public sealed class KeyboardEditorViewModel : ObservableObject
 
     public ObservableCollection<KeyViewModel> Keys { get; }
     public IReadOnlyList<ModifierLayerOptionViewModel> Layers { get; }
-    public IReadOnlyList<LogicalKey> LogicalKeys => EditableLogicalKeys;
+    public IReadOnlyList<LogicalKey> LogicalKeys { get; }
     public double KeyboardWidth { get; }
     public double KeyboardHeight { get; }
     public IRelayCommand ClearAllOutputsCommand { get; }

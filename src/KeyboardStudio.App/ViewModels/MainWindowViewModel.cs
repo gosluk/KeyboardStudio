@@ -10,7 +10,7 @@ public sealed class MainWindowViewModel : ObservableObject
 {
     private const string DefaultTemplateId = "iso-105";
 
-    private readonly IProjectDocumentService _documentService;
+    private readonly ProjectDocumentService _documentService;
     private readonly IProjectInteractionService _interactionService;
     private readonly IKeyboardTemplateProvider _templateProvider;
     private KeyboardTemplateDescriptor _selectedTemplate;
