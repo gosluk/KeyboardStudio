@@ -68,6 +68,11 @@ Windows-native integration tests use the `WindowsIntegration` category. They det
 return without invoking native tools when it is unavailable, allowing the same suite to run on Linux.
 A configured Windows runner exercises the real generated-source-to-DLL path.
 
+PE structure and export parsing use synthetic fixtures and run on every host. The load-level smoke
+test is reported as not run unless the test process is Windows and matches the artifact architecture.
+Reproducibility unit tests compare source dictionaries and binary hashes without MSVC; the native
+integration path can enable `BuildOptions.VerifyReproducibility` on a configured Windows runner.
+
 ## Test project boundaries
 
 - `KeyboardStudio.Core.Tests` covers platform-neutral domain, editing, validation, and persistence-facing behavior.

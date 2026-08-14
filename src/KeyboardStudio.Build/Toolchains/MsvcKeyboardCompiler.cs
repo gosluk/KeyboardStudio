@@ -7,18 +7,26 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
 {
     private readonly IBuildEnvironment _environment;
     private readonly IProcessRunner _processRunner;
+    private readonly IArtifactVerifier _artifactVerifier;
 
     public MsvcKeyboardCompiler()
-        : this(new WindowsBuildEnvironment(), new ProcessRunner())
+        : this(
+            new WindowsBuildEnvironment(),
+            new ProcessRunner(),
+            new PortableExecutableArtifactVerifier())
     {
     }
 
-    public MsvcKeyboardCompiler(IBuildEnvironment environment, IProcessRunner processRunner)
+    public MsvcKeyboardCompiler(
+        IBuildEnvironment environment,
+        IProcessRunner processRunner,
+        IArtifactVerifier? artifactVerifier = null)
     {
         ArgumentNullException.ThrowIfNull(environment);
         ArgumentNullException.ThrowIfNull(processRunner);
         _environment = environment;
         _processRunner = processRunner;
+        _artifactVerifier = artifactVerifier ?? new PortableExecutableArtifactVerifier();
     }
 
     public async Task<CompilationResult> CompileAsync(
@@ -39,6 +47,10 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
                 null,
                 [new CompilerMessage("ENV001", status.Message)]);
         }
+
+        var toolchainVersions = new BuildToolchainVersions(
+            toolchain.ToolVersion,
+            toolchain.SdkVersion);
 
         var requiredSourceFiles = new[] { "keyboard.c", "keyboard.def", "keyboard.rc" };
         var missingSourceFiles = requiredSourceFiles
@@ -74,6 +86,8 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
                     processResults,
                     "MSVC_CL",
                     options.CleanupPolicy,
+                    null,
+                    toolchainVersions,
                     cancellationToken);
             }
 
@@ -91,6 +105,8 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
                     processResults,
                     "MSVC_RC",
                     options.CleanupPolicy,
+                    null,
+                    toolchainVersions,
                     cancellationToken);
             }
 
@@ -108,16 +124,24 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
                     processResults,
                     "MSVC_LINK",
                     options.CleanupPolicy,
+                    null,
+                    toolchainVersions,
                     cancellationToken);
             }
 
+            var verification = await _artifactVerifier.VerifyAsync(
+                outputPath,
+                options.Target,
+                cancellationToken);
             return await CompleteAsync(
-                true,
+                verification.Success,
                 outputPath,
                 workspace,
                 processResults,
                 null,
                 options.CleanupPolicy,
+                verification,
+                toolchainVersions,
                 cancellationToken);
         }
         catch (OperationCanceledException)
@@ -202,6 +226,7 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
             $"/PDB:{Path.ChangeExtension(outputPath, ".pdb")}",
             "/OPT:REF",
             "/OPT:ICF",
+            "/Brepro",
             objectPath,
             resourcePath
         };
@@ -243,6 +268,8 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
         IReadOnlyList<ProcessResult> processResults,
         string? fallbackCode,
         BuildCleanupPolicy cleanupPolicy,
+        ArtifactVerificationResult? verification,
+        BuildToolchainVersions toolchainVersions,
         CancellationToken cancellationToken)
     {
         var messages = MsvcCompilerMessageParser.Parse(processResults.ToArray()).ToList();
@@ -251,6 +278,11 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
             !messages.Any(message => message.Severity == CompilerMessageSeverity.Error))
         {
             messages.Add(new CompilerMessage(fallbackCode, SelectToolOutput(processResults[^1])));
+        }
+
+        if (verification is not null)
+        {
+            messages.AddRange(verification.Messages);
         }
 
         var rawLog = CreateRawLog(processResults);
@@ -275,7 +307,9 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
             messages,
             rawLog,
             retainedLogPath,
-            retainedWorkspacePath);
+            retainedWorkspacePath,
+            verification,
+            toolchainVersions);
     }
 
     private static async Task HandleCancellationAsync(

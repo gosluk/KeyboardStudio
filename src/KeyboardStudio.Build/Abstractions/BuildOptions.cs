@@ -3,4 +3,5 @@ namespace KeyboardStudio.Build;
 public sealed record BuildOptions(
     BuildTarget Target,
     string OutputDirectory,
-    BuildCleanupPolicy CleanupPolicy = BuildCleanupPolicy.KeepFailedBuild);
+    BuildCleanupPolicy CleanupPolicy = BuildCleanupPolicy.KeepFailedBuild,
+    bool VerifyReproducibility = false);

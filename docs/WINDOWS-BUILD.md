@@ -163,7 +163,17 @@ The initial native targets are x64 and ARM64. For each build, `MsvcKeyboardCompi
 1. invokes `cl.exe` with the resolved headers and architecture define to create `keyboard.obj`;
 2. invokes `rc.exe` for deterministic version metadata in `keyboard.rc`;
 3. invokes `link.exe /DLL /NOENTRY` with `keyboard.def`, exporting `KbdLayerDescriptor`;
-4. writes the layout-ID-derived DLL into `output/`.
+4. writes the layout-ID-derived DLL into `output/`;
+5. parses the resulting PE and requires the requested x64/ARM64 machine, DLL characteristic, and an
+   exact named export for `KbdLayerDescriptor`.
+
+PE and export-directory validation is implemented in managed code, so structural verification does
+not depend on `dumpbin` and can be unit-tested on non-Windows hosts.
+
+On Windows, a matching-architecture build also performs a load-level smoke test through
+`NativeLibrary.Load` and resolves `KbdLayerDescriptor` before immediately freeing the module. The
+helper never installs or registers the layout. Cross-architecture artifacts and non-Windows hosts
+record the smoke test as not run; Windows integration CI is responsible for exercising it.
 
 Processes use `ProcessStartInfo.ArgumentList`, not a composed shell command. Standard output,
 standard error, exit code, elapsed duration, executable, arguments, environment, and working
@@ -185,11 +195,23 @@ build/
       keyboard.res
     output/
       <layout>.dll
+      build-manifest.json
     logs/
       build.log
 ```
 
 Generated files are build output and are not part of the `.kbdproj` source model.
+
+After artifact verification, `BuildOrchestrator` writes a versioned JSON manifest beside the DLL. It
+records the project name, target, ordered generated-source names and SHA-256 hashes, MSVC and Windows
+SDK versions, verified output path and hash, verification state, and the UTC build timestamp. The
+timestamp is confined to the manifest and never changes generated source.
+
+Set `BuildOptions.VerifyReproducibility` to build the same project twice. The checker compares the
+two generated source dictionaries exactly and the verified DLLs by SHA-256. `link.exe` receives
+`/Brepro` so supported MSVC toolchains suppress nondeterministic PE content. A mismatch fails the
+overall build with `REPRO_SOURCE` or `REPRO_BINARY`, retains the comparison workspace for diagnosis,
+and is recorded in the primary manifest.
 
 Each invocation receives a unique workspace and never compiles in a source directory. With the
 default `KeepFailedBuild` policy, successful builds remove `generated/` and `obj/` but retain the DLL
@@ -202,3 +224,9 @@ the child process tree before applying that policy and writes `logs/cancellation
 Microsoft publishes keyboard-layout source examples in the Windows Driver Samples repository:
 
 https://github.com/microsoft/Windows-driver-samples/tree/main/input/layout
+
+Artifact verification follows Microsoft's PE/COFF header and export-directory format and uses the
+.NET native-library API for the matching-host loader smoke test:
+
+- https://learn.microsoft.com/windows/win32/debug/pe-format
+- https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.nativelibrary

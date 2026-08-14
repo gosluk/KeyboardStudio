@@ -514,6 +514,13 @@ diagnostics. The Windows model is never exposed to Avalonia or serialized into `
 
 The generated source ultimately describes the native Windows keyboard tables and exposes the keyboard-table descriptor expected by Windows. See [WINDOWS-BUILD.md](WINDOWS-BUILD.md).
 
+After linking, the Windows path parses the PE headers and named export directory on every host. It
+requires the selected x64/ARM64 machine, the DLL characteristic, and the exact undecorated
+`KbdLayerDescriptor` export. A matching-architecture Windows process additionally loads the module,
+resolves the export, and frees it without registering or installing the layout. Only then does
+orchestration write the versioned source/toolchain/artifact manifest. An opt-in reproducibility run
+generates and compiles twice, comparing source exactly and DLLs by SHA-256.
+
 ---
 
 ## 10. Linux XKB backend (planned Phase 9)

@@ -8,7 +8,7 @@ public sealed class WindowsNativeCompilationIntegrationTests
 {
     [Fact]
     [Trait("Category", "WindowsIntegration")]
-    public async Task CompileAsync_WhenToolchainIsAvailable_ProducesDll()
+    public async Task BuildAsync_WhenToolchainIsAvailable_ProducesVerifiedReproducibleDll()
     {
         var environment = new WindowsBuildEnvironment();
         if (!environment.CanBuild(BuildTarget.WindowsX64))
@@ -22,14 +22,26 @@ public sealed class WindowsNativeCompilationIntegrationTests
             var generator = new WindowsArtifactGenerator(new WindowsLayoutMetadata(
                 "kbd-phase7-test",
                 "KeyboardStudio Phase 7 integration test"));
-            var options = new BuildOptions(BuildTarget.WindowsX64, buildRoot);
-            var artifact = await generator.GenerateAsync(DemoProjectFactory.Create(), options);
+            var options = new BuildOptions(
+                BuildTarget.WindowsX64,
+                buildRoot,
+                VerifyReproducibility: true);
+            var orchestrator = new BuildOrchestrator(
+                new KeyboardProjectValidator(),
+                generator,
+                environment,
+                new MsvcKeyboardCompiler(environment, new ProcessRunner()));
 
-            var result = await new MsvcKeyboardCompiler(environment, new ProcessRunner())
-                .CompileAsync(artifact, options);
+            var result = await orchestrator.BuildAsync(DemoProjectFactory.Create(), options);
 
-            Assert.True(result.Success, result.RawLog);
-            Assert.True(File.Exists(result.ArtifactPath), result.RawLog);
+            var compilation = Assert.IsType<CompilationResult>(result.Compilation);
+            Assert.True(result.Success, compilation.RawLog);
+            Assert.True(File.Exists(compilation.ArtifactPath), compilation.RawLog);
+            Assert.True(File.Exists(compilation.ManifestPath), compilation.RawLog);
+            var verification = Assert.IsType<ArtifactVerificationResult>(compilation.Verification);
+            Assert.True(verification.ExpectedExportFound, compilation.RawLog);
+            Assert.Equal(ArtifactLoadTestStatus.Passed, verification.LoadTest.Status);
+            Assert.True(result.Reproducibility?.Success is true, compilation.RawLog);
         }
         finally
         {

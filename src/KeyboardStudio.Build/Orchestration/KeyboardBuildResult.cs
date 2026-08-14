@@ -5,4 +5,5 @@ namespace KeyboardStudio.Build;
 public sealed record KeyboardBuildResult(
     bool Success,
     IReadOnlyList<ValidationIssue> ValidationIssues,
-    CompilationResult? Compilation);
+    CompilationResult? Compilation,
+    BuildReproducibilityResult? Reproducibility = null);

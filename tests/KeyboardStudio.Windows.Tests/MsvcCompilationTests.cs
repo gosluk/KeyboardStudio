@@ -16,7 +16,10 @@ public sealed class MsvcCompilationTests
         try
         {
             var runner = new RecordingProcessRunner();
-            var compiler = new MsvcKeyboardCompiler(new ResolvedEnvironment(target), runner);
+            var compiler = new MsvcKeyboardCompiler(
+                new ResolvedEnvironment(target),
+                runner,
+                new SuccessfulArtifactVerifier());
             var artifact = new GeneratedArtifact(new GeneratedSource(new Dictionary<string, string>
             {
                 ["keyboard.c"] = "/* source */\n",
@@ -49,11 +52,14 @@ public sealed class MsvcCompilationTests
                 target == BuildTarget.WindowsX64 ? "/MACHINE:X64" : "/MACHINE:ARM64",
                 linkRequest.Arguments);
             Assert.Contains(linkRequest.Arguments, argument => argument.EndsWith("keyboard.def", StringComparison.Ordinal));
+            Assert.Contains("/Brepro", linkRequest.Arguments);
             Assert.EndsWith("kbd-demo.dll", result.ArtifactPath, StringComparison.Ordinal);
             Assert.Contains(@"C:\toolchain\cl.exe", result.RawLog, StringComparison.Ordinal);
             Assert.NotNull(result.LogPath);
             Assert.True(File.Exists(result.LogPath));
             Assert.NotNull(result.WorkspacePath);
+            Assert.Equal("14.50", result.ToolchainVersions?.Compiler);
+            Assert.Equal("10.0", result.ToolchainVersions?.WindowsSdk);
             Assert.False(Directory.Exists(Path.Combine(result.WorkspacePath, "generated")));
             Assert.False(Directory.Exists(Path.Combine(result.WorkspacePath, "obj")));
             Assert.True(Directory.Exists(Path.Combine(result.WorkspacePath, "output")));
@@ -178,5 +184,21 @@ public sealed class MsvcCompilationTests
                 []);
 
         public ResolvedBuildEnvironment? Resolve(BuildTarget target) => null;
+    }
+
+    private sealed class SuccessfulArtifactVerifier : IArtifactVerifier
+    {
+        public Task<ArtifactVerificationResult> VerifyAsync(
+            string artifactPath,
+            BuildTarget target,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(new ArtifactVerificationResult(
+                true,
+                target,
+                target == BuildTarget.WindowsX64 ? "Amd64" : "Arm64",
+                true,
+                true,
+                new ArtifactLoadTestResult(ArtifactLoadTestStatus.NotRun, "Test verifier."),
+                []));
     }
 }
