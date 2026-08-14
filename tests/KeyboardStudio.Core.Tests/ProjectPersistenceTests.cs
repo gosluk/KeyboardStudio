@@ -36,6 +36,7 @@ public sealed class ProjectPersistenceTests
     {
         var project = DemoProjectFactory.Create();
         var mapping = project.Layout.Find("KeyA")!;
+        mapping.Outputs[ModifierLayer.Default] = new CharacterOutput("ą");
         mapping.Outputs[ModifierLayer.AltGr] = new SpecialKeyOutput(LogicalKey.Space);
         mapping.Outputs[ModifierLayer.ShiftAltGr] = new NoOutput();
         var store = new JsonKeyboardProjectStore();
@@ -46,6 +47,78 @@ public sealed class ProjectPersistenceTests
         var loaded = await store.LoadAsync(stream);
 
         AssertEquivalent(project, loaded);
+    }
+
+    [Fact]
+    public async Task SaveAsync_WhenAllOutputKindsExist_WritesStableKindEncoding()
+    {
+        var project = DemoProjectFactory.Create();
+        var mapping = project.Layout.Find("KeyA")!;
+        mapping.Outputs[ModifierLayer.Default] = new CharacterOutput("ą");
+        mapping.Outputs[ModifierLayer.AltGr] = new SpecialKeyOutput(LogicalKey.Space);
+        mapping.Outputs[ModifierLayer.ShiftAltGr] = new NoOutput();
+        var store = new JsonKeyboardProjectStore();
+        await using var stream = new MemoryStream();
+
+        await store.SaveAsync(project, stream);
+
+        var json = Encoding.UTF8.GetString(stream.ToArray());
+        using var document = JsonDocument.Parse(json);
+        var mappingElement = document.RootElement
+            .GetProperty("layout")
+            .GetProperty("mappings")
+            .EnumerateArray()
+            .Single(element => element.GetProperty("keyId").GetString() == "KeyA");
+        var outputs = mappingElement.GetProperty("outputs");
+
+        Assert.Equal("character", outputs.GetProperty("default").GetProperty("kind").GetString());
+        Assert.Equal("ą", outputs.GetProperty("default").GetProperty("value").GetString());
+        Assert.Equal("specialKey", outputs.GetProperty("altGr").GetProperty("kind").GetString());
+        Assert.Equal("space", outputs.GetProperty("altGr").GetProperty("key").GetString());
+        Assert.Equal("none", outputs.GetProperty("shiftAltGr").GetProperty("kind").GetString());
+        Assert.DoesNotContain("\"$type\"", json);
+    }
+
+    [Fact]
+    public async Task SaveAndLoad_WhenCharacterOutputIsSpace_PreservesWhitespaceCharacter()
+    {
+        var project = DemoProjectFactory.Create();
+        project.Layout.Find("KeyA")!.Outputs[ModifierLayer.Default] = new CharacterOutput(" ");
+        var store = new JsonKeyboardProjectStore();
+        await using var stream = new MemoryStream();
+
+        await store.SaveAsync(project, stream);
+        stream.Position = 0;
+        var loaded = await store.LoadAsync(stream);
+
+        var output = Assert.IsType<CharacterOutput>(loaded.Layout.Find("KeyA")!.Outputs[ModifierLayer.Default]);
+        Assert.Equal(" ", output.Value);
+    }
+
+    [Fact]
+    public async Task LoadAsync_WhenOutputKindIsUnknown_ReportsInvalidProject()
+    {
+        var json = CreateProjectJson("{ \"kind\": \"futureOutput\" }");
+        var store = new JsonKeyboardProjectStore();
+        using var stream = CreateStream(json);
+
+        var exception = await Assert.ThrowsAsync<ProjectLoadException>(() => store.LoadAsync(stream));
+
+        Assert.Equal(ProjectLoadErrorCode.InvalidProject, exception.ErrorCode);
+        Assert.Equal(KeyboardProjectSchema.CurrentVersion, exception.SchemaVersion);
+    }
+
+    [Fact]
+    public async Task LoadAsync_WhenOutputPayloadDoesNotMatchKind_ReportsInvalidProject()
+    {
+        var json = CreateProjectJson("{ \"kind\": \"none\", \"value\": \"a\" }");
+        var store = new JsonKeyboardProjectStore();
+        using var stream = CreateStream(json);
+
+        var exception = await Assert.ThrowsAsync<ProjectLoadException>(() => store.LoadAsync(stream));
+
+        Assert.Equal(ProjectLoadErrorCode.InvalidProject, exception.ErrorCode);
+        Assert.Equal(KeyboardProjectSchema.CurrentVersion, exception.SchemaVersion);
     }
 
     [Fact]
@@ -149,6 +222,33 @@ public sealed class ProjectPersistenceTests
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => store.SaveAsync(project, stream));
     }
+
+    private static string CreateProjectJson(string outputJson) => $$"""
+        {
+          "schemaVersion": {{KeyboardProjectSchema.CurrentVersion}},
+          "metadata": {
+            "name": "Output test",
+            "description": "",
+            "version": "1.0.0",
+            "language": "und"
+          },
+          "keyboard": {
+            "id": "test",
+            "keys": []
+          },
+          "layout": {
+            "mappings": [
+              {
+                "keyId": "KeyA",
+                "logicalKey": "a",
+                "outputs": {
+                  "default": {{outputJson}}
+                }
+              }
+            ]
+          }
+        }
+        """;
 
     private static void AssertEquivalent(KeyboardProject expected, KeyboardProject actual)
     {

@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace KeyboardStudio.Persistence;
 
 internal sealed class KeyboardProjectDto
@@ -47,12 +45,16 @@ internal sealed class KeyMappingDto
     public required Dictionary<string, KeyOutputDto> Outputs { get; init; }
 }
 
-[JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
-[JsonDerivedType(typeof(CharacterOutputDto), "character")]
-[JsonDerivedType(typeof(SpecialKeyOutputDto), "specialKey")]
-[JsonDerivedType(typeof(NoOutputDto), "none")]
-internal abstract record KeyOutputDto;
+internal sealed class KeyOutputDto
+{
+    public required string Kind { get; init; }
+    public string? Value { get; init; }
+    public string? Key { get; init; }
+}
 
-internal sealed record CharacterOutputDto(string Value) : KeyOutputDto;
-internal sealed record SpecialKeyOutputDto(string Key) : KeyOutputDto;
-internal sealed record NoOutputDto() : KeyOutputDto;
+internal static class KeyOutputKinds
+{
+    public const string Character = "character";
+    public const string SpecialKey = "specialKey";
+    public const string None = "none";
+}

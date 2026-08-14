@@ -41,7 +41,34 @@ Malformed JSON and structurally invalid current-version projects are reported th
 
 Logical keys and modifier-layer names are represented by persistence strings rather than serializing domain enum values directly. This prevents a domain-model refactor from silently changing the stored JSON contract.
 
-`KeyboardStudio.Core` therefore contains no `System.Text.Json` polymorphism attributes. The temporary output discriminator currently lives only on persistence DTOs. P1.4 replaces that temporary `$type` representation with the explicit stable output encoding defined by the implementation plan.
+`KeyboardStudio.Core` contains no JSON polymorphism attributes. Output encoding is owned entirely by `KeyboardStudio.Persistence`, so the durable wire contract can evolve independently of runtime domain types.
+
+## Output encoding
+
+Every mapped output is an object with an explicit `kind` property. Runtime type names and serializer-specific discriminators such as `$type` are not part of the project format.
+
+Supported version-1 shapes are:
+
+```json
+{ "kind": "character", "value": "ą" }
+```
+
+```json
+{ "kind": "specialKey", "key": "space" }
+```
+
+```json
+{ "kind": "none" }
+```
+
+The payload is strict:
+
+- `character` requires a non-empty `value` and must not define `key`;
+- `specialKey` requires a supported logical `key` and must not define `value`;
+- `none` must define neither `value` nor `key`;
+- unknown `kind` values are rejected as invalid projects.
+
+A character value may itself be whitespace, such as a literal space. Scalar-count validation belongs to the editor/validation layer rather than the persistence transport.
 
 ## Project metadata
 
@@ -57,8 +84,6 @@ Windows-only layout identity is not part of `ProjectMetadata`. It is represented
 Author metadata is intentionally omitted for now because generated resources do not consume it yet.
 
 ## Current v1 document shape
-
-The DTO layer preserves the current version-1 project shape while decoupling that shape from runtime domain classes:
 
 ```json
 {
@@ -89,18 +114,16 @@ The DTO layer preserves the current version-1 project shape while decoupling tha
         "keyId": "KeyA",
         "logicalKey": "a",
         "outputs": {
-          "default": { "$type": "character", "value": "a" },
-          "shift": { "$type": "character", "value": "A" },
-          "altGr": { "$type": "character", "value": "ą" },
-          "shiftAltGr": { "$type": "character", "value": "Ą" }
+          "default": { "kind": "character", "value": "a" },
+          "shift": { "kind": "character", "value": "A" },
+          "altGr": { "kind": "character", "value": "ą" },
+          "shiftAltGr": { "kind": "character", "value": "Ą" }
         }
       }
     ]
   }
 }
 ```
-
-The `$type` output discriminator is intentionally transitional and is replaced in P1.4. Changing it does not require adding JSON attributes back to the domain model because polymorphism is now owned entirely by persistence DTOs.
 
 Windows layout identity remains separate from the core aggregate and is not currently carried by the `IKeyboardProjectStore` contract. A target-specific document/settings boundary must preserve it without introducing a `KeyboardStudio.Core -> KeyboardStudio.Windows` dependency.
 
@@ -112,6 +135,7 @@ Windows layout identity remains separate from the core aggregate and is not curr
 - Windows build metadata stays separate from general project metadata.
 - Output objects are typed so additional output categories can be added later.
 - Runtime domain classes are not the persistence contract.
+- Output kinds are stable persistence identifiers, not CLR type names.
 
 ## Persistence abstraction
 
