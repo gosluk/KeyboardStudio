@@ -7,6 +7,30 @@ namespace KeyboardStudio.App.Tests;
 public sealed class KeyPresentationViewModelTests
 {
     [Fact]
+    public void Layers_WhenCreated_ExposeTheFourSupportedFriendlyLabels()
+    {
+        var editor = new MainWindowViewModel().Editor;
+
+        Assert.Collection(
+            editor.Layers,
+            layer => Assert.Equal((ModifierLayer.Default, "Default"), (layer.Value, layer.Label)),
+            layer => Assert.Equal((ModifierLayer.Shift, "Shift"), (layer.Value, layer.Label)),
+            layer => Assert.Equal((ModifierLayer.AltGr, "AltGr"), (layer.Value, layer.Label)),
+            layer => Assert.Equal((ModifierLayer.ShiftAltGr, "Shift + AltGr"), (layer.Value, layer.Label)));
+    }
+
+    [Fact]
+    public void ActiveLayerOption_WhenChanged_UsesStableCoreLayerValue()
+    {
+        var editor = new MainWindowViewModel().Editor;
+
+        editor.ActiveLayerOption = editor.Layers.Single(layer => layer.Value == ModifierLayer.AltGr);
+
+        Assert.Equal(ModifierLayer.AltGr, editor.ActiveLayer);
+        Assert.Equal("AltGr", editor.ActiveLayerOption.Label);
+    }
+
+    [Fact]
     public void SelectCommand_WhenAnotherKeyIsSelected_MovesSelectedState()
     {
         var editor = new MainWindowViewModel().Editor;

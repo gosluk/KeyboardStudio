@@ -6,6 +6,14 @@ namespace KeyboardStudio.App;
 
 public sealed class KeyboardEditorViewModel : ObservableObject
 {
+    private static readonly IReadOnlyList<ModifierLayerOptionViewModel> ModifierLayers =
+    [
+        new(ModifierLayer.Default, "Default"),
+        new(ModifierLayer.Shift, "Shift"),
+        new(ModifierLayer.AltGr, "AltGr"),
+        new(ModifierLayer.ShiftAltGr, "Shift + AltGr")
+    ];
+
     private readonly KeyboardEditor _editor;
     private ModifierLayer _activeLayer;
     private KeyViewModel? _selectedKey;
@@ -16,7 +24,7 @@ public sealed class KeyboardEditorViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(template);
 
         _editor = editor;
-        Layers = Enum.GetValues<ModifierLayer>();
+        Layers = ModifierLayers;
         Keys = new ObservableCollection<KeyViewModel>(
             editor.Project.Keyboard.Keys.Select(key =>
                 new KeyViewModel(
@@ -34,7 +42,7 @@ public sealed class KeyboardEditorViewModel : ObservableObject
     }
 
     public ObservableCollection<KeyViewModel> Keys { get; }
-    public IReadOnlyList<ModifierLayer> Layers { get; }
+    public IReadOnlyList<ModifierLayerOptionViewModel> Layers { get; }
     public double KeyboardWidth { get; }
     public double KeyboardHeight { get; }
 
@@ -46,8 +54,19 @@ public sealed class KeyboardEditorViewModel : ObservableObject
             if (SetProperty(ref _activeLayer, value))
             {
                 RefreshLabels();
+                OnPropertyChanged(nameof(ActiveLayerOption));
                 OnPropertyChanged(nameof(SelectedOutput));
             }
+        }
+    }
+
+    public ModifierLayerOptionViewModel ActiveLayerOption
+    {
+        get => Layers.Single(option => option.Value == ActiveLayer);
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            ActiveLayer = value.Value;
         }
     }
 
