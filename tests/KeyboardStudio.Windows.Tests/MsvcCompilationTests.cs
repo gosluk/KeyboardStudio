@@ -16,7 +16,10 @@ public sealed class MsvcCompilationTests
         try
         {
             var runner = new RecordingProcessRunner();
-            var compiler = new MsvcKeyboardCompiler(new ResolvedEnvironment(target), runner);
+            var compiler = new MsvcKeyboardCompiler(
+                new ResolvedEnvironment(target),
+                runner,
+                new SuccessfulArtifactVerifier());
             var artifact = new GeneratedArtifact(new GeneratedSource(new Dictionary<string, string>
             {
                 ["keyboard.c"] = "/* source */\n",
@@ -178,5 +181,19 @@ public sealed class MsvcCompilationTests
                 []);
 
         public ResolvedBuildEnvironment? Resolve(BuildTarget target) => null;
+    }
+
+    private sealed class SuccessfulArtifactVerifier : IArtifactVerifier
+    {
+        public Task<ArtifactVerificationResult> VerifyAsync(
+            string artifactPath,
+            BuildTarget target,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(new ArtifactVerificationResult(
+                true,
+                target,
+                target == BuildTarget.WindowsX64 ? "Amd64" : "Arm64",
+                true,
+                []));
     }
 }

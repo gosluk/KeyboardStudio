@@ -104,7 +104,7 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 
 ## Phase 8 — Artifact verification
 
-- [ ] **P8.1** PE verification
+- [x] **P8.1** PE verification
 - [ ] **P8.2** Export verification
 - [ ] **P8.3** Load-level smoke test
 - [ ] **P8.4** Generated/source manifest
