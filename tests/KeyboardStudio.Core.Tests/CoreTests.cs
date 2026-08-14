@@ -93,6 +93,21 @@ public sealed class KeyboardEditorTests
         Assert.Equal(LogicalKey.A, mapping.LogicalKey);
     }
 
+    [Fact]
+    public void Mutations_WhenValueChanges_ReturnChangeInformation()
+    {
+        var editor = new KeyboardEditor(DemoProjectFactory.Create());
+
+        Assert.True(editor.MapCharacter("KeyA", ModifierLayer.AltGr, "ą"));
+        Assert.False(editor.MapCharacter("KeyA", ModifierLayer.AltGr, "ą"));
+        Assert.True(editor.MapLogicalKey("KeyA", LogicalKey.Enter));
+        Assert.False(editor.MapLogicalKey("KeyA", LogicalKey.Enter));
+        Assert.True(editor.ClearMapping("KeyA", ModifierLayer.AltGr));
+        Assert.False(editor.ClearMapping("KeyA", ModifierLayer.AltGr));
+        Assert.True(editor.ClearAllOutputs("KeyA"));
+        Assert.False(editor.ClearAllOutputs("KeyA"));
+    }
+
     [Theory]
     [InlineData("Map")]
     [InlineData("Clear")]

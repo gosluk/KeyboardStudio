@@ -1,5 +1,6 @@
 using KeyboardStudio.App;
 using KeyboardStudio.Core;
+using KeyboardStudio.Persistence;
 using Xunit;
 
 namespace KeyboardStudio.App.Tests;
@@ -197,5 +198,48 @@ public sealed class KeyPresentationViewModelTests
         editor.UnmapLogicalKeyCommand.Execute(null);
 
         Assert.Equal(LogicalKey.None, editor.SelectedLogicalKey);
+    }
+
+    [Fact]
+    public void MappingMutation_WhenValueChanges_MarksDocumentDirtyOnlyOnce()
+    {
+        var document = new ProjectDocumentService(
+            new JsonKeyboardProjectStore(),
+            DemoProjectFactory.Create);
+        var project = document.CreateNew();
+        var template = new KeyboardTemplateProvider().Templates.Single(item => item.Id == "iso-105");
+        var changes = 0;
+        var editor = new KeyboardEditorViewModel(
+            new KeyboardEditor(project),
+            template,
+            () =>
+            {
+                changes++;
+                document.MarkDirty();
+            });
+        Assert.True(editor.SelectKey("KeyA"));
+
+        editor.LayerMappings[0].Output = "x";
+        editor.LayerMappings[0].Output = "x";
+
+        Assert.True(document.IsDirty);
+        Assert.Equal(1, changes);
+    }
+
+    [Fact]
+    public void InvalidMappingMutation_WhenRejected_DoesNotMarkDocumentDirty()
+    {
+        var changes = 0;
+        var project = DemoProjectFactory.Create();
+        var template = new KeyboardTemplateProvider().Templates.Single(item => item.Id == "iso-105");
+        var editor = new KeyboardEditorViewModel(
+            new KeyboardEditor(project),
+            template,
+            () => changes++);
+        Assert.True(editor.SelectKey("KeyA"));
+
+        editor.LayerMappings[0].Output = "ab";
+
+        Assert.Equal(0, changes);
     }
 }

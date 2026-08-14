@@ -9,7 +9,58 @@ public sealed class KeyboardEditor
 
     public KeyboardProject Project { get; }
 
-    public KeyMapping GetOrCreateMapping(string keyId)
+    public bool MapCharacter(string keyId, ModifierLayer layer, string character)
+    {
+        var output = new CharacterOutput(character);
+        var mapping = GetOrCreateMapping(keyId);
+        if (mapping.Outputs.TryGetValue(layer, out var current) && current == output)
+        {
+            return false;
+        }
+
+        mapping.Outputs[layer] = output;
+        return true;
+    }
+
+    public bool MapLogicalKey(string keyId, LogicalKey key)
+    {
+        EnsurePhysicalKeyExists(keyId);
+        var existing = Project.Layout.Find(keyId);
+        if (existing is null && key == LogicalKey.None)
+        {
+            return false;
+        }
+
+        var mapping = existing ?? GetOrCreateMapping(keyId);
+        if (mapping.LogicalKey == key)
+        {
+            return false;
+        }
+
+        mapping.LogicalKey = key;
+        return true;
+    }
+
+    public bool ClearMapping(string keyId, ModifierLayer layer)
+    {
+        EnsurePhysicalKeyExists(keyId);
+        return Project.Layout.Find(keyId)?.Outputs.Remove(layer) == true;
+    }
+
+    public bool ClearAllOutputs(string keyId)
+    {
+        EnsurePhysicalKeyExists(keyId);
+        var outputs = Project.Layout.Find(keyId)?.Outputs;
+        if (outputs is null || outputs.Count == 0)
+        {
+            return false;
+        }
+
+        outputs.Clear();
+        return true;
+    }
+
+    private KeyMapping GetOrCreateMapping(string keyId)
     {
         EnsurePhysicalKeyExists(keyId);
 
@@ -26,28 +77,6 @@ public sealed class KeyboardEditor
         };
         Project.Layout.Mappings.Add(mapping);
         return mapping;
-    }
-
-    public void MapCharacter(string keyId, ModifierLayer layer, string character)
-    {
-        GetOrCreateMapping(keyId).Outputs[layer] = new CharacterOutput(character);
-    }
-
-    public void MapLogicalKey(string keyId, LogicalKey key)
-    {
-        GetOrCreateMapping(keyId).LogicalKey = key;
-    }
-
-    public void ClearMapping(string keyId, ModifierLayer layer)
-    {
-        EnsurePhysicalKeyExists(keyId);
-        Project.Layout.Find(keyId)?.Outputs.Remove(layer);
-    }
-
-    public void ClearAllOutputs(string keyId)
-    {
-        EnsurePhysicalKeyExists(keyId);
-        Project.Layout.Find(keyId)?.Outputs.Clear();
     }
 
     private void EnsurePhysicalKeyExists(string keyId)

@@ -18,17 +18,22 @@ public sealed class KeyboardEditorViewModel : ObservableObject
     private static readonly IReadOnlyList<LogicalKey> EditableLogicalKeys =
         Enum.GetValues<LogicalKey>();
 
+    private readonly Action _documentChanged;
     private readonly KeyboardEditor _editor;
     private ModifierLayer _activeLayer;
     private IReadOnlyList<LayerMappingViewModel> _layerMappings = [];
     private KeyViewModel? _selectedKey;
 
-    public KeyboardEditorViewModel(KeyboardEditor editor, KeyboardTemplateDescriptor template)
+    public KeyboardEditorViewModel(
+        KeyboardEditor editor,
+        KeyboardTemplateDescriptor template,
+        Action? documentChanged = null)
     {
         ArgumentNullException.ThrowIfNull(editor);
         ArgumentNullException.ThrowIfNull(template);
 
         _editor = editor;
+        _documentChanged = documentChanged ?? (() => { });
         Layers = ModifierLayers;
         Keys = new ObservableCollection<KeyViewModel>(
             editor.Project.Keyboard.Keys.Select(key =>
@@ -72,7 +77,10 @@ public sealed class KeyboardEditorViewModel : ObservableObject
                 return;
             }
 
-            _editor.MapLogicalKey(SelectedKey.KeyId, value);
+            if (_editor.MapLogicalKey(SelectedKey.KeyId, value))
+            {
+                _documentChanged();
+            }
             SelectedKey.Mapping = _editor.Project.Layout.Find(SelectedKey.KeyId);
             SelectedKey.Refresh(ActiveLayer);
             OnPropertyChanged();
@@ -166,11 +174,17 @@ public sealed class KeyboardEditorViewModel : ObservableObject
 
             if (string.IsNullOrEmpty(value))
             {
-                _editor.ClearMapping(SelectedKey.KeyId, ActiveLayer);
+                if (_editor.ClearMapping(SelectedKey.KeyId, ActiveLayer))
+                {
+                    _documentChanged();
+                }
             }
             else
             {
-                _editor.MapCharacter(SelectedKey.KeyId, ActiveLayer, value);
+                if (_editor.MapCharacter(SelectedKey.KeyId, ActiveLayer, value))
+                {
+                    _documentChanged();
+                }
             }
 
             SelectedKey.Mapping = _editor.Project.Layout.Find(SelectedKey.KeyId);
@@ -209,11 +223,17 @@ public sealed class KeyboardEditorViewModel : ObservableObject
 
         if (string.IsNullOrEmpty(output))
         {
-            _editor.ClearMapping(SelectedKey.KeyId, layer);
+            if (_editor.ClearMapping(SelectedKey.KeyId, layer))
+            {
+                _documentChanged();
+            }
         }
         else
         {
-            _editor.MapCharacter(SelectedKey.KeyId, layer, output);
+            if (_editor.MapCharacter(SelectedKey.KeyId, layer, output))
+            {
+                _documentChanged();
+            }
         }
 
         SelectedKey.Mapping = _editor.Project.Layout.Find(SelectedKey.KeyId);
@@ -229,7 +249,10 @@ public sealed class KeyboardEditorViewModel : ObservableObject
             return;
         }
 
-        _editor.ClearAllOutputs(SelectedKey.KeyId);
+        if (_editor.ClearAllOutputs(SelectedKey.KeyId))
+        {
+            _documentChanged();
+        }
         SelectedKey.Mapping = _editor.Project.Layout.Find(SelectedKey.KeyId);
         SelectedKey.Refresh(ActiveLayer);
         RefreshMappingPanel();
