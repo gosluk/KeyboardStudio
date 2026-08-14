@@ -2,7 +2,7 @@
 
 KeyboardStudio is a modern Avalonia-based editor for defining custom keyboard layouts and compiling them into native Windows keyboard-layout artifacts.
 
-The repository is currently in the architecture/bootstrap phase. The initial implementation is intentionally limited to the core workflow:
+The repository now contains a buildable source skeleton. The implementation is intentionally focused on the core workflow:
 
 1. Display a physical keyboard.
 2. Select a key and define its mapping for supported modifier layers.
@@ -32,6 +32,8 @@ The most important architectural rule is that `KeyboardStudio.Core` must not ref
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the complete architecture.
 
+See [docs/IMPLEMENTATION-PLAN.md](docs/IMPLEMENTATION-PLAN.md) for the phased implementation plan, acceptance criteria, test gates, milestones, and risk register.
+
 ## Repository structure
 
 ```text
@@ -50,6 +52,7 @@ templates/
 
 docs/
   ARCHITECTURE.md
+  IMPLEMENTATION-PLAN.md
   PROJECT-FORMAT.md
   WINDOWS-BUILD.md
   DECISIONS.md
