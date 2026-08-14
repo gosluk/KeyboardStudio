@@ -29,7 +29,7 @@ public interface IProjectDocumentService
     bool IsDirty { get; }
     ProjectDocumentError? LastError { get; }
 
-    KeyboardProject New();
+    KeyboardProject CreateNew();
     void MarkDirty();
     Task<ProjectDocumentOperationResult> OpenAsync(string path, CancellationToken cancellationToken = default);
     Task<ProjectDocumentOperationResult> SaveAsync(CancellationToken cancellationToken = default);
@@ -58,7 +58,7 @@ public sealed class ProjectDocumentService : IProjectDocumentService
 
     public ProjectDocumentError? LastError { get; private set; }
 
-    public KeyboardProject New()
+    public KeyboardProject CreateNew()
     {
         var project = _projectFactory();
         CurrentProject = project;
@@ -180,8 +180,9 @@ public sealed class ProjectDocumentService : IProjectDocumentService
 
     private ProjectDocumentOperationResult Fail(ProjectDocumentErrorKind kind, string message)
     {
-        LastError = new ProjectDocumentError(kind, message);
-        return ProjectDocumentOperationResult.Failed(LastError);
+        var error = new ProjectDocumentError(kind, message);
+        LastError = error;
+        return ProjectDocumentOperationResult.Failed(error);
     }
 
     private static bool TryNormalizePath(string path, out string fullPath, out string error)

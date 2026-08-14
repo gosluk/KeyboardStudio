@@ -8,11 +8,11 @@ namespace KeyboardStudio.App.Tests;
 public sealed class ProjectDocumentServiceTests
 {
     [Fact]
-    public void New_WhenInvoked_CreatesCleanUntitledDocument()
+    public void CreateNew_WhenInvoked_CreatesCleanUntitledDocument()
     {
         var service = CreateService();
 
-        var project = service.New();
+        var project = service.CreateNew();
 
         Assert.Same(project, service.CurrentProject);
         Assert.Null(service.CurrentFilePath);
@@ -24,7 +24,7 @@ public sealed class ProjectDocumentServiceTests
     public async Task SaveAsync_WhenDocumentHasNoPath_RequiresSaveAs()
     {
         var service = CreateService();
-        service.New();
+        service.CreateNew();
         service.MarkDirty();
 
         var result = await service.SaveAsync();
@@ -42,7 +42,7 @@ public sealed class ProjectDocumentServiceTests
         try
         {
             var service = CreateService();
-            var project = service.New();
+            var project = service.CreateNew();
             service.MarkDirty();
 
             var result = await service.SaveAsAsync(path);
@@ -75,7 +75,7 @@ public sealed class ProjectDocumentServiceTests
             }
 
             var service = CreateService();
-            service.New();
+            service.CreateNew();
             service.MarkDirty();
 
             var result = await service.OpenAsync(path);
@@ -124,7 +124,7 @@ public sealed class ProjectDocumentServiceTests
         {
             var store = new ControllableProjectStore();
             var service = new ProjectDocumentService(store, DemoProjectFactory.Create);
-            service.New();
+            service.CreateNew();
 
             var firstResult = await service.SaveAsAsync(firstPath);
             Assert.True(firstResult.Success);
