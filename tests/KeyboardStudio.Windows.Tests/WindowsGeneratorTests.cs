@@ -64,4 +64,23 @@ public sealed class WindowsGeneratorTests
         Assert.Contains("{ 0x4B, L\"Left\" }", source);
         Assert.DoesNotContain("L\"ArrowLeft\"", source);
     }
+
+    [Fact]
+    public async Task Generate_EmitsNativeModifierAndAltGrTables()
+    {
+        var artifact = await new WindowsArtifactGenerator(
+                new WindowsLayoutMetadata("kbd-demo", "Demo layout"))
+            .GenerateAsync(
+                DemoProjectFactory.Create(),
+                new BuildOptions(BuildTarget.WindowsX64, "out"));
+        var source = artifact.Source.Files["keyboard.c"];
+
+        Assert.Contains("static ALLOC_SECTION_LDATA VK_TO_BIT aVkToBits[]", source);
+        Assert.Contains("{ VK_SHIFT, KBDSHIFT }", source);
+        Assert.Contains("static ALLOC_SECTION_LDATA MODIFIERS CharModifiers", source);
+        Assert.Equal(4, source.Split("SHFT_INVALID", StringSplitOptions.None).Length - 1);
+        Assert.Contains("2 /* Control, Alt */", source);
+        Assert.Contains("3 /* Shift, Control, Alt */", source);
+        Assert.Contains("#define KEYBOARD_STUDIO_LOCALE_FLAGS KLLF_ALTGR", source);
+    }
 }

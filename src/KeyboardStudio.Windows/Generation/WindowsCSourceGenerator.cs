@@ -26,6 +26,7 @@ internal static class WindowsCSourceGenerator
         builder.AppendLine();
         AppendScanCodeTables(builder, layout);
         AppendKeyNameTables(builder, layout);
+        AppendModifierTables(builder, layout.Modifiers);
         builder.AppendLine("typedef struct KEYBOARD_STUDIO_CHARACTER_ROW {");
         builder.AppendLine("    uint16_t virtual_key;");
         builder.AppendLine("    uint8_t attributes;");
@@ -62,6 +63,47 @@ internal static class WindowsCSourceGenerator
         builder.AppendLine("}");
         return builder.ToString();
     }
+
+    private static void AppendModifierTables(StringBuilder builder, WindowsModifierTable modifiers)
+    {
+        builder.AppendLine("static ALLOC_SECTION_LDATA VK_TO_BIT aVkToBits[] = {");
+        builder.AppendLine("    { VK_SHIFT, KBDSHIFT },");
+        builder.AppendLine("    { VK_CONTROL, KBDCTRL },");
+        builder.AppendLine("    { VK_MENU, KBDALT },");
+        builder.AppendLine("    { 0, 0 }");
+        builder.AppendLine("};");
+        builder.AppendLine();
+        builder.AppendLine("static ALLOC_SECTION_LDATA MODIFIERS CharModifiers = {");
+        builder.AppendLine("    aVkToBits,");
+        builder.AppendLine("    7,");
+        builder.AppendLine("    {");
+
+        foreach (var state in modifiers.States.OrderBy(state => state.Bits))
+        {
+            builder.Append("        ");
+            if (state.Number == WindowsModifierNumber.Invalid)
+            {
+                builder.Append("SHFT_INVALID");
+            }
+            else
+            {
+                builder.Append(((byte)state.Number).ToString(CultureInfo.InvariantCulture));
+            }
+
+            builder.Append(" /* ")
+                .Append(DescribeModifierBits(state.Bits))
+                .AppendLine(" */,");
+        }
+
+        builder.AppendLine("    }");
+        builder.AppendLine("};");
+        builder.AppendLine();
+        builder.AppendLine("#define KEYBOARD_STUDIO_LOCALE_FLAGS KLLF_ALTGR");
+        builder.AppendLine();
+    }
+
+    private static string DescribeModifierBits(WindowsModifierBits bits) =>
+        bits == WindowsModifierBits.None ? "Default" : bits.ToString();
 
     private static void AppendKeyNameTables(StringBuilder builder, WindowsKeyboardLayout layout)
     {
