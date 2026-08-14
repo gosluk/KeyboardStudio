@@ -2,10 +2,10 @@
 
 This file tracks execution of [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
 
-- Current work branch: `agent/phase-5-windows-semantic-translation`
+- Current work branch: `agent/phase-6-kbdtables-source-generation`
 - Last updated: 2026-08-14
-- Current phase: Phase 6 — Real Windows `KBDTABLES` source generation
-- Next work item: **P6.1 — Establish reference fixture**
+- Current phase: Phase 7 — MSVC/WDK compiler integration
+- Next work item: **P7.1 — Implement build-environment detection**
 
 Legend: `[x]` complete, `[ ]` not yet complete.
 
@@ -76,16 +76,18 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 
 ## Phase 6 — Real Windows `KBDTABLES` source generation
 
-- [ ] **P6.1** Establish reference fixture
-- [ ] **P6.2** Generate source file set
-- [ ] **P6.3** Generate scan-code tables
-- [ ] **P6.4** Generate key names
-- [ ] **P6.5** Generate modifier tables
-- [ ] **P6.6** Generate character tables
-- [ ] **P6.7** Generate `KBDTABLES`
-- [ ] **P6.8** Generate `KbdLayerDescriptor`
-- [ ] **P6.9** Generate `.def` and resource metadata
-- [ ] **P6.10** Golden-file tests
+- [x] **P6.1** Establish reference fixture
+- [x] **P6.2** Generate source file set
+- [x] **P6.3** Generate scan-code tables
+- [x] **P6.4** Generate key names
+- [x] **P6.5** Generate modifier tables
+- [x] **P6.6** Generate character tables
+- [x] **P6.7** Generate `KBDTABLES`
+- [x] **P6.8** Generate `KbdLayerDescriptor`
+- [x] **P6.9** Generate `.def` and resource metadata
+- [x] **P6.10** Golden-file tests
+
+**Phase status:** 10/10 work items complete. Phase complete.
 
 ## Phase 7 — MSVC/WDK compiler integration
 

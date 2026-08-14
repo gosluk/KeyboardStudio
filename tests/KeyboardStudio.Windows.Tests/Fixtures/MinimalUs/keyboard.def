@@ -1,0 +1,4 @@
+LIBRARY KBD_MINIMAL
+
+EXPORTS
+    KbdLayerDescriptor @1

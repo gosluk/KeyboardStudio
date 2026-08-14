@@ -12,7 +12,8 @@ Responsibilities:
 - keep scan-only keys out of printable character rows;
 - validate Windows-only logical-key and modifier compatibility behind a Core rule contract;
 - publish stable `KSW` compatibility diagnostic codes;
-- generate deterministic native keyboard-layout source;
+- generate deterministic native `VSC_VK`, key-name, modifier, character, and `KBDTABLES` source;
+- emit `keyboard.c`, `keyboard.h`, `keyboard.def`, and `keyboard.rc` as one native source set;
 - isolate all Windows keyboard-table knowledge from the Avalonia UI and core domain.
 
 This project generates source; it does not own compiler process execution.
@@ -36,3 +37,11 @@ mapping. Layer-specific special-key remapping and character outputs on scan-only
 Native v1 character rows hold one UTF-16 code unit, so non-BMP scalar values require later ligature
 support and currently produce `KSW003`. Unsupported translations throw `WindowsTranslationException`
 with stable, key-linked diagnostics instead of omitting data.
+
+## Phase 6 generation contract
+
+The source generator follows the minimal WDK keyboard-layout ABI documented in
+[`docs/WINDOWS-KBDTABLES-REFERENCE.md`](../../docs/WINDOWS-KBDTABLES-REFERENCE.md). It emits dense
+primary scan tables, sentinel-terminated E0/E1 and key-name tables, four v1 modifier states,
+two- or four-column UTF-16 character tables, a complete MVP descriptor, its exported entry point,
+and deterministic resource metadata. Native compilation remains a Phase 7 build responsibility.

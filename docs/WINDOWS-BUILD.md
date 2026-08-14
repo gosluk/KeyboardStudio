@@ -52,13 +52,15 @@ Windows-specific values must not leak into `KeyboardStudio.Core`.
 
 ## Internal Windows model
 
-Phase 5 model:
+Phase 6 model:
 
 ```csharp
 public sealed record WindowsKeyboardLayout
 {
     public required IReadOnlyList<VscToVkMapping> VscToVkMappings { get; init; }
     public required IReadOnlyList<ExtendedVscToVkMapping> ExtendedVscToVkMappings { get; init; }
+    public required IReadOnlyList<WindowsKeyNameMapping> KeyNames { get; init; }
+    public required IReadOnlyList<WindowsKeyNameMapping> ExtendedKeyNames { get; init; }
     public required WindowsModifierTable Modifiers { get; init; }
     public required WindowsCharacterTable Characters { get; init; }
 }
@@ -96,9 +98,19 @@ non-BMP characters fail translation with a `WindowsTranslationException` carryin
 
 `WindowsCSourceGenerator` emits deterministic source from `WindowsKeyboardLayout`.
 
-The generated code contains the native Windows keyboard-layout tables and exposes the descriptor required by Windows.
+The generated C translation unit contains dense primary and sentinel-terminated E0/E1 scan tables,
+normal and extended key names, native modifier and character tables, a complete MVP `KBDTABLES`,
+and the typed `KbdLayerDescriptor` entry point. `keyboard.def` exports that entry at ordinal 1;
+`keyboard.rc` contains stable DLL version metadata; and `keyboard.h` fixes `KBD_TYPE` and declares
+the descriptor.
+
+The generic `keyboard.*` names are deliberate: each build already has its own project working
+directory, while the layout ID determines module/resource identity and the eventual DLL name.
+Dead keys, ligatures, and locale-specific optional tables are emitted as ABI-defined null/zero
+fields because those features are outside the MVP semantic model.
 
 Identical project input and build options should produce byte-for-byte identical generated source.
+Golden fixtures for minimal US, AltGr Unicode, and ISO examples verify all four output files exactly.
 
 ## Compiler abstraction
 

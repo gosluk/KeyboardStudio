@@ -16,4 +16,7 @@
     <ProjectReference Include="..\..\src\KeyboardStudio.Build\KeyboardStudio.Build.csproj" />
     <ProjectReference Include="..\..\src\KeyboardStudio.Windows\KeyboardStudio.Windows.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Fixtures\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

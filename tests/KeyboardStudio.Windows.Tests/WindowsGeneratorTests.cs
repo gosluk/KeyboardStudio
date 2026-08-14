@@ -24,6 +24,7 @@ public sealed class WindowsGeneratorTests
             first.Source.Files.Keys);
         Assert.Equal(first.Source.Files.Keys, second.Source.Files.Keys);
         Assert.All(first.Source.Files, file => Assert.Equal(file.Value, second.Source.Files[file.Key]));
+        Assert.All(first.Source.Files.Values, source => Assert.DoesNotContain('\r', source));
 
         var firstSource = first.Source.Files["keyboard.c"];
         var secondSource = second.Source.Files["keyboard.c"];
@@ -63,6 +64,33 @@ public sealed class WindowsGeneratorTests
         Assert.Contains("static ALLOC_SECTION_LDATA VSC_LPWSTR aKeyNamesExt[]", source);
         Assert.Contains("{ 0x4B, L\"Left\" }", source);
         Assert.DoesNotContain("L\"ArrowLeft\"", source);
+    }
+
+    [Fact]
+    public async Task Generate_WhenPrimaryTableContainsSpecialKeys_EmitsRequiredKbdFlags()
+    {
+        var project = DemoProjectFactory.Create();
+        project.Keyboard.Keys.AddRange(
+        [
+            new PhysicalKey { Id = "RightShift", ScanCode = 0x36 },
+            new PhysicalKey { Id = "NumLock", ScanCode = 0x45 },
+            new PhysicalKey { Id = "Numpad1", ScanCode = 0x4F }
+        ]);
+        project.Layout.Mappings.AddRange(
+        [
+            new KeyMapping { KeyId = "RightShift", LogicalKey = LogicalKey.RightShift },
+            new KeyMapping { KeyId = "NumLock", LogicalKey = LogicalKey.NumLock },
+            new KeyMapping { KeyId = "Numpad1", LogicalKey = LogicalKey.Numpad1 }
+        ]);
+
+        var artifact = await new WindowsArtifactGenerator(
+                new WindowsLayoutMetadata("kbd-demo", "Demo layout"))
+            .GenerateAsync(project, new BuildOptions(BuildTarget.WindowsX64, "out"));
+        var source = artifact.Source.Files["keyboard.c"];
+
+        Assert.Contains("0x00A1 | KBDEXT /* 0x36 */", source);
+        Assert.Contains("0x0090 | KBDEXT | KBDMULTIVK /* 0x45 */", source);
+        Assert.Contains("0x0061 | KBDNUMPAD | KBDSPECIAL /* 0x4F */", source);
     }
 
     [Fact]

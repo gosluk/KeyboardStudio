@@ -31,7 +31,7 @@ internal static class WindowsCSourceGenerator
         builder.AppendLine("{");
         builder.AppendLine("    return &KbdTables;");
         builder.AppendLine("}");
-        return builder.ToString();
+        return NormalizeNewlines(builder.ToString());
     }
 
     private static void AppendLayoutDescriptor(StringBuilder builder)
@@ -240,9 +240,17 @@ internal static class WindowsCSourceGenerator
         builder.Append("0x")
             .Append(((ushort)virtualKey).ToString("X4", CultureInfo.InvariantCulture));
 
-        if (extended || virtualKey == WindowsVirtualKey.RightShift)
+        if (extended || virtualKey is WindowsVirtualKey.RightShift or WindowsVirtualKey.NumLock)
         {
             builder.Append(" | KBDEXT");
+        }
+
+        if (virtualKey is WindowsVirtualKey.Snapshot or
+            WindowsVirtualKey.Multiply or
+            WindowsVirtualKey.NumLock or
+            WindowsVirtualKey.Scroll)
+        {
+            builder.Append(" | KBDMULTIVK");
         }
 
         if (virtualKey is >= WindowsVirtualKey.Numpad0 and <= WindowsVirtualKey.Numpad9 ||
@@ -257,4 +265,8 @@ internal static class WindowsCSourceGenerator
     private static string EscapeWideString(string value) =>
         value.Replace("\\", "\\\\", StringComparison.Ordinal)
             .Replace("\"", "\\\"", StringComparison.Ordinal);
+
+    private static string NormalizeNewlines(string value) =>
+        value.Replace("\r\n", "\n", StringComparison.Ordinal)
+            .Replace("\r", "\n", StringComparison.Ordinal);
 }

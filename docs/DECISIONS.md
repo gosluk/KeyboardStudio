@@ -68,3 +68,13 @@ AltGr uses the Windows Ctrl+Alt bit relationship. Scan-only logical keys do not 
 character table. The v1 character model supports BMP values that fit one native `WCHAR`; non-BMP
 characters and layer-specific special-key remaps are rejected with structured diagnostics until
 ligature or broader special-key support is implemented.
+
+## AD-014 - Native Windows source mirrors the minimal WDK keyboard-layout ABI
+
+The Windows generator produces a deterministic four-file set named `keyboard.c`, `keyboard.h`,
+`keyboard.def`, and `keyboard.rc`. The stable generic names simplify the compiler working directory;
+layout identity belongs in generated comments, module/resource metadata, and the eventual DLL name.
+
+The C translation unit uses numeric virtual-key and UTF-16 values with WDK flags and sentinel rows.
+Optional dead-key, ligature, and locale-specific structures remain explicit null/zero `KBDTABLES`
+fields until their semantic models exist. Source files contain no generated timestamps or host paths.

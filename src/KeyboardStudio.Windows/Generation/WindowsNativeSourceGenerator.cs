@@ -66,7 +66,7 @@ internal static class WindowsNativeSourceGenerator
         builder.AppendLine("        VALUE \"Translation\", 0x0409, 1200");
         builder.AppendLine("    END");
         builder.AppendLine("END");
-        return builder.ToString();
+        return NormalizeNewlines(builder.ToString());
     }
 
     private static void AppendResourceValue(StringBuilder builder, string name, string value)
@@ -126,4 +126,8 @@ internal static class WindowsNativeSourceGenerator
             .Replace("\"", "\\\"", StringComparison.Ordinal)
             .Replace("\r", " ", StringComparison.Ordinal)
             .Replace("\n", " ", StringComparison.Ordinal);
+
+    private static string NormalizeNewlines(string value) =>
+        value.Replace("\r\n", "\n", StringComparison.Ordinal)
+            .Replace("\r", "\n", StringComparison.Ordinal);
 }
