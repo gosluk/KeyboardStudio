@@ -5,7 +5,7 @@ namespace KeyboardStudio.Persistence;
 
 public sealed class ProjectMigrationPipeline
 {
-    private readonly IReadOnlyDictionary<int, IProjectMigration> _migrationsBySourceVersion;
+    private readonly Dictionary<int, IProjectMigration> _migrationsBySourceVersion;
 
     public ProjectMigrationPipeline(IEnumerable<IProjectMigration> migrations)
     {
