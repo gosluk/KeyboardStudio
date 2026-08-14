@@ -104,4 +104,38 @@ public sealed class KeyPresentationViewModelTests
         Assert.True(selectedKey.IsUnmapped);
         Assert.NotEqual("x", selectedKey.Label);
     }
+
+    [Fact]
+    public void LayerMappings_WhenKeyIsSelected_ShowAllFourOutputsAtOnce()
+    {
+        var editor = new MainWindowViewModel().Editor;
+        Assert.True(editor.SelectKey("KeyA"));
+
+        editor.LayerMappings.Single(mapping => mapping.Layer == ModifierLayer.Default).Output = "a";
+        editor.LayerMappings.Single(mapping => mapping.Layer == ModifierLayer.Shift).Output = "A";
+        editor.LayerMappings.Single(mapping => mapping.Layer == ModifierLayer.AltGr).Output = "ą";
+        editor.LayerMappings.Single(mapping => mapping.Layer == ModifierLayer.ShiftAltGr).Output = "Ą";
+
+        Assert.Collection(
+            editor.LayerMappings,
+            mapping => Assert.Equal((ModifierLayer.Default, "a"), (mapping.Layer, mapping.Output)),
+            mapping => Assert.Equal((ModifierLayer.Shift, "A"), (mapping.Layer, mapping.Output)),
+            mapping => Assert.Equal((ModifierLayer.AltGr, "ą"), (mapping.Layer, mapping.Output)),
+            mapping => Assert.Equal((ModifierLayer.ShiftAltGr, "Ą"), (mapping.Layer, mapping.Output)));
+    }
+
+    [Fact]
+    public void SelectedKey_WhenChanged_RefreshesMappingPanelDetails()
+    {
+        var editor = new MainWindowViewModel().Editor;
+        Assert.True(editor.SelectKey("KeyA"));
+        editor.LayerMappings[0].Output = "a";
+
+        Assert.True(editor.SelectKey("KeyB"));
+
+        Assert.Equal("KeyB", editor.SelectedKey?.KeyId);
+        Assert.Equal("0x30", editor.SelectedKey?.ScanCode);
+        Assert.Equal("None", editor.SelectedLogicalKey);
+        Assert.All(editor.LayerMappings, mapping => Assert.Empty(mapping.Output));
+    }
 }

@@ -16,6 +16,7 @@ public sealed class KeyboardEditorViewModel : ObservableObject
 
     private readonly KeyboardEditor _editor;
     private ModifierLayer _activeLayer;
+    private IReadOnlyList<LayerMappingViewModel> _layerMappings = [];
     private KeyViewModel? _selectedKey;
 
     public KeyboardEditorViewModel(KeyboardEditor editor, KeyboardTemplateDescriptor template)
@@ -45,6 +46,15 @@ public sealed class KeyboardEditorViewModel : ObservableObject
     public IReadOnlyList<ModifierLayerOptionViewModel> Layers { get; }
     public double KeyboardWidth { get; }
     public double KeyboardHeight { get; }
+
+    public IReadOnlyList<LayerMappingViewModel> LayerMappings
+    {
+        get => _layerMappings;
+        private set => SetProperty(ref _layerMappings, value);
+    }
+
+    public string SelectedLogicalKey =>
+        SelectedKey?.Mapping?.LogicalKey.ToString() ?? LogicalKey.None.ToString();
 
     public ModifierLayer ActiveLayer
     {
@@ -88,6 +98,8 @@ public sealed class KeyboardEditorViewModel : ObservableObject
                     value.IsSelected = true;
                 }
 
+                RefreshMappingPanel();
+                OnPropertyChanged(nameof(SelectedLogicalKey));
                 OnPropertyChanged(nameof(SelectedOutput));
             }
         }
@@ -145,6 +157,44 @@ public sealed class KeyboardEditorViewModel : ObservableObject
     private void SelectKey(KeyViewModel key)
     {
         SelectedKey = key;
+    }
+
+    private void RefreshMappingPanel()
+    {
+        LayerMappings = Layers
+            .Select(layer => new LayerMappingViewModel(
+                layer,
+                GetCharacterOutput(layer.Value),
+                UpdateOutput))
+            .ToArray();
+    }
+
+    private string GetCharacterOutput(ModifierLayer layer) =>
+        SelectedKey?.Mapping?.Outputs.TryGetValue(layer, out var output) == true &&
+        output is CharacterOutput characterOutput
+            ? characterOutput.Value
+            : string.Empty;
+
+    private void UpdateOutput(ModifierLayer layer, string output)
+    {
+        if (SelectedKey is null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrEmpty(output))
+        {
+            _editor.ClearMapping(SelectedKey.KeyId, layer);
+        }
+        else
+        {
+            _editor.MapCharacter(SelectedKey.KeyId, layer, output);
+        }
+
+        SelectedKey.Mapping = _editor.Project.Layout.Find(SelectedKey.KeyId);
+        SelectedKey.Refresh(ActiveLayer);
+        OnPropertyChanged(nameof(SelectedLogicalKey));
+        OnPropertyChanged(nameof(SelectedOutput));
     }
 
     private void RefreshLabels()

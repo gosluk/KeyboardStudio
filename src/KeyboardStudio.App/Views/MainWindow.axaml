@@ -82,8 +82,23 @@
           <TextBlock Text="Selected key" FontSize="18" FontWeight="SemiBold" />
           <TextBlock Text="{Binding Editor.SelectedKey.KeyId}" />
           <TextBlock Text="{Binding Editor.SelectedKey.ScanCode}" Opacity="0.7" />
-          <TextBlock Text="Output for active layer" Margin="0,8,0,0" />
-          <TextBox Text="{Binding Editor.SelectedOutput, Mode=TwoWay}" PlaceholderText="Character output" />
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+            <TextBlock Text="Logical key" />
+            <TextBlock Grid.Column="1" Text="{Binding Editor.SelectedLogicalKey}" />
+          </Grid>
+          <TextBlock Text="Layer outputs" Margin="0,8,0,0" FontWeight="SemiBold" />
+          <ItemsControl ItemsSource="{Binding Editor.LayerMappings}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Grid ColumnDefinitions="110,*" ColumnSpacing="8" Margin="0,2">
+                  <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                  <TextBox Grid.Column="1"
+                           Text="{Binding Output, Mode=TwoWay}"
+                           PlaceholderText="No output" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
         </StackPanel>
       </Border>
 
