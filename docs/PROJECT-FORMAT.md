@@ -8,7 +8,7 @@ The serialized format is a persistence contract. It is not required to mirror th
 
 ## Versioning
 
-Every project starts with a schema version.
+Every project starts with an explicit integer schema version.
 
 ```json
 {
@@ -16,11 +16,22 @@ Every project starts with a schema version.
 }
 ```
 
-Future versions must migrate older schemas explicitly rather than silently changing interpretation.
+The current schema version is defined in one place by `KeyboardProjectSchema.CurrentVersion`. New `KeyboardProject` instances default to that value, and the persistence layer only writes the current schema version.
+
+Loading validates `schemaVersion` before deserializing the rest of the document:
+
+- the current version is accepted;
+- a missing, non-integer, zero, or negative version is rejected as an invalid schema version;
+- a future version is rejected with `ProjectLoadErrorCode.UnsupportedFutureSchema`;
+- an older valid version is routed to `ProjectLoadErrorCode.LegacySchemaRequiresMigration` until the migration pipeline from P1.6 handles it.
+
+Schema version 1 is the first project format, so there is currently no valid older schema to migrate. Future versions must migrate older schemas explicitly rather than silently changing interpretation.
 
 ```text
 v1 -> v2 -> v3
 ```
+
+Malformed JSON and structurally invalid current-version projects are reported through `ProjectLoadException` with a machine-readable `ProjectLoadErrorCode`. This gives the application a stable error boundary without requiring message parsing.
 
 ## Project metadata
 
@@ -99,4 +110,4 @@ public interface IKeyboardProjectStore
 }
 ```
 
-The initial implementation uses `System.Text.Json` in `KeyboardStudio.Persistence`. P1.3 replaces direct domain serialization with explicit DTO mapping.
+The initial implementation uses `System.Text.Json` in `KeyboardStudio.Persistence`. P1.3 replaces direct domain serialization with explicit DTO mapping while preserving the schema checks introduced in P1.2.
