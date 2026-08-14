@@ -26,11 +26,33 @@ internal static class WindowsCSourceGenerator
         AppendKeyNameTables(builder, layout);
         AppendModifierTables(builder, layout.Modifiers);
         AppendCharacterTables(builder, layout.Characters);
+        AppendLayoutDescriptor(builder);
         builder.AppendLine("const void* KbdLayerDescriptor(void)");
         builder.AppendLine("{");
         builder.AppendLine("    return aVkToWcharTable;");
         builder.AppendLine("}");
         return builder.ToString();
+    }
+
+    private static void AppendLayoutDescriptor(StringBuilder builder)
+    {
+        builder.AppendLine("static ALLOC_SECTION_LDATA KBDTABLES KbdTables = {");
+        builder.AppendLine("    &CharModifiers,");
+        builder.AppendLine("    aVkToWcharTable,");
+        builder.AppendLine("    NULL, /* dead keys */");
+        builder.AppendLine("    aKeyNames,");
+        builder.AppendLine("    aKeyNamesExt,");
+        builder.AppendLine("    NULL, /* dead-key names */");
+        builder.AppendLine("    ausVscToVk,");
+        builder.AppendLine("    sizeof(ausVscToVk) / sizeof(ausVscToVk[0]),");
+        builder.AppendLine("    aE0VscToVk,");
+        builder.AppendLine("    aE1VscToVk,");
+        builder.AppendLine("    MAKELONG(KEYBOARD_STUDIO_LOCALE_FLAGS, KBD_VERSION),");
+        builder.AppendLine("    0, /* maximum ligature length */");
+        builder.AppendLine("    0, /* ligature entry size */");
+        builder.AppendLine("    NULL /* ligatures */");
+        builder.AppendLine("};");
+        builder.AppendLine();
     }
 
     private static void AppendCharacterTables(StringBuilder builder, WindowsCharacterTable characters)

@@ -101,4 +101,22 @@ public sealed class WindowsGeneratorTests
         Assert.Contains("{ (PVK_TO_WCHARS1)aVkToWch4, 4, sizeof(aVkToWch4[0]) }", source);
         Assert.Contains("{ NULL, 0, 0 }", source);
     }
+
+    [Fact]
+    public async Task Generate_EmitsCompleteMvpKeyboardTablesDescriptor()
+    {
+        var artifact = await new WindowsArtifactGenerator(
+                new WindowsLayoutMetadata("kbd-demo", "Demo layout"))
+            .GenerateAsync(
+                DemoProjectFactory.Create(),
+                new BuildOptions(BuildTarget.WindowsX64, "out"));
+        var source = artifact.Source.Files["keyboard.c"];
+
+        Assert.Contains("static ALLOC_SECTION_LDATA KBDTABLES KbdTables", source);
+        Assert.Contains("&CharModifiers,", source);
+        Assert.Contains("aVkToWcharTable,", source);
+        Assert.Contains("sizeof(ausVscToVk) / sizeof(ausVscToVk[0]),", source);
+        Assert.Contains("MAKELONG(KEYBOARD_STUDIO_LOCALE_FLAGS, KBD_VERSION),", source);
+        Assert.Contains("NULL /* ligatures */", source);
+    }
 }
