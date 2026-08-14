@@ -57,3 +57,14 @@ Avalonia storage pickers are responsible only for choosing paths. `KeyboardStudi
 Project schema migrations live in `KeyboardStudio.Persistence` and operate on `JsonObject` documents before the current persistence DTO is deserialized. `JsonKeyboardProjectStore` is responsible for schema validation and delegates legacy upgrades to `ProjectMigrationPipeline` rather than accumulating version-specific switch logic.
 
 Each `IProjectMigration` advances exactly one schema version. The pipeline applies registered migrations in order, stamps `schemaVersion` after each successful step, and fails explicitly when a required step is missing. Schema version 1 remains the first version, so no synthetic v0 migration is introduced.
+
+## AD-013 - Windows semantic translation is explicit and complete before generation
+
+`WindowsLayoutTranslator` converts every supported logical key through an explicit mapping to a
+Windows virtual key. It produces separate normal and extended scan-code collections, an eight-state
+Windows modifier-number table, and typed character rows before any C source is generated.
+
+AltGr uses the Windows Ctrl+Alt bit relationship. Scan-only logical keys do not participate in the
+character table. The v1 character model supports BMP values that fit one native `WCHAR`; non-BMP
+characters and layer-specific special-key remaps are rejected with structured diagnostics until
+ligature or broader special-key support is implemented.

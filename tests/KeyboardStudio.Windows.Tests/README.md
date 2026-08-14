@@ -2,11 +2,14 @@
 
 Tests for the Windows translation/source-generation backend.
 
-Initial coverage should include:
+Coverage includes:
 
 - scan-code to virtual-key translation;
 - modifier translation;
 - character table generation;
 - Unicode output mappings;
+- scan-only special keys and explicit unmapped outputs;
+- structured failures for unsupported Windows mappings;
 - deterministic generated source;
-- golden/source snapshot tests for representative layouts.
+
+Golden/source snapshot coverage for real native tables begins in Phase 6.

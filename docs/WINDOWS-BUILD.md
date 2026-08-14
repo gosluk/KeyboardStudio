@@ -52,34 +52,45 @@ Windows-specific values must not leak into `KeyboardStudio.Core`.
 
 ## Internal Windows model
 
-Representative model:
+Phase 5 model:
 
 ```csharp
-internal sealed class WindowsKeyboardLayout
+public sealed record WindowsKeyboardLayout
 {
-    public required IReadOnlyList<VscToVkMapping> ScanCodes { get; init; }
-    public required IReadOnlyList<WindowsCharacterMapping> Characters { get; init; }
+    public required IReadOnlyList<VscToVkMapping> VscToVkMappings { get; init; }
+    public required IReadOnlyList<ExtendedVscToVkMapping> ExtendedVscToVkMappings { get; init; }
     public required WindowsModifierTable Modifiers { get; init; }
+    public required WindowsCharacterTable Characters { get; init; }
 }
 
-internal sealed record VscToVkMapping(
+public sealed record VscToVkMapping(
     byte ScanCode,
-    WindowsVirtualKey VirtualKey,
-    bool Extended);
+    WindowsVirtualKey VirtualKey);
+
+public sealed record ExtendedVscToVkMapping(
+    byte ScanCode,
+    WindowsVirtualKey VirtualKey);
 ```
 
-Character mappings initially represent four modifier states.
+Character mappings represent the four v1 modifier states. `WindowsCharacterTable.Width` is `2` when
+only Default and Shift are populated and `4` when AltGr columns are required.
 
 ```csharp
-internal sealed class WindowsCharacterMapping
-{
-    public required WindowsVirtualKey VirtualKey { get; init; }
-    public string? Normal { get; init; }
-    public string? Shift { get; init; }
-    public string? AltGr { get; init; }
-    public string? ShiftAltGr { get; init; }
-}
+public sealed record WindowsCharacterMapping(
+    WindowsVirtualKey VirtualKey,
+    WindowsCharacterAttributes Attributes,
+    char? Default,
+    char? Shift,
+    char? AltGr,
+    char? ShiftAltGr);
 ```
+
+AltGr is modeled as Windows Ctrl+Alt and Shift+AltGr as Shift+Ctrl+Alt. The modifier-number table also
+contains explicit invalid entries for unsupported Ctrl-only and Alt-only combinations.
+
+Scan-only logical keys never receive a character row. Unsupported character/special-key mappings and
+non-BMP characters fail translation with a `WindowsTranslationException` carrying structured
+`ValidationIssue` instances; translation never silently drops them.
 
 ## Native source generation
 

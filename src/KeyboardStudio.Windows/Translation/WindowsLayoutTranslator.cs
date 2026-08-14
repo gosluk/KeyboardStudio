@@ -2,12 +2,27 @@ using KeyboardStudio.Core;
 
 namespace KeyboardStudio.Windows;
 
-internal static class WindowsLayoutTranslator
+public static class WindowsLayoutTranslator
 {
     public static WindowsKeyboardLayout Translate(KeyboardProject project)
     {
+        ArgumentNullException.ThrowIfNull(project);
+
+        var validation = new KeyboardProjectValidator(
+        [
+            new PhysicalKeyboardValidationRule(),
+            new MappingValidationRule(),
+            new WindowsCompatibilityValidationRule()
+        ]).Validate(project);
+        if (validation.HasErrors)
+        {
+            throw new WindowsTranslationException(validation.Issues);
+        }
+
         var physicalKeys = project.Keyboard.Keys.ToDictionary(key => key.Id, StringComparer.Ordinal);
-        var entries = new List<WindowsMappingEntry>();
+        var vscToVkMappings = new List<VscToVkMapping>();
+        var extendedVscToVkMappings = new List<ExtendedVscToVkMapping>();
+        var characters = new List<WindowsCharacterMapping>();
 
         foreach (var mapping in project.Layout.Mappings.OrderBy(mapping => mapping.KeyId, StringComparer.Ordinal))
         {
@@ -16,18 +31,55 @@ internal static class WindowsLayoutTranslator
                 continue;
             }
 
-            foreach (var output in mapping.Outputs.OrderBy(pair => pair.Key))
+            if (WindowsVirtualKeyMapper.TryMap(mapping.LogicalKey, out var virtualKey))
             {
-                if (output.Value is not CharacterOutput characterOutput || string.IsNullOrEmpty(characterOutput.Value))
+                var scanCode = checked((byte)key.ScanCode);
+                if (key.Extended)
                 {
-                    continue;
+                    extendedVscToVkMappings.Add(new ExtendedVscToVkMapping(scanCode, virtualKey));
+                }
+                else
+                {
+                    vscToVkMappings.Add(new VscToVkMapping(scanCode, virtualKey));
                 }
 
-                var rune = characterOutput.Value.EnumerateRunes().First();
-                entries.Add(new WindowsMappingEntry((byte)key.ScanCode, output.Key, rune.Value));
+                if (WindowsLogicalKeyClassifier.ProducesCharacters(mapping.LogicalKey) &&
+                    mapping.Outputs.Values.OfType<CharacterOutput>().Any())
+                {
+                    characters.Add(new WindowsCharacterMapping(
+                        virtualKey,
+                        IsLetter(mapping.LogicalKey)
+                            ? WindowsCharacterAttributes.CapsLock
+                            : WindowsCharacterAttributes.None,
+                        GetCharacter(mapping, ModifierLayer.Default),
+                        GetCharacter(mapping, ModifierLayer.Shift),
+                        GetCharacter(mapping, ModifierLayer.AltGr),
+                        GetCharacter(mapping, ModifierLayer.ShiftAltGr)));
+                }
             }
+
         }
 
-        return new WindowsKeyboardLayout(entries);
+        return new WindowsKeyboardLayout(
+            vscToVkMappings.OrderBy(mapping => mapping.ScanCode).ThenBy(mapping => mapping.VirtualKey).ToArray(),
+            extendedVscToVkMappings.OrderBy(mapping => mapping.ScanCode).ThenBy(mapping => mapping.VirtualKey).ToArray(),
+            WindowsModifierTable.CreateV1(),
+            new WindowsCharacterTable(
+                characters.Any(mapping => mapping.AltGr.HasValue || mapping.ShiftAltGr.HasValue) ? 4 : 2,
+                characters.OrderBy(mapping => mapping.VirtualKey).ToArray()));
     }
+
+    private static char? GetCharacter(KeyMapping mapping, ModifierLayer layer)
+    {
+        if (!mapping.Outputs.TryGetValue(layer, out var output) || output is not CharacterOutput characterOutput)
+        {
+            return null;
+        }
+
+        var rune = characterOutput.Value.EnumerateRunes().First();
+        return checked((char)rune.Value);
+    }
+
+    private static bool IsLetter(LogicalKey logicalKey) =>
+        logicalKey is >= LogicalKey.A and <= LogicalKey.Z;
 }
