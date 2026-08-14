@@ -1,0 +1,60 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="KeyboardStudio.App.MainWindow"
+        Title="KeyboardStudio"
+        Width="1180"
+        Height="760"
+        MinWidth="900"
+        MinHeight="600">
+  <Grid RowDefinitions="Auto,*" ColumnDefinitions="2*,*" Margin="16">
+    <StackPanel Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="12" Margin="0,0,0,12">
+      <TextBlock Text="KeyboardStudio" FontSize="24" FontWeight="Bold" />
+      <TextBlock Text="Avalonia keyboard layout editor skeleton" VerticalAlignment="Center" Opacity="0.7" />
+    </StackPanel>
+
+    <Border Grid.Row="1" Grid.Column="0" Padding="16" Margin="0,0,12,0" BorderThickness="1" BorderBrush="#707070" CornerRadius="6">
+      <StackPanel Spacing="12">
+        <TextBlock Text="Keyboard" FontSize="18" FontWeight="SemiBold" />
+        <ComboBox ItemsSource="{Binding Editor.Layers}"
+                  SelectedItem="{Binding Editor.ActiveLayer}"
+                  Width="220"
+                  HorizontalAlignment="Left" />
+        <ItemsControl ItemsSource="{Binding Editor.Keys}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Button Content="{Binding Label}"
+                      Command="{Binding SelectCommand}"
+                      Width="58"
+                      Height="58"
+                      Margin="3" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </Border>
+
+    <StackPanel Grid.Row="1" Grid.Column="1" Spacing="12">
+      <Border Padding="16" BorderThickness="1" BorderBrush="#707070" CornerRadius="6">
+        <StackPanel Spacing="8">
+          <TextBlock Text="Selected key" FontSize="18" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding Editor.SelectedKey.KeyId}" />
+          <TextBlock Text="{Binding Editor.SelectedKey.ScanCode}" Opacity="0.7" />
+          <TextBlock Text="Output for active layer" Margin="0,8,0,0" />
+          <TextBox Text="{Binding Editor.SelectedOutput, Mode=TwoWay}" Watermark="Character output" />
+        </StackPanel>
+      </Border>
+
+      <Border Padding="16" BorderThickness="1" BorderBrush="#707070" CornerRadius="6">
+        <StackPanel Spacing="8">
+          <TextBlock Text="Windows build" FontSize="18" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding Build.Status}" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </Grid>
+</Window>

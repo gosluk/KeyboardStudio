@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\KeyboardStudio.Core\KeyboardStudio.Core.csproj" />
+  </ItemGroup>
+</Project>

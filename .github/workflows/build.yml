@@ -1,0 +1,33 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - architecture
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.302'
+
+      - name: Restore
+        run: dotnet restore KeyboardStudio.sln
+
+      - name: Build
+        run: dotnet build KeyboardStudio.sln --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test KeyboardStudio.sln --configuration Release --no-build --verbosity normal
