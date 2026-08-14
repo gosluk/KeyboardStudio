@@ -19,17 +19,11 @@ env:
 
 jobs:
   managed-build:
-    name: Managed build (${{ matrix.name }})
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # Phase 10 can add windows-latest here and conditionally append
-          # native WDK integration steps without duplicating managed build steps.
-          - name: Ubuntu
-            os: ubuntu-latest
-
-    runs-on: ${{ matrix.os }}
+    name: Managed build (self-hosted Linux x64)
+    # Prefer the repository's self-hosted pool. GitHub matches all three
+    # labels, so the job can run on any registered Linux x64 host rather than
+    # being tied to one machine-specific runner label.
+    runs-on: [self-hosted, Linux, X64]
 
     steps:
       - name: Checkout

@@ -12,6 +12,17 @@ Run the same restore, Release build, and complete solution test sequence in an i
 
 The script uses the .NET `10.0.302` SDK image pinned by `global.json` and pulls it when missing. Set `KEYBOARDSTUDIO_DOTNET_IMAGE` to override the image for compatibility testing. Build outputs are written to the normal ignored `bin/` and `obj/` directories in the checkout.
 
+## Continuous integration runner preference
+
+The managed GitHub Actions build targets runners labeled `self-hosted`, `Linux`, and `X64`. Using
+the generic platform labels lets any matching repository runner accept the job while keeping the
+workflow independent of a machine-specific label such as `cherry-home-runner-1`.
+
+GitHub Actions does not provide an ordered `runs-on` fallback from self-hosted to hosted runners.
+If no matching self-hosted runner is online, the job intentionally remains queued instead of
+silently consuming a GitHub-hosted runner. A separately named hosted fallback job can be added later
+if that tradeoff becomes desirable.
+
 ## Test method naming
 
 Behavior tests use the following form:
