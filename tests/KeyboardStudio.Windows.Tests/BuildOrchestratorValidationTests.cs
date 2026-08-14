@@ -79,7 +79,9 @@ public sealed class BuildOrchestratorValidationTests
         public bool CanBuild(BuildTarget target) => true;
 
         public BuildEnvironmentStatus GetStatus(BuildTarget target) =>
-            new(true, "Available");
+            new(true, "Available", [], [BuildTarget.WindowsX64]);
+
+        public ResolvedBuildEnvironment? Resolve(BuildTarget target) => null;
     }
 
     private sealed class TrackingNativeCompiler : INativeCompiler
@@ -87,8 +89,8 @@ public sealed class BuildOrchestratorValidationTests
         public bool WasCalled { get; private set; }
 
         public Task<CompilationResult> CompileAsync(
-            GeneratedSource source,
-            BuildTarget target,
+            GeneratedArtifact artifact,
+            BuildOptions options,
             CancellationToken cancellationToken = default)
         {
             WasCalled = true;

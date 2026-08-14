@@ -44,4 +44,5 @@ The source generator follows the minimal WDK keyboard-layout ABI documented in
 [`docs/WINDOWS-KBDTABLES-REFERENCE.md`](../../docs/WINDOWS-KBDTABLES-REFERENCE.md). It emits dense
 primary scan tables, sentinel-terminated E0/E1 and key-name tables, four v1 modifier states,
 two- or four-column UTF-16 character tables, a complete MVP descriptor, its exported entry point,
-and deterministic resource metadata. Native compilation remains a Phase 7 build responsibility.
+and deterministic resource metadata. `KeyboardStudio.Build` consumes this source set through its
+Phase 7 MSVC/WDK toolchain integration and derives the output DLL name from the validated layout ID.

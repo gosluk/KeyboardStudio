@@ -78,3 +78,14 @@ layout identity belongs in generated comments, module/resource metadata, and the
 The C translation unit uses numeric virtual-key and UTF-16 values with WDK flags and sentinel rows.
 Optional dead-key, ligature, and locale-specific structures remain explicit null/zero `KBDTABLES`
 fields until their semantic models exist. Source files contain no generated timestamps or host paths.
+
+## AD-015 - Native builds use discovered tools and isolated disposable workspaces
+
+Windows toolchain discovery prefers the active Visual Studio developer environment, then `vswhere`
+for MSVC and the Windows Kits registry for the SDK/WDK. A resolved environment contains exact tool,
+include, library, architecture, and version data; no repository-relative compiler paths are assumed.
+
+Every native build writes generated files, objects, outputs, and logs below a unique workspace. The
+default cleanup policy removes successful-build intermediates but retains the DLL and raw log, while
+failed and cancelled builds retain their diagnostic workspace. Callers may retain all files or delete
+failed workspaces explicitly through `BuildCleanupPolicy`.

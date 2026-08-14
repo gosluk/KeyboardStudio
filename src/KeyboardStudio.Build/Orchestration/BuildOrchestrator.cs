@@ -43,7 +43,7 @@ public sealed class BuildOrchestrator
         }
 
         var generated = await _generator.GenerateAsync(project, options, cancellationToken);
-        var compilationResult = await _compiler.CompileAsync(generated.Source, options.Target, cancellationToken);
+        var compilationResult = await _compiler.CompileAsync(generated, options, cancellationToken);
         return new KeyboardBuildResult(compilationResult.Success, validation.Issues, compilationResult);
     }
 }

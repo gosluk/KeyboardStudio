@@ -3,7 +3,7 @@ namespace KeyboardStudio.Build;
 public interface INativeCompiler
 {
     Task<CompilationResult> CompileAsync(
-        GeneratedSource source,
-        BuildTarget target,
+        GeneratedArtifact artifact,
+        BuildOptions options,
         CancellationToken cancellationToken = default);
 }

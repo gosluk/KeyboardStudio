@@ -64,7 +64,9 @@ Tests for persistence, translation, and source generation should avoid dependenc
 - collection ordering that is not part of the contract;
 - operating-system behavior in platform-neutral test suites.
 
-Windows-native integration tests will be isolated and categorized when Phase 10 introduces them.
+Windows-native integration tests use the `WindowsIntegration` category. They detect the toolchain and
+return without invoking native tools when it is unavailable, allowing the same suite to run on Linux.
+A configured Windows runner exercises the real generated-source-to-DLL path.
 
 ## Test project boundaries
 
