@@ -195,6 +195,7 @@ public sealed class MsvcCompilationTests
                 target == BuildTarget.WindowsX64 ? "Amd64" : "Arm64",
                 true,
                 true,
+                new ArtifactLoadTestResult(ArtifactLoadTestStatus.NotRun, "Test verifier."),
                 []));
     }
 }

@@ -20,7 +20,7 @@ public sealed class PortableExecutableArtifactVerifierTests
             PortableExecutableArtifactVerifier.RequiredExportName);
         try
         {
-            var result = await new PortableExecutableArtifactVerifier().VerifyAsync(path, target);
+            var result = await CreateVerifier().VerifyAsync(path, target);
 
             Assert.True(result.Success);
             Assert.Equal(expectedMachine, result.Machine);
@@ -43,7 +43,7 @@ public sealed class PortableExecutableArtifactVerifierTests
             PortableExecutableArtifactVerifier.RequiredExportName);
         try
         {
-            var result = await new PortableExecutableArtifactVerifier().VerifyAsync(
+            var result = await CreateVerifier().VerifyAsync(
                 path,
                 BuildTarget.WindowsX64);
 
@@ -65,7 +65,7 @@ public sealed class PortableExecutableArtifactVerifierTests
             PortableExecutableArtifactVerifier.RequiredExportName);
         try
         {
-            var result = await new PortableExecutableArtifactVerifier().VerifyAsync(
+            var result = await CreateVerifier().VerifyAsync(
                 path,
                 BuildTarget.WindowsX64);
 
@@ -83,7 +83,7 @@ public sealed class PortableExecutableArtifactVerifierTests
     {
         var path = Path.Combine(Path.GetTempPath(), $"missing-{Guid.NewGuid():N}.dll");
 
-        var result = await new PortableExecutableArtifactVerifier().VerifyAsync(
+        var result = await CreateVerifier().VerifyAsync(
             path,
             BuildTarget.WindowsX64);
 
@@ -97,7 +97,7 @@ public sealed class PortableExecutableArtifactVerifierTests
         var path = CreateTemporaryImage(0x8664, isDll: true, "DecoratedDescriptor");
         try
         {
-            var result = await new PortableExecutableArtifactVerifier().VerifyAsync(
+            var result = await CreateVerifier().VerifyAsync(
                 path,
                 BuildTarget.WindowsX64);
 
@@ -112,6 +112,33 @@ public sealed class PortableExecutableArtifactVerifierTests
             File.Delete(path);
         }
     }
+
+    [Fact]
+    public async Task VerifyAsync_WhenWindowsLoaderRejectsArtifact_ReturnsDiagnostic()
+    {
+        var path = CreateTemporaryImage(
+            0x8664,
+            isDll: true,
+            PortableExecutableArtifactVerifier.RequiredExportName);
+        try
+        {
+            var verifier = CreateVerifier(ArtifactLoadTestStatus.Failed);
+
+            var result = await verifier.VerifyAsync(path, BuildTarget.WindowsX64);
+
+            Assert.False(result.Success);
+            Assert.Equal(ArtifactLoadTestStatus.Failed, result.LoadTest.Status);
+            Assert.Contains(result.Messages, message => message.Code == "PE_LOAD");
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    private static PortableExecutableArtifactVerifier CreateVerifier(
+        ArtifactLoadTestStatus status = ArtifactLoadTestStatus.NotRun) =>
+        new(new StaticLoadTester(status));
 
     private static string CreateTemporaryImage(
         ushort machine,
@@ -187,5 +214,15 @@ public sealed class PortableExecutableArtifactVerifierTests
         var path = Path.Combine(Path.GetTempPath(), $"KeyboardStudio-{Guid.NewGuid():N}.dll");
         File.WriteAllBytes(path, image);
         return path;
+    }
+
+    private sealed class StaticLoadTester(ArtifactLoadTestStatus status) : IArtifactLoadTester
+    {
+        public Task<ArtifactLoadTestResult> TestAsync(
+            string artifactPath,
+            BuildTarget target,
+            string exportName,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(new ArtifactLoadTestResult(status, "Load test result."));
     }
 }

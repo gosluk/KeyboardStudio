@@ -170,6 +170,11 @@ The initial native targets are x64 and ARM64. For each build, `MsvcKeyboardCompi
 PE and export-directory validation is implemented in managed code, so structural verification does
 not depend on `dumpbin` and can be unit-tested on non-Windows hosts.
 
+On Windows, a matching-architecture build also performs a load-level smoke test through
+`NativeLibrary.Load` and resolves `KbdLayerDescriptor` before immediately freeing the module. The
+helper never installs or registers the layout. Cross-architecture artifacts and non-Windows hosts
+record the smoke test as not run; Windows integration CI is responsible for exercising it.
+
 Processes use `ProcessStartInfo.ArgumentList`, not a composed shell command. Standard output,
 standard error, exit code, elapsed duration, executable, arguments, environment, and working
 directory are captured. MSVC/RC/link diagnostics are mapped to `CompilerMessage`, while the complete

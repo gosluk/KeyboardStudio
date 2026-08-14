@@ -6,8 +6,20 @@ namespace KeyboardStudio.Build;
 public sealed class PortableExecutableArtifactVerifier : IArtifactVerifier
 {
     public const string RequiredExportName = "KbdLayerDescriptor";
+    private readonly IArtifactLoadTester _loadTester;
 
-    public Task<ArtifactVerificationResult> VerifyAsync(
+    public PortableExecutableArtifactVerifier()
+        : this(new WindowsArtifactLoadTester())
+    {
+    }
+
+    public PortableExecutableArtifactVerifier(IArtifactLoadTester loadTester)
+    {
+        ArgumentNullException.ThrowIfNull(loadTester);
+        _loadTester = loadTester;
+    }
+
+    public async Task<ArtifactVerificationResult> VerifyAsync(
         string artifactPath,
         BuildTarget target,
         CancellationToken cancellationToken = default)
@@ -17,13 +29,13 @@ public sealed class PortableExecutableArtifactVerifier : IArtifactVerifier
 
         if (!File.Exists(artifactPath))
         {
-            return Task.FromResult(Failure(
+            return Failure(
                 target,
                 null,
                 false,
                 false,
                 "PE_FILE",
-                $"The linked artifact does not exist: {artifactPath}"));
+                $"The linked artifact does not exist: {artifactPath}");
         }
 
         try
@@ -39,26 +51,26 @@ public sealed class PortableExecutableArtifactVerifier : IArtifactVerifier
             var headers = peReader.PEHeaders;
             if (headers.PEHeader is null)
             {
-                return Task.FromResult(Failure(
+                return Failure(
                     target,
                     headers.CoffHeader.Machine.ToString(),
                     false,
                     false,
                     "PE_HEADER",
-                    "The linked artifact does not contain a PE optional header."));
+                    "The linked artifact does not contain a PE optional header.");
             }
 
             var actualMachine = headers.CoffHeader.Machine;
             var expectedMachine = GetExpectedMachine(target);
             if (expectedMachine is null)
             {
-                return Task.FromResult(Failure(
+                return Failure(
                     target,
                     actualMachine.ToString(),
                     false,
                     false,
                     "PE_TARGET",
-                    $"PE verification does not support build target '{target}'."));
+                    $"PE verification does not support build target '{target}'.");
             }
 
             var isDll = headers.CoffHeader.Characteristics.HasFlag(Characteristics.Dll);
@@ -87,24 +99,41 @@ public sealed class PortableExecutableArtifactVerifier : IArtifactVerifier
                     $"The PE image does not export '{RequiredExportName}' under the expected name."));
             }
 
-            return Task.FromResult(new ArtifactVerificationResult(
+            var loadTest = new ArtifactLoadTestResult(
+                ArtifactLoadTestStatus.NotRun,
+                "Structural verification failed before the load-level smoke test.");
+            if (messages.Count == 0)
+            {
+                loadTest = await _loadTester.TestAsync(
+                    artifactPath,
+                    target,
+                    RequiredExportName,
+                    cancellationToken);
+                if (loadTest.Status == ArtifactLoadTestStatus.Failed)
+                {
+                    messages.Add(new CompilerMessage("PE_LOAD", loadTest.Message));
+                }
+            }
+
+            return new ArtifactVerificationResult(
                 messages.Count == 0,
                 target,
                 actualMachine.ToString(),
                 isDll,
                 expectedExportFound,
-                messages));
+                loadTest,
+                messages);
         }
         catch (Exception exception) when (
             exception is BadImageFormatException or IOException or UnauthorizedAccessException)
         {
-            return Task.FromResult(Failure(
+            return Failure(
                 target,
                 null,
                 false,
                 false,
                 "PE_INVALID",
-                $"The linked artifact is not a readable PE image: {exception.Message}"));
+                $"The linked artifact is not a readable PE image: {exception.Message}");
         }
     }
 
@@ -128,5 +157,8 @@ public sealed class PortableExecutableArtifactVerifier : IArtifactVerifier
             machine,
             isDll,
             expectedExportFound,
+            new ArtifactLoadTestResult(
+                ArtifactLoadTestStatus.NotRun,
+                "Structural verification failed before the load-level smoke test."),
             [new CompilerMessage(code, message)]);
 }

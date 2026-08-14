@@ -6,4 +6,5 @@ public sealed record ArtifactVerificationResult(
     string? Machine,
     bool IsDll,
     bool ExpectedExportFound,
+    ArtifactLoadTestResult LoadTest,
     IReadOnlyList<CompilerMessage> Messages);

@@ -30,6 +30,9 @@ public sealed class WindowsNativeCompilationIntegrationTests
 
             Assert.True(result.Success, result.RawLog);
             Assert.True(File.Exists(result.ArtifactPath), result.RawLog);
+            var verification = Assert.IsType<ArtifactVerificationResult>(result.Verification);
+            Assert.True(verification.ExpectedExportFound, result.RawLog);
+            Assert.Equal(ArtifactLoadTestStatus.Passed, verification.LoadTest.Status);
         }
         finally
         {
