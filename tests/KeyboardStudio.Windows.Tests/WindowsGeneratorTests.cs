@@ -119,4 +119,18 @@ public sealed class WindowsGeneratorTests
         Assert.Contains("MAKELONG(KEYBOARD_STUDIO_LOCALE_FLAGS, KBD_VERSION),", source);
         Assert.Contains("NULL /* ligatures */", source);
     }
+
+    [Fact]
+    public async Task Generate_ExportsTypedLayerDescriptorReturningKeyboardTables()
+    {
+        var artifact = await new WindowsArtifactGenerator(
+                new WindowsLayoutMetadata("kbd-demo", "Demo layout"))
+            .GenerateAsync(
+                DemoProjectFactory.Create(),
+                new BuildOptions(BuildTarget.WindowsX64, "out"));
+
+        Assert.Contains("PKBDTABLES KbdLayerDescriptor(VOID)", artifact.Source.Files["keyboard.h"]);
+        Assert.Contains("PKBDTABLES KbdLayerDescriptor(VOID)", artifact.Source.Files["keyboard.c"]);
+        Assert.Contains("return &KbdTables;", artifact.Source.Files["keyboard.c"]);
+    }
 }

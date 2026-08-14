@@ -27,9 +27,9 @@ internal static class WindowsCSourceGenerator
         AppendModifierTables(builder, layout.Modifiers);
         AppendCharacterTables(builder, layout.Characters);
         AppendLayoutDescriptor(builder);
-        builder.AppendLine("const void* KbdLayerDescriptor(void)");
+        builder.AppendLine("PKBDTABLES KbdLayerDescriptor(VOID)");
         builder.AppendLine("{");
-        builder.AppendLine("    return aVkToWcharTable;");
+        builder.AppendLine("    return &KbdTables;");
         builder.AppendLine("}");
         return builder.ToString();
     }
