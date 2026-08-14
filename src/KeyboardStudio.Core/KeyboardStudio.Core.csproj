@@ -1,2 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <EmbeddedResource Include="../../templates/iso-105.json"
+                      LogicalName="KeyboardStudio.Core.KeyboardTemplates.iso-105.json" />
+    <EmbeddedResource Include="../../templates/ansi-104.json"
+                      LogicalName="KeyboardStudio.Core.KeyboardTemplates.ansi-104.json" />
+  </ItemGroup>
 </Project>

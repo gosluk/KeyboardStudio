@@ -6,6 +6,7 @@ Responsibilities:
 
 - `KeyboardProject` aggregate;
 - physical keyboard and physical key models;
+- versioned physical keyboard template contracts and `IKeyboardTemplateProvider`;
 - keyboard layout and key mapping models;
 - modifier/output abstractions;
 - `KeyboardEditor` mutation service;

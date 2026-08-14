@@ -61,15 +61,32 @@ Coordinates are **not pixels**. A normal key is generally `1 x 1`; wider keys us
 
 ## Structural versus semantic validation
 
-The JSON Schema defines the structural contract: required fields, primitive types, numeric ranges, ID shapes, and the absence of unknown properties. Runtime template validation in P2.2 adds rules that JSON Schema alone does not express conveniently, including:
+The JSON Schema defines the structural contract: required fields, primitive types, numeric ranges, ID shapes, and the absence of unknown properties. Runtime template validation adds rules that JSON Schema alone does not express conveniently, including:
 
 - supported `schemaVersion`;
+- registered resource identity and rendering metrics;
 - duplicate physical key IDs;
-- invalid duplicate scan-code identities;
-- template completeness for built-in definitions;
-- conversion into the immutable/cached `PhysicalKeyboard` domain representation.
+- invalid duplicate `(scanCode, extended)` identities;
+- finite, positive geometry;
+- expected key count for each built-in definition;
+- conversion into the cached `PhysicalKeyboard` domain representation.
 
-This separation keeps the public file format explicit while allowing runtime diagnostics to be precise.
+`KeyboardTemplateErrorCode` gives callers a stable machine-readable reason when semantic validation fails. A base scan code may appear twice only when the `extended` flag makes the two physical identities distinct.
+
+## Runtime provider
+
+`IKeyboardTemplateProvider` exposes the built-in catalog and loads a template by stable ID. `KeyboardTemplateProvider` uses `EmbeddedKeyboardTemplateContentSource` by default. The existing files under `templates/` are linked into `KeyboardStudio.Core` as embedded resources, so repository JSON remains the single source of truth rather than being copied into project-specific resource files.
+
+Built-ins are loaded lazily. A successfully validated template is cached once as a private key array. Each call to `Load` returns a new `PhysicalKeyboard` with a defensive `Keys` list, so callers can edit project state without mutating the provider cache. `PhysicalKey` instances themselves use init-only properties and can safely be shared from the cached definition.
+
+The provider registers these completeness expectations:
+
+| Template | Expected key count |
+| --- | ---: |
+| `iso-105` | 105 |
+| `ansi-104` | 104 |
+
+Until P2.3 and P2.4 populate the built-in files, they remain enumerable but `Load` intentionally reports `IncompleteTemplate`. This keeps P2.2 independent from the physical-layout population work while ensuring incomplete built-ins cannot silently enter a project.
 
 ## Versioning rules
 
