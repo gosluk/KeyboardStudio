@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using KeyboardStudio.Core;
 
 namespace KeyboardStudio.Persistence;
@@ -6,6 +7,18 @@ namespace KeyboardStudio.Persistence;
 public sealed class JsonKeyboardProjectStore : IKeyboardProjectStore
 {
     private static readonly JsonSerializerOptions SerializerOptions = CreateSerializerOptions();
+    private readonly ProjectMigrationPipeline _migrationPipeline;
+
+    public JsonKeyboardProjectStore()
+        : this(new ProjectMigrationPipeline([]))
+    {
+    }
+
+    public JsonKeyboardProjectStore(ProjectMigrationPipeline migrationPipeline)
+    {
+        ArgumentNullException.ThrowIfNull(migrationPipeline);
+        _migrationPipeline = migrationPipeline;
+    }
 
     public async Task SaveAsync(
         KeyboardProject project,
@@ -50,7 +63,10 @@ public sealed class JsonKeyboardProjectStore : IKeyboardProjectStore
 
             try
             {
-                var dto = document.RootElement.Deserialize<KeyboardProjectDto>(SerializerOptions);
+                var dto = schemaVersion == KeyboardProjectSchema.CurrentVersion
+                    ? document.RootElement.Deserialize<KeyboardProjectDto>(SerializerOptions)
+                    : DeserializeMigratedProject(document.RootElement, schemaVersion);
+
                 if (dto is null)
                 {
                     throw new ProjectLoadException(
@@ -61,6 +77,14 @@ public sealed class JsonKeyboardProjectStore : IKeyboardProjectStore
 
                 return KeyboardProjectDtoMapper.ToDomain(dto);
             }
+            catch (ProjectMigrationException exception)
+            {
+                throw new ProjectLoadException(
+                    ProjectLoadErrorCode.LegacySchemaRequiresMigration,
+                    $"Project schema version {schemaVersion} cannot be migrated to version {KeyboardProjectSchema.CurrentVersion} because a required migration is not registered.",
+                    schemaVersion,
+                    exception);
+            }
             catch (Exception exception) when (exception is JsonException or NotSupportedException or InvalidDataException)
             {
                 throw new ProjectLoadException(
@@ -70,6 +94,19 @@ public sealed class JsonKeyboardProjectStore : IKeyboardProjectStore
                     exception);
             }
         }
+    }
+
+    private KeyboardProjectDto? DeserializeMigratedProject(JsonElement root, int schemaVersion)
+    {
+        var legacyProject = JsonNode.Parse(root.GetRawText()) as JsonObject
+            ?? throw new InvalidDataException("The legacy project root must be a JSON object.");
+
+        var migratedProject = _migrationPipeline.Migrate(
+            legacyProject,
+            schemaVersion,
+            KeyboardProjectSchema.CurrentVersion);
+
+        return migratedProject.Deserialize<KeyboardProjectDto>(SerializerOptions);
     }
 
     private static int ReadAndValidateSchemaVersion(JsonElement root)
@@ -108,14 +145,6 @@ public sealed class JsonKeyboardProjectStore : IKeyboardProjectStore
             throw new ProjectLoadException(
                 ProjectLoadErrorCode.UnsupportedFutureSchema,
                 $"Project schema version {schemaVersion} is newer than the supported version {KeyboardProjectSchema.CurrentVersion}.",
-                schemaVersion);
-        }
-
-        if (schemaVersion < KeyboardProjectSchema.CurrentVersion)
-        {
-            throw new ProjectLoadException(
-                ProjectLoadErrorCode.LegacySchemaRequiresMigration,
-                $"Project schema version {schemaVersion} requires migration to version {KeyboardProjectSchema.CurrentVersion}.",
                 schemaVersion);
         }
 

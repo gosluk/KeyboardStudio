@@ -20,14 +20,17 @@ The current schema version is defined in one place by `KeyboardProjectSchema.Cur
 
 Loading validates `schemaVersion` before deserializing the rest of the document:
 
-- the current version is accepted;
+- the current version is accepted directly;
 - a missing, non-integer, zero, or negative version is rejected as an invalid schema version;
 - a future version is rejected with `ProjectLoadErrorCode.UnsupportedFutureSchema`;
-- an older valid version is routed to `ProjectLoadErrorCode.LegacySchemaRequiresMigration` until the migration pipeline from P1.6 handles it.
+- an older valid version is passed to `ProjectMigrationPipeline` before current-version DTO deserialization;
+- if a required migration step is not registered, loading fails with `ProjectLoadErrorCode.LegacySchemaRequiresMigration`.
 
-Schema version 1 is the first project format, so there is currently no valid older schema to migrate. Future versions must migrate older schemas explicitly rather than silently changing interpretation.
+Migrations are persistence transformations, not domain transformations. Each `IProjectMigration` receives a JSON object for one historical schema version and advances it exactly one version. `ProjectMigrationPipeline` applies the chain in order and stamps `schemaVersion` after each successful step. This keeps version-specific compatibility logic out of `JsonKeyboardProjectStore` and ensures the final JSON is interpreted only by the current persistence DTO contract.
 
-Malformed JSON and structurally invalid current-version projects are reported through `ProjectLoadException` with a machine-readable `ProjectLoadErrorCode`. This gives the application a stable error boundary without requiring message parsing.
+Schema version 1 is the first project format, so there is currently no valid older schema to migrate and no artificial version-0 migration is provided. When schema version 2 is introduced, its v1-to-v2 migration can be registered without changing the store's control flow.
+
+Malformed JSON and structurally invalid current-version or migrated projects are reported through `ProjectLoadException` with a machine-readable `ProjectLoadErrorCode`. This gives the application a stable error boundary without requiring message parsing.
 
 ## Persistence DTO boundary
 
@@ -136,6 +139,8 @@ Windows layout identity remains separate from the core aggregate and is not curr
 - Output objects are typed so additional output categories can be added later.
 - Runtime domain classes are not the persistence contract.
 - Output kinds are stable persistence identifiers, not CLR type names.
+- Historical project schemas are migrated in persistence JSON before current DTO mapping.
+- Each registered project migration advances exactly one schema version.
 
 ## Persistence abstraction
 
@@ -147,4 +152,4 @@ public interface IKeyboardProjectStore
 }
 ```
 
-The implementation uses `System.Text.Json` in `KeyboardStudio.Persistence`, but JSON-specific concerns are contained behind DTOs and mapping rather than leaking into `KeyboardStudio.Core`.
+The implementation uses `System.Text.Json` in `KeyboardStudio.Persistence`, but JSON-specific concerns are contained behind DTOs, migration transforms, and mapping rather than leaking into `KeyboardStudio.Core`.
