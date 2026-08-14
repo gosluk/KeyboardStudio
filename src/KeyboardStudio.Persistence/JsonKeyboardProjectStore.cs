@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using KeyboardStudio.Core;
 
 namespace KeyboardStudio.Persistence;
@@ -22,7 +21,8 @@ public sealed class JsonKeyboardProjectStore : IKeyboardProjectStore
                 $"Only project schema version {KeyboardProjectSchema.CurrentVersion} can be saved.");
         }
 
-        await JsonSerializer.SerializeAsync(destination, project, SerializerOptions, cancellationToken);
+        var dto = KeyboardProjectDtoMapper.ToDto(project);
+        await JsonSerializer.SerializeAsync(destination, dto, SerializerOptions, cancellationToken);
     }
 
     public async Task<KeyboardProject> LoadAsync(
@@ -50,13 +50,18 @@ public sealed class JsonKeyboardProjectStore : IKeyboardProjectStore
 
             try
             {
-                var project = document.RootElement.Deserialize<KeyboardProject>(SerializerOptions);
-                return project ?? throw new ProjectLoadException(
-                    ProjectLoadErrorCode.InvalidProject,
-                    $"The project file does not contain a valid schema version {schemaVersion} project.",
-                    schemaVersion);
+                var dto = document.RootElement.Deserialize<KeyboardProjectDto>(SerializerOptions);
+                if (dto is null)
+                {
+                    throw new ProjectLoadException(
+                        ProjectLoadErrorCode.InvalidProject,
+                        $"The project file does not contain a valid schema version {schemaVersion} project.",
+                        schemaVersion);
+                }
+
+                return KeyboardProjectDtoMapper.ToDomain(dto);
             }
-            catch (Exception exception) when (exception is JsonException or NotSupportedException)
+            catch (Exception exception) when (exception is JsonException or NotSupportedException or InvalidDataException)
             {
                 throw new ProjectLoadException(
                     ProjectLoadErrorCode.InvalidProject,
@@ -137,15 +142,10 @@ public sealed class JsonKeyboardProjectStore : IKeyboardProjectStore
         return false;
     }
 
-    private static JsonSerializerOptions CreateSerializerOptions()
+    private static JsonSerializerOptions CreateSerializerOptions() => new()
     {
-        var options = new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            PropertyNameCaseInsensitive = true,
-            WriteIndented = true
-        };
-        options.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
-        return options;
-    }
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
+        WriteIndented = true
+    };
 }

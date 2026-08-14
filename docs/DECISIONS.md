@@ -38,4 +38,10 @@ ViewModels orchestrate UI state but do not directly mutate arbitrary nested proj
 
 `ProjectMetadata` contains only cross-platform information: display name, description, user-managed project version, and language/locale. Windows layout identity is represented by `WindowsLayoutMetadata` in `KeyboardStudio.Windows` and must not be added to `KeyboardStudio.Core`.
 
-The durable `.kbdproj` representation will place Windows metadata in a target-specific persistence section when P1.3 introduces DTO mapping. Author metadata is deferred until a generated resource or another concrete feature needs it.
+Persistence DTOs must not solve target metadata by making `KeyboardStudio.Persistence` depend on the Windows backend or by putting Windows fields into the core aggregate. The current `IKeyboardProjectStore` transports only the platform-neutral `KeyboardProject`; target-specific document/settings persistence must be introduced through a boundary that can preserve Windows metadata without reversing dependency direction.
+
+## AD-010 - Persistence DTOs own the wire contract
+
+`JsonKeyboardProjectStore` serializes persistence DTOs and maps them explicitly to and from the domain model. JSON attributes, wire discriminators and persistence-specific enum names belong in `KeyboardStudio.Persistence`, not in `KeyboardStudio.Core`.
+
+This allows the domain model to evolve independently while schema migrations and wire-format compatibility remain explicit persistence responsibilities.
