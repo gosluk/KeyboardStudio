@@ -5,4 +5,5 @@ public sealed record CompilationResult(
     string? ArtifactPath,
     IReadOnlyList<CompilerMessage> Messages,
     string RawLog = "",
-    string? LogPath = null);
+    string? LogPath = null,
+    string? WorkspacePath = null);

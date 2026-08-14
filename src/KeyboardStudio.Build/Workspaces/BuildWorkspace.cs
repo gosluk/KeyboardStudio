@@ -42,6 +42,14 @@ public sealed class BuildWorkspace
         }
     }
 
+    public void DeleteIntermediates()
+    {
+        DeleteDirectory(GeneratedDirectory);
+        DeleteDirectory(ObjectDirectory);
+    }
+
+    public void Delete() => DeleteDirectory(RootDirectory);
+
     private static void ValidateGeneratedFileName(string fileName)
     {
         if (string.IsNullOrWhiteSpace(fileName) ||
@@ -51,6 +59,14 @@ public sealed class BuildWorkspace
             throw new ArgumentException(
                 "Generated source file names must be non-empty leaf names.",
                 nameof(fileName));
+        }
+    }
+
+    private static void DeleteDirectory(string path)
+    {
+        if (Directory.Exists(path))
+        {
+            Directory.Delete(path, recursive: true);
         }
     }
 }

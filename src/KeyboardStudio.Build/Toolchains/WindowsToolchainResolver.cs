@@ -93,6 +93,11 @@ public sealed class WindowsToolchainResolver : IWindowsToolchainResolver
 
     private static string? FindWindowsSdkDirectory()
     {
+        if (!OperatingSystem.IsWindows())
+        {
+            return null;
+        }
+
         var configured = Environment.GetEnvironmentVariable("WindowsSdkDir");
         if (IsDirectory(configured))
         {

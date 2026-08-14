@@ -2,10 +2,10 @@
 
 This file tracks execution of [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
 
-- Current work branch: `agent/phase-6-kbdtables-source-generation`
+- Current work branch: `agent/phase-7-msvc-wdk-compiler-integration`
 - Last updated: 2026-08-14
-- Current phase: Phase 7 — MSVC/WDK compiler integration
-- Next work item: **P7.1 — Implement build-environment detection**
+- Current phase: Phase 8 — Artifact verification
+- Next work item: **P8.1 — PE verification**
 
 Legend: `[x]` complete, `[ ]` not yet complete.
 
@@ -91,14 +91,16 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 
 ## Phase 7 — MSVC/WDK compiler integration
 
-- [ ] **P7.1** Implement build-environment detection
-- [ ] **P7.2** Resolve compiler environment
-- [ ] **P7.3** Build working directory
-- [ ] **P7.4** Implement process runner
-- [ ] **P7.5** Compile generated C
-- [ ] **P7.6** Link keyboard-layout DLL
-- [ ] **P7.7** Build logs
-- [ ] **P7.8** Cancellation and cleanup
+- [x] **P7.1** Implement build-environment detection
+- [x] **P7.2** Resolve compiler environment
+- [x] **P7.3** Build working directory
+- [x] **P7.4** Implement process runner
+- [x] **P7.5** Compile generated C
+- [x] **P7.6** Link keyboard-layout DLL
+- [x] **P7.7** Build logs
+- [x] **P7.8** Cancellation and cleanup
+
+**Phase status:** 8/8 work items complete. Phase complete.
 
 ## Phase 8 — Artifact verification
 
@@ -134,8 +136,8 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 
 ## Progress summary
 
-- Completed work items: **29**
+- Completed work items: **53**
 - Total planned work items: **73**
-- Overall checklist progress: **29/73**
+- Overall checklist progress: **53/73**
 
 The checklist records work-item completion only. Phase-level acceptance criteria and test gates in `IMPLEMENTATION-PLAN.md` still apply before a phase is considered complete.

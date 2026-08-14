@@ -24,10 +24,16 @@ public sealed class WindowsBuildEnvironment : IBuildEnvironment
     {
         if (_status.Available && !_status.SupportedTargets.Contains(target))
         {
+            var diagnostics = _status.Diagnostics
+                .Append(new BuildEnvironmentDiagnostic(
+                    "ENV_TARGET",
+                    $"The resolved Windows toolchain does not support {target}."))
+                .ToArray();
             return _status with
             {
                 Available = false,
-                Message = $"The Windows build environment does not support {target}."
+                Message = $"The Windows build environment does not support {target}.",
+                Diagnostics = diagnostics
             };
         }
 

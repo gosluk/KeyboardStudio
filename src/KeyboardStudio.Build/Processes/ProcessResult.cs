@@ -6,4 +6,6 @@ public sealed record ProcessResult(
     string StandardOutput,
     string StandardError,
     int ExitCode,
-    TimeSpan Duration);
+    TimeSpan Duration,
+    string WorkingDirectory,
+    IReadOnlyDictionary<string, string?> Environment);

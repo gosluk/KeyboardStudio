@@ -523,9 +523,14 @@ The editor may run on Windows, Linux, and macOS. Native Windows compilation is e
 public interface IBuildEnvironment
 {
     bool CanBuild(BuildTarget target);
-    BuildEnvironmentStatus GetStatus();
+    BuildEnvironmentStatus GetStatus(BuildTarget target);
+    ResolvedBuildEnvironment? Resolve(BuildTarget target);
 }
 ```
+
+The Windows implementation reports structured missing-component diagnostics. Resolution prefers an
+active developer environment and supported Visual Studio/Windows Kits discovery, then exposes exact
+compiler, linker, resource compiler, include/library, target, and version data.
 
 ### 10.2 Artifact generation abstraction
 
@@ -545,13 +550,16 @@ public interface IArtifactGenerator
 public interface INativeCompiler
 {
     Task<CompilationResult> CompileAsync(
-        GeneratedSource source,
-        BuildTarget target,
+        GeneratedArtifact artifact,
+        BuildOptions options,
         CancellationToken cancellationToken);
 }
 ```
 
-Generation remains testable without invoking the toolchain.
+Generation remains testable without invoking the toolchain. Native compilation uses one unique
+workspace per build, argument-list process execution, parsed diagnostics, and a retained raw log.
+Successful builds keep output/logs and normally remove intermediates; failed and cancelled builds
+follow the caller-selected cleanup policy.
 
 ---
 

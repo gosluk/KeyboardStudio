@@ -14,7 +14,9 @@ public sealed class MsvcCompilerMessageParserTests
             "keyboard.c(42,7): warning C4100: unreferenced parameter\n",
             "LINK : fatal error LNK1104: cannot open file 'missing.lib'\n",
             2,
-            TimeSpan.FromSeconds(1));
+            TimeSpan.FromSeconds(1),
+            Environment.CurrentDirectory,
+            new Dictionary<string, string?>());
 
         var messages = MsvcCompilerMessageParser.Parse(result);
 

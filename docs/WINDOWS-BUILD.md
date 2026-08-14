@@ -118,8 +118,8 @@ Golden fixtures for minimal US, AltGr Unicode, and ISO examples verify all four 
 public interface INativeCompiler
 {
     Task<CompilationResult> CompileAsync(
-        GeneratedSource source,
-        BuildTarget target,
+        GeneratedArtifact artifact,
+        BuildOptions options,
         CancellationToken cancellationToken);
 }
 ```
@@ -130,7 +130,10 @@ The compiler implementation owns process execution and compiler-diagnostic parsi
 public sealed record CompilationResult(
     bool Success,
     string? ArtifactPath,
-    IReadOnlyList<CompilerMessage> Messages);
+    IReadOnlyList<CompilerMessage> Messages,
+    string RawLog,
+    string? LogPath,
+    string? WorkspacePath);
 ```
 
 ## Build environment
@@ -141,30 +144,58 @@ The Avalonia editor may run cross-platform. Native Windows compilation is enable
 public interface IBuildEnvironment
 {
     bool CanBuild(BuildTarget target);
-    BuildEnvironmentStatus GetStatus();
+    BuildEnvironmentStatus GetStatus(BuildTarget target);
+    ResolvedBuildEnvironment? Resolve(BuildTarget target);
 }
 ```
 
-`WindowsBuildEnvironmentDetector` should detect the compiler, SDK/WDK includes/libraries, and linker resources required by the implementation.
+`WindowsBuildEnvironment` detects the host and resolves `cl.exe`, `link.exe`, `rc.exe`, MSVC/SDK
+versions, include directories, and library directories for each target. It prefers an active Visual
+Studio developer environment, then queries Visual Studio through `vswhere` and Windows Kits through
+the registered SDK root. Missing components are returned as structured diagnostics.
 
 The UI should explain why compilation is unavailable instead of failing only after Build is pressed.
+
+## Native command pipeline
+
+The initial native targets are x64 and ARM64. For each build, `MsvcKeyboardCompiler`:
+
+1. invokes `cl.exe` with the resolved headers and architecture define to create `keyboard.obj`;
+2. invokes `rc.exe` for deterministic version metadata in `keyboard.rc`;
+3. invokes `link.exe /DLL /NOENTRY` with `keyboard.def`, exporting `KbdLayerDescriptor`;
+4. writes the layout-ID-derived DLL into `output/`.
+
+Processes use `ProcessStartInfo.ArgumentList`, not a composed shell command. Standard output,
+standard error, exit code, elapsed duration, executable, arguments, environment, and working
+directory are captured. MSVC/RC/link diagnostics are mapped to `CompilerMessage`, while the complete
+invocation and output stream is retained in `logs/build.log`.
 
 ## Output structure
 
 ```text
 build/
-  <project-name>/
+  build-<unique-id>/
     generated/
       keyboard.c
       keyboard.h
       keyboard.def
       keyboard.rc
     obj/
+      keyboard.obj
+      keyboard.res
     output/
       <layout>.dll
+    logs/
+      build.log
 ```
 
 Generated files are build output and are not part of the `.kbdproj` source model.
+
+Each invocation receives a unique workspace and never compiles in a source directory. With the
+default `KeepFailedBuild` policy, successful builds remove `generated/` and `obj/` but retain the DLL
+and log; failures and cancellations retain all diagnostic files. `DeleteFailedBuild` removes a
+failed/cancelled workspace, while `KeepAll` preserves successful intermediates. Cancellation kills
+the child process tree before applying that policy and writes `logs/cancellation.log` when retained.
 
 ## References
 

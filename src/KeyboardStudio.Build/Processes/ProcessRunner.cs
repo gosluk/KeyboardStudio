@@ -65,6 +65,8 @@ public sealed class ProcessRunner : IProcessRunner
             await standardOutput,
             await standardError,
             process.ExitCode,
-            stopwatch.Elapsed);
+            stopwatch.Elapsed,
+            request.WorkingDirectory,
+            new Dictionary<string, string?>(request.Environment, StringComparer.OrdinalIgnoreCase));
     }
 }

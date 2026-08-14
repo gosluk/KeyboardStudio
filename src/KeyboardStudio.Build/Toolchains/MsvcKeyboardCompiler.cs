@@ -57,62 +57,74 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
         ValidateOutputFileName(artifact.OutputFileName);
 
         var workspace = BuildWorkspace.Create(options.OutputDirectory);
-        await workspace.WriteGeneratedSourceAsync(artifact.Source, cancellationToken);
-        var processResults = new List<ProcessResult>();
-        var objectPath = Path.Combine(workspace.ObjectDirectory, "keyboard.obj");
-        var compileRequest = CreateCompileRequest(toolchain, workspace, objectPath);
-        var compileResult = await _processRunner.RunAsync(compileRequest, cancellationToken);
-        processResults.Add(compileResult);
-        if (compileResult.ExitCode != 0)
+        try
         {
+            await workspace.WriteGeneratedSourceAsync(artifact.Source, cancellationToken);
+            var processResults = new List<ProcessResult>();
+            var objectPath = Path.Combine(workspace.ObjectDirectory, "keyboard.obj");
+            var compileRequest = CreateCompileRequest(toolchain, workspace, objectPath);
+            var compileResult = await _processRunner.RunAsync(compileRequest, cancellationToken);
+            processResults.Add(compileResult);
+            if (compileResult.ExitCode != 0)
+            {
+                return await CompleteAsync(
+                    false,
+                    null,
+                    workspace,
+                    processResults,
+                    "MSVC_CL",
+                    options.CleanupPolicy,
+                    cancellationToken);
+            }
+
+            var resourcePath = Path.Combine(workspace.ObjectDirectory, "keyboard.res");
+            var resourceResult = await _processRunner.RunAsync(
+                CreateResourceRequest(toolchain, workspace, resourcePath),
+                cancellationToken);
+            processResults.Add(resourceResult);
+            if (resourceResult.ExitCode != 0)
+            {
+                return await CompleteAsync(
+                    false,
+                    null,
+                    workspace,
+                    processResults,
+                    "MSVC_RC",
+                    options.CleanupPolicy,
+                    cancellationToken);
+            }
+
+            var outputPath = Path.Combine(workspace.OutputDirectory, artifact.OutputFileName);
+            var linkResult = await _processRunner.RunAsync(
+                CreateLinkRequest(toolchain, workspace, objectPath, resourcePath, outputPath),
+                cancellationToken);
+            processResults.Add(linkResult);
+            if (linkResult.ExitCode != 0)
+            {
+                return await CompleteAsync(
+                    false,
+                    null,
+                    workspace,
+                    processResults,
+                    "MSVC_LINK",
+                    options.CleanupPolicy,
+                    cancellationToken);
+            }
+
             return await CompleteAsync(
-                false,
-                null,
+                true,
+                outputPath,
                 workspace,
                 processResults,
-                "MSVC_CL",
-                cancellationToken);
-        }
-
-        var resourcePath = Path.Combine(workspace.ObjectDirectory, "keyboard.res");
-        var resourceResult = await _processRunner.RunAsync(
-            CreateResourceRequest(toolchain, workspace, resourcePath),
-            cancellationToken);
-        processResults.Add(resourceResult);
-        if (resourceResult.ExitCode != 0)
-        {
-            return await CompleteAsync(
-                false,
                 null,
-                workspace,
-                processResults,
-                "MSVC_RC",
+                options.CleanupPolicy,
                 cancellationToken);
         }
-
-        var outputPath = Path.Combine(workspace.OutputDirectory, artifact.OutputFileName);
-        var linkResult = await _processRunner.RunAsync(
-            CreateLinkRequest(toolchain, workspace, objectPath, resourcePath, outputPath),
-            cancellationToken);
-        processResults.Add(linkResult);
-        if (linkResult.ExitCode != 0)
+        catch (OperationCanceledException)
         {
-            return await CompleteAsync(
-                false,
-                null,
-                workspace,
-                processResults,
-                "MSVC_LINK",
-                cancellationToken);
+            await HandleCancellationAsync(workspace, options.CleanupPolicy);
+            throw;
         }
-
-        return await CompleteAsync(
-            true,
-            outputPath,
-            workspace,
-            processResults,
-            null,
-            cancellationToken);
     }
 
     private static ProcessRequest CreateCompileRequest(
@@ -145,7 +157,7 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
             CreateToolEnvironment(toolchain));
     }
 
-    private static IReadOnlyDictionary<string, string?> CreateToolEnvironment(
+    private static Dictionary<string, string?> CreateToolEnvironment(
         ResolvedBuildEnvironment toolchain) =>
         new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
         {
@@ -230,6 +242,7 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
         BuildWorkspace workspace,
         IReadOnlyList<ProcessResult> processResults,
         string? fallbackCode,
+        BuildCleanupPolicy cleanupPolicy,
         CancellationToken cancellationToken)
     {
         var messages = MsvcCompilerMessageParser.Parse(processResults.ToArray()).ToList();
@@ -243,7 +256,41 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
         var rawLog = CreateRawLog(processResults);
         var logPath = Path.Combine(workspace.LogsDirectory, "build.log");
         await File.WriteAllTextAsync(logPath, rawLog, cancellationToken);
-        return new CompilationResult(success, artifactPath, messages, rawLog, logPath);
+        var retainedLogPath = logPath;
+        var retainedWorkspacePath = workspace.RootDirectory;
+        if (success && cleanupPolicy != BuildCleanupPolicy.KeepAll)
+        {
+            workspace.DeleteIntermediates();
+        }
+        else if (!success && cleanupPolicy == BuildCleanupPolicy.DeleteFailedBuild)
+        {
+            workspace.Delete();
+            retainedLogPath = null;
+            retainedWorkspacePath = null;
+        }
+
+        return new CompilationResult(
+            success,
+            artifactPath,
+            messages,
+            rawLog,
+            retainedLogPath,
+            retainedWorkspacePath);
+    }
+
+    private static async Task HandleCancellationAsync(
+        BuildWorkspace workspace,
+        BuildCleanupPolicy cleanupPolicy)
+    {
+        var logPath = Path.Combine(workspace.LogsDirectory, "cancellation.log");
+        await File.WriteAllTextAsync(
+            logPath,
+            "Build cancelled. The active child process was terminated.\n",
+            CancellationToken.None);
+        if (cleanupPolicy == BuildCleanupPolicy.DeleteFailedBuild)
+        {
+            workspace.Delete();
+        }
     }
 
     private static string CreateRawLog(IEnumerable<ProcessResult> results)

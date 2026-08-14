@@ -14,6 +14,8 @@ public sealed class ProcessRunnerTests
 
         Assert.Equal(request.Executable, result.Executable);
         Assert.Equal(request.Arguments, result.Arguments);
+        Assert.Equal(request.WorkingDirectory, result.WorkingDirectory);
+        Assert.Equal(request.Environment, result.Environment);
         Assert.Equal(0, result.ExitCode);
         Assert.Contains("KeyboardStudio process runner", result.StandardOutput, StringComparison.Ordinal);
         Assert.True(result.Duration >= TimeSpan.Zero);

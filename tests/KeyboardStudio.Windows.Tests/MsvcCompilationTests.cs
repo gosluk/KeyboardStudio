@@ -53,6 +53,11 @@ public sealed class MsvcCompilationTests
             Assert.Contains(@"C:\toolchain\cl.exe", result.RawLog, StringComparison.Ordinal);
             Assert.NotNull(result.LogPath);
             Assert.True(File.Exists(result.LogPath));
+            Assert.NotNull(result.WorkspacePath);
+            Assert.False(Directory.Exists(Path.Combine(result.WorkspacePath, "generated")));
+            Assert.False(Directory.Exists(Path.Combine(result.WorkspacePath, "obj")));
+            Assert.True(Directory.Exists(Path.Combine(result.WorkspacePath, "output")));
+            Assert.True(Directory.Exists(Path.Combine(result.WorkspacePath, "logs")));
         }
         finally
         {
@@ -69,7 +74,9 @@ public sealed class MsvcCompilationTests
         var buildRoot = Path.Combine(Path.GetTempPath(), $"KeyboardStudio-{Guid.NewGuid():N}");
         try
         {
-            var runner = new RecordingProcessRunner(exitCode: 2, standardError: "keyboard.c(1): error C1000");
+            var runner = new RecordingProcessRunner(
+                exitCode: 2,
+                standardError: "keyboard.c(1): error C1000: internal compiler error");
             var compiler = new MsvcKeyboardCompiler(
                 new ResolvedEnvironment(BuildTarget.WindowsX64),
                 runner);
@@ -97,6 +104,21 @@ public sealed class MsvcCompilationTests
                 Directory.Delete(buildRoot, recursive: true);
             }
         }
+    }
+
+    [Fact]
+    public async Task CompileAsync_WhenToolchainIsMissing_ReturnsEnvironmentDiagnostic()
+    {
+        var compiler = new MsvcKeyboardCompiler(new MissingEnvironment(), new RecordingProcessRunner());
+
+        var result = await compiler.CompileAsync(
+            new GeneratedArtifact(new GeneratedSource(new Dictionary<string, string>())),
+            new BuildOptions(BuildTarget.WindowsX64, "out"));
+
+        Assert.False(result.Success);
+        var message = Assert.Single(result.Messages);
+        Assert.Equal("ENV001", message.Code);
+        Assert.Contains("MSVC", message.Message, StringComparison.Ordinal);
     }
 
     private sealed class ResolvedEnvironment(BuildTarget target) : IBuildEnvironment
@@ -138,7 +160,23 @@ public sealed class MsvcCompilationTests
                 standardOutput,
                 standardError,
                 exitCode,
-                TimeSpan.FromMilliseconds(1)));
+                TimeSpan.FromMilliseconds(1),
+                request.WorkingDirectory,
+                request.Environment));
         }
+    }
+
+    private sealed class MissingEnvironment : IBuildEnvironment
+    {
+        public bool CanBuild(BuildTarget target) => false;
+
+        public BuildEnvironmentStatus GetStatus(BuildTarget target) =>
+            new(
+                false,
+                "MSVC and the Windows SDK are unavailable.",
+                [new BuildEnvironmentDiagnostic("ENV_MSVC", "MSVC is unavailable.")],
+                []);
+
+        public ResolvedBuildEnvironment? Resolve(BuildTarget target) => null;
     }
 }
