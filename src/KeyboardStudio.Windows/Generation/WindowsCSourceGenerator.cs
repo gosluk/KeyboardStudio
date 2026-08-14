@@ -25,6 +25,7 @@ internal static class WindowsCSourceGenerator
         builder.AppendLine("#endif");
         builder.AppendLine();
         AppendScanCodeTables(builder, layout);
+        AppendKeyNameTables(builder, layout);
         builder.AppendLine("typedef struct KEYBOARD_STUDIO_CHARACTER_ROW {");
         builder.AppendLine("    uint16_t virtual_key;");
         builder.AppendLine("    uint8_t attributes;");
@@ -60,6 +61,34 @@ internal static class WindowsCSourceGenerator
         builder.AppendLine("    return g_keyboard_layout;");
         builder.AppendLine("}");
         return builder.ToString();
+    }
+
+    private static void AppendKeyNameTables(StringBuilder builder, WindowsKeyboardLayout layout)
+    {
+        AppendKeyNameTable(builder, "aKeyNames", layout.KeyNames);
+        AppendKeyNameTable(builder, "aKeyNamesExt", layout.ExtendedKeyNames);
+    }
+
+    private static void AppendKeyNameTable(
+        StringBuilder builder,
+        string tableName,
+        IReadOnlyList<WindowsKeyNameMapping> mappings)
+    {
+        builder.Append("static ALLOC_SECTION_LDATA VSC_LPWSTR ")
+            .Append(tableName)
+            .AppendLine("[] = {");
+        foreach (var mapping in mappings)
+        {
+            builder.Append("    { 0x")
+                .Append(mapping.ScanCode.ToString("X2", CultureInfo.InvariantCulture))
+                .Append(", L\"")
+                .Append(EscapeWideString(mapping.DisplayName))
+                .AppendLine("\" },");
+        }
+
+        builder.AppendLine("    { 0x00, NULL }");
+        builder.AppendLine("};");
+        builder.AppendLine();
     }
 
     private static void AppendScanCodeTables(StringBuilder builder, WindowsKeyboardLayout layout)
@@ -131,4 +160,8 @@ internal static class WindowsCSourceGenerator
     }
 
     private static string EscapeComment(string value) => value.Replace("*/", "* /", StringComparison.Ordinal);
+
+    private static string EscapeWideString(string value) =>
+        value.Replace("\\", "\\\\", StringComparison.Ordinal)
+            .Replace("\"", "\\\"", StringComparison.Ordinal);
 }

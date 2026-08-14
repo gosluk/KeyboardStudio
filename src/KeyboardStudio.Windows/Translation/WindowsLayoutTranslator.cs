@@ -22,6 +22,8 @@ public static class WindowsLayoutTranslator
         var physicalKeys = project.Keyboard.Keys.ToDictionary(key => key.Id, StringComparer.Ordinal);
         var vscToVkMappings = new List<VscToVkMapping>();
         var extendedVscToVkMappings = new List<ExtendedVscToVkMapping>();
+        var keyNames = new List<WindowsKeyNameMapping>();
+        var extendedKeyNames = new List<WindowsKeyNameMapping>();
         var characters = new List<WindowsCharacterMapping>();
 
         foreach (var mapping in project.Layout.Mappings.OrderBy(mapping => mapping.KeyId, StringComparer.Ordinal))
@@ -41,6 +43,19 @@ public static class WindowsLayoutTranslator
                 else
                 {
                     vscToVkMappings.Add(new VscToVkMapping(scanCode, virtualKey));
+                }
+
+                if (WindowsKeyNameMapper.TryGetDisplayName(mapping.LogicalKey, out var displayName))
+                {
+                    var keyName = new WindowsKeyNameMapping(scanCode, displayName);
+                    if (key.Extended)
+                    {
+                        extendedKeyNames.Add(keyName);
+                    }
+                    else
+                    {
+                        keyNames.Add(keyName);
+                    }
                 }
 
                 if (WindowsLogicalKeyClassifier.ProducesCharacters(mapping.LogicalKey) &&
@@ -63,6 +78,8 @@ public static class WindowsLayoutTranslator
         return new WindowsKeyboardLayout(
             vscToVkMappings.OrderBy(mapping => mapping.ScanCode).ThenBy(mapping => mapping.VirtualKey).ToArray(),
             extendedVscToVkMappings.OrderBy(mapping => mapping.ScanCode).ThenBy(mapping => mapping.VirtualKey).ToArray(),
+            keyNames.OrderBy(mapping => mapping.ScanCode).ThenBy(mapping => mapping.DisplayName, StringComparer.Ordinal).ToArray(),
+            extendedKeyNames.OrderBy(mapping => mapping.ScanCode).ThenBy(mapping => mapping.DisplayName, StringComparer.Ordinal).ToArray(),
             WindowsModifierTable.CreateV1(),
             new WindowsCharacterTable(
                 characters.Any(mapping => mapping.AltGr.HasValue || mapping.ShiftAltGr.HasValue) ? 4 : 2,

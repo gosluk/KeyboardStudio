@@ -60,5 +60,8 @@ public sealed class WindowsGeneratorTests
         Assert.Contains("{ 0x4B, 0x0025 | KBDEXT }", source);
         Assert.Contains("static ALLOC_SECTION_LDATA VSC_VK aE1VscToVk[]", source);
         Assert.Contains("{ 0x00, 0x0000 }", source);
+        Assert.Contains("static ALLOC_SECTION_LDATA VSC_LPWSTR aKeyNamesExt[]", source);
+        Assert.Contains("{ 0x4B, L\"Left\" }", source);
+        Assert.DoesNotContain("L\"ArrowLeft\"", source);
     }
 }
