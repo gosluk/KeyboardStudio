@@ -154,6 +154,20 @@ public sealed class KeyboardEditorViewModel : ObservableObject
         return true;
     }
 
+    public void ApplyDiagnostics(IEnumerable<ValidationIssue> issues)
+    {
+        ArgumentNullException.ThrowIfNull(issues);
+
+        var errorKeyIds = issues
+            .Where(issue => issue.Severity == ValidationSeverity.Error && issue.KeyId is not null)
+            .Select(issue => issue.KeyId!)
+            .ToHashSet(StringComparer.Ordinal);
+        foreach (var key in Keys)
+        {
+            key.HasError = errorKeyIds.Contains(key.KeyId);
+        }
+    }
+
     public string SelectedOutput
     {
         get

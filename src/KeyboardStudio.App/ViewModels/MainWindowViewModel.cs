@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using KeyboardStudio.Core;
 using KeyboardStudio.Persistence;
+using KeyboardStudio.Windows;
 
 namespace KeyboardStudio.App;
 
@@ -13,6 +14,8 @@ public sealed class MainWindowViewModel : ObservableObject
     private readonly ProjectDocumentService _documentService;
     private readonly IProjectInteractionService _interactionService;
     private readonly IKeyboardTemplateProvider _templateProvider;
+    private readonly IKeyboardProjectValidator _validator;
+    private DiagnosticsViewModel _diagnostics;
     private KeyboardTemplateDescriptor _selectedTemplate;
     private KeyboardProject _project;
     private KeyboardEditorViewModel _editor;
@@ -35,12 +38,22 @@ public sealed class MainWindowViewModel : ObservableObject
     public MainWindowViewModel(
         IKeyboardTemplateProvider templateProvider,
         IProjectInteractionService interactionService)
+        : this(templateProvider, interactionService, CreateDefaultValidator())
+    {
+    }
+
+    public MainWindowViewModel(
+        IKeyboardTemplateProvider templateProvider,
+        IProjectInteractionService interactionService,
+        IKeyboardProjectValidator validator)
     {
         ArgumentNullException.ThrowIfNull(templateProvider);
         ArgumentNullException.ThrowIfNull(interactionService);
+        ArgumentNullException.ThrowIfNull(validator);
 
         _templateProvider = templateProvider;
         _interactionService = interactionService;
+        _validator = validator;
         Templates = templateProvider.Templates;
         _selectedTemplate = Templates.FirstOrDefault(template => template.Id == DefaultTemplateId)
             ?? Templates[0];
@@ -49,6 +62,8 @@ public sealed class MainWindowViewModel : ObservableObject
             () => CreateProject(_selectedTemplate));
         _project = _documentService.CreateNew();
         _editor = CreateEditor(_project, _selectedTemplate);
+        _diagnostics = CreateDiagnostics(_editor);
+        RefreshDiagnostics();
         Build = new BuildViewModel(new WindowsBuildEnvironment());
         NewCommand = new AsyncRelayCommand(NewDocumentAsync);
         OpenCommand = new AsyncRelayCommand(OpenDocumentAsync);
@@ -85,6 +100,12 @@ public sealed class MainWindowViewModel : ObservableObject
     public IAsyncRelayCommand OpenCommand { get; }
     public IAsyncRelayCommand SaveCommand { get; }
     public IAsyncRelayCommand SaveAsCommand { get; }
+
+    public DiagnosticsViewModel Diagnostics
+    {
+        get => _diagnostics;
+        private set => SetProperty(ref _diagnostics, value);
+    }
 
     public bool IsDirty => _documentService.IsDirty;
 
@@ -204,12 +225,15 @@ public sealed class MainWindowViewModel : ObservableObject
         OnPropertyChanged(nameof(SelectedTemplate));
         Project = project;
         Editor = CreateEditor(project, template);
+        Diagnostics = CreateDiagnostics(Editor);
+        RefreshDiagnostics();
         RefreshDocumentState();
     }
 
     private void DocumentChanged()
     {
         _documentService.MarkDirty();
+        RefreshDiagnostics();
         RefreshDocumentState();
     }
 
@@ -220,6 +244,24 @@ public sealed class MainWindowViewModel : ObservableObject
         OnPropertyChanged(nameof(DocumentStatus));
         OnPropertyChanged(nameof(WindowTitle));
     }
+
+    private static DiagnosticsViewModel CreateDiagnostics(KeyboardEditorViewModel editor) =>
+        new(keyId => editor.SelectKey(keyId));
+
+    private void RefreshDiagnostics()
+    {
+        var result = _validator.Validate(Project);
+        Diagnostics.Refresh(result);
+        Editor.ApplyDiagnostics(result.Issues);
+    }
+
+    private static KeyboardProjectValidator CreateDefaultValidator() =>
+        new KeyboardProjectValidator([
+            new MetadataValidationRule(),
+            new PhysicalKeyboardValidationRule(),
+            new MappingValidationRule(),
+            new WindowsCompatibilityValidationRule()
+        ]);
 
     private Task ShowOperationErrorAsync(
         string title,

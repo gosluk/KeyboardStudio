@@ -11,7 +11,7 @@ The repository now contains a buildable source skeleton. The implementation is i
 5. Generate native Windows keyboard-layout source.
 6. Compile the generated source into a Windows keyboard-layout DLL.
 
-## Current editor workflow
+## Current editor and diagnostics workflow
 
 The Phase 3 editor supports one selected physical key at a time and displays its physical ID,
 scan code, logical-key assignment, and all four modifier outputs together. Choose the active
@@ -29,6 +29,15 @@ Projects use the `.kbdproj` format. The File menu and shortcuts provide:
 
 Mapping changes mark the document as dirty. New and Open prompt to save or discard unsaved changes
 before replacing the current document.
+
+The Phase 4 validation pipeline composes platform-neutral metadata, physical-key, and mapping rules
+with a Windows compatibility rule at the application boundary. The diagnostics panel displays
+Info, Warning, and Error results using stable codes. Selecting a key-linked diagnostic selects and
+highlights the affected physical key. Lightweight validation reruns after successful edits; only
+errors block build orchestration.
+
+See [docs/DIAGNOSTICS.md](docs/DIAGNOSTICS.md) for the code catalog, severity behavior, compatibility
+policy, and continuous-validation boundary.
 
 ## Architecture
 
@@ -66,11 +75,13 @@ src/
 tests/
   KeyboardStudio.Core.Tests/
   KeyboardStudio.Windows.Tests/
+  KeyboardStudio.App.Tests/
 
 templates/
 
 docs/
   ARCHITECTURE.md
+  DIAGNOSTICS.md
   IMPLEMENTATION-PLAN.md
   PROJECT-FORMAT.md
   WINDOWS-BUILD.md
