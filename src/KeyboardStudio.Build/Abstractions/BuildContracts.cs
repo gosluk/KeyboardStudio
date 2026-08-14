@@ -44,27 +44,3 @@ public interface INativeCompiler
         BuildTarget target,
         CancellationToken cancellationToken = default);
 }
-
-public sealed class WindowsBuildEnvironment : IBuildEnvironment
-{
-    public bool CanBuild(BuildTarget target) => OperatingSystem.IsWindows();
-
-    public BuildEnvironmentStatus GetStatus(BuildTarget target) => OperatingSystem.IsWindows()
-        ? new BuildEnvironmentStatus(true, "Windows host detected. MSVC/WDK discovery will be implemented next.")
-        : new BuildEnvironmentStatus(false, "Native Windows keyboard DLL compilation requires a Windows build host with MSVC/WDK.");
-}
-
-public sealed class MsvcKeyboardCompiler : INativeCompiler
-{
-    public Task<CompilationResult> CompileAsync(
-        GeneratedSource source,
-        BuildTarget target,
-        CancellationToken cancellationToken = default)
-    {
-        var result = new CompilationResult(
-            false,
-            null,
-            [new CompilerMessage("MSVC000", "MSVC/WDK invocation is intentionally not implemented in the source skeleton yet.")]);
-        return Task.FromResult(result);
-    }
-}
