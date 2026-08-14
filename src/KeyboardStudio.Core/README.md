@@ -10,7 +10,8 @@ Responsibilities:
 - keyboard layout and key mapping models;
 - modifier/output abstractions;
 - `KeyboardEditor` mutation service;
-- project validation contracts and rules;
+- composable metadata, physical-key, and mapping validation rules;
+- stable Core diagnostic codes and severity-aware `ValidationResult`;
 - build/persistence abstractions shared by outer layers.
 
 This project must not reference Avalonia, Windows APIs, WDK/MSVC types, or platform-specific UI services.

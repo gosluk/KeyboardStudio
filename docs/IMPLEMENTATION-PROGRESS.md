@@ -2,10 +2,10 @@
 
 This file tracks execution of [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
 
-- Current work branch: `agent/phase-3-editor-lifecycle`
+- Current work branch: `agent/phase-4-validation-diagnostics`
 - Last updated: 2026-08-14
-- Current phase: Phase 4 — Validation and diagnostics
-- Next work item: **P4.1 — Validation pipeline**
+- Current phase: Phase 5 — Windows semantic translation
+- Next work item: **P5.1 — Define Windows virtual-key model**
 
 Legend: `[x]` complete, `[ ]` not yet complete.
 
@@ -55,11 +55,13 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 
 ## Phase 4 — Validation and diagnostics
 
-- [ ] **P4.1** Validation pipeline
-- [ ] **P4.2** Stable diagnostic codes
-- [ ] **P4.3** Severity model
-- [ ] **P4.4** UI diagnostics
-- [ ] **P4.5** Continuous lightweight validation
+- [x] **P4.1** Validation pipeline
+- [x] **P4.2** Stable diagnostic codes
+- [x] **P4.3** Severity model
+- [x] **P4.4** UI diagnostics
+- [x] **P4.5** Continuous lightweight validation
+
+**Phase status:** 5/5 work items complete. Phase complete.
 
 ## Phase 5 — Windows semantic translation
 
@@ -128,8 +130,8 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 
 ## Progress summary
 
-- Completed work items: **24**
+- Completed work items: **29**
 - Total planned work items: **73**
-- Overall checklist progress: **24/73**
+- Overall checklist progress: **29/73**
 
 The checklist records work-item completion only. Phase-level acceptance criteria and test gates in `IMPLEMENTATION-PLAN.md` still apply before a phase is considered complete.
