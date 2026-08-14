@@ -46,6 +46,7 @@ public static class WindowsLayoutTranslator
         return new WindowsKeyboardLayout(
             vscToVkMappings.OrderBy(mapping => mapping.ScanCode).ThenBy(mapping => mapping.VirtualKey).ToArray(),
             extendedVscToVkMappings.OrderBy(mapping => mapping.ScanCode).ThenBy(mapping => mapping.VirtualKey).ToArray(),
+            WindowsModifierTable.CreateV1(),
             entries);
     }
 }
