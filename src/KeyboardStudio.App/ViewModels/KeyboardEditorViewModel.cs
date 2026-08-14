@@ -74,6 +74,21 @@ public sealed class KeyboardEditorViewModel : ObservableObject
         }
     }
 
+    public bool SelectKey(string keyId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(keyId);
+
+        var key = Keys.FirstOrDefault(candidate =>
+            string.Equals(candidate.KeyId, keyId, StringComparison.Ordinal));
+        if (key is null)
+        {
+            return false;
+        }
+
+        SelectedKey = key;
+        return true;
+    }
+
     public string SelectedOutput
     {
         get
