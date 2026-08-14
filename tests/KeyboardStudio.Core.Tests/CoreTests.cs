@@ -7,7 +7,7 @@ namespace KeyboardStudio.Core.Tests;
 public sealed class KeyboardEditorTests
 {
     [Fact]
-    public void MapCharacter_UpdatesSelectedLayer()
+    public void MapCharacter_WhenAltGrCharacterIsAssigned_UpdatesSelectedLayer()
     {
         var project = DemoProjectFactory.Create();
         var editor = new KeyboardEditor(project);
@@ -20,7 +20,7 @@ public sealed class KeyboardEditorTests
     }
 
     [Fact]
-    public void Validator_ReportsDuplicatePhysicalKeyIds()
+    public void Validate_WhenPhysicalKeyIdIsDuplicated_ReportsKey001Error()
     {
         var project = DemoProjectFactory.Create();
         project.Keyboard.Keys.Add(new PhysicalKey
@@ -35,7 +35,7 @@ public sealed class KeyboardEditorTests
     }
 
     [Fact]
-    public async Task JsonStore_RoundTripsPolymorphicOutput()
+    public async Task SaveAndLoad_WhenCharacterOutputExists_PreservesPolymorphicOutput()
     {
         var project = DemoProjectFactory.Create();
         new KeyboardEditor(project).MapCharacter("KeyA", ModifierLayer.AltGr, "ą");

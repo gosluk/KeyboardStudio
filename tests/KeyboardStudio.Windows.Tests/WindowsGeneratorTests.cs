@@ -8,7 +8,7 @@ namespace KeyboardStudio.Windows.Tests;
 public sealed class WindowsGeneratorTests
 {
     [Fact]
-    public async Task Generator_ProducesDeterministicUnicodeMappingSource()
+    public async Task Generate_WhenInputIsIdentical_ProducesIdenticalUnicodeMappingSource()
     {
         var project = DemoProjectFactory.Create();
         new KeyboardEditor(project).MapCharacter("KeyA", ModifierLayer.AltGr, "ą");

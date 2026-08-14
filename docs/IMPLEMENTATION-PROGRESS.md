@@ -4,8 +4,8 @@ This file tracks execution of [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md)
 
 - Branch: `architecture`
 - Last updated: 2026-08-14
-- Current phase: Phase 0 — Baseline hardening
-- Next work item: **P0.4 — Establish test naming conventions**
+- Current phase: Phase 1 — Complete project model and persistence
+- Next work item: **P1.1 — Finalize project metadata**
 
 Legend: `[x]` complete, `[ ]` not yet complete.
 
@@ -14,9 +14,9 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 - [x] **P0.1** Normalize namespaces and file organization
 - [x] **P0.2** Strengthen compiler settings
 - [x] **P0.3** Improve CI matrix structure
-- [ ] **P0.4** Establish test naming conventions
+- [x] **P0.4** Establish test naming conventions
 
-**Phase status:** 3/4 work items complete.
+**Phase status:** 4/4 work items complete. Phase complete.
 
 ## Phase 1 — Complete project model and persistence
 
@@ -122,8 +122,8 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 
 ## Progress summary
 
-- Completed work items: **3**
+- Completed work items: **4**
 - Total planned work items: **73**
-- Overall checklist progress: **3/73**
+- Overall checklist progress: **4/73**
 
 The checklist records work-item completion only. Phase-level acceptance criteria and test gates in `IMPLEMENTATION-PLAN.md` still apply before a phase is considered complete.
