@@ -194,6 +194,7 @@ public sealed class MsvcCompilationTests
                 target,
                 target == BuildTarget.WindowsX64 ? "Amd64" : "Arm64",
                 true,
+                true,
                 []));
     }
 }

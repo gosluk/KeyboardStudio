@@ -164,7 +164,11 @@ The initial native targets are x64 and ARM64. For each build, `MsvcKeyboardCompi
 2. invokes `rc.exe` for deterministic version metadata in `keyboard.rc`;
 3. invokes `link.exe /DLL /NOENTRY` with `keyboard.def`, exporting `KbdLayerDescriptor`;
 4. writes the layout-ID-derived DLL into `output/`;
-5. parses the resulting PE and requires the requested x64/ARM64 machine and DLL characteristic.
+5. parses the resulting PE and requires the requested x64/ARM64 machine, DLL characteristic, and an
+   exact named export for `KbdLayerDescriptor`.
+
+PE and export-directory validation is implemented in managed code, so structural verification does
+not depend on `dumpbin` and can be unit-tested on non-Windows hosts.
 
 Processes use `ProcessStartInfo.ArgumentList`, not a composed shell command. Standard output,
 standard error, exit code, elapsed duration, executable, arguments, environment, and working

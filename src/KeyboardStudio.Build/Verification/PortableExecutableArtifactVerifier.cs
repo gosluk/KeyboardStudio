@@ -5,6 +5,8 @@ namespace KeyboardStudio.Build;
 
 public sealed class PortableExecutableArtifactVerifier : IArtifactVerifier
 {
+    public const string RequiredExportName = "KbdLayerDescriptor";
+
     public Task<ArtifactVerificationResult> VerifyAsync(
         string artifactPath,
         BuildTarget target,
@@ -18,6 +20,7 @@ public sealed class PortableExecutableArtifactVerifier : IArtifactVerifier
             return Task.FromResult(Failure(
                 target,
                 null,
+                false,
                 false,
                 "PE_FILE",
                 $"The linked artifact does not exist: {artifactPath}"));
@@ -40,6 +43,7 @@ public sealed class PortableExecutableArtifactVerifier : IArtifactVerifier
                     target,
                     headers.CoffHeader.Machine.ToString(),
                     false,
+                    false,
                     "PE_HEADER",
                     "The linked artifact does not contain a PE optional header."));
             }
@@ -51,6 +55,7 @@ public sealed class PortableExecutableArtifactVerifier : IArtifactVerifier
                 return Task.FromResult(Failure(
                     target,
                     actualMachine.ToString(),
+                    false,
                     false,
                     "PE_TARGET",
                     $"PE verification does not support build target '{target}'."));
@@ -72,11 +77,22 @@ public sealed class PortableExecutableArtifactVerifier : IArtifactVerifier
                     "The PE image does not have the DLL characteristic."));
             }
 
+            var expectedExportFound = PortableExecutableExportReader
+                .ReadNames(peReader)
+                .Contains(RequiredExportName);
+            if (!expectedExportFound)
+            {
+                messages.Add(new CompilerMessage(
+                    "PE_EXPORT",
+                    $"The PE image does not export '{RequiredExportName}' under the expected name."));
+            }
+
             return Task.FromResult(new ArtifactVerificationResult(
                 messages.Count == 0,
                 target,
                 actualMachine.ToString(),
                 isDll,
+                expectedExportFound,
                 messages));
         }
         catch (Exception exception) when (
@@ -85,6 +101,7 @@ public sealed class PortableExecutableArtifactVerifier : IArtifactVerifier
             return Task.FromResult(Failure(
                 target,
                 null,
+                false,
                 false,
                 "PE_INVALID",
                 $"The linked artifact is not a readable PE image: {exception.Message}"));
@@ -102,7 +119,14 @@ public sealed class PortableExecutableArtifactVerifier : IArtifactVerifier
         BuildTarget target,
         string? machine,
         bool isDll,
+        bool expectedExportFound,
         string code,
         string message) =>
-        new(false, target, machine, isDll, [new CompilerMessage(code, message)]);
+        new(
+            false,
+            target,
+            machine,
+            isDll,
+            expectedExportFound,
+            [new CompilerMessage(code, message)]);
 }
