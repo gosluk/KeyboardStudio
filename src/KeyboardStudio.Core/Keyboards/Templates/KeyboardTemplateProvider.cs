@@ -19,7 +19,7 @@ public sealed class KeyboardTemplateProvider : IKeyboardTemplateProvider
     };
 
     private readonly IKeyboardTemplateContentSource _contentSource;
-    private readonly IReadOnlyDictionary<string, Lazy<CachedTemplate>> _templatesById;
+    private readonly Dictionary<string, Lazy<CachedTemplate>> _templatesById;
 
     public KeyboardTemplateProvider()
         : this(new EmbeddedKeyboardTemplateContentSource(), BuiltInTemplates)
