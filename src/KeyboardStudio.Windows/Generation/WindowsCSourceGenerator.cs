@@ -12,8 +12,19 @@ internal static class WindowsCSourceGenerator
         builder.AppendLine("/* Skeleton source: real KBDTABLES generation will replace this table. */");
         builder.Append("/* Layout ID: ").Append(EscapeComment(metadata.LayoutId)).AppendLine(" */");
         builder.Append("/* Layout name: ").Append(EscapeComment(metadata.LayoutName)).AppendLine(" */");
+        builder.AppendLine("#include <windows.h>");
         builder.AppendLine("#include <stdint.h>");
+        builder.AppendLine("#include \"keyboard.h\"");
         builder.AppendLine();
+        builder.AppendLine("#if defined(_M_IA64)");
+        builder.AppendLine("#pragma section(\".data\")");
+        builder.AppendLine("#define ALLOC_SECTION_LDATA __declspec(allocate(\".data\"))");
+        builder.AppendLine("#else");
+        builder.AppendLine("#pragma data_seg(\".data\")");
+        builder.AppendLine("#define ALLOC_SECTION_LDATA");
+        builder.AppendLine("#endif");
+        builder.AppendLine();
+        AppendScanCodeTables(builder, layout);
         builder.AppendLine("typedef struct KEYBOARD_STUDIO_CHARACTER_ROW {");
         builder.AppendLine("    uint16_t virtual_key;");
         builder.AppendLine("    uint8_t attributes;");
@@ -49,6 +60,68 @@ internal static class WindowsCSourceGenerator
         builder.AppendLine("    return g_keyboard_layout;");
         builder.AppendLine("}");
         return builder.ToString();
+    }
+
+    private static void AppendScanCodeTables(StringBuilder builder, WindowsKeyboardLayout layout)
+    {
+        var primaryByScanCode = layout.VscToVkMappings.ToDictionary(mapping => mapping.ScanCode);
+        var maximumScanCode = primaryByScanCode.Count == 0 ? 0 : primaryByScanCode.Keys.Max();
+
+        builder.AppendLine("static ALLOC_SECTION_LDATA USHORT ausVscToVk[] = {");
+        for (var scanCode = 0; scanCode <= maximumScanCode; scanCode++)
+        {
+            builder.Append("    ");
+            if (primaryByScanCode.TryGetValue((byte)scanCode, out var mapping))
+            {
+                AppendVirtualKey(builder, mapping.VirtualKey, extended: false);
+            }
+            else
+            {
+                builder.Append("0x0000");
+            }
+
+            builder.Append(" /* 0x")
+                .Append(scanCode.ToString("X2", CultureInfo.InvariantCulture))
+                .AppendLine(" */,");
+        }
+
+        builder.AppendLine("};");
+        builder.AppendLine();
+
+        builder.AppendLine("static ALLOC_SECTION_LDATA VSC_VK aE0VscToVk[] = {");
+        foreach (var mapping in layout.ExtendedVscToVkMappings)
+        {
+            builder.Append("    { 0x")
+                .Append(mapping.ScanCode.ToString("X2", CultureInfo.InvariantCulture))
+                .Append(", ");
+            AppendVirtualKey(builder, mapping.VirtualKey, extended: true);
+            builder.AppendLine(" },");
+        }
+
+        builder.AppendLine("    { 0x00, 0x0000 }");
+        builder.AppendLine("};");
+        builder.AppendLine();
+        builder.AppendLine("static ALLOC_SECTION_LDATA VSC_VK aE1VscToVk[] = {");
+        builder.AppendLine("    { 0x00, 0x0000 }");
+        builder.AppendLine("};");
+        builder.AppendLine();
+    }
+
+    private static void AppendVirtualKey(StringBuilder builder, WindowsVirtualKey virtualKey, bool extended)
+    {
+        builder.Append("0x")
+            .Append(((ushort)virtualKey).ToString("X4", CultureInfo.InvariantCulture));
+
+        if (extended || virtualKey == WindowsVirtualKey.RightShift)
+        {
+            builder.Append(" | KBDEXT");
+        }
+
+        if (virtualKey is >= WindowsVirtualKey.Numpad0 and <= WindowsVirtualKey.Numpad9 ||
+            virtualKey == WindowsVirtualKey.NumpadDecimal)
+        {
+            builder.Append(" | KBDNUMPAD | KBDSPECIAL");
+        }
     }
 
     private static void AppendScalar(StringBuilder builder, char? value)

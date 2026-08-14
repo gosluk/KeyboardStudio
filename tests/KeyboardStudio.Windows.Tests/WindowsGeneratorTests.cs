@@ -33,4 +33,32 @@ public sealed class WindowsGeneratorTests
         Assert.Contains("0x00000105", firstSource);
         Assert.Contains("KbdLayerDescriptor", firstSource);
     }
+
+    [Fact]
+    public async Task Generate_WhenLayoutHasNormalAndExtendedKeys_EmitsNativeScanCodeTables()
+    {
+        var project = DemoProjectFactory.Create();
+        project.Keyboard.Keys.Add(new PhysicalKey
+        {
+            Id = "ArrowLeft",
+            ScanCode = 0x4B,
+            Extended = true
+        });
+        project.Layout.Mappings.Add(new KeyMapping
+        {
+            KeyId = "ArrowLeft",
+            LogicalKey = LogicalKey.ArrowLeft
+        });
+
+        var artifact = await new WindowsArtifactGenerator(
+                new WindowsLayoutMetadata("kbd-demo", "Demo layout"))
+            .GenerateAsync(project, new BuildOptions(BuildTarget.WindowsX64, "out"));
+        var source = artifact.Source.Files["keyboard.c"];
+
+        Assert.Contains("static ALLOC_SECTION_LDATA USHORT ausVscToVk[]", source);
+        Assert.Contains("0x0041 /* 0x1E */", source);
+        Assert.Contains("{ 0x4B, 0x0025 | KBDEXT }", source);
+        Assert.Contains("static ALLOC_SECTION_LDATA VSC_VK aE1VscToVk[]", source);
+        Assert.Contains("{ 0x00, 0x0000 }", source);
+    }
 }
