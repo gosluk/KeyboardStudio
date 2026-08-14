@@ -30,7 +30,7 @@ public sealed class WindowsGeneratorTests
         Assert.Equal(firstSource, secondSource);
         Assert.Contains("Layout ID: kbd-demo", firstSource);
         Assert.Contains("Layout name: Demo layout", firstSource);
-        Assert.Contains("0x00000105", firstSource);
+        Assert.Contains("0x0105", firstSource);
         Assert.Contains("KbdLayerDescriptor", firstSource);
     }
 
@@ -82,5 +82,23 @@ public sealed class WindowsGeneratorTests
         Assert.Contains("2 /* Control, Alt */", source);
         Assert.Contains("3 /* Shift, Control, Alt */", source);
         Assert.Contains("#define KEYBOARD_STUDIO_LOCALE_FLAGS KLLF_ALTGR", source);
+    }
+
+    [Fact]
+    public async Task Generate_WhenAltGrIsUsed_EmitsFourColumnNativeCharacterTable()
+    {
+        var project = DemoProjectFactory.Create();
+        new KeyboardEditor(project).MapCharacter("KeyA", ModifierLayer.AltGr, "ą");
+
+        var artifact = await new WindowsArtifactGenerator(
+                new WindowsLayoutMetadata("kbd-demo", "Demo layout"))
+            .GenerateAsync(project, new BuildOptions(BuildTarget.WindowsX64, "out"));
+        var source = artifact.Source.Files["keyboard.c"];
+
+        Assert.Contains("static ALLOC_SECTION_LDATA VK_TO_WCHARS4 aVkToWch4[]", source);
+        Assert.Contains("{ 0x0041, CAPLOK, 0x0061, 0x0041, 0x0105, WCH_NONE }", source);
+        Assert.Contains("{ 0x0000, 0, 0x0000, 0x0000, 0x0000, 0x0000 }", source);
+        Assert.Contains("{ (PVK_TO_WCHARS1)aVkToWch4, 4, sizeof(aVkToWch4[0]) }", source);
+        Assert.Contains("{ NULL, 0, 0 }", source);
     }
 }
