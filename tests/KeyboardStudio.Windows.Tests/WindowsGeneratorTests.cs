@@ -19,6 +19,12 @@ public sealed class WindowsGeneratorTests
         var first = await generator.GenerateAsync(project, options);
         var second = await generator.GenerateAsync(project, options);
 
+        Assert.Equal(
+            ["keyboard.c", "keyboard.def", "keyboard.h", "keyboard.rc"],
+            first.Source.Files.Keys);
+        Assert.Equal(first.Source.Files.Keys, second.Source.Files.Keys);
+        Assert.All(first.Source.Files, file => Assert.Equal(file.Value, second.Source.Files[file.Key]));
+
         var firstSource = first.Source.Files["keyboard.c"];
         var secondSource = second.Source.Files["keyboard.c"];
         Assert.Equal(firstSource, secondSource);

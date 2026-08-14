@@ -22,11 +22,7 @@ public sealed class WindowsArtifactGenerator : IArtifactGenerator
         cancellationToken.ThrowIfCancellationRequested();
 
         var model = WindowsLayoutTranslator.Translate(project);
-        var source = WindowsCSourceGenerator.Generate(model, _metadata);
-        GeneratedArtifact artifact = new(new GeneratedSource(new Dictionary<string, string>
-        {
-            ["keyboard.c"] = source
-        }));
+        GeneratedArtifact artifact = new(WindowsNativeSourceGenerator.Generate(model, _metadata));
 
         return Task.FromResult(artifact);
     }
