@@ -3,4 +3,6 @@ namespace KeyboardStudio.Build;
 public sealed record CompilationResult(
     bool Success,
     string? ArtifactPath,
-    IReadOnlyList<CompilerMessage> Messages);
+    IReadOnlyList<CompilerMessage> Messages,
+    string RawLog = "",
+    string? LogPath = null);

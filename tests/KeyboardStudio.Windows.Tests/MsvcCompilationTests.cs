@@ -50,6 +50,9 @@ public sealed class MsvcCompilationTests
                 linkRequest.Arguments);
             Assert.Contains(linkRequest.Arguments, argument => argument.EndsWith("keyboard.def", StringComparison.Ordinal));
             Assert.EndsWith("kbd-demo.dll", result.ArtifactPath, StringComparison.Ordinal);
+            Assert.Contains(@"C:\toolchain\cl.exe", result.RawLog, StringComparison.Ordinal);
+            Assert.NotNull(result.LogPath);
+            Assert.True(File.Exists(result.LogPath));
         }
         finally
         {
@@ -81,7 +84,11 @@ public sealed class MsvcCompilationTests
                 new BuildOptions(BuildTarget.WindowsX64, buildRoot));
 
             Assert.False(result.Success);
-            Assert.Contains(result.Messages, message => message.Code == "MSVC_CL");
+            var diagnostic = Assert.Single(result.Messages);
+            Assert.Equal("C1000", diagnostic.Code);
+            Assert.Equal("keyboard.c", diagnostic.FilePath);
+            Assert.NotEmpty(result.RawLog);
+            Assert.True(File.Exists(result.LogPath));
         }
         finally
         {

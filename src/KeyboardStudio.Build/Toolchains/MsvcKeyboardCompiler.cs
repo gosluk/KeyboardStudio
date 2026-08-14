@@ -1,3 +1,6 @@
+using System.Globalization;
+using System.Text;
+
 namespace KeyboardStudio.Build;
 
 public sealed class MsvcKeyboardCompiler : INativeCompiler
@@ -55,42 +58,61 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
 
         var workspace = BuildWorkspace.Create(options.OutputDirectory);
         await workspace.WriteGeneratedSourceAsync(artifact.Source, cancellationToken);
+        var processResults = new List<ProcessResult>();
         var objectPath = Path.Combine(workspace.ObjectDirectory, "keyboard.obj");
         var compileRequest = CreateCompileRequest(toolchain, workspace, objectPath);
         var compileResult = await _processRunner.RunAsync(compileRequest, cancellationToken);
+        processResults.Add(compileResult);
         if (compileResult.ExitCode != 0)
         {
-            return new CompilationResult(
+            return await CompleteAsync(
                 false,
                 null,
-                [new CompilerMessage("MSVC_CL", SelectToolOutput(compileResult))]);
+                workspace,
+                processResults,
+                "MSVC_CL",
+                cancellationToken);
         }
 
         var resourcePath = Path.Combine(workspace.ObjectDirectory, "keyboard.res");
         var resourceResult = await _processRunner.RunAsync(
             CreateResourceRequest(toolchain, workspace, resourcePath),
             cancellationToken);
+        processResults.Add(resourceResult);
         if (resourceResult.ExitCode != 0)
         {
-            return new CompilationResult(
+            return await CompleteAsync(
                 false,
                 null,
-                [new CompilerMessage("MSVC_RC", SelectToolOutput(resourceResult))]);
+                workspace,
+                processResults,
+                "MSVC_RC",
+                cancellationToken);
         }
 
         var outputPath = Path.Combine(workspace.OutputDirectory, artifact.OutputFileName);
         var linkResult = await _processRunner.RunAsync(
             CreateLinkRequest(toolchain, workspace, objectPath, resourcePath, outputPath),
             cancellationToken);
+        processResults.Add(linkResult);
         if (linkResult.ExitCode != 0)
         {
-            return new CompilationResult(
+            return await CompleteAsync(
                 false,
                 null,
-                [new CompilerMessage("MSVC_LINK", SelectToolOutput(linkResult))]);
+                workspace,
+                processResults,
+                "MSVC_LINK",
+                cancellationToken);
         }
 
-        return new CompilationResult(true, outputPath, []);
+        return await CompleteAsync(
+            true,
+            outputPath,
+            workspace,
+            processResults,
+            null,
+            cancellationToken);
     }
 
     private static ProcessRequest CreateCompileRequest(
@@ -201,4 +223,67 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
             ? $"{Path.GetFileName(result.Executable)} exited with code {result.ExitCode}."
             : output.Trim();
     }
+
+    private static async Task<CompilationResult> CompleteAsync(
+        bool success,
+        string? artifactPath,
+        BuildWorkspace workspace,
+        IReadOnlyList<ProcessResult> processResults,
+        string? fallbackCode,
+        CancellationToken cancellationToken)
+    {
+        var messages = MsvcCompilerMessageParser.Parse(processResults.ToArray()).ToList();
+        if (!success &&
+            fallbackCode is not null &&
+            !messages.Any(message => message.Severity == CompilerMessageSeverity.Error))
+        {
+            messages.Add(new CompilerMessage(fallbackCode, SelectToolOutput(processResults[^1])));
+        }
+
+        var rawLog = CreateRawLog(processResults);
+        var logPath = Path.Combine(workspace.LogsDirectory, "build.log");
+        await File.WriteAllTextAsync(logPath, rawLog, cancellationToken);
+        return new CompilationResult(success, artifactPath, messages, rawLog, logPath);
+    }
+
+    private static string CreateRawLog(IEnumerable<ProcessResult> results)
+    {
+        var builder = new StringBuilder();
+        foreach (var result in results)
+        {
+            builder.Append("$ ")
+                .Append(result.Executable);
+            foreach (var argument in result.Arguments)
+            {
+                builder.Append(' ')
+                    .Append(FormatArgument(argument));
+            }
+
+            builder.AppendLine();
+            if (!string.IsNullOrEmpty(result.StandardOutput))
+            {
+                builder.AppendLine("[stdout]")
+                    .AppendLine(result.StandardOutput.TrimEnd());
+            }
+
+            if (!string.IsNullOrEmpty(result.StandardError))
+            {
+                builder.AppendLine("[stderr]")
+                    .AppendLine(result.StandardError.TrimEnd());
+            }
+
+            builder.Append("[exit ")
+                .Append(result.ExitCode.ToString(CultureInfo.InvariantCulture))
+                .Append(", duration ")
+                .Append(result.Duration.TotalMilliseconds.ToString("F0", CultureInfo.InvariantCulture))
+                .AppendLine(" ms]");
+        }
+
+        return builder.ToString();
+    }
+
+    private static string FormatArgument(string argument) =>
+        argument.Any(char.IsWhiteSpace)
+            ? $"\"{argument.Replace("\"", "\\\"", StringComparison.Ordinal)}\""
+            : argument;
 }
