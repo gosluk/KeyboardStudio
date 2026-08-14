@@ -20,22 +20,36 @@ public sealed class MsvcCompilationTests
             var artifact = new GeneratedArtifact(new GeneratedSource(new Dictionary<string, string>
             {
                 ["keyboard.c"] = "/* source */\n",
-                ["keyboard.h"] = "#pragma once\n"
-            }));
+                ["keyboard.def"] = "EXPORTS\n",
+                ["keyboard.h"] = "#pragma once\n",
+                ["keyboard.rc"] = "1 VERSIONINFO\n"
+            }), "kbd-demo.dll");
 
             var result = await compiler.CompileAsync(
                 artifact,
                 new BuildOptions(target, buildRoot));
 
             Assert.True(result.Success);
-            var request = Assert.Single(runner.Requests);
-            Assert.Equal(@"C:\toolchain\cl.exe", request.Executable);
-            Assert.Contains("/c", request.Arguments);
-            Assert.Contains(architectureDefine, request.Arguments);
-            Assert.Contains(request.Arguments, argument => argument.StartsWith("/Fo", StringComparison.Ordinal));
-            Assert.Contains(@"/IC:\toolchain\include", request.Arguments);
-            Assert.Equal(@"C:\toolchain\include", request.Environment["INCLUDE"]);
-            Assert.EndsWith("keyboard.obj", result.ArtifactPath, StringComparison.Ordinal);
+            Assert.Equal(3, runner.Requests.Count);
+            var compileRequest = runner.Requests[0];
+            Assert.Equal(@"C:\toolchain\cl.exe", compileRequest.Executable);
+            Assert.Contains("/c", compileRequest.Arguments);
+            Assert.Contains(architectureDefine, compileRequest.Arguments);
+            Assert.Contains(compileRequest.Arguments, argument => argument.StartsWith("/Fo", StringComparison.Ordinal));
+            Assert.Contains(@"/IC:\toolchain\include", compileRequest.Arguments);
+            Assert.Equal(@"C:\toolchain\include", compileRequest.Environment["INCLUDE"]);
+
+            var resourceRequest = runner.Requests[1];
+            Assert.Equal(@"C:\sdk\rc.exe", resourceRequest.Executable);
+            Assert.EndsWith("keyboard.rc", resourceRequest.Arguments[^1], StringComparison.Ordinal);
+
+            var linkRequest = runner.Requests[2];
+            Assert.Equal(@"C:\toolchain\link.exe", linkRequest.Executable);
+            Assert.Contains(
+                target == BuildTarget.WindowsX64 ? "/MACHINE:X64" : "/MACHINE:ARM64",
+                linkRequest.Arguments);
+            Assert.Contains(linkRequest.Arguments, argument => argument.EndsWith("keyboard.def", StringComparison.Ordinal));
+            Assert.EndsWith("kbd-demo.dll", result.ArtifactPath, StringComparison.Ordinal);
         }
         finally
         {
@@ -60,7 +74,9 @@ public sealed class MsvcCompilationTests
             var result = await compiler.CompileAsync(
                 new GeneratedArtifact(new GeneratedSource(new Dictionary<string, string>
                 {
-                    ["keyboard.c"] = "invalid"
+                    ["keyboard.c"] = "invalid",
+                    ["keyboard.def"] = "EXPORTS\n",
+                    ["keyboard.rc"] = "1 VERSIONINFO\n"
                 })),
                 new BuildOptions(BuildTarget.WindowsX64, buildRoot));
 

@@ -22,7 +22,9 @@ public sealed class WindowsArtifactGenerator : IArtifactGenerator
         cancellationToken.ThrowIfCancellationRequested();
 
         var model = WindowsLayoutTranslator.Translate(project);
-        GeneratedArtifact artifact = new(WindowsNativeSourceGenerator.Generate(model, _metadata));
+        GeneratedArtifact artifact = new(
+            WindowsNativeSourceGenerator.Generate(model, _metadata),
+            WindowsNativeSourceGenerator.GetOutputFileName(_metadata));
 
         return Task.FromResult(artifact);
     }

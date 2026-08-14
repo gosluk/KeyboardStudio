@@ -6,6 +6,12 @@ namespace KeyboardStudio.Windows;
 
 internal static class WindowsNativeSourceGenerator
 {
+    public static string GetOutputFileName(WindowsLayoutMetadata metadata)
+    {
+        ArgumentNullException.ThrowIfNull(metadata);
+        return $"{ToFileStem(metadata.LayoutId)}.dll";
+    }
+
     public static GeneratedSource Generate(WindowsKeyboardLayout layout, WindowsLayoutMetadata metadata)
     {
         ArgumentNullException.ThrowIfNull(layout);
@@ -35,7 +41,7 @@ internal static class WindowsNativeSourceGenerator
         var versionString = string.Join(
             ".",
             version.Select(part => part.ToString(CultureInfo.InvariantCulture)));
-        var fileName = $"{ToFileStem(metadata.LayoutId)}.dll";
+        var fileName = GetOutputFileName(metadata);
         var builder = new StringBuilder();
         builder.AppendLine("#include <windows.h>");
         builder.AppendLine();
