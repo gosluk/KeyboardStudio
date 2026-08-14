@@ -2,10 +2,10 @@
 
 This file tracks execution of [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
 
-- Current work branch: `agent/p1.4-output-encoding`
+- Current work branch: `agent/p1.5-file-service`
 - Last updated: 2026-08-14
 - Current phase: Phase 1 — Complete project model and persistence
-- Next work item: **P1.5 — File service abstraction for the application**
+- Next work item: **P1.6 — Project migrations**
 
 Legend: `[x]` complete, `[ ]` not yet complete.
 
@@ -24,10 +24,10 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 - [x] **P1.2** Formalize schema versioning
 - [x] **P1.3** Introduce persistence DTOs
 - [x] **P1.4** Define polymorphic output encoding
-- [ ] **P1.5** File service abstraction for the application
+- [x] **P1.5** File service abstraction for the application
 - [ ] **P1.6** Project migrations
 
-**Phase status:** 4/6 work items complete.
+**Phase status:** 5/6 work items complete.
 
 ## Phase 2 — Physical keyboard templates and geometry
 
@@ -124,8 +124,8 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 
 ## Progress summary
 
-- Completed work items: **8**
+- Completed work items: **9**
 - Total planned work items: **73**
-- Overall checklist progress: **8/73**
+- Overall checklist progress: **9/73**
 
 The checklist records work-item completion only. Phase-level acceptance criteria and test gates in `IMPLEMENTATION-PLAN.md` still apply before a phase is considered complete.

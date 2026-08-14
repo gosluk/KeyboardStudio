@@ -45,3 +45,9 @@ Persistence DTOs must not solve target metadata by making `KeyboardStudio.Persis
 `JsonKeyboardProjectStore` serializes persistence DTOs and maps them explicitly to and from the domain model. JSON attributes, wire discriminators and persistence-specific enum names belong in `KeyboardStudio.Persistence`, not in `KeyboardStudio.Core`.
 
 This allows the domain model to evolve independently while schema migrations and wire-format compatibility remain explicit persistence responsibilities.
+
+## AD-011 - Document lifecycle is an application concern
+
+`IProjectDocumentService` in `KeyboardStudio.App` owns New/Open/Save/Save As semantics, the current project path, document dirty state, and translation of expected persistence or file-system failures into presentation-safe errors.
+
+Avalonia storage pickers are responsible only for choosing paths. `KeyboardStudio.Persistence` continues to serialize streams and does not acquire UI or file-dialog dependencies. Editor-to-dirty-state wiring and unsaved-change prompts remain part of the later editor lifecycle work.
