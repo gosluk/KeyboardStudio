@@ -12,6 +12,8 @@ public sealed class LinuxXkbBuildBackend : IBuildBackend
     private readonly XkbLayoutTranslator _translator;
     private readonly IXkbSymbolsGenerator _generator;
     private readonly IXkbBuildManifestWriter _manifestWriter;
+    private readonly IXkbArtifactVerifier _verifier;
+    private readonly bool _requireExternalVerification;
     private readonly TimeProvider _timeProvider;
 
     public LinuxXkbBuildBackend(
@@ -19,12 +21,16 @@ public sealed class LinuxXkbBuildBackend : IBuildBackend
         XkbLayoutTranslator? translator = null,
         IXkbSymbolsGenerator? generator = null,
         IXkbBuildManifestWriter? manifestWriter = null,
+        IXkbArtifactVerifier? verifier = null,
+        bool requireExternalVerification = false,
         TimeProvider? timeProvider = null)
     {
         _metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
         _translator = translator ?? new XkbLayoutTranslator();
         _generator = generator ?? new XkbSymbolsGenerator();
         _manifestWriter = manifestWriter ?? new XkbBuildManifestWriter();
+        _verifier = verifier ?? new XkbArtifactVerifier();
+        _requireExternalVerification = requireExternalVerification;
         _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
@@ -71,6 +77,12 @@ public sealed class LinuxXkbBuildBackend : IBuildBackend
                 generated.Content,
                 new UTF8Encoding(false),
                 cancellationToken);
+            var verification = await _verifier.VerifyAsync(
+                translation.Layout!,
+                generated,
+                outputRoot,
+                _requireExternalVerification,
+                cancellationToken);
             var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(generated.Content)))
                 .ToLowerInvariant();
             var manifest = new XkbBuildManifest(
@@ -82,23 +94,26 @@ public sealed class LinuxXkbBuildBackend : IBuildBackend
                 XkbSymbolsGenerator.GeneratorVersion,
                 artifactPath,
                 hash,
-                "managed",
-                null,
+                verification.Status.ToString(),
+                verification.ToolVersion,
                 _timeProvider.GetUtcNow());
             var manifestPath = await _manifestWriter.WriteAsync(
                 manifest,
                 outputRoot,
                 cancellationToken);
 
-            var details = new XkbBuildDetails(manifest, manifestPath, generated);
+            var details = new XkbBuildDetails(manifest, manifestPath, generated, verification);
+            var success = verification.Status != XkbVerificationStatus.Failed;
             var artifact = new ArtifactBuildResult(
-                true,
+                success,
                 artifactPath,
-                [],
+                verification.Diagnostics,
+                verification.StandardOutput + verification.StandardError,
+                verification.LogPath,
                 ManifestPath: manifestPath,
                 ArtifactSha256: hash,
                 BackendDetails: details);
-            return new KeyboardBuildResult(true, [], artifact);
+            return new KeyboardBuildResult(success, [], artifact);
         }
         catch (Exception exception) when (
             exception is IOException or UnauthorizedAccessException or ArgumentException)
