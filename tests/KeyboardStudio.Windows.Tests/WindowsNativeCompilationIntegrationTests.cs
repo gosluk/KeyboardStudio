@@ -28,9 +28,12 @@ public sealed class WindowsNativeCompilationIntegrationTests
                 VerifyReproducibility: true);
             var orchestrator = new BuildOrchestrator(
                 new KeyboardProjectValidator(),
-                generator,
-                environment,
-                new MsvcKeyboardCompiler(environment, new ProcessRunner()));
+                new BuildBackendResolver([
+                    new WindowsBuildBackend(
+                        generator,
+                        environment,
+                        new MsvcKeyboardCompiler(environment, new ProcessRunner()))
+                ]));
 
             var result = await orchestrator.BuildAsync(DemoProjectFactory.Create(), options);
 

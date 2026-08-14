@@ -59,10 +59,13 @@ public sealed class BuildOrchestratorValidationTests
         TrackingBuildManifestWriter manifestWriter) =>
         new(
             new KeyboardProjectValidator([new StaticValidationRule(severity)]),
-            generator,
-            new AvailableBuildEnvironment(),
-            compiler,
-            manifestWriter);
+            new BuildBackendResolver([
+                new WindowsBuildBackend(
+                    generator,
+                    new AvailableBuildEnvironment(),
+                    compiler,
+                    manifestWriter)
+            ]));
 
     private sealed class StaticValidationRule(ValidationSeverity severity) : IKeyboardProjectValidationRule
     {
