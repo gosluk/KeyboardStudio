@@ -168,4 +168,34 @@ public sealed class KeyPresentationViewModelTests
             viewModel.Project.Layout.Find("KeyA")?.Outputs[ModifierLayer.Default]);
         Assert.Equal("a", output.Value);
     }
+
+    [Fact]
+    public void ClearCommands_WhenInvoked_ClearOneOrAllSelectedOutputs()
+    {
+        var editor = new MainWindowViewModel().Editor;
+        Assert.True(editor.SelectKey("KeyA"));
+        editor.LayerMappings[0].Output = "a";
+        editor.LayerMappings[1].Output = "A";
+
+        editor.LayerMappings[0].ClearCommand.Execute(null);
+
+        Assert.Empty(editor.LayerMappings[0].Output);
+        Assert.Equal("A", editor.LayerMappings[1].Output);
+
+        editor.ClearAllOutputsCommand.Execute(null);
+
+        Assert.All(editor.LayerMappings, mapping => Assert.Empty(mapping.Output));
+    }
+
+    [Fact]
+    public void UnmapLogicalKeyCommand_WhenInvoked_SetsLogicalKeyToNone()
+    {
+        var editor = new MainWindowViewModel().Editor;
+        Assert.True(editor.SelectKey("Enter"));
+        editor.SelectedLogicalKey = LogicalKey.Enter;
+
+        editor.UnmapLogicalKeyCommand.Execute(null);
+
+        Assert.Equal(LogicalKey.None, editor.SelectedLogicalKey);
+    }
 }

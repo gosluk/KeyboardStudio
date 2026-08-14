@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using KeyboardStudio.Core;
 
 namespace KeyboardStudio.App;
@@ -22,11 +23,14 @@ public sealed class LayerMappingViewModel : ObservableObject
         Label = layer.Label;
         _output = output;
         _updateOutput = updateOutput;
+        ClearCommand = new RelayCommand(() => Output = string.Empty);
     }
 
     public ModifierLayer Layer { get; }
 
     public string Label { get; }
+
+    public IRelayCommand ClearCommand { get; }
 
     public string? ValidationMessage
     {

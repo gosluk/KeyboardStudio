@@ -67,6 +67,58 @@ public sealed class KeyboardEditorTests
     }
 
     [Fact]
+    public void ClearMapping_WhenLayerIsMapped_RemovesOnlySelectedLayer()
+    {
+        var project = DemoProjectFactory.Create();
+        var editor = new KeyboardEditor(project);
+
+        editor.ClearMapping("KeyA", ModifierLayer.Default);
+
+        var mapping = project.Layout.Find("KeyA")!;
+        Assert.False(mapping.Outputs.ContainsKey(ModifierLayer.Default));
+        Assert.True(mapping.Outputs.ContainsKey(ModifierLayer.Shift));
+    }
+
+    [Fact]
+    public void ClearAllOutputs_WhenKeyHasMappings_RemovesEveryLayerButKeepsLogicalKey()
+    {
+        var project = DemoProjectFactory.Create();
+        var editor = new KeyboardEditor(project);
+        editor.MapCharacter("KeyA", ModifierLayer.AltGr, "ą");
+
+        editor.ClearAllOutputs("KeyA");
+
+        var mapping = project.Layout.Find("KeyA")!;
+        Assert.Empty(mapping.Outputs);
+        Assert.Equal(LogicalKey.A, mapping.LogicalKey);
+    }
+
+    [Theory]
+    [InlineData("Map")]
+    [InlineData("Clear")]
+    [InlineData("ClearAll")]
+    public void Mutation_WhenPhysicalKeyIdIsUnknown_RejectsOperation(string operation)
+    {
+        var editor = new KeyboardEditor(DemoProjectFactory.Create());
+
+        Assert.Throws<ArgumentException>(() =>
+        {
+            switch (operation)
+            {
+                case "Map":
+                    editor.MapLogicalKey("MissingKey", LogicalKey.A);
+                    break;
+                case "Clear":
+                    editor.ClearMapping("MissingKey", ModifierLayer.Default);
+                    break;
+                case "ClearAll":
+                    editor.ClearAllOutputs("MissingKey");
+                    break;
+            }
+        });
+    }
+
+    [Fact]
     public void Validate_WhenPhysicalKeyIdIsDuplicated_ReportsKey001Error()
     {
         var project = DemoProjectFactory.Create();

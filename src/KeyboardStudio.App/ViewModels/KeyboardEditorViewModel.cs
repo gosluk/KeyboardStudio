@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using KeyboardStudio.Core;
 
 namespace KeyboardStudio.App;
@@ -40,6 +41,8 @@ public sealed class KeyboardEditorViewModel : ObservableObject
 
         KeyboardWidth = Keys.Select(key => key.Left + key.Width).DefaultIfEmpty().Max();
         KeyboardHeight = Keys.Select(key => key.Top + key.Height).DefaultIfEmpty().Max();
+        ClearAllOutputsCommand = new RelayCommand(ClearAllOutputs, () => SelectedKey is not null);
+        UnmapLogicalKeyCommand = new RelayCommand(UnmapLogicalKey, () => SelectedKey is not null);
 
         RefreshLabels();
         SelectedKey = Keys.FirstOrDefault();
@@ -50,6 +53,8 @@ public sealed class KeyboardEditorViewModel : ObservableObject
     public IReadOnlyList<LogicalKey> LogicalKeys => EditableLogicalKeys;
     public double KeyboardWidth { get; }
     public double KeyboardHeight { get; }
+    public IRelayCommand ClearAllOutputsCommand { get; }
+    public IRelayCommand UnmapLogicalKeyCommand { get; }
 
     public IReadOnlyList<LayerMappingViewModel> LayerMappings
     {
@@ -119,6 +124,8 @@ public sealed class KeyboardEditorViewModel : ObservableObject
                 RefreshMappingPanel();
                 OnPropertyChanged(nameof(SelectedLogicalKey));
                 OnPropertyChanged(nameof(SelectedOutput));
+                ClearAllOutputsCommand.NotifyCanExecuteChanged();
+                UnmapLogicalKeyCommand.NotifyCanExecuteChanged();
             }
         }
     }
@@ -213,6 +220,25 @@ public sealed class KeyboardEditorViewModel : ObservableObject
         SelectedKey.Refresh(ActiveLayer);
         OnPropertyChanged(nameof(SelectedLogicalKey));
         OnPropertyChanged(nameof(SelectedOutput));
+    }
+
+    private void ClearAllOutputs()
+    {
+        if (SelectedKey is null)
+        {
+            return;
+        }
+
+        _editor.ClearAllOutputs(SelectedKey.KeyId);
+        SelectedKey.Mapping = _editor.Project.Layout.Find(SelectedKey.KeyId);
+        SelectedKey.Refresh(ActiveLayer);
+        RefreshMappingPanel();
+        OnPropertyChanged(nameof(SelectedOutput));
+    }
+
+    private void UnmapLogicalKey()
+    {
+        SelectedLogicalKey = LogicalKey.None;
     }
 
     private void RefreshLabels()

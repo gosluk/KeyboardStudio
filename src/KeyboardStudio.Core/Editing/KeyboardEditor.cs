@@ -40,7 +40,14 @@ public sealed class KeyboardEditor
 
     public void ClearMapping(string keyId, ModifierLayer layer)
     {
-        GetOrCreateMapping(keyId).Outputs.Remove(layer);
+        EnsurePhysicalKeyExists(keyId);
+        Project.Layout.Find(keyId)?.Outputs.Remove(layer);
+    }
+
+    public void ClearAllOutputs(string keyId)
+    {
+        EnsurePhysicalKeyExists(keyId);
+        Project.Layout.Find(keyId)?.Outputs.Clear();
     }
 
     private void EnsurePhysicalKeyExists(string keyId)
