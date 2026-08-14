@@ -45,6 +45,7 @@ public static class DemoProjectFactory
             {
                 Name = "Demo layout",
                 Description = "Minimal project used by the application skeleton.",
+                Version = "0.1.0",
                 Language = "und"
             },
             Keyboard = new PhysicalKeyboard

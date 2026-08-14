@@ -33,3 +33,9 @@ The first release supports `Default`, `Shift`, `AltGr`, and `ShiftAltGr`. More a
 ## AD-008 - All editing mutations pass through KeyboardEditor
 
 ViewModels orchestrate UI state but do not directly mutate arbitrary nested project state. This leaves room for validation, dirty tracking and undo/redo.
+
+## AD-009 - General and Windows metadata are separate
+
+`ProjectMetadata` contains only cross-platform information: display name, description, user-managed project version, and language/locale. Windows layout identity is represented by `WindowsLayoutMetadata` in `KeyboardStudio.Windows` and must not be added to `KeyboardStudio.Core`.
+
+The durable `.kbdproj` representation will place Windows metadata in a target-specific persistence section when P1.3 introduces DTO mapping. Author metadata is deferred until a generated resource or another concrete feature needs it.

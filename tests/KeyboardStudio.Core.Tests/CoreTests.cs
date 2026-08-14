@@ -35,6 +35,50 @@ public sealed class KeyboardEditorTests
     }
 
     [Fact]
+    public void Validate_WhenProjectVersionIsEmpty_ReportsMeta002Error()
+    {
+        var source = DemoProjectFactory.Create();
+        var project = new KeyboardProject
+        {
+            Metadata = new ProjectMetadata
+            {
+                Name = source.Metadata.Name,
+                Description = source.Metadata.Description,
+                Version = string.Empty,
+                Language = source.Metadata.Language
+            },
+            Keyboard = source.Keyboard,
+            Layout = source.Layout
+        };
+
+        var issues = new KeyboardProjectValidator().Validate(project);
+
+        Assert.Contains(issues, issue => issue.Code == "META002" && issue.Severity == ValidationSeverity.Error);
+    }
+
+    [Fact]
+    public void Validate_WhenLanguageIsEmpty_ReportsMeta003Error()
+    {
+        var source = DemoProjectFactory.Create();
+        var project = new KeyboardProject
+        {
+            Metadata = new ProjectMetadata
+            {
+                Name = source.Metadata.Name,
+                Description = source.Metadata.Description,
+                Version = source.Metadata.Version,
+                Language = string.Empty
+            },
+            Keyboard = source.Keyboard,
+            Layout = source.Layout
+        };
+
+        var issues = new KeyboardProjectValidator().Validate(project);
+
+        Assert.Contains(issues, issue => issue.Code == "META003" && issue.Severity == ValidationSeverity.Error);
+    }
+
+    [Fact]
     public async Task SaveAndLoad_WhenCharacterOutputExists_PreservesPolymorphicOutput()
     {
         var project = DemoProjectFactory.Create();
@@ -49,5 +93,22 @@ public sealed class KeyboardEditorTests
         var output = Assert.IsType<CharacterOutput>(loaded.Layout.Find("KeyA")!.Outputs[ModifierLayer.AltGr]);
         Assert.Equal("ą", output.Value);
         Assert.Equal(project.Keyboard.Keys.Count, loaded.Keyboard.Keys.Count);
+    }
+
+    [Fact]
+    public async Task SaveAndLoad_WhenProjectMetadataExists_PreservesMetadata()
+    {
+        var project = DemoProjectFactory.Create();
+        var store = new JsonKeyboardProjectStore();
+        await using var stream = new MemoryStream();
+
+        await store.SaveAsync(project, stream);
+        stream.Position = 0;
+        var loaded = await store.LoadAsync(stream);
+
+        Assert.Equal(project.Metadata.Name, loaded.Metadata.Name);
+        Assert.Equal(project.Metadata.Description, loaded.Metadata.Description);
+        Assert.Equal(project.Metadata.Version, loaded.Metadata.Version);
+        Assert.Equal(project.Metadata.Language, loaded.Metadata.Language);
     }
 }

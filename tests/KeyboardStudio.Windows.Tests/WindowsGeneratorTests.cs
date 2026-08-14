@@ -12,7 +12,8 @@ public sealed class WindowsGeneratorTests
     {
         var project = DemoProjectFactory.Create();
         new KeyboardEditor(project).MapCharacter("KeyA", ModifierLayer.AltGr, "ą");
-        var generator = new WindowsArtifactGenerator();
+        var metadata = new WindowsLayoutMetadata("kbd-demo", "Demo layout");
+        var generator = new WindowsArtifactGenerator(metadata);
         var options = new BuildOptions(BuildTarget.WindowsX64, "out");
 
         var first = await generator.GenerateAsync(project, options);
@@ -21,6 +22,8 @@ public sealed class WindowsGeneratorTests
         var firstSource = first.Source.Files["keyboard.c"];
         var secondSource = second.Source.Files["keyboard.c"];
         Assert.Equal(firstSource, secondSource);
+        Assert.Contains("Layout ID: kbd-demo", firstSource);
+        Assert.Contains("Layout name: Demo layout", firstSource);
         Assert.Contains("0x00000105", firstSource);
         Assert.Contains("KbdLayerDescriptor", firstSource);
     }
