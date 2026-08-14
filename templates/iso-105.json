@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "id": "iso-105",
   "name": "ISO 105-key",
-  "status": "placeholder",
+  "unitWidth": 54,
+  "unitGap": 4,
   "keys": []
 }
