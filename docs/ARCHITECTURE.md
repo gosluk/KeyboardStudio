@@ -464,23 +464,22 @@ WindowsKeyboardLayout
 WindowsCSourceGenerator
 ```
 
-Representative internal model:
+Windows semantic model:
 
 ```csharp
-internal sealed class WindowsKeyboardLayout
+public sealed record WindowsKeyboardLayout
 {
-    public required IReadOnlyList<VscToVkMapping> ScanCodes { get; init; }
-    public required IReadOnlyList<WindowsCharacterMapping> Characters { get; init; }
+    public required IReadOnlyList<VscToVkMapping> VscToVkMappings { get; init; }
+    public required IReadOnlyList<ExtendedVscToVkMapping> ExtendedVscToVkMappings { get; init; }
     public required WindowsModifierTable Modifiers { get; init; }
+    public required WindowsCharacterTable Characters { get; init; }
 }
-
-internal sealed record VscToVkMapping(
-    byte ScanCode,
-    WindowsVirtualKey VirtualKey,
-    bool Extended);
 ```
 
-The Windows model is never exposed to Avalonia or serialized into `.kbdproj`.
+The model has an explicit `LogicalKey` to `WindowsVirtualKey` translation, distinct normal and extended
+scan-code collections, Windows Ctrl+Alt semantics for AltGr, and typed character rows. Scan-only keys
+are represented only in scan-code tables. Translation failures carry structured, key-linked
+diagnostics. The Windows model is never exposed to Avalonia or serialized into `.kbdproj`.
 
 The generated source ultimately describes the native Windows keyboard tables and exposes the keyboard-table descriptor expected by Windows. See [WINDOWS-BUILD.md](WINDOWS-BUILD.md).
 

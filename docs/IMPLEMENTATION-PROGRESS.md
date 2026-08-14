@@ -2,10 +2,10 @@
 
 This file tracks execution of [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
 
-- Current work branch: `agent/phase-4-validation-diagnostics`
+- Current work branch: `agent/phase-5-windows-semantic-translation`
 - Last updated: 2026-08-14
-- Current phase: Phase 5 — Windows semantic translation
-- Next work item: **P5.1 — Define Windows virtual-key model**
+- Current phase: Phase 6 — Real Windows `KBDTABLES` source generation
+- Next work item: **P6.1 — Establish reference fixture**
 
 Legend: `[x]` complete, `[ ]` not yet complete.
 
@@ -65,12 +65,14 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 
 ## Phase 5 — Windows semantic translation
 
-- [ ] **P5.1** Define Windows virtual-key model
-- [ ] **P5.2** Define scan-code mapping model
-- [ ] **P5.3** Define modifier model
-- [ ] **P5.4** Define character table rows
-- [ ] **P5.5** Special/non-character keys
-- [ ] **P5.6** Unsupported mapping detection
+- [x] **P5.1** Define Windows virtual-key model
+- [x] **P5.2** Define scan-code mapping model
+- [x] **P5.3** Define modifier model
+- [x] **P5.4** Define character table rows
+- [x] **P5.5** Special/non-character keys
+- [x] **P5.6** Unsupported mapping detection
+
+**Phase status:** 6/6 work items complete. Phase complete.
 
 ## Phase 6 — Real Windows `KBDTABLES` source generation
 

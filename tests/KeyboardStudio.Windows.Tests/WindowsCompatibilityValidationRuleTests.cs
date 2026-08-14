@@ -11,6 +11,8 @@ public sealed class WindowsCompatibilityValidationRuleTests
     {
         Assert.Equal("KSW001", WindowsDiagnosticCodes.UnsupportedLogicalKeyMapping);
         Assert.Equal("KSW002", WindowsDiagnosticCodes.UnsupportedModifierCombination);
+        Assert.Equal("KSW003", WindowsDiagnosticCodes.UnsupportedCharacterMapping);
+        Assert.Equal("KSW004", WindowsDiagnosticCodes.UnsupportedSpecialKeyMapping);
     }
 
     [Fact]
@@ -19,6 +21,18 @@ public sealed class WindowsCompatibilityValidationRuleTests
         var project = DemoProjectFactory.Create();
         var mapping = project.Layout.Find("KeyA")!;
         mapping.LogicalKey = LogicalKey.None;
+
+        var issues = new WindowsCompatibilityValidationRule().Validate(project);
+
+        Assert.Contains(issues, issue =>
+            issue.Code == WindowsDiagnosticCodes.UnsupportedLogicalKeyMapping && issue.KeyId == "KeyA");
+    }
+
+    [Fact]
+    public void Validate_WhenSpecialOutputHasNoLogicalKey_ReportsWindowsCompatibilityIssue()
+    {
+        var project = DemoProjectFactory.Create();
+        project.Layout.Find("KeyA")!.Outputs[ModifierLayer.Default] = new SpecialKeyOutput(LogicalKey.None);
 
         var issues = new WindowsCompatibilityValidationRule().Validate(project);
 
@@ -36,5 +50,29 @@ public sealed class WindowsCompatibilityValidationRuleTests
 
         Assert.Contains(issues, issue =>
             issue.Code == WindowsDiagnosticCodes.UnsupportedModifierCombination && issue.KeyId == "KeyA");
+    }
+
+    [Fact]
+    public void Validate_WhenCharacterIsOutsideBmp_ReportsUnsupportedCharacterMapping()
+    {
+        var project = DemoProjectFactory.Create();
+        project.Layout.Find("KeyA")!.Outputs[ModifierLayer.AltGr] = new CharacterOutput("😀");
+
+        var issues = new WindowsCompatibilityValidationRule().Validate(project);
+
+        Assert.Contains(issues, issue =>
+            issue.Code == WindowsDiagnosticCodes.UnsupportedCharacterMapping && issue.KeyId == "KeyA");
+    }
+
+    [Fact]
+    public void Validate_WhenSpecialOutputChangesByLayer_ReportsUnsupportedSpecialKeyMapping()
+    {
+        var project = DemoProjectFactory.Create();
+        project.Layout.Find("KeyA")!.Outputs[ModifierLayer.Default] = new SpecialKeyOutput(LogicalKey.Enter);
+
+        var issues = new WindowsCompatibilityValidationRule().Validate(project);
+
+        Assert.Contains(issues, issue =>
+            issue.Code == WindowsDiagnosticCodes.UnsupportedSpecialKeyMapping && issue.KeyId == "KeyA");
     }
 }

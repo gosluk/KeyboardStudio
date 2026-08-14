@@ -26,8 +26,12 @@ should use the code and severity when they need machine-readable behavior.
 |---|---|---|---|
 | `KSW001` | Error | The mapping cannot be represented by the supported Windows logical-key model. | Yes |
 | `KSW002` | Error | The modifier combination is not supported by the Windows backend. | Yes |
+| `KSW003` | Error | A character output cannot be represented by a v1 Windows character-table row. | Yes |
+| `KSW004` | Error | A layer-specific special-key output cannot be represented by the scan-code mapping. | Yes |
 
 Windows codes are declared in `KeyboardStudio.Windows`; Core does not depend on or interpret them.
+The translator raises `WindowsTranslationException` with the complete structured issue list if any
+Core structural or Windows compatibility error reaches the translation boundary.
 
 ## Compatibility policy
 

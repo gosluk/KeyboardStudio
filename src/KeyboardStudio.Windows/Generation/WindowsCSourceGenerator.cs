@@ -14,23 +14,32 @@ internal static class WindowsCSourceGenerator
         builder.Append("/* Layout name: ").Append(EscapeComment(metadata.LayoutName)).AppendLine(" */");
         builder.AppendLine("#include <stdint.h>");
         builder.AppendLine();
-        builder.AppendLine("typedef struct KEYBOARD_STUDIO_ENTRY {");
-        builder.AppendLine("    uint16_t scan_code;");
-        builder.AppendLine("    uint16_t modifier;");
-        builder.AppendLine("    uint32_t unicode_scalar;");
-        builder.AppendLine("} KEYBOARD_STUDIO_ENTRY;");
+        builder.AppendLine("typedef struct KEYBOARD_STUDIO_CHARACTER_ROW {");
+        builder.AppendLine("    uint16_t virtual_key;");
+        builder.AppendLine("    uint8_t attributes;");
+        builder.AppendLine("    uint32_t normal;");
+        builder.AppendLine("    uint32_t shift;");
+        builder.AppendLine("    uint32_t altgr;");
+        builder.AppendLine("    uint32_t shift_altgr;");
+        builder.AppendLine("} KEYBOARD_STUDIO_CHARACTER_ROW;");
         builder.AppendLine();
-        builder.AppendLine("static const KEYBOARD_STUDIO_ENTRY g_keyboard_layout[] = {");
+        builder.AppendLine("static const KEYBOARD_STUDIO_CHARACTER_ROW g_keyboard_layout[] = {");
 
-        foreach (var entry in layout.Entries)
+        foreach (var row in layout.Characters.Rows)
         {
             builder.Append("    { 0x")
-                .Append(entry.ScanCode.ToString("X2", CultureInfo.InvariantCulture))
-                .Append(", ")
-                .Append(((int)entry.Modifier).ToString(CultureInfo.InvariantCulture))
+                .Append(((ushort)row.VirtualKey).ToString("X2", CultureInfo.InvariantCulture))
                 .Append(", 0x")
-                .Append(entry.UnicodeScalar.ToString("X8", CultureInfo.InvariantCulture))
-                .AppendLine(" },");
+                .Append(((byte)row.Attributes).ToString("X2", CultureInfo.InvariantCulture))
+                .Append(", ");
+            AppendScalar(builder, row.Default);
+            builder.Append(", ");
+            AppendScalar(builder, row.Shift);
+            builder.Append(", ");
+            AppendScalar(builder, row.AltGr);
+            builder.Append(", ");
+            AppendScalar(builder, row.ShiftAltGr);
+            builder.AppendLine(" },");
         }
 
         builder.AppendLine("};");
@@ -40,6 +49,12 @@ internal static class WindowsCSourceGenerator
         builder.AppendLine("    return g_keyboard_layout;");
         builder.AppendLine("}");
         return builder.ToString();
+    }
+
+    private static void AppendScalar(StringBuilder builder, char? value)
+    {
+        var scalar = value.HasValue ? value.Value : uint.MaxValue;
+        builder.Append("0x").Append(scalar.ToString("X8", CultureInfo.InvariantCulture));
     }
 
     private static string EscapeComment(string value) => value.Replace("*/", "* /", StringComparison.Ordinal);

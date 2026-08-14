@@ -6,11 +6,23 @@ public static class WindowsLayoutTranslator
 {
     public static WindowsKeyboardLayout Translate(KeyboardProject project)
     {
+        ArgumentNullException.ThrowIfNull(project);
+
+        var validation = new KeyboardProjectValidator(
+        [
+            new PhysicalKeyboardValidationRule(),
+            new MappingValidationRule(),
+            new WindowsCompatibilityValidationRule()
+        ]).Validate(project);
+        if (validation.HasErrors)
+        {
+            throw new WindowsTranslationException(validation.Issues);
+        }
+
         var physicalKeys = project.Keyboard.Keys.ToDictionary(key => key.Id, StringComparer.Ordinal);
         var vscToVkMappings = new List<VscToVkMapping>();
         var extendedVscToVkMappings = new List<ExtendedVscToVkMapping>();
         var characters = new List<WindowsCharacterMapping>();
-        var entries = new List<WindowsMappingEntry>();
 
         foreach (var mapping in project.Layout.Mappings.OrderBy(mapping => mapping.KeyId, StringComparer.Ordinal))
         {
@@ -46,16 +58,6 @@ public static class WindowsLayoutTranslator
                 }
             }
 
-            foreach (var output in mapping.Outputs.OrderBy(pair => pair.Key))
-            {
-                if (output.Value is not CharacterOutput characterOutput || string.IsNullOrEmpty(characterOutput.Value))
-                {
-                    continue;
-                }
-
-                var rune = characterOutput.Value.EnumerateRunes().First();
-                entries.Add(new WindowsMappingEntry((byte)key.ScanCode, output.Key, rune.Value));
-            }
         }
 
         return new WindowsKeyboardLayout(
@@ -64,8 +66,7 @@ public static class WindowsLayoutTranslator
             WindowsModifierTable.CreateV1(),
             new WindowsCharacterTable(
                 characters.Any(mapping => mapping.AltGr.HasValue || mapping.ShiftAltGr.HasValue) ? 4 : 2,
-                characters.OrderBy(mapping => mapping.VirtualKey).ToArray()),
-            entries);
+                characters.OrderBy(mapping => mapping.VirtualKey).ToArray()));
     }
 
     private static char? GetCharacter(KeyMapping mapping, ModifierLayer layer)
