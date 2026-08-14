@@ -133,4 +133,23 @@ public sealed class WindowsGeneratorTests
         Assert.Contains("PKBDTABLES KbdLayerDescriptor(VOID)", artifact.Source.Files["keyboard.c"]);
         Assert.Contains("return &KbdTables;", artifact.Source.Files["keyboard.c"]);
     }
+
+    [Fact]
+    public async Task Generate_EmitsDefinitionExportAndDeterministicVersionResource()
+    {
+        var artifact = await new WindowsArtifactGenerator(
+                new WindowsLayoutMetadata("kbd-demo", "Demo \"Unicode\" layout", "2.3.4.5", "Example Co"))
+            .GenerateAsync(
+                DemoProjectFactory.Create(),
+                new BuildOptions(BuildTarget.WindowsX64, "out"));
+
+        Assert.Equal(
+            "LIBRARY KBD_DEMO\n\nEXPORTS\n    KbdLayerDescriptor @1\n",
+            artifact.Source.Files["keyboard.def"]);
+        var resource = artifact.Source.Files["keyboard.rc"];
+        Assert.Contains("FILEVERSION 2,3,4,5", resource);
+        Assert.Contains("FILESUBTYPE VFT2_DRV_KEYBOARD", resource);
+        Assert.Contains("VALUE \"FileDescription\", \"Demo \\\"Unicode\\\" layout\\0\"", resource);
+        Assert.Contains("VALUE \"OriginalFilename\", \"kbd-demo.dll\\0\"", resource);
+    }
 }

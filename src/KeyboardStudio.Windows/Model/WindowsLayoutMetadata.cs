@@ -6,4 +6,6 @@ namespace KeyboardStudio.Windows;
 /// </summary>
 public sealed record WindowsLayoutMetadata(
     string LayoutId,
-    string LayoutName);
+    string LayoutName,
+    string FileVersion = "1.0.0.0",
+    string CompanyName = "KeyboardStudio");
