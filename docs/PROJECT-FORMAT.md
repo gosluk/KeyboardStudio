@@ -134,11 +134,11 @@ Author metadata is intentionally omitted for now because generated resources do 
 }
 ```
 
-Target layout identities remain separate from the core aggregate and are not currently carried by the
-`IKeyboardProjectStore` contract. Phase 9 introduces a target-specific document/settings boundary that
-can preserve both Windows and XKB profiles without introducing Core dependencies on either backend.
-That implementation must migrate the schema explicitly; this document does not claim a `targets`
-member exists in schema version 1.
+Target layout identities remain separate from the core aggregate and are not carried by the legacy
+`IKeyboardProjectStore` contract. `IKeyboardProjectDocumentStore` provides a versioned outer envelope
+with a nested Core project and a `targets` dictionary. Each entry has a stable target discriminator
+and string settings, allowing Windows and XKB profiles to coexist without introducing backend
+dependencies into Core. The original schema-v1 project format remains readable and unchanged.
 
 ## Design rules
 

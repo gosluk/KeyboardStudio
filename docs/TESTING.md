@@ -73,10 +73,20 @@ test is reported as not run unless the test process is Windows and matches the a
 Reproducibility unit tests compare source dictionaries and binary hashes without MSVC; the native
 integration path can enable `BuildOptions.VerifyReproducibility` on a configured Windows runner.
 
+Linux XKB integration tests use the `XkbIntegration` category. The Linux CI job installs `xkbcli`
+and `xkeyboard-config`, then compiles an ISO AltGr/Unicode fixture and an ANSI two-level fixture in
+isolated roots. The tests never activate a layout. On failure, the generated symbols component and
+`xkbcli.log` remain under `TestResults/xkb-integration` and are uploaded as a workflow artifact.
+Locally, categorized tests return without running when `xkbcli` is unavailable; install the tool or
+run `scripts/install-xkbcli.sh` to exercise the external verifier.
+
 ## Test project boundaries
 
 - `KeyboardStudio.Core.Tests` covers platform-neutral domain, editing, validation, and persistence-facing behavior.
 - `KeyboardStudio.Windows.Tests` covers Windows translation and source generation without requiring native compilation unless explicitly categorized later.
+- `KeyboardStudio.Linux.Tests` covers physical key-name mapping, keysym/level translation,
+  deterministic symbols generation, manifests, verifier behavior, golden files, and categorized
+  `xkbcli` integration.
 - Native toolchain and artifact tests must not make the Ubuntu platform-neutral test gate Windows-dependent.
 
 ## Analyzer exception for test names

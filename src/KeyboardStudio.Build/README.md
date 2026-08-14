@@ -12,12 +12,12 @@ Responsibilities:
 
 The build pipeline must keep source generation testable without requiring the native toolchain.
 
-## Target backend direction (Phase 9)
+## Target backends
 
-The current orchestrator models the Windows pipeline directly as validation, generation, environment
-resolution, and native compilation. Linux XKB output is deterministic text and has no native
-compile/link step, so Phase 9 will introduce `IBuildBackend` plus an `IBuildBackendResolver` selected
-by `BuildOptions.Target`.
+`BuildOrchestrator` runs platform-neutral validation and resolves exactly one `IBuildBackend` through
+`IBuildBackendResolver`. Linux XKB output is deterministic text and has no native compile/link step;
+the Windows backend keeps generation, environment resolution, MSVC compilation, and PE verification
+behind the same target boundary.
 
 ```text
 WindowsX64 / WindowsArm64 -> generate -> compile/link -> PE verify -> DLL

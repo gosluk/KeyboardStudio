@@ -80,15 +80,21 @@ public sealed class XkbArtifactVerifier : IXkbArtifactVerifier
                 new Dictionary<string, string?>()),
             cancellationToken);
         var version = SelectVersion(versionResult);
-        var arguments = new[]
+        var arguments = new List<string>
         {
             "compile-keymap",
             "--include", xkbRoot,
-            "--include-defaults",
-            "--test",
+            "--include-defaults"
+        };
+        if (SupportsTestOption(version))
+        {
+            arguments.Add("--test");
+        }
+
+        arguments.AddRange([
             "--layout", layout.Metadata.LayoutId,
             "--variant", layout.Metadata.SectionId
-        };
+        ]);
         var result = await _processRunner.RunAsync(
             new ProcessRequest(
                 executable,
@@ -126,6 +132,12 @@ public sealed class XkbArtifactVerifier : IXkbArtifactVerifier
             ? result.StandardError
             : result.StandardOutput;
         return value.Trim();
+    }
+
+    private static bool SupportsTestOption(string versionOutput)
+    {
+        var versionText = versionOutput.Split(' ', StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
+        return Version.TryParse(versionText, out var version) && version >= new Version(1, 9);
     }
 
     private static async Task<string> WriteLogAsync(

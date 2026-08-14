@@ -4,9 +4,9 @@
 
 This document is the executable implementation plan for KeyboardStudio. The completed phases provide
 the solution, Avalonia editor, versioned project persistence, validation, Windows semantic translation,
-deterministic native source generation, the MSVC/WDK compile/link pipeline, and structural artifact
-verification. The remaining work adds a Linux XKB output backend, target-aware build UX, platform
-integration CI, and release stabilization.
+deterministic native source generation, the MSVC/WDK compile/link pipeline, structural artifact
+verification, and a verified Linux XKB output backend. The remaining work adds target-aware build UX,
+Windows integration CI, and release stabilization.
 
 The goal is to move from that bootstrap state to a usable first release that can:
 
@@ -24,7 +24,7 @@ The plan intentionally keeps installation/registry registration, dead keys, liga
 
 ## 2. Current baseline
 
-The current Phase 8-complete baseline provides:
+The current Phase 9-complete baseline provides:
 
 - `KeyboardStudio.sln` targeting .NET 10;
 - `KeyboardStudio.App` using Avalonia;
@@ -33,17 +33,18 @@ The current Phase 8-complete baseline provides:
 - `KeyboardStudio.Build` with orchestration, isolated workspaces, process execution, MSVC/SDK
   discovery, PE/export/load verification, manifests, and opt-in reproducibility checks;
 - `KeyboardStudio.Windows` with semantic translation and deterministic `KBDTABLES` source generation;
+- `KeyboardStudio.Linux` with typed XKB translation, deterministic v1 symbols generation, manifests,
+  managed verification, and optional `xkbcli` compilation;
 - complete ISO-105 and ANSI-104 templates;
-- Core, Windows, and App test projects;
+- Core, Windows, Linux, and App test projects;
 - Linux-hosted restore/build/test validation;
 - an Avalonia editor with project lifecycle, mapping controls, and diagnostics.
 
-Phases 0-8 are complete. The Windows path generates real `KBDTABLES` source, compiles x64 or ARM64
+Phases 0-9 are complete. The Windows path generates real `KBDTABLES` source, compiles x64 or ARM64
 DLLs through a discovered MSVC/Windows SDK toolchain, and verifies the resulting artifact beyond the
-linker exit code. The current `BuildOrchestrator` still assumes
-every target has one generator, one build environment, and one native compiler. That shape must be
-generalized before adding XKB because an XKB symbols component is already the distributable artifact;
-it does not have a native compile/link stage.
+linker exit code. `BuildOrchestrator` now validates once and resolves one `IBuildBackend` for the
+selected target. The Linux path materializes an XKB symbols component directly, performs managed
+validation everywhere, and compiles it with `xkbcli` when available without probing MSVC.
 
 ---
 
@@ -1157,6 +1158,9 @@ xkbcli compile-keymap
   --test
   --layout <layout-id>
 ```
+
+Use `--test` on libxkbcommon 1.9 and newer. Older supported `xkbcli` versions compile normally and
+the captured full-keymap stdout is discarded after verification.
 
 Capture version, arguments, stdout/stderr, exit code, duration, and structured diagnostics. Missing
 `xkbcli` does not prevent deterministic text generation on another host, but the result is marked as

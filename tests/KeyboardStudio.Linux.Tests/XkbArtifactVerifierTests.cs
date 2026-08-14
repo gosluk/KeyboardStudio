@@ -53,6 +53,34 @@ public sealed class XkbArtifactVerifierTests
         }
     }
 
+    [Fact]
+    public async Task VerifyAsync_WhenXkbCliPredatesTestFlag_CompilesWithoutTestArgument()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"KeyboardStudio-Verify-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        try
+        {
+            var runner = new QueueProcessRunner([
+                CreateProcessResult(["--version"], "1.6.0\n", "", 0),
+                CreateProcessResult(["compile-keymap"], "compiled keymap", "", 0)
+            ]);
+            var verifier = new XkbArtifactVerifier(
+                new XkbManagedValidator(),
+                new StaticLocator("/usr/bin/xkbcli"),
+                runner);
+            var (layout, generated) = CreateArtifact();
+
+            var result = await verifier.VerifyAsync(layout, generated, root, true);
+
+            Assert.Equal(XkbVerificationStatus.Verified, result.Status);
+            Assert.DoesNotContain("--test", result.Arguments);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     private static (XkbKeyboardLayout Layout, XkbGeneratedSymbols Generated) CreateArtifact()
     {
         var layout = new XkbKeyboardLayout(
