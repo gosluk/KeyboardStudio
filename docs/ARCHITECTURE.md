@@ -2,14 +2,16 @@
 
 ## 1. Purpose
 
-KeyboardStudio is a cross-platform keyboard-layout editor written with Avalonia. The editor owns a platform-neutral keyboard project model. Windows-specific keyboard layout structures exist only in the Windows compilation backend.
+KeyboardStudio is a cross-platform keyboard-layout editor written with Avalonia. The editor owns a
+platform-neutral keyboard project model. Platform backends translate that model into either a native
+Windows keyboard-layout DLL or a Linux XKB symbols component.
 
 The first version focuses on four capabilities:
 
 1. displaying a physical keyboard;
 2. editing key mappings;
 3. saving and loading a project;
-4. compiling a native Windows keyboard-layout artifact.
+4. selecting an artifact target and producing a Windows DLL or Linux XKB layout file.
 
 Everything not required by those capabilities is intentionally excluded from the first implementation.
 
@@ -25,14 +27,17 @@ Everything not required by those capabilities is intentionally excluded from the
 - Windows APIs;
 - Windows SDK or WDK types;
 - MSVC;
+- XKB key names, keysyms, or libxkbcommon types;
 - filesystem UI abstractions;
 - installer or registry APIs.
 
 The core represents what a keyboard layout means, not how a specific operating system implements it.
 
-### 2.2 Windows translation at the boundary
+### 2.2 Platform translation at the boundary
 
 Windows structures such as scan-code mappings, virtual keys, modifier tables and `KBDTABLES` are generated only in `KeyboardStudio.Windows`.
+XKB symbolic key names, keysyms, levels, types, and symbols-component syntax are generated only in
+the planned `KeyboardStudio.Linux` backend.
 
 The editor thinks in terms of:
 
@@ -40,35 +45,39 @@ The editor thinks in terms of:
 Physical key + modifier layer -> output
 ```
 
-The Windows backend translates that model to the native Windows representation.
+The selected backend translates that model to its target representation.
 
-### 2.3 Generation and compilation are separate
+### 2.3 Generation, materialization, and compilation are separate
 
-Generating native C source and invoking a native compiler are distinct responsibilities.
+Artifact generation is deterministic and tool-independent. A target backend then materializes or
+compiles those generated files according to the target's actual delivery format.
 
 ```text
-KeyboardProject
-      |
-      v
-WindowsLayoutTranslator
-      |
-      v
-WindowsKeyboardLayout
-      |
-      v
-WindowsCSourceGenerator
-      |
-      v
-Generated source files
-      |
-      v
-INativeCompiler
-      |
-      v
-Keyboard layout DLL
+                         KeyboardProject
+                                |
+                                v
+                      Select one BuildTarget
+                         /              \
+                        v                v
+             Windows backend       Linux XKB backend
+             translate to          translate to
+             Windows model         XKB model
+                   |                    |
+                   v                    v
+             generate C/.def/.rc   generate symbols text
+                   |                    |
+                   v                    v
+             compile and link      write final artifact
+                   |                    |
+                   v                    v
+             verify PE/export      verify with xkbcli
+                   |                    |
+                   v                    v
+               <id>.dll          symbols/<layout-id>
 ```
 
-This keeps source generation deterministic and unit-testable without requiring a Windows compiler installation.
+This keeps both generators deterministic and unit-testable without requiring MSVC or `xkbcli`.
+`INativeCompiler` remains a Windows-backend collaborator; Linux does not use a fake compiler stage.
 
 The Phase 6 generator emits the WDK-native `VSC_VK`, `VSC_LPWSTR`, `VK_TO_BIT`, `MODIFIERS`,
 `VK_TO_WCHARS<n>`, `VK_TO_WCHAR_TABLE`, and `KBDTABLES` structures. The exported
@@ -76,9 +85,20 @@ The Phase 6 generator emits the WDK-native `VSC_VK`, `VSC_LPWSTR`, `VK_TO_BIT`, 
 export and deterministic version metadata. See
 [`WINDOWS-KBDTABLES-REFERENCE.md`](WINDOWS-KBDTABLES-REFERENCE.md) for the supported ABI subset.
 
+The planned Linux generator emits classic XKB text format v1 as an `xkb_symbols` component. The
+component composes with normal host keycodes/types/compat data, making it more portable than a
+self-contained keymap. See [`LINUX-XKB.md`](LINUX-XKB.md).
+
 ### 2.4 All project mutations flow through the editor service
 
 ViewModels should not directly mutate arbitrary nested domain objects. Editing operations are concentrated behind `KeyboardEditor` so validation, dirty tracking and future undo/redo can be introduced without redesigning the UI.
+
+### 2.5 One build invocation selects one target backend
+
+The same project can be built repeatedly for different targets, but one invocation resolves exactly
+one backend from `BuildOptions.Target`. Common validation runs before dispatch; target validation and
+artifact stages run only inside the selected backend. This prevents an unavailable Windows toolchain
+from blocking XKB generation and prevents Linux tools from affecting Windows builds.
 
 ---
 
@@ -92,11 +112,14 @@ src/
   KeyboardStudio.Core/
   KeyboardStudio.Persistence/
   KeyboardStudio.Windows/
+  KeyboardStudio.Linux/        # planned in Phase 9
   KeyboardStudio.Build/
 
 tests/
   KeyboardStudio.Core.Tests/
   KeyboardStudio.Windows.Tests/
+  KeyboardStudio.Linux.Tests/  # planned in Phase 9
+  KeyboardStudio.App.Tests/
 
 templates/
 
@@ -106,29 +129,17 @@ docs/
 ### Dependency direction
 
 ```text
-                         +----------------------+
-                         | KeyboardStudio.App   |
-                         +----------+-----------+
-                                    |
-                 +------------------+------------------+
-                 |                                     |
-                 v                                     v
-       +----------------------+            +---------------------------+
-       | KeyboardStudio.Core  |<-----------| KeyboardStudio.Persistence|
-       +----------+-----------+            +---------------------------+
-                  ^
-                  |
-       +----------+-----------+
-       | KeyboardStudio.Windows|
-       +----------+-----------+
-                  ^
-                  |
-       +----------+-----------+
-       | KeyboardStudio.Build |
-       +----------------------+
+KeyboardStudio.App (composition root)
+ |- KeyboardStudio.Core
+ |- KeyboardStudio.Persistence -> Core
+ |- KeyboardStudio.Build       -> Core
+ |- KeyboardStudio.Windows     -> Build + Core
+ `- KeyboardStudio.Linux       -> Build + Core  (planned)
 ```
 
-The exact project-reference graph can use dependency inversion, but the rule remains: UI and platform concerns point inward, never the reverse.
+The application is the composition root and may reference concrete backends to register them. Its
+ViewModels depend on build abstractions, not Windows or Linux generator types. Platform and UI
+concerns point inward; Core never references them.
 
 ---
 
@@ -317,12 +328,16 @@ MainWindowViewModel
  |   `- Selected key mapping fields
  |
  `- BuildViewModel
-     |- TargetArchitecture
+     |- SelectedTarget
+     |- TargetProfile
+     |- EnvironmentStatus
      |- BuildCommand
+     |- Stages
      `- BuildResult
 ```
 
-ViewModels must not depend on Windows-specific classes.
+ViewModels must not depend on Windows- or XKB-specific generator classes. Concrete backends are
+registered at the application composition root and reached through build abstractions.
 
 ### 6.2 Keyboard rendering
 
@@ -425,11 +440,17 @@ Use `System.Text.Json`.
 
 Every project must contain `schemaVersion` from the first release so migrations can be added later. See [PROJECT-FORMAT.md](PROJECT-FORMAT.md).
 
+`KeyboardProject` remains the platform-neutral aggregate. Phase 9 adds an application/document
+boundary for optional target profiles such as `WindowsLayoutMetadata` and `XkbLayoutMetadata`.
+Profiles are persisted with stable target discriminators without adding their fields to
+`ProjectMetadata` or making Core reference a platform backend. One project may retain profiles for
+both targets; `BuildOptions.Target` selects which one is consumed.
+
 ---
 
 ## 8. Validation
 
-Validation occurs before native translation/build.
+Validation occurs before target translation/build.
 
 ```csharp
 public sealed record ValidationIssue(
@@ -446,8 +467,12 @@ Initial validation rules:
 - duplicate physical scan-code mappings are rejected;
 - output values are valid for the supported output type;
 - required logical mappings are valid;
-- Windows metadata is valid;
-- generated Windows identifiers are valid.
+- target-independent mappings are internally consistent.
+
+After common validation, only the selected backend runs its compatibility rules:
+
+- Windows metadata, logical-key support, scan codes, and generated identifiers;
+- Linux XKB metadata, template-key coverage, keysym support, and generated identifiers.
 
 A validation issue may include `KeyId` so the UI can highlight the problematic key.
 
@@ -491,33 +516,115 @@ The generated source ultimately describes the native Windows keyboard tables and
 
 ---
 
-## 10. Build orchestration
+## 10. Linux XKB backend (planned Phase 9)
+
+The Linux backend translates the platform-neutral model into a typed XKB symbols model before
+emitting text.
 
 ```text
-Build command
-    |
-    v
-Validate project
-    |
-    v
-Translate to Windows model
-    |
-    v
-Generate C/native source
-    |
-    v
-Invoke native compiler
-    |
-    v
-Validate build result
-    |
-    v
-Output keyboard-layout DLL
+KeyboardProject
+      |
+      v
+XkbLayoutTranslator
+      |
+      v
+XkbKeyboardLayout
+      |
+      v
+XkbSymbolsGenerator
+      |
+      v
+symbols/<layout-id>
 ```
 
-The editor may run on Windows, Linux, and macOS. Native Windows compilation is enabled only when the required Windows toolchain is available.
+The intermediate model carries a sanitized layout/section identity and ordered mappings with an XKB
+key name, optional key type, and up to four keysyms. Core layers map to XKB levels 1-4:
 
-### 10.1 Build environment abstraction
+| Core layer | XKB level | Meaning |
+|---|---:|---|
+| `Default` | 1 | no modifier |
+| `Shift` | 2 | Shift |
+| `AltGr` | 3 | LevelThree |
+| `ShiftAltGr` | 4 | Shift+LevelThree |
+
+### 10.1 Physical key translation
+
+The common identity is `(PhysicalKeyboard.Id, PhysicalKey.Id)`. The Linux backend maps that pair to
+standard XKB key names such as `<AE01>`, `<AC01>`, `<LSGT>`, and `<KPEN>`. It must not infer XKB
+identity from `PhysicalKey.ScanCode`: that field currently supports the Windows set-1 translation and
+does not encode the XKB key-name convention.
+
+Explicit ISO-105 and ANSI-104 maps make international and keypad differences reviewable. Missing
+pairs produce key-linked target diagnostics.
+
+### 10.2 Symbols format
+
+The final artifact is a classic XKB text format v1 `xkb_symbols` component stored as
+`symbols/<layout-id>`. V1 is selected for interoperability with both X11 tooling and Wayland clients.
+The generator uses canonical keysym names for known special keys and deterministic Unicode `U...`
+notation for character outputs. `NoSymbol` fills missing intermediate levels.
+
+A component file is preferable to a self-contained `xkb_keymap` because it composes with the host's
+standard keycodes, types, compatibility data, and rules. The generator does not copy or modify the
+system XKB database. Automatic installation and activation are outside the build boundary. See
+[`LINUX-XKB.md`](LINUX-XKB.md).
+
+### 10.3 Verification
+
+Managed validation always checks identifiers, key coverage, keysyms, and output structure. When
+available, `xkbcli compile-keymap --test` verifies the generated component in an isolated include root
+combined with the system defaults. The verifier is mandatory in Linux integration CI but optional for
+local generation, so XKB text can be produced on any supported host.
+
+---
+
+## 11. Build orchestration
+
+### 11.1 Target dispatch
+
+The current fixed `IArtifactGenerator` + `IBuildEnvironment` + `INativeCompiler` constructor models
+the Windows pipeline. Phase 9 moves those collaborators behind a target backend:
+
+```csharp
+public interface IBuildBackend
+{
+    IReadOnlySet<BuildTarget> SupportedTargets { get; }
+    BuildEnvironmentStatus GetStatus(BuildTarget target);
+    Task<KeyboardBuildResult> BuildAsync(
+        KeyboardProject project,
+        BuildOptions options,
+        CancellationToken cancellationToken = default);
+}
+```
+
+An `IBuildBackendResolver` returns exactly one backend for `BuildOptions.Target`. `BuildOrchestrator`
+runs Core validation first and invokes no backend if common errors exist. The selected backend then
+runs compatibility validation and reports its own stages.
+
+| Target | Backend path | Required tools | Verification | Final artifact |
+|---|---|---|---|---|
+| `WindowsX64` | C generation -> compile -> link | MSVC + Windows SDK/WDK | PE/export verifier | `<layout-id>.dll` |
+| `WindowsArm64` | C generation -> compile -> link | MSVC + Windows SDK/WDK | PE/export verifier | `<layout-id>.dll` |
+| `LinuxXkb` | symbols generation -> write | none | `xkbcli` when available; required in CI | `symbols/<layout-id>` |
+
+This is single-target dispatch, not host dispatch. A Linux XKB artifact may be generated on Windows or
+macOS because it is deterministic text. A Windows DLL requires the supported Windows toolchain.
+
+### 11.2 Target profiles
+
+`BuildOptions.Target` chooses the output kind. The associated profile supplies backend metadata:
+
+```text
+WindowsX64 / WindowsArm64 -> WindowsLayoutMetadata
+LinuxXkb                  -> XkbLayoutMetadata
+```
+
+Profiles belong to the application/project-document boundary, remain separate from Core metadata,
+and may coexist for one project. Changing the target does not mutate key mappings.
+
+### 11.3 Windows build collaborators
+
+The Windows backend retains the existing abstractions internally:
 
 ```csharp
 public interface IBuildEnvironment
@@ -526,15 +633,7 @@ public interface IBuildEnvironment
     BuildEnvironmentStatus GetStatus(BuildTarget target);
     ResolvedBuildEnvironment? Resolve(BuildTarget target);
 }
-```
 
-The Windows implementation reports structured missing-component diagnostics. Resolution prefers an
-active developer environment and supported Visual Studio/Windows Kits discovery, then exposes exact
-compiler, linker, resource compiler, include/library, target, and version data.
-
-### 10.2 Artifact generation abstraction
-
-```csharp
 public interface IArtifactGenerator
 {
     Task<GeneratedArtifact> GenerateAsync(
@@ -542,11 +641,7 @@ public interface IArtifactGenerator
         BuildOptions options,
         CancellationToken cancellationToken = default);
 }
-```
 
-### 10.3 Native compiler abstraction
-
-```csharp
 public interface INativeCompiler
 {
     Task<CompilationResult> CompileAsync(
@@ -556,14 +651,31 @@ public interface INativeCompiler
 }
 ```
 
-Generation remains testable without invoking the toolchain. Native compilation uses one unique
-workspace per build, argument-list process execution, parsed diagnostics, and a retained raw log.
-Successful builds keep output/logs and normally remove intermediates; failed and cancelled builds
-follow the caller-selected cleanup policy.
+Windows environment resolution prefers an active developer environment and supported Visual
+Studio/Windows Kits discovery. Compilation uses a unique workspace, argument-list process execution,
+parsed diagnostics, and a retained raw log.
+
+### 11.4 Target-neutral results and stages
+
+At the orchestration/UI boundary, result names describe an artifact rather than assuming compilation.
+The current `KeyboardBuildResult.Compilation` property should evolve to an artifact result containing:
+
+```text
+Success / verification status
+Selected target
+Artifact path and kind
+Common and target diagnostics
+Executed stages
+Raw/verifier logs
+Manifest and workspace paths
+```
+
+Compiler messages may remain a detailed Windows result below the backend. XKB verifier messages map to
+the same target-neutral diagnostic envelope without being mislabeled as compiler output.
 
 ---
 
-## 11. Keyboard templates
+## 12. Keyboard templates
 
 Physical geometry is supplied as reusable templates rather than duplicated into every project.
 
@@ -574,11 +686,13 @@ templates/
  `- jis-109.json
 ```
 
-The first implementation prioritizes ISO-105 and ANSI-104. A project stores the template identifier; mappings store project-specific behavior.
+The first implementation prioritizes ISO-105 and ANSI-104. A project stores the template identifier;
+mappings store project-specific behavior. Platform backends own their mappings from stable template
+key IDs to native physical identities.
 
 ---
 
-## 12. Testing strategy
+## 13. Testing strategy
 
 ### KeyboardStudio.Core.Tests
 
@@ -600,13 +714,28 @@ Test:
 - generated character tables;
 - Unicode output mappings;
 - deterministic source generation;
-- representative golden/source snapshots.
+- representative golden/source snapshots;
+- native compilation and PE/export verification in Windows integration tests.
 
-Native compiler invocation belongs in separate Windows-only integration tests when implementation begins.
+### KeyboardStudio.Linux.Tests
+
+Test:
+
+- template key ID to XKB key-name translation;
+- logical/special key to keysym translation;
+- two- and four-level modifier behavior;
+- Unicode keysym generation;
+- deterministic symbols-component golden files;
+- `xkbcli` verification in Linux integration tests.
+
+### KeyboardStudio.App.Tests
+
+Test target selection, backend resolution, target-specific command enablement, dynamic stage
+presentation, cancellation, and result/error presentation without referencing concrete generators.
 
 ---
 
-## 13. Initial MVP boundary
+## 14. Initial MVP boundary
 
 ### Included
 
@@ -615,14 +744,16 @@ Native compiler invocation belongs in separate Windows-only integration tests wh
 - map physical key to logical key;
 - map `Default`, `Shift`, `AltGr`, and `ShiftAltGr`;
 - Unicode character outputs;
-- save/load `.kbdproj`;
-- project validation;
-- native Windows source generation;
-- Windows DLL compilation.
+- save/load `.kbdproj` and target profiles;
+- common and target-specific validation;
+- native Windows source generation and DLL compilation;
+- deterministic Linux XKB v1 symbols generation;
+- structural/tool verification for both artifact paths.
 
 ### Excluded
 
-- installation and registry registration;
+- Windows installation and registry registration;
+- automatic XKB installation, desktop registration, or activation;
 - dead keys;
 - chained dead keys;
 - ligatures;
@@ -630,70 +761,45 @@ Native compiler invocation belongs in separate Windows-only integration tests wh
 - arbitrary scripts;
 - IMEs;
 - runtime hooks/remapping;
-- importing existing native DLLs.
+- importing existing native artifacts.
 
 The domain model should remain extensible enough to add these later without complicating the first implementation.
 
 ---
 
-## 14. Critical abstractions
-
-Establish these interfaces early:
+## 15. Critical abstractions
 
 ```text
 IKeyboardProjectStore
 IKeyboardProjectValidator
-IArtifactGenerator
-INativeCompiler
+IBuildBackendResolver          (planned Phase 9)
+IBuildBackend                  (planned Phase 9)
+IArtifactGenerator             (backend-internal generation)
+INativeCompiler                (Windows backend only)
 ```
 
 These boundaries protect the editor from persistence and platform-specific implementation details.
 
 ---
 
-## 15. Architectural summary
+## 16. Architectural summary
 
 ```text
-                         KeyboardStudio
-
-+-----------------------------------------------------------+
-| KeyboardStudio.App                                        |
-|                                                           |
-| MainWindow                                                |
-|  |- KeyboardEditorView -> KeyControl x N                  |
-|  |- KeyMappingView                                        |
-|  `- BuildView                                             |
-|                                                           |
-| ViewModels                                                |
-+--------------------------+--------------------------------+
-                           |
-                           v
-+-----------------------------------------------------------+
-| KeyboardStudio.Core                                       |
-|                                                           |
-| KeyboardProject                                           |
-|  |- ProjectMetadata                                       |
-|  |- PhysicalKeyboard -> PhysicalKey                       |
-|  `- KeyboardLayout -> KeyMapping                          |
-|                      `- ModifierLayer -> KeyOutput         |
-|                                                           |
-| KeyboardEditor                                            |
-| KeyboardProjectValidator                                  |
-+---------------+-----------------------+-------------------+
-                |                       |
-                v                       v
-+--------------------------+  +-----------------------------+
-| Persistence              |  | Windows                     |
-| JsonKeyboardProjectStore |  | WindowsLayoutTranslator     |
-| .kbdproj                 |  | WindowsKeyboardLayout       |
-+--------------------------+  | WindowsCSourceGenerator     |
-                              +-------------+---------------+
-                                            |
-                                            v
-                              +-----------------------------+
-                              | Build                       |
-                              | WindowsBuildEnvironment     |
-                              | MsvcKeyboardCompiler        |
-                              | C -> OBJ -> DLL             |
-                              +-----------------------------+
+KeyboardStudio.App (composition + target-aware UI)
+ |
+ +--> KeyboardStudio.Persistence --> KeyboardStudio.Core
+ |
+ +--> KeyboardStudio.Build --> common validation --> backend resolver
+ |                                               /          \
+ |                                              v            v
+ |                              KeyboardStudio.Windows   KeyboardStudio.Linux
+ |                              C/.def/.rc generation    XKB symbols generation
+ |                              MSVC compile/link        artifact writer
+ |                              PE/export verification  xkbcli verification
+ |                                      |                     |
+ |                                      v                     v
+ |                                  <id>.dll          symbols/<layout-id>
+ |
+ `--> KeyboardStudio.Core
+      KeyboardProject -> PhysicalKeyboard + KeyboardLayout + ProjectMetadata
 ```

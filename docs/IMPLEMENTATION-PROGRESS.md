@@ -2,7 +2,7 @@
 
 This file tracks execution of [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
 
-- Current work branch: `agent/phase-7-msvc-wdk-compiler-integration`
+- Current work branch: `main`
 - Last updated: 2026-08-14
 - Current phase: Phase 8 — Artifact verification
 - Next work item: **P8.1 — PE verification**
@@ -110,34 +110,46 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 - [ ] **P8.4** Generated/source manifest
 - [ ] **P8.5** Reproducibility check
 
-## Phase 9 — Build user experience
+## Phase 9 — Support for Linux XKB Layout File Generation
 
-- [ ] **P9.1** Build panel
-- [ ] **P9.2** Disable invalid actions
-- [ ] **P9.3** Build diagnostics
-- [ ] **P9.4** Open generated files/output
-- [ ] **P9.5** Error presentation
+- [ ] **P9.1** Generalize orchestration for heterogeneous artifact targets
+- [ ] **P9.2** Add the Linux/XKB backend and target metadata
+- [ ] **P9.3** Map physical key identities to XKB key names
+- [ ] **P9.4** Translate project mappings to XKB keysyms and levels
+- [ ] **P9.5** Generate a deterministic XKB symbols component
+- [ ] **P9.6** Materialize the Linux artifact and build manifest
+- [ ] **P9.7** Validate generated layouts with `xkbcli`
+- [ ] **P9.8** Add XKB unit and golden-file tests
+- [ ] **P9.9** Add Linux XKB integration coverage
 
-## Phase 10 — Windows integration CI
+## Phase 10 — Target-aware build user experience
 
-- [ ] **P10.1** Add Windows runner
-- [ ] **P10.2** Separate fast and native tests
-- [ ] **P10.3** Artifact retention on failure
-- [ ] **P10.4** Test representative fixtures
+- [ ] **P10.1** Build panel
+- [ ] **P10.2** Disable invalid actions
+- [ ] **P10.3** Build diagnostics
+- [ ] **P10.4** Open generated files/output
+- [ ] **P10.5** Error presentation
 
-## Phase 11 — MVP stabilization and release readiness
+## Phase 11 — Windows integration CI
 
-- [ ] **P11.1** End-to-end scenario tests
-- [ ] **P11.2** Error-path testing
-- [ ] **P11.3** Documentation update
-- [ ] **P11.4** Packaging the Avalonia application
-- [ ] **P11.5** Versioning
-- [ ] **P11.6** MVP exit criteria
+- [ ] **P11.1** Add Windows runner
+- [ ] **P11.2** Separate fast and native tests
+- [ ] **P11.3** Artifact retention on failure
+- [ ] **P11.4** Test representative fixtures
+
+## Phase 12 — MVP stabilization and release readiness
+
+- [ ] **P12.1** End-to-end scenario tests
+- [ ] **P12.2** Error-path testing
+- [ ] **P12.3** Documentation update
+- [ ] **P12.4** Packaging the Avalonia application
+- [ ] **P12.5** Versioning
+- [ ] **P12.6** MVP exit criteria
 
 ## Progress summary
 
 - Completed work items: **53**
-- Total planned work items: **73**
-- Overall checklist progress: **53/73**
+- Total planned work items: **82**
+- Overall checklist progress: **53/82**
 
 The checklist records work-item completion only. Phase-level acceptance criteria and test gates in `IMPLEMENTATION-PLAN.md` still apply before a phase is considered complete.

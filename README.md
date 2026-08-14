@@ -1,15 +1,18 @@
 # KeyboardStudio
 
-KeyboardStudio is a modern Avalonia-based editor for defining custom keyboard layouts and compiling them into native Windows keyboard-layout artifacts.
+KeyboardStudio is a modern Avalonia-based editor for defining platform-neutral custom keyboard
+layouts. The implemented backend produces native Windows keyboard-layout DLLs; the roadmap now adds
+Linux XKB symbols-file generation before the target-aware build UI is finalized.
 
-The repository now contains a buildable source skeleton. The implementation is intentionally focused on the core workflow:
+The repository contains the working editor/domain/persistence foundation and the Windows source and
+native build backend. The implementation is focused on this core workflow:
 
 1. Display a physical keyboard.
 2. Select a key and define its mapping for supported modifier layers.
 3. Save and load a KeyboardStudio project.
 4. Validate the project.
-5. Generate native Windows keyboard-layout source.
-6. Compile the generated source into a Windows keyboard-layout DLL.
+5. Select an artifact target.
+6. Generate a native Windows keyboard-layout DLL or, in planned Phase 9, a Linux XKB symbols file.
 
 ## Current editor and diagnostics workflow
 
@@ -41,22 +44,19 @@ policy, and continuous-validation boundary.
 
 ## Architecture
 
-The application uses a clean separation between the cross-platform editor and the Windows-specific compiler backend.
+The application separates the cross-platform editor and build orchestration from target backends.
 
 ```text
 KeyboardStudio.App
-        |
-        v
-KeyboardStudio.Core <---- KeyboardStudio.Persistence
-        ^
-        |
-KeyboardStudio.Windows
-        ^
-        |
-KeyboardStudio.Build
+ |- KeyboardStudio.Core
+ |- KeyboardStudio.Persistence -> Core
+ |- KeyboardStudio.Build       -> Core
+ |- KeyboardStudio.Windows     -> Build + Core
+ `- KeyboardStudio.Linux       -> Build + Core (planned Phase 9)
 ```
 
-The most important architectural rule is that `KeyboardStudio.Core` must not reference Avalonia, Windows APIs, the WDK, or MSVC.
+The most important architectural rule is that `KeyboardStudio.Core` must not reference Avalonia,
+Windows APIs/WDK/MSVC, or Linux XKB/libxkbcommon concepts.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the complete architecture.
 
@@ -70,11 +70,13 @@ src/
   KeyboardStudio.Core/
   KeyboardStudio.Persistence/
   KeyboardStudio.Windows/
+  KeyboardStudio.Linux/        # planned Phase 9
   KeyboardStudio.Build/
 
 tests/
   KeyboardStudio.Core.Tests/
   KeyboardStudio.Windows.Tests/
+  KeyboardStudio.Linux.Tests/  # planned Phase 9
   KeyboardStudio.App.Tests/
 
 templates/
@@ -83,14 +85,15 @@ docs/
   ARCHITECTURE.md
   DIAGNOSTICS.md
   IMPLEMENTATION-PLAN.md
+  LINUX-XKB.md
   PROJECT-FORMAT.md
   WINDOWS-BUILD.md
   DECISIONS.md
 ```
 
-## Initial scope
+## MVP scope
 
-Supported in the first implementation:
+Implemented through Phase 7:
 
 - visual ISO/ANSI keyboard representation;
 - physical-key selection;
@@ -102,7 +105,11 @@ Supported in the first implementation:
 - Windows keyboard-table source generation;
 - native Windows DLL compilation.
 
-Explicitly out of initial scope:
+Planned before MVP:
+
+- Linux XKB v1 symbols-file generation and verification (planned Phase 9).
+
+Explicitly out of MVP scope:
 
 - installers and registry installation;
 - dead keys and chained dead keys;
@@ -112,8 +119,10 @@ Explicitly out of initial scope:
 - runtime keyboard hooks;
 - PowerToys-style remapping;
 - importing arbitrary existing keyboard DLLs.
+- automatic installation or activation of generated XKB layouts.
 
 ## References
 
 - Avalonia documentation: https://docs.avaloniaui.net/
 - Microsoft Windows keyboard-layout samples: https://github.com/microsoft/Windows-driver-samples/tree/main/input/layout
+- libxkbcommon XKB text format: https://xkbcommon.org/doc/current/keymap-text-format-v1-v2.html

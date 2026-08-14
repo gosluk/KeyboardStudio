@@ -34,11 +34,18 @@ The first release supports `Default`, `Shift`, `AltGr`, and `ShiftAltGr`. More a
 
 ViewModels orchestrate UI state but do not directly mutate arbitrary nested project state. This leaves room for validation, dirty tracking and undo/redo.
 
-## AD-009 - General and Windows metadata are separate
+## AD-009 - General and target metadata are separate
 
-`ProjectMetadata` contains only cross-platform information: display name, description, user-managed project version, and language/locale. Windows layout identity is represented by `WindowsLayoutMetadata` in `KeyboardStudio.Windows` and must not be added to `KeyboardStudio.Core`.
+`ProjectMetadata` contains only cross-platform information: display name, description, user-managed
+project version, and language/locale. Windows layout identity is represented by
+`WindowsLayoutMetadata` in `KeyboardStudio.Windows`; Linux layout/section identity is represented by
+`XkbLayoutMetadata` in the planned `KeyboardStudio.Linux`. Neither belongs in `KeyboardStudio.Core`.
 
-Persistence DTOs must not solve target metadata by making `KeyboardStudio.Persistence` depend on the Windows backend or by putting Windows fields into the core aggregate. The current `IKeyboardProjectStore` transports only the platform-neutral `KeyboardProject`; target-specific document/settings persistence must be introduced through a boundary that can preserve Windows metadata without reversing dependency direction.
+Persistence DTOs must not solve target metadata by making `KeyboardStudio.Persistence` depend on a
+platform backend or by putting backend fields into the core aggregate. The current
+`IKeyboardProjectStore` transports only the platform-neutral `KeyboardProject`; target-specific
+document/settings persistence must be introduced through a boundary that can preserve both profiles
+without reversing dependency direction.
 
 ## AD-010 - Persistence DTOs own the wire contract
 
@@ -89,3 +96,34 @@ Every native build writes generated files, objects, outputs, and logs below a un
 default cleanup policy removes successful-build intermediates but retains the DLL and raw log, while
 failed and cancelled builds retain their diagnostic workspace. Callers may retain all files or delete
 failed workspaces explicitly through `BuildCleanupPolicy`.
+
+## AD-016 - Build orchestration resolves one backend by artifact target
+
+`BuildOrchestrator` owns common project validation and resolves exactly one `IBuildBackend` from
+`BuildOptions.Target`. The selected backend owns target compatibility validation, generation,
+materialization, verification, and its environment status.
+
+Windows backends retain `IArtifactGenerator`, `IBuildEnvironment`, and `INativeCompiler` as internal
+collaborators. The Linux XKB backend writes its generated text as the final artifact and must not use a
+no-op native compiler. Results and UI stages use target-neutral artifact terminology at the backend
+boundary.
+
+## AD-017 - The Linux artifact is an XKB v1 symbols component
+
+The Linux backend generates classic XKB text format v1 at `symbols/<layout-id>`. It emits an
+`xkb_symbols` component rather than a self-contained keymap so the artifact composes with the host's
+standard keycodes, types, compatibility data, and rules. V1 is chosen for X11 and Wayland interchange
+compatibility.
+
+Generation is deterministic managed code and does not require Linux or libxkbcommon. When available,
+`xkbcli compile-keymap --test` verifies the component in an isolated include root; Linux CI requires
+that verification. Normal build and test workflows never install or activate the layout.
+
+## AD-018 - Platform physical identities are mapped from stable template key IDs
+
+`(PhysicalKeyboard.Id, PhysicalKey.Id)` is the shared physical identity at translation boundaries.
+The Windows backend consumes the template's scan-code data, while the Linux backend uses explicit
+ISO-105/ANSI-104 tables to map stable key IDs to XKB symbolic names such as `<AC01>` and `<LSGT>`.
+
+XKB names must not be inferred from Windows scan codes or stored in Core. Unknown template/key pairs
+fail with structured, key-linked target diagnostics.

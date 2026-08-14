@@ -1,6 +1,6 @@
 # KeyboardStudio.Build
 
-Build orchestration and native toolchain integration.
+Build orchestration and target tool integration.
 
 Responsibilities:
 
@@ -11,6 +11,22 @@ Responsibilities:
 - return structured compiler diagnostics and artifact paths.
 
 The build pipeline must keep source generation testable without requiring the native toolchain.
+
+## Target backend direction (Phase 9)
+
+The current orchestrator models the Windows pipeline directly as validation, generation, environment
+resolution, and native compilation. Linux XKB output is deterministic text and has no native
+compile/link step, so Phase 9 will introduce `IBuildBackend` plus an `IBuildBackendResolver` selected
+by `BuildOptions.Target`.
+
+```text
+WindowsX64 / WindowsArm64 -> generate -> compile/link -> PE verify -> DLL
+LinuxXkb                  -> generate -> write -> optional xkbcli verify -> symbols file
+```
+
+`INativeCompiler` remains a Windows-backend collaborator rather than becoming a fake universal
+materializer. At the orchestration/UI boundary, results and stages use target-neutral artifact
+terminology. See [`docs/LINUX-XKB.md`](../../docs/LINUX-XKB.md).
 
 ## Windows toolchain contract
 

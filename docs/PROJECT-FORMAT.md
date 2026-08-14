@@ -86,7 +86,9 @@ General metadata is platform-neutral and belongs to the core project model:
 - `version` is the user-managed project version and is independent of `schemaVersion`;
 - `language` is a BCP 47 language/locale tag, with `und` meaning unspecified.
 
-Windows-only layout identity is not part of `ProjectMetadata`. It is represented by `WindowsLayoutMetadata` in `KeyboardStudio.Windows` so Windows concepts do not leak into `KeyboardStudio.Core`.
+Target-only layout identity is not part of `ProjectMetadata`. Windows uses `WindowsLayoutMetadata` in
+`KeyboardStudio.Windows`; planned Linux XKB generation uses `XkbLayoutMetadata` in
+`KeyboardStudio.Linux`. Platform concepts do not leak into `KeyboardStudio.Core`.
 
 Author metadata is intentionally omitted for now because generated resources do not consume it yet.
 
@@ -132,14 +134,18 @@ Author metadata is intentionally omitted for now because generated resources do 
 }
 ```
 
-Windows layout identity remains separate from the core aggregate and is not currently carried by the `IKeyboardProjectStore` contract. A target-specific document/settings boundary must preserve it without introducing a `KeyboardStudio.Core -> KeyboardStudio.Windows` dependency.
+Target layout identities remain separate from the core aggregate and are not currently carried by the
+`IKeyboardProjectStore` contract. Phase 9 introduces a target-specific document/settings boundary that
+can preserve both Windows and XKB profiles without introducing Core dependencies on either backend.
+That implementation must migrate the schema explicitly; this document does not claim a `targets`
+member exists in schema version 1.
 
 ## Design rules
 
 - Key mappings reference stable physical key IDs from a keyboard template.
 - Modifier names are platform-neutral.
-- Windows implementation structures are never serialized into `.kbdproj`.
-- Windows build metadata stays separate from general project metadata.
+- Platform implementation structures are never serialized into `.kbdproj`.
+- Windows and XKB build metadata stay separate from general project metadata.
 - Output objects are typed so additional output categories can be added later.
 - Runtime domain classes are not the persistence contract.
 - Output kinds are stable persistence identifiers, not CLR type names.
