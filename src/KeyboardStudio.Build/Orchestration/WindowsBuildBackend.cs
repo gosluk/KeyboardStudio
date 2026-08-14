@@ -54,7 +54,7 @@ public sealed class WindowsBuildBackend : IBuildBackend
                 false,
                 null,
                 [new CompilerMessage("ENV001", status.Message)]);
-            return new KeyboardBuildResult(false, [], compilation);
+            return CreateResult(compilation, null);
         }
 
         var generated = await _generator.GenerateAsync(project, options, cancellationToken);
@@ -114,11 +114,7 @@ public sealed class WindowsBuildBackend : IBuildBackend
             };
         }
 
-        return new KeyboardBuildResult(
-            compilationResult.Success,
-            [],
-            compilationResult,
-            reproducibility);
+        return CreateResult(compilationResult, reproducibility);
     }
 
     private async Task<BuildReproducibilityResult> VerifyReproducibilityAsync(
@@ -168,5 +164,32 @@ public sealed class WindowsBuildBackend : IBuildBackend
         {
             throw new ArgumentOutOfRangeException(nameof(target), target, "Unsupported Windows target.");
         }
+    }
+
+    private static KeyboardBuildResult CreateResult(
+        CompilationResult compilation,
+        BuildReproducibilityResult? reproducibility)
+    {
+        var diagnostics = compilation.Messages.Select(message => new BuildArtifactDiagnostic(
+            message.Severity switch
+            {
+                CompilerMessageSeverity.Info => BuildDiagnosticSeverity.Info,
+                CompilerMessageSeverity.Warning => BuildDiagnosticSeverity.Warning,
+                _ => BuildDiagnosticSeverity.Error
+            },
+            message.Code,
+            message.Message,
+            message.FilePath)).ToArray();
+        var artifact = new ArtifactBuildResult(
+            compilation.Success,
+            compilation.ArtifactPath,
+            diagnostics,
+            compilation.RawLog,
+            compilation.LogPath,
+            compilation.WorkspacePath,
+            compilation.ManifestPath,
+            compilation.ArtifactSha256,
+            compilation);
+        return new KeyboardBuildResult(compilation.Success, [], artifact, reproducibility);
     }
 }

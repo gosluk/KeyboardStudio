@@ -5,5 +5,8 @@ namespace KeyboardStudio.Build;
 public sealed record KeyboardBuildResult(
     bool Success,
     IReadOnlyList<ValidationIssue> ValidationIssues,
-    CompilationResult? Compilation,
-    BuildReproducibilityResult? Reproducibility = null);
+    ArtifactBuildResult? Artifact,
+    BuildReproducibilityResult? Reproducibility = null)
+{
+    public CompilationResult? Compilation => Artifact?.BackendDetails as CompilationResult;
+}
