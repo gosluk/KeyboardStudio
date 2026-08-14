@@ -123,7 +123,7 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 ## Progress summary
 
 - Completed work items: **3**
-- Total planned work items: **69**
-- Overall checklist progress: **3/69**
+- Total planned work items: **73**
+- Overall checklist progress: **3/73**
 
 The checklist records work-item completion only. Phase-level acceptance criteria and test gates in `IMPLEMENTATION-PLAN.md` still apply before a phase is considered complete.
