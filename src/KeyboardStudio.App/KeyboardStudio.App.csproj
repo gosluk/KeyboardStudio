@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Avalonia.Fonts.Inter" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\KeyboardStudio.Core\KeyboardStudio.Core.csproj" />
+    <ProjectReference Include="..\KeyboardStudio.Persistence\KeyboardStudio.Persistence.csproj" />
+    <ProjectReference Include="..\KeyboardStudio.Build\KeyboardStudio.Build.csproj" />
+    <ProjectReference Include="..\KeyboardStudio.Windows\KeyboardStudio.Windows.csproj" />
+  </ItemGroup>
+</Project>

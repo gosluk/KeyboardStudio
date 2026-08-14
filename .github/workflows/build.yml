@@ -1,0 +1,49 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - architecture
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_SDK_VERSION: '10.0.302'
+  SOLUTION: KeyboardStudio.sln
+  BUILD_CONFIGURATION: Release
+
+jobs:
+  managed-build:
+    name: Managed build (${{ matrix.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Phase 10 can add windows-latest here and conditionally append
+          # native WDK integration steps without duplicating managed build steps.
+          - name: Ubuntu
+            os: ubuntu-latest
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
+
+      - name: Restore
+        run: dotnet restore ${{ env.SOLUTION }}
+
+      - name: Build
+        run: dotnet build ${{ env.SOLUTION }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
+
+      - name: Test
+        run: dotnet test ${{ env.SOLUTION }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --verbosity normal
