@@ -11,7 +11,7 @@ public enum ProjectLoadErrorCode
     InvalidProject
 }
 
-public sealed class ProjectLoadException : InvalidDataException
+public sealed class ProjectLoadException : Exception
 {
     public ProjectLoadException()
         : this(ProjectLoadErrorCode.Unknown, "The project could not be loaded.")
