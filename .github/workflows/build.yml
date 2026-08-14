@@ -3,7 +3,8 @@ name: Build
 on:
   push:
     branches:
-      - architecture
+      - main
+      - 'agent/**'
   pull_request:
     branches:
       - main
