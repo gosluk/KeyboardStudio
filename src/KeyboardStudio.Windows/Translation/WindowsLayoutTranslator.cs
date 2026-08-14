@@ -31,7 +31,8 @@ public static class WindowsLayoutTranslator
                     vscToVkMappings.Add(new VscToVkMapping(scanCode, virtualKey));
                 }
 
-                if (mapping.Outputs.Values.OfType<CharacterOutput>().Any())
+                if (WindowsLogicalKeyClassifier.ProducesCharacters(mapping.LogicalKey) &&
+                    mapping.Outputs.Values.OfType<CharacterOutput>().Any())
                 {
                     characters.Add(new WindowsCharacterMapping(
                         virtualKey,
