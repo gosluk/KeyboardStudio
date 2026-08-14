@@ -143,7 +143,7 @@ public sealed class KeyboardEditorTests
             ScanCode = 0x60
         });
 
-        var issues = new KeyboardProjectValidator().Validate(project);
+        var issues = new KeyboardProjectValidator().Validate(project).Issues;
 
         Assert.Contains(issues, issue =>
             issue.Code == KeyboardProjectDiagnosticCodes.DuplicatePhysicalKeyId &&
@@ -167,7 +167,7 @@ public sealed class KeyboardEditorTests
             Layout = source.Layout
         };
 
-        var issues = new KeyboardProjectValidator().Validate(project);
+        var issues = new KeyboardProjectValidator().Validate(project).Issues;
 
         Assert.Contains(issues, issue =>
             issue.Code == KeyboardProjectDiagnosticCodes.MissingProjectVersion &&
@@ -191,7 +191,7 @@ public sealed class KeyboardEditorTests
             Layout = source.Layout
         };
 
-        var issues = new KeyboardProjectValidator().Validate(project);
+        var issues = new KeyboardProjectValidator().Validate(project).Issues;
 
         Assert.Contains(issues, issue =>
             issue.Code == KeyboardProjectDiagnosticCodes.MissingProjectLanguage &&

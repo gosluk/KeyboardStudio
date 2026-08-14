@@ -7,6 +7,14 @@ public sealed class MetadataValidationRule : IKeyboardProjectValidationRule
         ArgumentNullException.ThrowIfNull(project);
 
         var issues = new List<ValidationIssue>();
+        if (string.IsNullOrWhiteSpace(project.Metadata.Description))
+        {
+            issues.Add(new ValidationIssue(
+                ValidationSeverity.Info,
+                KeyboardProjectDiagnosticCodes.MissingProjectDescription,
+                "The optional project description is empty."));
+        }
+
         if (string.IsNullOrWhiteSpace(project.Metadata.Name))
         {
             issues.Add(new ValidationIssue(

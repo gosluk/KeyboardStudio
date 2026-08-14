@@ -23,10 +23,10 @@ public sealed class KeyboardProjectValidator : IKeyboardProjectValidator
         }
     }
 
-    public IReadOnlyList<ValidationIssue> Validate(KeyboardProject project)
+    public ValidationResult Validate(KeyboardProject project)
     {
         ArgumentNullException.ThrowIfNull(project);
 
-        return _rules.SelectMany(rule => rule.Validate(project)).ToArray();
+        return new ValidationResult(_rules.SelectMany(rule => rule.Validate(project)));
     }
 }

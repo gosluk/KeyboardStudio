@@ -2,11 +2,6 @@ using KeyboardStudio.Core;
 
 namespace KeyboardStudio.Build;
 
-public sealed record KeyboardBuildResult(
-    bool Success,
-    IReadOnlyList<ValidationIssue> ValidationIssues,
-    CompilationResult? Compilation);
-
 public sealed class BuildOrchestrator
 {
     private readonly IKeyboardProjectValidator _validator;
@@ -31,10 +26,10 @@ public sealed class BuildOrchestrator
         BuildOptions options,
         CancellationToken cancellationToken = default)
     {
-        var issues = _validator.Validate(project);
-        if (issues.Any(issue => issue.Severity == ValidationSeverity.Error))
+        var validation = _validator.Validate(project);
+        if (validation.HasErrors)
         {
-            return new KeyboardBuildResult(false, issues, null);
+            return new KeyboardBuildResult(false, validation.Issues, null);
         }
 
         if (!_environment.CanBuild(options.Target))
@@ -44,11 +39,11 @@ public sealed class BuildOrchestrator
                 false,
                 null,
                 [new CompilerMessage("ENV001", status.Message)]);
-            return new KeyboardBuildResult(false, issues, compilation);
+            return new KeyboardBuildResult(false, validation.Issues, compilation);
         }
 
         var generated = await _generator.GenerateAsync(project, options, cancellationToken);
         var compilationResult = await _compiler.CompileAsync(generated.Source, options.Target, cancellationToken);
-        return new KeyboardBuildResult(compilationResult.Success, issues, compilationResult);
+        return new KeyboardBuildResult(compilationResult.Success, validation.Issues, compilationResult);
     }
 }

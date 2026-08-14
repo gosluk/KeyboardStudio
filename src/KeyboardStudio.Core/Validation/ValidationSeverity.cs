@@ -2,7 +2,7 @@ namespace KeyboardStudio.Core;
 
 public enum ValidationSeverity
 {
-    Info,
-    Warning,
-    Error
+    Info = 0,
+    Warning = 1,
+    Error = 2
 }

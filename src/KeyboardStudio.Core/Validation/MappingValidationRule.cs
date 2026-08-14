@@ -24,6 +24,15 @@ public sealed class MappingValidationRule : IKeyboardProjectValidationRule
 
         foreach (var mapping in project.Layout.Mappings)
         {
+            if (mapping.LogicalKey == LogicalKey.None && mapping.Outputs.Count > 0)
+            {
+                issues.Add(new ValidationIssue(
+                    ValidationSeverity.Warning,
+                    KeyboardProjectDiagnosticCodes.OutputWithoutLogicalKey,
+                    $"Physical key '{mapping.KeyId}' has outputs but no logical-key assignment.",
+                    mapping.KeyId));
+            }
+
             foreach (var output in mapping.Outputs.Values)
             {
                 if (output is null ||
