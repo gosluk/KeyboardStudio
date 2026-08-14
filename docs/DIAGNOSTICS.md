@@ -36,3 +36,15 @@ Windows codes are declared in `KeyboardStudio.Windows`; Core does not depend on 
 - New checks receive new codes instead of overloading an unrelated existing code.
 - Only `Error` diagnostics block build orchestration.
 - `Warning` and `Info` diagnostics remain visible but allow the build pipeline to proceed.
+
+## Continuous editor validation
+
+The desktop editor runs the composed in-memory rules after each successful mapping mutation and
+after New or Open replaces the document. The current Core and Windows compatibility rules are
+deterministic, CPU-only checks over the project model, so they run synchronously without a debounce.
+Rejected character input and no-op edits do not trigger project validation because the domain did
+not change.
+
+Continuous validation never invokes source generation, a native compiler, filesystem I/O, or the
+Windows build environment. If later rules become expensive, they must move behind a debounced or
+explicit validation boundary rather than making editor input block on build work.

@@ -1,5 +1,6 @@
 using KeyboardStudio.App;
 using KeyboardStudio.Core;
+using KeyboardStudio.Windows;
 using Xunit;
 
 namespace KeyboardStudio.App.Tests;
@@ -58,5 +59,73 @@ public sealed class DiagnosticsViewModelTests
         editor.ApplyDiagnostics([]);
 
         Assert.False(keyA.HasError);
+    }
+
+    [Fact]
+    public void MappingMutation_WhenOutputHasNoLogicalKey_ContinuouslyRefreshesDiagnostics()
+    {
+        var viewModel = new MainWindowViewModel();
+        Assert.True(viewModel.Editor.SelectKey("KeyA"));
+
+        viewModel.Editor.LayerMappings[0].Output = "a";
+
+        Assert.Contains(viewModel.Diagnostics.Items, item =>
+            item.Code == KeyboardProjectDiagnosticCodes.OutputWithoutLogicalKey &&
+            item.Severity == ValidationSeverity.Warning &&
+            item.KeyId == "KeyA");
+        Assert.Contains(viewModel.Diagnostics.Items, item =>
+            item.Code == WindowsDiagnosticCodes.UnsupportedLogicalKeyMapping &&
+            item.Severity == ValidationSeverity.Error &&
+            item.KeyId == "KeyA");
+        Assert.True(viewModel.Editor.SelectedKey?.HasError);
+
+        viewModel.Editor.SelectedLogicalKey = LogicalKey.A;
+
+        Assert.DoesNotContain(viewModel.Diagnostics.Items, item => item.KeyId == "KeyA");
+        Assert.False(viewModel.Editor.SelectedKey?.HasError);
+    }
+
+    [Fact]
+    public void MappingMutation_WhenEditIsRejected_DoesNotRunProjectValidation()
+    {
+        var validator = new CountingProjectValidator();
+        var viewModel = new MainWindowViewModel(
+            new KeyboardTemplateProvider(),
+            new TestProjectInteractionService(),
+            validator);
+        Assert.True(viewModel.Editor.SelectKey("KeyA"));
+        Assert.Equal(1, validator.CallCount);
+
+        viewModel.Editor.LayerMappings[0].Output = "ab";
+
+        Assert.Equal(1, validator.CallCount);
+
+        viewModel.Editor.LayerMappings[0].Output = "a";
+
+        Assert.Equal(2, validator.CallCount);
+    }
+
+    private sealed class CountingProjectValidator : IKeyboardProjectValidator
+    {
+        public int CallCount { get; private set; }
+
+        public ValidationResult Validate(KeyboardProject project)
+        {
+            CallCount++;
+            return new ValidationResult([]);
+        }
+    }
+
+    private sealed class TestProjectInteractionService : IProjectInteractionService
+    {
+        public Task<ProjectReplacementChoice> ConfirmUnsavedChangesAsync(string projectName) =>
+            Task.FromResult(ProjectReplacementChoice.Cancel);
+
+        public Task<string?> SelectOpenPathAsync() => Task.FromResult<string?>(null);
+
+        public Task<string?> SelectSavePathAsync(string suggestedFileName) =>
+            Task.FromResult<string?>(null);
+
+        public Task ShowErrorAsync(string title, string message) => Task.CompletedTask;
     }
 }

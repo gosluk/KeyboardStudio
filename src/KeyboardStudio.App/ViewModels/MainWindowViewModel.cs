@@ -233,6 +233,7 @@ public sealed class MainWindowViewModel : ObservableObject
     private void DocumentChanged()
     {
         _documentService.MarkDirty();
+        RefreshDiagnostics();
         RefreshDocumentState();
     }
 
