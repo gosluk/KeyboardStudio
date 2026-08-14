@@ -1,0 +1,21 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="KeyboardStudio.App.UnsavedChangesDialog"
+        Title="Unsaved changes"
+        Width="460"
+        SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+  <StackPanel Margin="24" Spacing="16">
+    <TextBlock x:Name="MessageText" TextWrapping="Wrap" FontSize="15" />
+    <TextBlock Text="Save your changes before replacing the current document?"
+               TextWrapping="Wrap"
+               Opacity="0.75" />
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <Button Content="Cancel" Click="CancelClicked" />
+      <Button Content="Discard" Click="DiscardClicked" />
+      <Button Content="Save" Click="SaveClicked" />
+    </StackPanel>
+  </StackPanel>
+</Window>

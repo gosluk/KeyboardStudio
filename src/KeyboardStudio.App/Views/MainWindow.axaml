@@ -2,21 +2,43 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="using:KeyboardStudio.App.Controls"
         x:Class="KeyboardStudio.App.MainWindow"
-        Title="KeyboardStudio"
+        Title="{Binding WindowTitle}"
         Width="1180"
         Height="760"
         MinWidth="900"
         MinHeight="600">
-  <Grid RowDefinitions="Auto,*" ColumnDefinitions="2*,*" Margin="16">
-    <StackPanel Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="12" Margin="0,0,0,12">
+  <Window.KeyBindings>
+    <KeyBinding Gesture="Ctrl+N" Command="{Binding NewCommand}" />
+    <KeyBinding Gesture="Ctrl+O" Command="{Binding OpenCommand}" />
+    <KeyBinding Gesture="Ctrl+S" Command="{Binding SaveCommand}" />
+    <KeyBinding Gesture="Ctrl+Shift+S" Command="{Binding SaveAsCommand}" />
+  </Window.KeyBindings>
+
+  <Grid RowDefinitions="Auto,Auto,*" ColumnDefinitions="2*,*" Margin="16">
+    <Menu Grid.ColumnSpan="2" Margin="-8,-8,-8,10">
+      <MenuItem Header="_File">
+        <MenuItem Header="_New" Command="{Binding NewCommand}" />
+        <MenuItem Header="_Open…" Command="{Binding OpenCommand}" />
+        <Separator />
+        <MenuItem Header="_Save" Command="{Binding SaveCommand}" />
+        <MenuItem Header="Save _As…" Command="{Binding SaveAsCommand}" />
+      </MenuItem>
+    </Menu>
+
+    <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="12" Margin="0,0,0,12">
       <TextBlock Text="KeyboardStudio" FontSize="24" FontWeight="Bold" />
-      <TextBlock Text="Avalonia keyboard layout editor skeleton" VerticalAlignment="Center" Opacity="0.7" />
+      <TextBlock Text="{Binding DocumentStatus}" VerticalAlignment="Center" Opacity="0.7" />
+      <TextBlock Text="Unsaved changes"
+                 VerticalAlignment="Center"
+                 Foreground="#D97706"
+                 IsVisible="{Binding IsDirty}" />
     </StackPanel>
 
-    <Border Grid.Row="1" Grid.Column="0" Padding="16" Margin="0,0,12,0" BorderThickness="1" BorderBrush="#707070" CornerRadius="6">
+    <Border Grid.Row="2" Grid.Column="0" Padding="16" Margin="0,0,12,0" BorderThickness="1" BorderBrush="#707070" CornerRadius="6">
       <Grid RowDefinitions="Auto,Auto,*" RowSpacing="12">
         <TextBlock Text="Keyboard" FontSize="18" FontWeight="SemiBold" />
         <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="12">
+          <TextBlock Text="Template for new project" VerticalAlignment="Center" />
           <ComboBox ItemsSource="{Binding Templates}"
                     SelectedItem="{Binding SelectedTemplate}"
                     Width="220">
@@ -76,7 +98,7 @@
       </Grid>
     </Border>
 
-    <StackPanel Grid.Row="1" Grid.Column="1" Spacing="12">
+    <StackPanel Grid.Row="2" Grid.Column="1" Spacing="12">
       <Border Padding="16" BorderThickness="1" BorderBrush="#707070" CornerRadius="6">
         <StackPanel Spacing="8">
           <TextBlock Text="Selected key" FontSize="18" FontWeight="SemiBold" />
