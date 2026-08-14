@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 
 namespace KeyboardStudio.Windows;
@@ -23,11 +24,11 @@ internal static class WindowsCSourceGenerator
         foreach (var entry in layout.Entries)
         {
             builder.Append("    { 0x")
-                .Append(entry.ScanCode.ToString("X2"))
+                .Append(entry.ScanCode.ToString("X2", CultureInfo.InvariantCulture))
                 .Append(", ")
-                .Append((int)entry.Modifier)
+                .Append(((int)entry.Modifier).ToString(CultureInfo.InvariantCulture))
                 .Append(", 0x")
-                .Append(entry.UnicodeScalar.ToString("X8"))
+                .Append(entry.UnicodeScalar.ToString("X8", CultureInfo.InvariantCulture))
                 .AppendLine(" },");
         }
 

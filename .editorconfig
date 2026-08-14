@@ -26,6 +26,10 @@ csharp_style_prefer_primary_constructors = false:suggestion
 csharp_style_prefer_braces = true:suggestion
 csharp_new_line_before_open_brace = all
 
+[tests/**/*.cs]
+# Behavior-oriented test names intentionally use Method_WhenCondition_Result.
+dotnet_diagnostic.CA1707.severity = none
+
 [*.{axaml,xaml,xml,json,yml,yaml}]
 indent_style = space
 indent_size = 2
