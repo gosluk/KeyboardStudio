@@ -10,13 +10,24 @@ public sealed class KeyboardEditorViewModel : ObservableObject
     private ModifierLayer _activeLayer;
     private KeyViewModel? _selectedKey;
 
-    public KeyboardEditorViewModel(KeyboardEditor editor)
+    public KeyboardEditorViewModel(KeyboardEditor editor, KeyboardTemplateDescriptor template)
     {
+        ArgumentNullException.ThrowIfNull(editor);
+        ArgumentNullException.ThrowIfNull(template);
+
         _editor = editor;
         Layers = Enum.GetValues<ModifierLayer>();
         Keys = new ObservableCollection<KeyViewModel>(
             editor.Project.Keyboard.Keys.Select(key =>
-                new KeyViewModel(key, editor.Project.Layout.Find(key.Id), SelectKey)));
+                new KeyViewModel(
+                    key,
+                    editor.Project.Layout.Find(key.Id),
+                    SelectKey,
+                    template.UnitWidth,
+                    template.UnitGap)));
+
+        KeyboardWidth = Keys.Select(key => key.Left + key.Width).DefaultIfEmpty().Max();
+        KeyboardHeight = Keys.Select(key => key.Top + key.Height).DefaultIfEmpty().Max();
 
         RefreshLabels();
         SelectedKey = Keys.FirstOrDefault();
@@ -24,6 +35,8 @@ public sealed class KeyboardEditorViewModel : ObservableObject
 
     public ObservableCollection<KeyViewModel> Keys { get; }
     public IReadOnlyList<ModifierLayer> Layers { get; }
+    public double KeyboardWidth { get; }
+    public double KeyboardHeight { get; }
 
     public ModifierLayer ActiveLayer
     {
