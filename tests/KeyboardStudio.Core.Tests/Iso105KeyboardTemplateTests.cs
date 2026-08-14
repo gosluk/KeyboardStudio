@@ -66,7 +66,8 @@ public sealed class Iso105KeyboardTemplateTests
     {
         var keyboard = Provider.Load("iso-105");
         var key = Assert.Single(
-            keyboard.Keys.Where(key => string.Equals(key.Id, keyId, StringComparison.Ordinal)));
+            keyboard.Keys,
+            key => string.Equals(key.Id, keyId, StringComparison.Ordinal));
 
         Assert.Equal(scanCode, key.ScanCode);
         Assert.Equal(extended, key.Extended);
@@ -92,7 +93,8 @@ public sealed class Iso105KeyboardTemplateTests
     {
         var keyboard = Provider.Load("iso-105");
         var key = Assert.Single(
-            keyboard.Keys.Where(key => string.Equals(key.Id, keyId, StringComparison.Ordinal)));
+            keyboard.Keys,
+            key => string.Equals(key.Id, keyId, StringComparison.Ordinal));
 
         Assert.Equal(x, key.X);
         Assert.Equal(y, key.Y);
