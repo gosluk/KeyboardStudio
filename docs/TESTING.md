@@ -2,6 +2,16 @@
 
 This document defines the baseline testing conventions for KeyboardStudio. The detailed implementation roadmap remains in [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
 
+## Local Podman validation
+
+Run the same restore, Release build, and complete solution test sequence in an isolated .NET SDK container:
+
+```bash
+./scripts/test-in-podman.sh
+```
+
+The script uses the .NET `10.0.302` SDK image pinned by `global.json` and pulls it when missing. Set `KEYBOARDSTUDIO_DOTNET_IMAGE` to override the image for compatibility testing. Build outputs are written to the normal ignored `bin/` and `obj/` directories in the checkout.
+
 ## Test method naming
 
 Behavior tests use the following form:

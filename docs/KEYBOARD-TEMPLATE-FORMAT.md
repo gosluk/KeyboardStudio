@@ -19,7 +19,7 @@ A template version 1 document has these required fields:
 
 `id` is intentionally stable and should not be localized. `name` is display text and may change without changing identity.
 
-The JSON Schema allows an empty `keys` array so schema-only fixtures and staged template authoring remain possible. Built-in template completeness is a semantic rule enforced by the template provider. The ISO-105 definition is complete as of P2.3; ANSI-104 remains an empty staged definition until P2.4.
+The JSON Schema allows an empty `keys` array so schema-only fixtures and staged template authoring remain possible. Built-in template completeness is a semantic rule enforced by the template provider. The ISO-105 and ANSI-104 built-in definitions are complete.
 
 ## Physical key object
 
@@ -54,7 +54,7 @@ ISO-specific positions use:
 - `IntlHash` for the ISO non-US hash/tilde position represented by base scan code `0x2B`;
 - `IntlBackslash` for the additional ISO key represented by scan code `0x56`.
 
-This lets the later ANSI template represent its physically different `0x2B` position independently.
+ANSI instead uses `Backslash` for the `0x2B` position. Its horizontal Enter and wider left Shift geometry are also independent from ISO's tall Enter and additional `IntlBackslash` position.
 
 ## Example
 
@@ -103,7 +103,7 @@ The provider registers these completeness expectations:
 | Template | Expected key count | Current state |
 | --- | ---: | --- |
 | `iso-105` | 105 | Complete |
-| `ansi-104` | 104 | Staged for P2.4 |
+| `ansi-104` | 104 | Complete |
 
 An incomplete built-in remains enumerable but `Load` reports `IncompleteTemplate`. This keeps staged template work explicit while preventing incomplete physical definitions from silently entering a project.
 
