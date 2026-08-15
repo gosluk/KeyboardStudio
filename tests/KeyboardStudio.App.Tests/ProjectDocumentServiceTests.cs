@@ -120,6 +120,30 @@ public sealed class ProjectDocumentServiceTests
         }
     }
 
+    [Theory]
+    [Trait("Category", "Unit")]
+    [Trait("Category", "ErrorPath")]
+    [InlineData("not-json")]
+    [InlineData("{\"documentSchemaVersion\":999,\"project\":{},\"targets\":{}}")]
+    public async Task OpenAsync_WhenDocumentEnvelopeIsInvalid_ReportsInvalidProject(string contents)
+    {
+        var path = CreateTemporaryPath();
+        try
+        {
+            await File.WriteAllTextAsync(path, contents);
+            var service = CreateService();
+
+            var result = await service.OpenAsync(path);
+
+            Assert.False(result.Success);
+            Assert.Equal(ProjectDocumentErrorKind.InvalidProject, result.Error?.Kind);
+        }
+        finally
+        {
+            DeleteIfExists(path);
+        }
+    }
+
     [Fact]
     [Trait("Category", "Unit")]
     public async Task SaveAsAsync_WhenPersistenceFails_PreservesDirtyStateAndCurrentPath()

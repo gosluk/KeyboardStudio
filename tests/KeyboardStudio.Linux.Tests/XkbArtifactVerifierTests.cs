@@ -8,6 +8,7 @@ public sealed class XkbArtifactVerifierTests
 {
     [Fact]
     [Trait("Category", "Unit")]
+    [Trait("Category", "ErrorPath")]
     public async Task VerifyAsync_WhenXkbCliIsMissing_ReturnsUnverifiedWarning()
     {
         var verifier = new XkbArtifactVerifier(
@@ -21,6 +22,37 @@ public sealed class XkbArtifactVerifierTests
         Assert.Equal(XkbVerificationStatus.Unverified, result.Status);
         Assert.True(result.ManagedValidationPassed);
         Assert.Equal(BuildDiagnosticSeverity.Warning, Assert.Single(result.Diagnostics).Severity);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    [Trait("Category", "ErrorPath")]
+    public async Task VerifyAsync_WhenXkbCliRejectsArtifact_ReturnsFailureWithLog()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"KeyboardStudio-Verify-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        try
+        {
+            var verifier = new XkbArtifactVerifier(
+                new XkbManagedValidator(),
+                new StaticLocator("/usr/bin/xkbcli"),
+                new QueueProcessRunner([
+                    CreateProcessResult(["--version"], "xkbcli 1.9.0\n", "", 0),
+                    CreateProcessResult(["compile-keymap"], "", "syntax error", 1)
+                ]));
+            var (layout, generated) = CreateArtifact();
+
+            var result = await verifier.VerifyAsync(layout, generated, root, true);
+
+            Assert.Equal(XkbVerificationStatus.Failed, result.Status);
+            Assert.Equal("KSL005", Assert.Single(result.Diagnostics).Code);
+            Assert.Equal("syntax error", result.StandardError);
+            Assert.True(File.Exists(result.LogPath));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
     }
 
     [Fact]

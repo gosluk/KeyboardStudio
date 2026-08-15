@@ -1,5 +1,6 @@
 using KeyboardStudio.Core;
 using KeyboardStudio.Persistence;
+using System.Text.Json;
 
 namespace KeyboardStudio.App;
 
@@ -78,6 +79,10 @@ public sealed class ProjectDocumentService : IProjectDocumentService
             return ProjectDocumentOperationResult.Succeeded();
         }
         catch (ProjectLoadException exception)
+        {
+            return Fail(ProjectDocumentErrorKind.InvalidProject, exception.Message);
+        }
+        catch (Exception exception) when (exception is JsonException or InvalidDataException)
         {
             return Fail(ProjectDocumentErrorKind.InvalidProject, exception.Message);
         }

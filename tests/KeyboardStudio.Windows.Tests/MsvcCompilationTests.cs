@@ -92,6 +92,7 @@ public sealed class MsvcCompilationTests
 
     [Fact]
     [Trait("Category", "Unit")]
+    [Trait("Category", "ErrorPath")]
     public async Task CompileAsync_WhenCompilerFails_ReturnsDiagnostic()
     {
         var buildRoot = Path.Combine(Path.GetTempPath(), $"KeyboardStudio-{Guid.NewGuid():N}");
@@ -136,6 +137,7 @@ public sealed class MsvcCompilationTests
 
     [Fact]
     [Trait("Category", "Unit")]
+    [Trait("Category", "ErrorPath")]
     public async Task CompileAsync_WhenToolchainIsMissing_ReturnsEnvironmentDiagnostic()
     {
         var compiler = new MsvcKeyboardCompiler(new MissingEnvironment(), new RecordingProcessRunner());

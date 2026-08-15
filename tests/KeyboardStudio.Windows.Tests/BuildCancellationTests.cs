@@ -7,6 +7,7 @@ public sealed class BuildCancellationTests
 {
     [Fact]
     [Trait("Category", "Unit")]
+    [Trait("Category", "ErrorPath")]
     public async Task CompileAsync_WhenCancelled_PreservesDiagnosticWorkspaceByDefault()
     {
         var buildRoot = Path.Combine(Path.GetTempPath(), $"KeyboardStudio-{Guid.NewGuid():N}");

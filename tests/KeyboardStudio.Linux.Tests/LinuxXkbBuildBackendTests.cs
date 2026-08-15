@@ -76,6 +76,35 @@ public sealed class LinuxXkbBuildBackendTests
         }
     }
 
+    [Fact]
+    [Trait("Category", "Unit")]
+    [Trait("Category", "ErrorPath")]
+    public async Task BuildAsync_WhenOutputPathIsNotWritable_ReturnsMaterializationDiagnostic()
+    {
+        var testRoot = Path.Combine(Path.GetTempPath(), $"KeyboardStudio-Xkb-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(testRoot);
+        var blockedPath = Path.Combine(testRoot, "output-blocker");
+        await File.WriteAllTextAsync(blockedPath, "This file prevents creation of a child directory.");
+        try
+        {
+            var backend = new LinuxXkbBuildBackend(
+                new XkbLayoutMetadata("demo", "basic", "Demo"));
+
+            var result = await backend.BuildAsync(
+                CreateProject(),
+                new BuildOptions(BuildTarget.LinuxXkb, blockedPath));
+
+            Assert.False(result.Success);
+            var diagnostic = Assert.Single(result.Artifact?.Diagnostics!);
+            Assert.Equal("KSL006", diagnostic.Code);
+            Assert.Contains("could not be materialized", diagnostic.Message, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(testRoot, recursive: true);
+        }
+    }
+
     private static KeyboardProject CreateProject() => new()
     {
         Metadata = new ProjectMetadata
