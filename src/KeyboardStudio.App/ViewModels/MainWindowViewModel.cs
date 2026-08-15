@@ -64,7 +64,10 @@ public sealed class MainWindowViewModel : ObservableObject
         _editor = CreateEditor(_project, _selectedTemplate);
         _diagnostics = CreateDiagnostics(_editor);
         RefreshDiagnostics();
-        Build = new BuildViewModel(new WindowsBuildEnvironment());
+        Build = new BuildViewModel(
+            () => Project,
+            new TargetBuildService(),
+            new KeyboardProjectValidator());
         NewCommand = new AsyncRelayCommand(NewDocumentAsync);
         OpenCommand = new AsyncRelayCommand(OpenDocumentAsync);
         SaveCommand = new AsyncRelayCommand(SaveDocumentAsync);
@@ -253,6 +256,7 @@ public sealed class MainWindowViewModel : ObservableObject
         var result = _validator.Validate(Project);
         Diagnostics.Refresh(result);
         Editor.ApplyDiagnostics(result.Issues);
+        Build?.Refresh();
     }
 
     private static KeyboardProjectValidator CreateDefaultValidator() =>

@@ -98,7 +98,8 @@
       </Grid>
     </Border>
 
-    <StackPanel Grid.Row="2" Grid.Column="1" Spacing="12">
+    <ScrollViewer Grid.Row="2" Grid.Column="1" VerticalScrollBarVisibility="Auto">
+    <StackPanel Spacing="12">
       <Border Padding="16" BorderThickness="1" BorderBrush="#707070" CornerRadius="6">
         <StackPanel Spacing="8">
           <TextBlock Text="Selected key" FontSize="18" FontWeight="SemiBold" />
@@ -178,10 +179,47 @@
 
       <Border Padding="16" BorderThickness="1" BorderBrush="#707070" CornerRadius="6">
         <StackPanel Spacing="8">
-          <TextBlock Text="Windows build" FontSize="18" FontWeight="SemiBold" />
-          <TextBlock Text="{Binding Build.Status}" TextWrapping="Wrap" />
+          <TextBlock Text="Build" FontSize="18" FontWeight="SemiBold" />
+          <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="8">
+            <TextBlock Text="Target" VerticalAlignment="Center" />
+            <ComboBox Grid.Column="1"
+                      ItemsSource="{Binding Build.Targets}"
+                      SelectedItem="{Binding Build.SelectedTarget}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding DisplayName}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <TextBlock Grid.Row="1" Text="Tool availability" />
+            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Build.EnvironmentStatus}" TextWrapping="Wrap" />
+            <TextBlock Grid.Row="2" Text="Validation" />
+            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Build.ValidationStatus}" TextWrapping="Wrap" />
+            <TextBlock Grid.Row="3" Text="Output directory" VerticalAlignment="Center" />
+            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Build.OutputDirectory, Mode=TwoWay}" />
+            <TextBlock Grid.Row="4" Text="Profile" FontWeight="SemiBold" Margin="0,4,0,0" />
+            <ItemsControl Grid.Row="4" Grid.Column="1" ItemsSource="{Binding Build.ProfileSettings}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Grid ColumnDefinitions="100,*" ColumnSpacing="8" Margin="0,2">
+                    <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                    <TextBox Grid.Column="1" Text="{Binding Value, Mode=TwoWay}" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Grid>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="Build" Command="{Binding Build.BuildCommand}" />
+            <TextBlock Text="{Binding Build.Status}" VerticalAlignment="Center" TextWrapping="Wrap" />
+          </StackPanel>
+          <TextBlock Text="{Binding Build.ArtifactPath}"
+                     FontFamily="monospace"
+                     TextWrapping="Wrap"
+                     IsVisible="{Binding Build.HasArtifact}" />
         </StackPanel>
       </Border>
     </StackPanel>
+    </ScrollViewer>
   </Grid>
 </Window>

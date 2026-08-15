@@ -134,7 +134,7 @@ KeyboardStudio.App (composition root)
  |- KeyboardStudio.Persistence -> Core
  |- KeyboardStudio.Build       -> Core
  |- KeyboardStudio.Windows     -> Build + Core
- `- KeyboardStudio.Linux       -> Build + Core  (planned)
+ `- KeyboardStudio.Linux       -> Build + Core
 ```
 
 The application is the composition root and may reference concrete backends to register them. Its
@@ -337,7 +337,9 @@ MainWindowViewModel
 ```
 
 ViewModels must not depend on Windows- or XKB-specific generator classes. Concrete backends are
-registered at the application composition root and reached through build abstractions.
+registered at the application composition root and reached through `ITargetBuildService`. The build
+panel keeps one editable profile per target so switching targets never discards the other target's
+settings.
 
 ### 6.2 Keyboard rendering
 
