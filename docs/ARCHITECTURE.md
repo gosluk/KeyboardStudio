@@ -747,7 +747,14 @@ Test:
 - Unicode output mappings;
 - deterministic source generation;
 - representative golden/source snapshots;
-- native compilation and PE/export verification in Windows integration tests.
+- native compilation and PE/export verification in Windows integration tests;
+- representative ANSI letters, AltGr Unicode, ISO physical-key, and extended/special-key native fixtures.
+
+The hosted Windows integration boundary resolves a real MSVC/Windows SDK installation and compiles
+all four fixtures through the production orchestrator. It requires PE structure, machine type,
+`KbdLayerDescriptor` export, matching-host load, and reproducibility verification. Failed workspaces
+are the diagnostic handoff boundary: generated inputs, per-tool logs, and the intermediate native
+diagnostic manifest are retained by CI without retaining successful DLLs indefinitely.
 
 ### KeyboardStudio.Linux.Tests
 

@@ -141,7 +141,9 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 - [x] **P11.1** Add Windows runner
 - [x] **P11.2** Separate fast and native tests
 - [x] **P11.3** Artifact retention on failure
-- [ ] **P11.4** Test representative fixtures
+- [x] **P11.4** Test representative fixtures
+
+**Phase status:** 4/4 work items complete. Phase complete.
 
 ## Phase 12 — MVP stabilization and release readiness
 
@@ -154,8 +156,8 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 
 ## Progress summary
 
-- Completed work items: **75**
+- Completed work items: **76**
 - Total planned work items: **82**
-- Overall checklist progress: **75/82**
+- Overall checklist progress: **76/82**
 
 The checklist records work-item completion only. Phase-level acceptance criteria and test gates in `IMPLEMENTATION-PLAN.md` still apply before a phase is considered complete.

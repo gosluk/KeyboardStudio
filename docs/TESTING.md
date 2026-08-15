@@ -34,6 +34,11 @@ seven days. They contain generated C and headers, per-tool compiler/resource/lin
 combined build log, and `native-build-diagnostics.json`. Successful workspaces are deleted by the
 test and are never uploaded.
 
+The native matrix compiles four project-level fixtures: simple ANSI US-like letters, an ANSI AltGr
+Unicode mapping, an ISO-105 layout using the extra ISO key, and a special-key layout containing both
+ordinary and extended scan codes. Every fixture must produce a structurally valid x64 DLL exporting
+`KbdLayerDescriptor`, pass the matching-host load check, and reproduce byte-for-byte.
+
 ## Test categories
 
 Every test has exactly one `Category` trait. CI and local scripts select categories explicitly:
