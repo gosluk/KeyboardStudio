@@ -14,14 +14,15 @@ The script uses the .NET `10.0.302` SDK image pinned by `global.json` and pulls 
 
 ## Continuous integration runner preference
 
-The managed GitHub Actions build targets runners labeled `self-hosted`, `Linux`, and `X64`. Using
-the generic platform labels lets any matching repository runner accept the job while keeping the
-workflow independent of a machine-specific label such as `cherry-home-runner-1`.
+The main managed GitHub Actions build targets runners labeled `self-hosted`, `Linux`, and `X64`.
+Using the generic platform labels lets any matching repository runner accept the job while keeping
+the workflow independent of a machine-specific label such as `cherry-home-runner-1`.
 
 GitHub Actions does not provide an ordered `runs-on` fallback from self-hosted to hosted runners.
 If no matching self-hosted runner is online, the job intentionally remains queued instead of
-silently consuming a GitHub-hosted runner. A separately named hosted fallback job can be added later
-if that tradeoff becomes desirable.
+silently consuming a GitHub-hosted runner. XKB integration is intentionally a separate
+`ubuntu-latest` job because the external verifier needs packages that the unprivileged self-hosted
+runner cannot install; this is verification coverage, not a fallback for the managed build.
 
 ## Test method naming
 
@@ -73,10 +74,21 @@ test is reported as not run unless the test process is Windows and matches the a
 Reproducibility unit tests compare source dictionaries and binary hashes without MSVC; the native
 integration path can enable `BuildOptions.VerifyReproducibility` on a configured Windows runner.
 
+Linux XKB integration tests use the `XkbIntegration` category. A dedicated GitHub-hosted Ubuntu job
+installs `xkbcli` and `xkeyboard-config`, then compiles an ISO AltGr/Unicode fixture and an ANSI
+two-level fixture in isolated roots. This keeps package installation off the unprivileged self-hosted
+runner. The tests never activate a layout. On failure, the generated symbols component and
+`xkbcli.log` remain under `TestResults/xkb-integration` and are uploaded as a workflow artifact.
+Locally, categorized tests return without running when `xkbcli` is unavailable; install the tool or
+run `scripts/test-xkb-integration-in-podman.sh` to exercise the external verifier in isolation.
+
 ## Test project boundaries
 
 - `KeyboardStudio.Core.Tests` covers platform-neutral domain, editing, validation, and persistence-facing behavior.
 - `KeyboardStudio.Windows.Tests` covers Windows translation and source generation without requiring native compilation unless explicitly categorized later.
+- `KeyboardStudio.Linux.Tests` covers physical key-name mapping, keysym/level translation,
+  deterministic symbols generation, manifests, verifier behavior, golden files, and categorized
+  `xkbcli` integration.
 - Native toolchain and artifact tests must not make the Ubuntu platform-neutral test gate Windows-dependent.
 
 ## Analyzer exception for test names

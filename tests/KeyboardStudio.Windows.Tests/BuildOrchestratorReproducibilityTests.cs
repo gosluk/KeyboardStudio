@@ -17,11 +17,14 @@ public sealed class BuildOrchestratorReproducibilityTests
         var checker = new StaticReproducibilityChecker(reproducible);
         var orchestrator = new BuildOrchestrator(
             new KeyboardProjectValidator([]),
-            generator,
-            new AvailableBuildEnvironment(),
-            compiler,
-            new StaticManifestWriter(),
-            checker);
+            new BuildBackendResolver([
+                new WindowsBuildBackend(
+                    generator,
+                    new AvailableBuildEnvironment(),
+                    compiler,
+                    new StaticManifestWriter(),
+                    checker)
+            ]));
 
         var result = await orchestrator.BuildAsync(
             DemoProjectFactory.Create(),

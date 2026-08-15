@@ -1,22 +1,27 @@
 # KeyboardStudio
 
 KeyboardStudio is a modern Avalonia-based editor for defining platform-neutral custom keyboard
-layouts. The implemented backend produces native Windows keyboard-layout DLLs; the roadmap now adds
-Linux XKB symbols-file generation before the target-aware build UI is finalized.
+layouts. The implemented backends produce verified native Windows keyboard-layout DLLs and portable
+Linux XKB symbols components; target-aware build UI is the next roadmap phase.
 
-The repository contains the working editor/domain/persistence foundation and a verified Windows
-source/native build backend. The implementation is focused on this core workflow:
+The repository contains the working editor/domain/persistence foundation plus verified Windows and
+Linux artifact backends. The implementation is focused on this core workflow:
 
 1. Display a physical keyboard.
 2. Select a key and define its mapping for supported modifier layers.
 3. Save and load a KeyboardStudio project.
 4. Validate the project.
 5. Select an artifact target.
-6. Generate a native Windows keyboard-layout DLL or, in planned Phase 9, a Linux XKB symbols file.
+6. Generate a native Windows keyboard-layout DLL or a Linux XKB symbols file.
 
 Windows builds now verify PE architecture, DLL characteristics, the exact `KbdLayerDescriptor`
 export, and—on a matching Windows host—loader resolution. Successful orchestration writes a hashed
 build manifest, with an opt-in double-build reproducibility check.
+
+Linux builds map ISO-105 and ANSI-104 physical identities to XKB key names, translate all four
+modifier layers to typed keysyms, and write a deterministic `symbols/<layout-id>` component plus a
+hashed manifest. Managed structural verification always runs; `xkbcli` compilation runs when the
+tool is installed and is required by Linux CI. Builds never install or activate a layout.
 
 ## Current editor and diagnostics workflow
 
@@ -56,7 +61,7 @@ KeyboardStudio.App
  |- KeyboardStudio.Persistence -> Core
  |- KeyboardStudio.Build       -> Core
  |- KeyboardStudio.Windows     -> Build + Core
- `- KeyboardStudio.Linux       -> Build + Core (planned Phase 9)
+ `- KeyboardStudio.Linux       -> Build + Core
 ```
 
 The most important architectural rule is that `KeyboardStudio.Core` must not reference Avalonia,
@@ -74,13 +79,13 @@ src/
   KeyboardStudio.Core/
   KeyboardStudio.Persistence/
   KeyboardStudio.Windows/
-  KeyboardStudio.Linux/        # planned Phase 9
+  KeyboardStudio.Linux/
   KeyboardStudio.Build/
 
 tests/
   KeyboardStudio.Core.Tests/
   KeyboardStudio.Windows.Tests/
-  KeyboardStudio.Linux.Tests/  # planned Phase 9
+  KeyboardStudio.Linux.Tests/
   KeyboardStudio.App.Tests/
 
 templates/
@@ -97,7 +102,7 @@ docs/
 
 ## MVP scope
 
-Implemented through Phase 7:
+Implemented through Phase 9:
 
 - visual ISO/ANSI keyboard representation;
 - physical-key selection;
@@ -107,11 +112,9 @@ Implemented through Phase 7:
 - JSON project persistence;
 - project validation;
 - Windows keyboard-table source generation;
-- native Windows DLL compilation.
-
-Planned before MVP:
-
-- Linux XKB v1 symbols-file generation and verification (planned Phase 9).
+- native Windows DLL compilation;
+- PE/export/load verification and reproducibility manifests;
+- Linux XKB v1 symbols-file generation, manifests, and `xkbcli` verification.
 
 Explicitly out of MVP scope:
 

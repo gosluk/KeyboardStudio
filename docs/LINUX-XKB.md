@@ -2,8 +2,7 @@
 
 ## Status and scope
 
-This document defines the planned Phase 9 Linux artifact backend. It is an architectural contract,
-not a description of code that is already implemented.
+This document defines the implemented Phase 9 Linux artifact backend and its operational contract.
 
 The backend converts the same platform-neutral `KeyboardProject` used for Windows builds into a
 classic XKB text format v1 symbols component. That component is the final Linux artifact. It is not a
@@ -54,7 +53,8 @@ KeyboardProject + XkbLayoutMetadata + BuildTarget.LinuxXkb
 ```
 
 Generation is a deterministic managed transformation and works on every host supported by the app.
-`xkbcli` is an external verifier, not the producer of the artifact.
+`xkbcli` is an external verifier, not the producer of the artifact. Versions 1.9 and newer use
+`--test`; older supported versions compile normally and discard the emitted complete keymap.
 
 ## Target selection
 

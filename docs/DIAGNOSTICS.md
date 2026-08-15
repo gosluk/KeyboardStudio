@@ -53,6 +53,21 @@ Core structural or Windows compatibility error reaches the translation boundary.
 Load-level verification records a structured not-run state rather than a diagnostic when the host is
 not Windows or the process architecture cannot load the requested target.
 
+## Linux XKB diagnostics
+
+| Code | Severity | Meaning | Key linked |
+|---|---|---|---|
+| `KSL001` | Error | The template/physical-key pair has no XKB key-name mapping. | Yes |
+| `KSL002` | Error | A logical or layer output cannot be represented as an XKB keysym. | Yes |
+| `KSL003` | Error | Managed validation rejected identifiers, key names, levels, keysyms, ordering, or deterministic text. | Sometimes |
+| `KSL004` | Warning/Error | `xkbcli` is missing; warning locally, error when external verification is required. | No |
+| `KSL005` | Error | `xkbcli` rejected the isolated generated layout. | No |
+| `KSL006` | Error | The XKB artifact or manifest could not be materialized safely. | No |
+
+`KSL` diagnostics are declared in `KeyboardStudio.Linux`. External verification captures the exact
+tool path, arguments, version, output, exit code, duration, and retained log without installing or
+activating the generated layout.
+
 ## Compatibility policy
 
 - Existing code meanings are not reassigned.

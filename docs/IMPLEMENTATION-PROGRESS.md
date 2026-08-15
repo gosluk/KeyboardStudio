@@ -2,10 +2,10 @@
 
 This file tracks execution of [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
 
-- Current work branch: `agent/phase-8-artifact-verification`
+- Current work branch: `agent/phase-9-linux-xkb`
 - Last updated: 2026-08-15
-- Current phase: Phase 9 — Support for Linux XKB Layout File Generation
-- Next work item: **P9.1 — Generalize orchestration for heterogeneous artifact targets**
+- Current phase: Phase 10 — Target-aware build user experience
+- Next work item: **P10.1 — Build panel**
 
 Legend: `[x]` complete, `[ ]` not yet complete.
 
@@ -114,15 +114,17 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 
 ## Phase 9 — Support for Linux XKB Layout File Generation
 
-- [ ] **P9.1** Generalize orchestration for heterogeneous artifact targets
-- [ ] **P9.2** Add the Linux/XKB backend and target metadata
-- [ ] **P9.3** Map physical key identities to XKB key names
-- [ ] **P9.4** Translate project mappings to XKB keysyms and levels
-- [ ] **P9.5** Generate a deterministic XKB symbols component
-- [ ] **P9.6** Materialize the Linux artifact and build manifest
-- [ ] **P9.7** Validate generated layouts with `xkbcli`
-- [ ] **P9.8** Add XKB unit and golden-file tests
-- [ ] **P9.9** Add Linux XKB integration coverage
+- [x] **P9.1** Generalize orchestration for heterogeneous artifact targets
+- [x] **P9.2** Add the Linux/XKB backend and target metadata
+- [x] **P9.3** Map physical key identities to XKB key names
+- [x] **P9.4** Translate project mappings to XKB keysyms and levels
+- [x] **P9.5** Generate a deterministic XKB symbols component
+- [x] **P9.6** Materialize the Linux artifact and build manifest
+- [x] **P9.7** Validate generated layouts with `xkbcli`
+- [x] **P9.8** Add XKB unit and golden-file tests
+- [x] **P9.9** Add Linux XKB integration coverage
+
+**Phase status:** 9/9 work items complete. Phase complete.
 
 ## Phase 10 — Target-aware build user experience
 
@@ -150,8 +152,8 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 
 ## Progress summary
 
-- Completed work items: **58**
+- Completed work items: **67**
 - Total planned work items: **82**
-- Overall checklist progress: **58/82**
+- Overall checklist progress: **67/82**
 
 The checklist records work-item completion only. Phase-level acceptance criteria and test gates in `IMPLEMENTATION-PLAN.md` still apply before a phase is considered complete.

@@ -112,13 +112,13 @@ src/
   KeyboardStudio.Core/
   KeyboardStudio.Persistence/
   KeyboardStudio.Windows/
-  KeyboardStudio.Linux/        # planned in Phase 9
+  KeyboardStudio.Linux/
   KeyboardStudio.Build/
 
 tests/
   KeyboardStudio.Core.Tests/
   KeyboardStudio.Windows.Tests/
-  KeyboardStudio.Linux.Tests/  # planned in Phase 9
+  KeyboardStudio.Linux.Tests/
   KeyboardStudio.App.Tests/
 
 templates/
@@ -440,7 +440,7 @@ Use `System.Text.Json`.
 
 Every project must contain `schemaVersion` from the first release so migrations can be added later. See [PROJECT-FORMAT.md](PROJECT-FORMAT.md).
 
-`KeyboardProject` remains the platform-neutral aggregate. Phase 9 adds an application/document
+`KeyboardProject` remains the platform-neutral aggregate. The application/document boundary adds
 boundary for optional target profiles such as `WindowsLayoutMetadata` and `XkbLayoutMetadata`.
 Profiles are persisted with stable target discriminators without adding their fields to
 `ProjectMetadata` or making Core reference a platform backend. One project may retain profiles for
@@ -523,7 +523,7 @@ generates and compiles twice, comparing source exactly and DLLs by SHA-256.
 
 ---
 
-## 10. Linux XKB backend (planned Phase 9)
+## 10. Linux XKB backend
 
 The Linux backend translates the platform-neutral model into a typed XKB symbols model before
 emitting text.
@@ -579,8 +579,9 @@ system XKB database. Automatic installation and activation are outside the build
 ### 10.3 Verification
 
 Managed validation always checks identifiers, key coverage, keysyms, and output structure. When
-available, `xkbcli compile-keymap --test` verifies the generated component in an isolated include root
-combined with the system defaults. The verifier is mandatory in Linux integration CI but optional for
+available, `xkbcli compile-keymap` verifies the generated component in an isolated include root
+combined with the system defaults. Versions 1.9 and newer add `--test`; older versions compile and
+discard the emitted full keymap. The verifier is mandatory in Linux integration CI but optional for
 local generation, so XKB text can be produced on any supported host.
 
 ---
@@ -589,8 +590,8 @@ local generation, so XKB text can be produced on any supported host.
 
 ### 11.1 Target dispatch
 
-The current fixed `IArtifactGenerator` + `IBuildEnvironment` + `INativeCompiler` constructor models
-the Windows pipeline. Phase 9 moves those collaborators behind a target backend:
+The former fixed `IArtifactGenerator` + `IBuildEnvironment` + `INativeCompiler` constructor modeled
+only the Windows pipeline. Those collaborators now live behind a target backend:
 
 ```csharp
 public interface IBuildBackend
@@ -665,20 +666,20 @@ parsed diagnostics, and a retained raw log.
 ### 11.4 Target-neutral results and stages
 
 At the orchestration/UI boundary, result names describe an artifact rather than assuming compilation.
-The current `KeyboardBuildResult.Compilation` property should evolve to an artifact result containing:
+`KeyboardBuildResult.Artifact` contains:
 
 ```text
-Success / verification status
-Selected target
-Artifact path and kind
+Success and artifact path
 Common and target diagnostics
-Executed stages
-Raw/verifier logs
+Raw/verifier log and retained log path
 Manifest and workspace paths
+Artifact SHA-256
+Typed backend details
 ```
 
-Compiler messages may remain a detailed Windows result below the backend. XKB verifier messages map to
-the same target-neutral diagnostic envelope without being mislabeled as compiler output.
+Compiler messages remain in a detailed Windows `CompilationResult` below the backend and are exposed
+through a compatibility accessor. XKB verifier messages map to the target-neutral diagnostic envelope
+without being mislabeled as compiler output.
 
 ---
 
@@ -779,8 +780,8 @@ The domain model should remain extensible enough to add these later without comp
 ```text
 IKeyboardProjectStore
 IKeyboardProjectValidator
-IBuildBackendResolver          (planned Phase 9)
-IBuildBackend                  (planned Phase 9)
+IBuildBackendResolver
+IBuildBackend
 IArtifactGenerator             (backend-internal generation)
 INativeCompiler                (Windows backend only)
 ```
