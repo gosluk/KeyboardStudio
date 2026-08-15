@@ -67,6 +67,13 @@ public sealed class MsvcCompilationTests
             Assert.False(Directory.Exists(Path.Combine(result.WorkspacePath, "obj")));
             Assert.True(Directory.Exists(Path.Combine(result.WorkspacePath, "output")));
             Assert.True(Directory.Exists(Path.Combine(result.WorkspacePath, "logs")));
+            Assert.True(File.Exists(Path.Combine(result.WorkspacePath, "logs", "compiler.log")));
+            Assert.True(File.Exists(Path.Combine(result.WorkspacePath, "logs", "resource-compiler.log")));
+            Assert.True(File.Exists(Path.Combine(result.WorkspacePath, "logs", "linker.log")));
+            var diagnosticManifest = await File.ReadAllTextAsync(
+                Path.Combine(result.WorkspacePath, "logs", "native-build-diagnostics.json"));
+            Assert.Contains($"\"target\": \"{target}\"", diagnosticManifest, StringComparison.Ordinal);
+            Assert.Contains("\"success\": true", diagnosticManifest, StringComparison.Ordinal);
             Assert.Equal(
                 [BuildStageNames.Compiling, BuildStageNames.Linking, BuildStageNames.Verifying],
                 stages.Select(stage => stage.Name).Distinct());
@@ -117,6 +124,11 @@ public sealed class MsvcCompilationTests
             Assert.Equal("keyboard.c", diagnostic.FilePath);
             Assert.NotEmpty(result.RawLog);
             Assert.True(File.Exists(result.LogPath));
+            var workspace = Assert.IsType<string>(result.WorkspacePath);
+            Assert.True(File.Exists(Path.Combine(workspace, "generated", "keyboard.c")));
+            Assert.True(File.Exists(Path.Combine(workspace, "logs", "compiler.log")));
+            Assert.True(File.Exists(Path.Combine(workspace, "logs", "native-build-diagnostics.json")));
+            Assert.False(File.Exists(Path.Combine(workspace, "logs", "linker.log")));
         }
         finally
         {

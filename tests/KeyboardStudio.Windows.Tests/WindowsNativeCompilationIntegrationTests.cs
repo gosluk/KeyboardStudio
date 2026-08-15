@@ -25,7 +25,17 @@ public sealed class WindowsNativeCompilationIntegrationTests
             return;
         }
 
-        var buildRoot = Path.Combine(Path.GetTempPath(), $"KeyboardStudio-{Guid.NewGuid():N}");
+        var buildRoot = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "TestResults",
+            "windows-integration",
+            "demo");
+        if (Directory.Exists(buildRoot))
+        {
+            Directory.Delete(buildRoot, recursive: true);
+        }
+
+        var success = false;
         try
         {
             var generator = new WindowsArtifactGenerator(new WindowsLayoutMetadata(
@@ -54,10 +64,11 @@ public sealed class WindowsNativeCompilationIntegrationTests
             Assert.True(verification.ExpectedExportFound, compilation.RawLog);
             Assert.Equal(ArtifactLoadTestStatus.Passed, verification.LoadTest.Status);
             Assert.True(result.Reproducibility?.Success is true, compilation.RawLog);
+            success = true;
         }
         finally
         {
-            if (Directory.Exists(buildRoot))
+            if (success && Directory.Exists(buildRoot))
             {
                 Directory.Delete(buildRoot, recursive: true);
             }

@@ -29,6 +29,10 @@ contains the MSVC x64 tools and that a Windows 10/11 SDK is registered before it
 the complete solution. It then runs the platform-neutral suites and the categorized native test,
 which compiles generated source, verifies the DLL structure and export, and performs a load-level
 smoke test. A missing Windows toolchain is a CI failure, never a silent native-test skip.
+Failed Windows native workspaces remain under `TestResults/windows-integration` and are uploaded for
+seven days. They contain generated C and headers, per-tool compiler/resource/linker logs, the
+combined build log, and `native-build-diagnostics.json`. Successful workspaces are deleted by the
+test and are never uploaded.
 
 ## Test categories
 

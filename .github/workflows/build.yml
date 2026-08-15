@@ -122,3 +122,12 @@ jobs:
 
       - name: Compile and verify generated keyboard DLL
         run: dotnet test tests/KeyboardStudio.Windows.Tests/KeyboardStudio.Windows.Tests.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --verbosity normal --filter "Category=WindowsIntegration"
+
+      - name: Retain failed Windows native diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-integration-failures-${{ github.run_attempt }}
+          path: '**/TestResults/windows-integration/**'
+          if-no-files-found: ignore
+          retention-days: 7

@@ -1,10 +1,17 @@
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
 
 namespace KeyboardStudio.Build;
 
 public sealed class MsvcKeyboardCompiler : INativeCompiler
 {
+    private static readonly JsonSerializerOptions DiagnosticJsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        WriteIndented = true
+    };
+
     private readonly IBuildEnvironment _environment;
     private readonly IProcessRunner _processRunner;
     private readonly IArtifactVerifier _artifactVerifier;
@@ -88,6 +95,7 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
                     workspace,
                     processResults,
                     "MSVC_CL",
+                    options.Target,
                     options.CleanupPolicy,
                     null,
                     toolchainVersions,
@@ -111,6 +119,7 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
                     workspace,
                     processResults,
                     "MSVC_RC",
+                    options.Target,
                     options.CleanupPolicy,
                     null,
                     toolchainVersions,
@@ -131,6 +140,7 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
                     workspace,
                     processResults,
                     "MSVC_LINK",
+                    options.Target,
                     options.CleanupPolicy,
                     null,
                     toolchainVersions,
@@ -153,6 +163,7 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
                 workspace,
                 processResults,
                 null,
+                options.Target,
                 options.CleanupPolicy,
                 verification,
                 toolchainVersions,
@@ -281,6 +292,7 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
         BuildWorkspace workspace,
         IReadOnlyList<ProcessResult> processResults,
         string? fallbackCode,
+        BuildTarget target,
         BuildCleanupPolicy cleanupPolicy,
         ArtifactVerificationResult? verification,
         BuildToolchainVersions toolchainVersions,
@@ -302,6 +314,13 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
         var rawLog = CreateRawLog(processResults);
         var logPath = Path.Combine(workspace.LogsDirectory, "build.log");
         await File.WriteAllTextAsync(logPath, rawLog, cancellationToken);
+        await WriteDiagnosticFilesAsync(
+            success,
+            target,
+            workspace,
+            processResults,
+            toolchainVersions,
+            cancellationToken);
         var retainedLogPath = logPath;
         var retainedWorkspacePath = workspace.RootDirectory;
         if (success && cleanupPolicy != BuildCleanupPolicy.KeepAll)
@@ -324,6 +343,59 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
             retainedWorkspacePath,
             verification,
             toolchainVersions);
+    }
+
+    private static async Task WriteDiagnosticFilesAsync(
+        bool success,
+        BuildTarget target,
+        BuildWorkspace workspace,
+        IReadOnlyList<ProcessResult> processResults,
+        BuildToolchainVersions toolchainVersions,
+        CancellationToken cancellationToken)
+    {
+        var logFileNames = new[] { "compiler.log", "resource-compiler.log", "linker.log" };
+        for (var index = 0; index < processResults.Count; index++)
+        {
+            await File.WriteAllTextAsync(
+                Path.Combine(workspace.LogsDirectory, logFileNames[index]),
+                CreateRawLog([processResults[index]]),
+                cancellationToken);
+        }
+
+        var generatedSources = Directory.EnumerateFiles(workspace.GeneratedDirectory)
+            .Select(Path.GetFileName)
+            .Where(fileName => fileName is not null)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+        var processes = processResults.Select((result, index) => new
+        {
+            stage = index switch
+            {
+                0 => "compile",
+                1 => "resource",
+                _ => "link"
+            },
+            result.Executable,
+            result.Arguments,
+            result.ExitCode,
+            durationMilliseconds = result.Duration.TotalMilliseconds,
+            logFile = logFileNames[index]
+        });
+        var manifest = new
+        {
+            schemaVersion = 1,
+            target = target.ToString(),
+            success,
+            generatedSources,
+            toolchain = toolchainVersions,
+            processes
+        };
+        var json = JsonSerializer.Serialize(manifest, DiagnosticJsonOptions) + "\n";
+        await File.WriteAllTextAsync(
+            Path.Combine(workspace.LogsDirectory, "native-build-diagnostics.json"),
+            json,
+            new UTF8Encoding(false),
+            cancellationToken);
     }
 
     private static async Task HandleCancellationAsync(

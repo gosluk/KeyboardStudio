@@ -198,6 +198,10 @@ build/
       build-manifest.json
     logs/
       build.log
+      compiler.log
+      resource-compiler.log
+      linker.log
+      native-build-diagnostics.json
 ```
 
 Generated files are build output and are not part of the `.kbdproj` source model.
@@ -212,6 +216,13 @@ two generated source dictionaries exactly and the verified DLLs by SHA-256. `lin
 `/Brepro` so supported MSVC toolchains suppress nondeterministic PE content. A mismatch fails the
 overall build with `REPRO_SOURCE` or `REPRO_BINARY`, retains the comparison workspace for diagnosis,
 and is recorded in the primary manifest.
+
+Each completed native attempt also writes one log per invoked tool and a structured
+`native-build-diagnostics.json` manifest with the target, generated-source inventory, toolchain
+versions, commands, exit codes, durations, and log-file names. This intermediate manifest is
+available even when compilation or linking fails before the final artifact manifest can be written.
+Windows CI retains the entire failed integration workspace for seven days, including generated C,
+per-tool logs, and this diagnostic manifest. Successful native intermediates are not uploaded.
 
 Each invocation receives a unique workspace and never compiles in a source directory. With the
 default `KeepFailedBuild` policy, successful builds remove `generated/` and `obj/` but retain the DLL
