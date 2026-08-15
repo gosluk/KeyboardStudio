@@ -24,6 +24,10 @@ dotnet restore KeyboardStudio.slnx
 dotnet run --project src/KeyboardStudio.App/KeyboardStudio.App.csproj
 ```
 
+On a Bash-capable host, `./scripts/run-app.sh` performs restore, compilation, and startup in one
+command. Self-contained Windows and Linux publishing is documented in
+[docs/PACKAGING.md](docs/PACKAGING.md).
+
 The editor runs on x64 Windows and Linux desktops. Editing, persistence, validation, and Linux XKB
 generation need no native development toolchain. A Windows DLL build additionally requires an x64
 MSVC toolchain and Windows 10/11 SDK. Installing `xkbcli` is optional for local Linux generation and
@@ -125,6 +129,7 @@ docs/
   DIAGNOSTICS.md
   IMPLEMENTATION-PLAN.md
   LINUX-XKB.md
+  PACKAGING.md
   PROJECT-FORMAT.md
   WINDOWS-BUILD.md
   DECISIONS.md
