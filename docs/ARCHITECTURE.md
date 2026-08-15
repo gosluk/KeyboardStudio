@@ -341,6 +341,11 @@ registered at the application composition root and reached through `ITargetBuild
 panel keeps one editable profile per target so switching targets never discards the other target's
 settings.
 
+Before enabling Build, the service returns one readiness snapshot containing common validation,
+selected-target validation, profile/output validation, and environment availability. Common errors
+therefore disable every target, while compatibility errors and required-tool failures disable only
+the selected target. The asynchronous command also disables itself for the duration of a build.
+
 ### 6.2 Keyboard rendering
 
 Do not hand-code a button for every key in XAML. Render keys from the physical keyboard model.

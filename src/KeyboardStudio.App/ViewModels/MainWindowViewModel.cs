@@ -66,8 +66,7 @@ public sealed class MainWindowViewModel : ObservableObject
         RefreshDiagnostics();
         Build = new BuildViewModel(
             () => Project,
-            new TargetBuildService(),
-            new KeyboardProjectValidator());
+            new TargetBuildService());
         NewCommand = new AsyncRelayCommand(NewDocumentAsync);
         OpenCommand = new AsyncRelayCommand(OpenDocumentAsync);
         SaveCommand = new AsyncRelayCommand(SaveDocumentAsync);
@@ -263,8 +262,7 @@ public sealed class MainWindowViewModel : ObservableObject
         new KeyboardProjectValidator([
             new MetadataValidationRule(),
             new PhysicalKeyboardValidationRule(),
-            new MappingValidationRule(),
-            new WindowsCompatibilityValidationRule()
+            new MappingValidationRule()
         ]);
 
     private Task ShowOperationErrorAsync(

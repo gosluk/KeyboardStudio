@@ -9,7 +9,6 @@ public sealed class BuildViewModel : ObservableObject
 {
     private readonly Func<KeyboardProject> _projectProvider;
     private readonly ITargetBuildService _buildService;
-    private readonly IKeyboardProjectValidator _validator;
     private readonly Dictionary<BuildTarget, IReadOnlyList<BuildProfileSettingViewModel>> _profiles;
     private BuildTargetOptionViewModel _selectedTarget;
     private IReadOnlyList<BuildProfileSettingViewModel> _profileSettings;
@@ -18,15 +17,15 @@ public sealed class BuildViewModel : ObservableObject
     private string _validationStatus = string.Empty;
     private string _status = "Ready to build.";
     private string? _artifactPath;
+    private BuildReadiness? _readiness;
+    private bool _isBuilding;
 
     public BuildViewModel(
         Func<KeyboardProject> projectProvider,
-        ITargetBuildService buildService,
-        IKeyboardProjectValidator validator)
+        ITargetBuildService buildService)
     {
         _projectProvider = projectProvider ?? throw new ArgumentNullException(nameof(projectProvider));
         _buildService = buildService ?? throw new ArgumentNullException(nameof(buildService));
-        _validator = validator ?? throw new ArgumentNullException(nameof(validator));
         Targets =
         [
             new(BuildTarget.WindowsX64, "Windows x64"),
@@ -39,7 +38,12 @@ public sealed class BuildViewModel : ObservableObject
         _outputDirectory = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
             "KeyboardStudio Builds");
-        BuildCommand = new AsyncRelayCommand(BuildAsync);
+        foreach (var setting in _profiles.Values.SelectMany(settings => settings))
+        {
+            setting.PropertyChanged += (_, _) => Refresh();
+        }
+
+        BuildCommand = new AsyncRelayCommand(BuildAsync, CanStartBuild);
         Refresh();
     }
 
@@ -69,7 +73,13 @@ public sealed class BuildViewModel : ObservableObject
     public string OutputDirectory
     {
         get => _outputDirectory;
-        set => SetProperty(ref _outputDirectory, value);
+        set
+        {
+            if (SetProperty(ref _outputDirectory, value))
+            {
+                Refresh();
+            }
+        }
     }
 
     public string EnvironmentStatus
@@ -106,27 +116,44 @@ public sealed class BuildViewModel : ObservableObject
 
     public IAsyncRelayCommand BuildCommand { get; }
 
+    public bool IsBuilding
+    {
+        get => _isBuilding;
+        private set
+        {
+            if (SetProperty(ref _isBuilding, value))
+            {
+                BuildCommand.NotifyCanExecuteChanged();
+            }
+        }
+    }
+
     public void Refresh()
     {
-        var environment = _buildService.GetEnvironmentStatus(SelectedTarget.Target);
-        EnvironmentStatus = environment.Message;
-        var validation = _validator.Validate(_projectProvider());
-        ValidationStatus = validation.HasErrors
-            ? $"{validation.Issues.Count(issue => issue.Severity == ValidationSeverity.Error)} blocking validation error(s)."
-            : "Project validation passed.";
+        var settings = GetProfileSettings();
+        _readiness = _buildService.GetReadiness(
+            _projectProvider(),
+            SelectedTarget.Target,
+            settings,
+            OutputDirectory);
+        EnvironmentStatus = _readiness.Environment.Message;
+        var commonErrorCount = _readiness.CommonIssues.Count(issue => issue.Severity == ValidationSeverity.Error);
+        var targetErrorCount = _readiness.TargetIssues.Count(issue => issue.Severity == ValidationSeverity.Error);
+        ValidationStatus = commonErrorCount + targetErrorCount > 0
+            ? $"{commonErrorCount} common and {targetErrorCount} target error(s) block this build."
+            : "Common and selected-target validation passed.";
+        BuildCommand.NotifyCanExecuteChanged();
     }
 
     private async Task BuildAsync()
     {
+        IsBuilding = true;
         ArtifactPath = null;
         Status = $"Building {SelectedTarget.DisplayName}…";
         try
         {
             var options = new BuildOptions(SelectedTarget.Target, OutputDirectory);
-            var settings = ProfileSettings.ToDictionary(
-                setting => setting.Key,
-                setting => setting.Value,
-                StringComparer.Ordinal);
+            var settings = GetProfileSettings();
             var result = await _buildService.BuildAsync(_projectProvider(), options, settings);
             ArtifactPath = result.Artifact?.ArtifactPath;
             Status = result.Success
@@ -142,7 +169,20 @@ public sealed class BuildViewModel : ObservableObject
         {
             Status = $"Build failed: {exception.Message}";
         }
+        finally
+        {
+            IsBuilding = false;
+            Refresh();
+        }
     }
+
+    private bool CanStartBuild() => !IsBuilding && _readiness?.CanBuild == true;
+
+    private Dictionary<string, string> GetProfileSettings() =>
+        ProfileSettings.ToDictionary(
+            setting => setting.Key,
+            setting => setting.Value,
+            StringComparer.Ordinal);
 
     private static Dictionary<BuildTarget, IReadOnlyList<BuildProfileSettingViewModel>> CreateProfiles() =>
         new Dictionary<BuildTarget, IReadOnlyList<BuildProfileSettingViewModel>>
