@@ -41,7 +41,7 @@ jobs:
         run: dotnet build ${{ env.SOLUTION }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
 
       - name: Test managed suites
-        run: dotnet test ${{ env.SOLUTION }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --verbosity normal --filter "Category!=XkbIntegration"
+        run: dotnet test ${{ env.SOLUTION }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --verbosity normal --filter "Category!=XkbIntegration&Category!=WindowsIntegration"
 
   xkb-integration:
     name: XKB integration (Ubuntu)
@@ -72,3 +72,53 @@ jobs:
           name: xkb-integration-failures
           path: '**/TestResults/xkb-integration/**'
           if-no-files-found: ignore
+
+  windows-integration:
+    name: Windows native integration
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
+
+      - name: Locate MSVC and Windows SDK
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          if (-not (Test-Path $vswhere)) {
+            throw "vswhere.exe was not found at $vswhere."
+          }
+
+          $installation = & $vswhere -latest -products * `
+            -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
+            -property installationPath
+          if ([string]::IsNullOrWhiteSpace($installation)) {
+            throw "A Visual Studio installation with the MSVC x64 toolchain was not found."
+          }
+
+          $kitsRoot = Get-ItemPropertyValue `
+            -Path 'HKLM:\SOFTWARE\Microsoft\Windows Kits\Installed Roots' `
+            -Name KitsRoot10
+          if ([string]::IsNullOrWhiteSpace($kitsRoot) -or -not (Test-Path $kitsRoot)) {
+            throw "The Windows 10/11 SDK root was not found."
+          }
+
+          "MSVC installation: $installation" >> $env:GITHUB_STEP_SUMMARY
+          "Windows SDK root: $kitsRoot" >> $env:GITHUB_STEP_SUMMARY
+
+      - name: Restore
+        run: dotnet restore ${{ env.SOLUTION }}
+
+      - name: Build
+        run: dotnet build ${{ env.SOLUTION }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
+
+      - name: Test managed suites
+        run: dotnet test ${{ env.SOLUTION }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --verbosity normal --filter "Category!=XkbIntegration&Category!=WindowsIntegration"
+
+      - name: Compile and verify generated keyboard DLL
+        run: dotnet test tests/KeyboardStudio.Windows.Tests/KeyboardStudio.Windows.Tests.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --verbosity normal --filter "Category=WindowsIntegration"

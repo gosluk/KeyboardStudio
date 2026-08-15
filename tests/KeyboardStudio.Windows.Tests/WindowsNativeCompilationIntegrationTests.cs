@@ -13,6 +13,15 @@ public sealed class WindowsNativeCompilationIntegrationTests
         var environment = new WindowsBuildEnvironment();
         if (!environment.CanBuild(BuildTarget.WindowsX64))
         {
+            if (string.Equals(
+                    Environment.GetEnvironmentVariable("CI"),
+                    "true",
+                    StringComparison.OrdinalIgnoreCase) &&
+                OperatingSystem.IsWindows())
+            {
+                Assert.Fail(environment.GetStatus(BuildTarget.WindowsX64).Message);
+            }
+
             return;
         }
 

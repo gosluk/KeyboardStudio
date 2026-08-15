@@ -24,6 +24,12 @@ silently consuming a GitHub-hosted runner. XKB integration is intentionally a se
 `ubuntu-latest` job because the external verifier needs packages that the unprivileged self-hosted
 runner cannot install; this is verification coverage, not a fallback for the managed build.
 
+Windows native integration runs independently on `windows-latest`. The job proves that Visual Studio
+contains the MSVC x64 tools and that a Windows 10/11 SDK is registered before it restores and builds
+the complete solution. It then runs the platform-neutral suites and the categorized native test,
+which compiles generated source, verifies the DLL structure and export, and performs a load-level
+smoke test. A missing Windows toolchain is a CI failure, never a silent native-test skip.
+
 ## Test method naming
 
 Behavior tests use the following form:
