@@ -44,8 +44,9 @@ On Linux, macOS, WSL with GUI support, or another Bash environment, run:
 ```
 
 The launcher restores the solution, compiles the Avalonia application, and starts the compiled app.
-Set `KEYBOARDSTUDIO_CONFIGURATION=Release` for a Release build. Additional arguments are forwarded
-to KeyboardStudio.
+The repository's `global.json` accepts compatible .NET 10 feature bands, so the launcher does not
+require one exact SDK patch version. Set `KEYBOARDSTUDIO_CONFIGURATION=Release` for a Release build.
+Additional arguments are forwarded to KeyboardStudio.
 
 ## Release checks
 

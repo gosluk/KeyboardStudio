@@ -19,8 +19,9 @@ Linux artifact backends. The implementation is focused on this core workflow:
 
 ## Quick start
 
-KeyboardStudio requires the .NET SDK version pinned in [`global.json`](global.json). From the
-repository root:
+KeyboardStudio requires a compatible .NET 10 SDK as configured in [`global.json`](global.json).
+The configuration accepts installed .NET 10 feature bands rather than requiring one exact SDK patch.
+From the repository root:
 
 ```bash
 dotnet restore KeyboardStudio.slnx
@@ -28,7 +29,8 @@ dotnet run --project src/KeyboardStudio.App/KeyboardStudio.App.csproj
 ```
 
 On a Bash-capable host, `./scripts/run-app.sh` performs restore, compilation, and startup in one
-command. Self-contained Windows and Linux publishing is documented in
+command using a compatible installed .NET 10 SDK. Self-contained Windows and Linux publishing is
+documented in
 [docs/PACKAGING.md](docs/PACKAGING.md).
 
 The editor runs on x64 Windows and Linux desktops. Editing, persistence, validation, and Linux XKB
