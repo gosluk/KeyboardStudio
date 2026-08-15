@@ -2,6 +2,12 @@ namespace KeyboardStudio.Build;
 
 public sealed class WindowsBuildEnvironmentProbe : IWindowsBuildEnvironmentProbe
 {
+    private static readonly BuildTarget[] WindowsTargets =
+    [
+        BuildTarget.WindowsX64,
+        BuildTarget.WindowsArm64
+    ];
+
     private readonly IReadOnlyDictionary<BuildTarget, ResolvedBuildEnvironment> _resolutions;
 
     public WindowsBuildEnvironmentProbe()
@@ -15,7 +21,7 @@ public sealed class WindowsBuildEnvironmentProbe : IWindowsBuildEnvironmentProbe
         var resolutions = new Dictionary<BuildTarget, ResolvedBuildEnvironment>();
         if (OperatingSystem.IsWindows())
         {
-            foreach (var target in Enum.GetValues<BuildTarget>())
+            foreach (var target in WindowsTargets)
             {
                 if (resolver.Resolve(target) is { } resolution)
                 {

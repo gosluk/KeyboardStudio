@@ -30,14 +30,15 @@ public sealed class BuildViewModelTests
         var viewModel = CreateViewModel(service);
         viewModel.SelectedTarget = viewModel.Targets.Single(option => option.Target == BuildTarget.LinuxXkb);
         viewModel.ProfileSettings.Single(setting => setting.Key == BuildProfileKeys.LayoutId).Value = "custom";
-        viewModel.OutputDirectory = "/tmp/keyboard-build";
+        var outputDirectory = Path.Combine(Path.GetTempPath(), "keyboard-build");
+        viewModel.OutputDirectory = outputDirectory;
 
         await viewModel.BuildCommand.ExecuteAsync(null);
 
         Assert.Equal(BuildTarget.LinuxXkb, service.LastOptions?.Target);
-        Assert.Equal("/tmp/keyboard-build", service.LastOptions?.OutputDirectory);
+        Assert.Equal(outputDirectory, service.LastOptions?.OutputDirectory);
         Assert.Equal("custom", service.LastSettings?[BuildProfileKeys.LayoutId]);
-        Assert.Equal("/tmp/keyboard-build/xkb/symbols/custom", viewModel.ArtifactPath);
+        Assert.Equal(Path.Combine(outputDirectory, "xkb", "symbols", "custom"), viewModel.ArtifactPath);
         Assert.Equal("Build completed successfully.", viewModel.Status);
     }
 

@@ -38,10 +38,39 @@ public sealed class WindowsBuildEnvironmentTests
         Assert.False(environment.GetStatus(BuildTarget.WindowsArm64).Available);
     }
 
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Constructor_WhenRunningOnWindows_ResolvesOnlyWindowsTargets()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        var resolver = new RecordingResolver();
+
+        _ = new WindowsBuildEnvironmentProbe(resolver);
+
+        Assert.Equal(
+            [BuildTarget.WindowsX64, BuildTarget.WindowsArm64],
+            resolver.RequestedTargets);
+    }
+
     private sealed class StaticProbe(BuildEnvironmentStatus status) : IWindowsBuildEnvironmentProbe
     {
         public BuildEnvironmentStatus Probe() => status;
 
         public ResolvedBuildEnvironment? Resolve(BuildTarget target) => null;
+    }
+
+    private sealed class RecordingResolver : IWindowsToolchainResolver
+    {
+        public List<BuildTarget> RequestedTargets { get; } = [];
+
+        public ResolvedBuildEnvironment? Resolve(BuildTarget target)
+        {
+            RequestedTargets.Add(target);
+            return null;
+        }
     }
 }
