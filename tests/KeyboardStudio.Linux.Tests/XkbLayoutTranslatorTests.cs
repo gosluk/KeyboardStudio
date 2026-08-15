@@ -7,6 +7,7 @@ namespace KeyboardStudio.Linux.Tests;
 public sealed class XkbLayoutTranslatorTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public void Translate_FourLayers_MapsLevelsUnicodeAndAlphabeticType()
     {
         var project = CreateProject(
@@ -33,6 +34,7 @@ public sealed class XkbLayoutTranslatorTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Translate_MissingIntermediateLevel_UsesNoSymbol()
     {
         var project = CreateProject(
@@ -53,6 +55,7 @@ public sealed class XkbLayoutTranslatorTests
     }
 
     [Theory]
+    [Trait("Category", "Unit")]
     [InlineData(LogicalKey.Enter, "Return")]
     [InlineData(LogicalKey.ArrowLeft, "Left")]
     [InlineData(LogicalKey.NumpadAdd, "KP_Add")]

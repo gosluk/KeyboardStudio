@@ -6,6 +6,7 @@ namespace KeyboardStudio.Linux.Tests;
 public sealed class XkbLayoutMetadataTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public void Constructor_SanitizesPortableIdentifiers()
     {
         var metadata = new XkbLayoutMetadata(" 42 My/Layout ", "Fancy Variant!", " Example ");

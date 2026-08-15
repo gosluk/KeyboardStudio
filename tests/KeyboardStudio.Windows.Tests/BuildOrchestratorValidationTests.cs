@@ -7,6 +7,7 @@ namespace KeyboardStudio.Windows.Tests;
 public sealed class BuildOrchestratorValidationTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task BuildAsync_WhenValidationHasError_DoesNotGenerateOrCompile()
     {
         var generator = new TrackingArtifactGenerator();
@@ -30,6 +31,7 @@ public sealed class BuildOrchestratorValidationTests
     }
 
     [Theory]
+    [Trait("Category", "Unit")]
     [InlineData(ValidationSeverity.Info)]
     [InlineData(ValidationSeverity.Warning)]
     public async Task BuildAsync_WhenValidationIsNonBlocking_ContinuesBuild(

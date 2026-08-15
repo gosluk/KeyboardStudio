@@ -7,6 +7,7 @@ namespace KeyboardStudio.Windows.Tests;
 public sealed class BuildBackendResolverTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public void Resolve_ReturnsTheOnlyBackendForTarget()
     {
         var backend = new StubBackend(BuildTarget.WindowsX64);
@@ -16,6 +17,7 @@ public sealed class BuildBackendResolverTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Constructor_WhenTargetHasMultipleBackends_Throws()
     {
         Assert.Throws<ArgumentException>(() => new BuildBackendResolver([

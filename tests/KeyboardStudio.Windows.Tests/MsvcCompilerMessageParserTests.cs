@@ -6,6 +6,7 @@ namespace KeyboardStudio.Windows.Tests;
 public sealed class MsvcCompilerMessageParserTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public void Parse_MapsSourceAndLinkerDiagnostics()
     {
         var result = new ProcessResult(

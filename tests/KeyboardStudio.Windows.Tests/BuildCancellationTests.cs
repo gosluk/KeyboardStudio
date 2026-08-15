@@ -6,6 +6,7 @@ namespace KeyboardStudio.Windows.Tests;
 public sealed class BuildCancellationTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task CompileAsync_WhenCancelled_PreservesDiagnosticWorkspaceByDefault()
     {
         var buildRoot = Path.Combine(Path.GetTempPath(), $"KeyboardStudio-{Guid.NewGuid():N}");
@@ -31,6 +32,7 @@ public sealed class BuildCancellationTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task CompileAsync_WhenCancelledAndDeletionRequested_RemovesWorkspace()
     {
         var buildRoot = Path.Combine(Path.GetTempPath(), $"KeyboardStudio-{Guid.NewGuid():N}");

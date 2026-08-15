@@ -9,6 +9,7 @@ namespace KeyboardStudio.Linux.Tests;
 public sealed class LinuxXkbBuildBackendTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public void GetStatus_WhenOptionalVerifierIsMissing_KeepsGenerationAvailable()
     {
         var backend = new LinuxXkbBuildBackend(
@@ -23,6 +24,7 @@ public sealed class LinuxXkbBuildBackendTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task BuildAsync_WritesSymbolsArtifactAndManifestWithoutNativeCompiler()
     {
         var output = Path.Combine(Path.GetTempPath(), $"KeyboardStudio-Xkb-{Guid.NewGuid():N}");

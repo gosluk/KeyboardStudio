@@ -7,6 +7,7 @@ namespace KeyboardStudio.App.Tests;
 public sealed class DiagnosticsViewModelTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public void Refresh_WhenIssuesExist_DisplaysSeverityCodeMessageAndKeyAssociation()
     {
         var diagnostics = new DiagnosticsViewModel(_ => { });
@@ -30,6 +31,7 @@ public sealed class DiagnosticsViewModelTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void SelectCommand_WhenIssueHasKey_SelectsAndHighlightsAssociatedKey()
     {
         var editor = new MainWindowViewModel().Editor;
@@ -47,6 +49,7 @@ public sealed class DiagnosticsViewModelTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void ApplyDiagnostics_WhenErrorsChange_RefreshesKeyHighlighting()
     {
         var editor = new MainWindowViewModel().Editor;
@@ -61,6 +64,7 @@ public sealed class DiagnosticsViewModelTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void MappingMutation_WhenOutputHasNoLogicalKey_ContinuouslyRefreshesDiagnostics()
     {
         var viewModel = new MainWindowViewModel();
@@ -83,6 +87,7 @@ public sealed class DiagnosticsViewModelTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void MappingMutation_WhenEditIsRejected_DoesNotRunProjectValidation()
     {
         var validator = new CountingProjectValidator();

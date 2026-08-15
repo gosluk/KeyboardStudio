@@ -7,6 +7,7 @@ namespace KeyboardStudio.Linux.Tests;
 public sealed class BuildTargetDispatchTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task BuildAsync_WindowsAndLinuxTargets_InvokeDifferentBackends()
     {
         var windows = new TrackingBackend(BuildTarget.WindowsX64, BuildTarget.WindowsArm64);

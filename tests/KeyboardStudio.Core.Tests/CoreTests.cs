@@ -7,6 +7,7 @@ namespace KeyboardStudio.Core.Tests;
 public sealed class KeyboardEditorTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public void MapCharacter_WhenAltGrCharacterIsAssigned_UpdatesSelectedLayer()
     {
         var project = DemoProjectFactory.Create();
@@ -20,6 +21,7 @@ public sealed class KeyboardEditorTests
     }
 
     [Theory]
+    [Trait("Category", "Unit")]
     [InlineData(LogicalKey.A)]
     [InlineData(LogicalKey.Digit7)]
     [InlineData(LogicalKey.Semicolon)]
@@ -37,6 +39,7 @@ public sealed class KeyboardEditorTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void MapCharacter_WhenSupplementaryUnicodeScalarIsAssigned_AcceptsOutput()
     {
         var project = DemoProjectFactory.Create();
@@ -50,6 +53,7 @@ public sealed class KeyboardEditorTests
     }
 
     [Theory]
+    [Trait("Category", "Unit")]
     [InlineData("")]
     [InlineData("ab")]
     [InlineData("a\u0301")]
@@ -67,6 +71,7 @@ public sealed class KeyboardEditorTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void ClearMapping_WhenLayerIsMapped_RemovesOnlySelectedLayer()
     {
         var project = DemoProjectFactory.Create();
@@ -80,6 +85,7 @@ public sealed class KeyboardEditorTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void ClearAllOutputs_WhenKeyHasMappings_RemovesEveryLayerButKeepsLogicalKey()
     {
         var project = DemoProjectFactory.Create();
@@ -94,6 +100,7 @@ public sealed class KeyboardEditorTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Mutations_WhenValueChanges_ReturnChangeInformation()
     {
         var editor = new KeyboardEditor(DemoProjectFactory.Create());
@@ -109,6 +116,7 @@ public sealed class KeyboardEditorTests
     }
 
     [Theory]
+    [Trait("Category", "Unit")]
     [InlineData("Map")]
     [InlineData("Clear")]
     [InlineData("ClearAll")]
@@ -134,6 +142,7 @@ public sealed class KeyboardEditorTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Validate_WhenPhysicalKeyIdIsDuplicated_ReportsKey001Error()
     {
         var project = DemoProjectFactory.Create();
@@ -151,6 +160,7 @@ public sealed class KeyboardEditorTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Validate_WhenProjectVersionIsEmpty_ReportsMeta002Error()
     {
         var source = DemoProjectFactory.Create();
@@ -175,6 +185,7 @@ public sealed class KeyboardEditorTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Validate_WhenLanguageIsEmpty_ReportsMeta003Error()
     {
         var source = DemoProjectFactory.Create();
@@ -199,6 +210,7 @@ public sealed class KeyboardEditorTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task SaveAndLoad_WhenCharacterOutputExists_PreservesPolymorphicOutput()
     {
         var project = DemoProjectFactory.Create();
@@ -216,6 +228,7 @@ public sealed class KeyboardEditorTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task SaveAndLoad_WhenProjectMetadataExists_PreservesMetadata()
     {
         var project = DemoProjectFactory.Create();

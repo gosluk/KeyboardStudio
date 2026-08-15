@@ -8,6 +8,7 @@ public sealed class Ansi104KeyboardTemplateTests
     private static readonly KeyboardTemplateProvider Provider = new();
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Load_WhenAnsi104Requested_ReturnsCompleteExpectedPhysicalKeySet()
     {
         string[] expectedKeyIds =
@@ -45,6 +46,7 @@ public sealed class Ansi104KeyboardTemplateTests
     }
 
     [Theory]
+    [Trait("Category", "Unit")]
     [InlineData("Escape", 0x01, false)]
     [InlineData("KeyA", 0x1E, false)]
     [InlineData("Backslash", 0x2B, false)]
@@ -73,6 +75,7 @@ public sealed class Ansi104KeyboardTemplateTests
     }
 
     [Theory]
+    [Trait("Category", "Unit")]
     [InlineData("Backspace", 13, 1.5, 2, 1)]
     [InlineData("Tab", 0, 2.5, 1.5, 1)]
     [InlineData("Backslash", 13.5, 2.5, 1.5, 1)]
@@ -103,6 +106,7 @@ public sealed class Ansi104KeyboardTemplateTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Load_WhenAnsi104Requested_UsesExpectedRowStartCounts()
     {
         var keyboard = Provider.Load("ansi-104");
@@ -116,6 +120,7 @@ public sealed class Ansi104KeyboardTemplateTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Load_WhenAnsiAndIsoRequested_RepresentsDifferentPhysicalPositionsIndependently()
     {
         var ansiKeyIds = Provider.Load("ansi-104").Keys.Select(key => key.Id).ToHashSet(StringComparer.Ordinal);

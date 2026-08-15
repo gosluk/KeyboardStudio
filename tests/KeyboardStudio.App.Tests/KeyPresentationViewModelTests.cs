@@ -8,6 +8,7 @@ namespace KeyboardStudio.App.Tests;
 public sealed class KeyPresentationViewModelTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public void Layers_WhenCreated_ExposeTheFourSupportedFriendlyLabels()
     {
         var editor = new MainWindowViewModel().Editor;
@@ -21,6 +22,7 @@ public sealed class KeyPresentationViewModelTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void ActiveLayerOption_WhenChanged_UsesStableCoreLayerValue()
     {
         var editor = new MainWindowViewModel().Editor;
@@ -32,6 +34,7 @@ public sealed class KeyPresentationViewModelTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void SelectCommand_WhenAnotherKeyIsSelected_MovesSelectedState()
     {
         var editor = new MainWindowViewModel().Editor;
@@ -49,6 +52,7 @@ public sealed class KeyPresentationViewModelTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void ActiveLayer_WhenChanged_PreservesSelectedKey()
     {
         var editor = new MainWindowViewModel().Editor;
@@ -63,6 +67,7 @@ public sealed class KeyPresentationViewModelTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void SelectKey_WhenKeyExists_SelectsItAndRefreshesDetails()
     {
         var editor = new MainWindowViewModel().Editor;
@@ -75,6 +80,7 @@ public sealed class KeyPresentationViewModelTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void SelectKey_WhenKeyDoesNotExist_PreservesSelection()
     {
         var editor = new MainWindowViewModel().Editor;
@@ -87,6 +93,7 @@ public sealed class KeyPresentationViewModelTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void SelectedOutput_WhenMappingChanges_UpdatesPresentationStateForActiveLayer()
     {
         var editor = new MainWindowViewModel().Editor;
@@ -107,6 +114,7 @@ public sealed class KeyPresentationViewModelTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void LayerMappings_WhenKeyIsSelected_ShowAllFourOutputsAtOnce()
     {
         var editor = new MainWindowViewModel().Editor;
@@ -126,6 +134,7 @@ public sealed class KeyPresentationViewModelTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void SelectedKey_WhenChanged_RefreshesMappingPanelDetails()
     {
         var editor = new MainWindowViewModel().Editor;
@@ -141,6 +150,7 @@ public sealed class KeyPresentationViewModelTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void SelectedLogicalKey_WhenChanged_UpdatesSelectedKeyMapping()
     {
         var editor = new MainWindowViewModel().Editor;
@@ -153,6 +163,7 @@ public sealed class KeyPresentationViewModelTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void LayerMapping_WhenMultipleScalarsAreEntered_ShowsErrorAndPreservesDomainOutput()
     {
         var viewModel = new MainWindowViewModel();
@@ -171,6 +182,7 @@ public sealed class KeyPresentationViewModelTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void ClearCommands_WhenInvoked_ClearOneOrAllSelectedOutputs()
     {
         var editor = new MainWindowViewModel().Editor;
@@ -189,6 +201,7 @@ public sealed class KeyPresentationViewModelTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void UnmapLogicalKeyCommand_WhenInvoked_SetsLogicalKeyToNone()
     {
         var editor = new MainWindowViewModel().Editor;
@@ -201,6 +214,7 @@ public sealed class KeyPresentationViewModelTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void MappingMutation_WhenValueChanges_MarksDocumentDirtyOnlyOnce()
     {
         var document = new ProjectDocumentService(
@@ -227,6 +241,7 @@ public sealed class KeyPresentationViewModelTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void InvalidMappingMutation_WhenRejected_DoesNotMarkDocumentDirty()
     {
         var changes = 0;

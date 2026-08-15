@@ -12,6 +12,7 @@ public sealed class KeyboardTemplateSchemaTests
     };
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Deserialize_WhenTemplateUsesCurrentSchema_PreservesPhysicalGeometry()
     {
         const string json = """
@@ -55,6 +56,7 @@ public sealed class KeyboardTemplateSchemaTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Deserialize_WhenExtendedFlagIsOmitted_DefaultsToFalse()
     {
         const string json = """
@@ -85,6 +87,7 @@ public sealed class KeyboardTemplateSchemaTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Serialize_WhenTemplateDtoIsUsed_DoesNotContainProjectMappings()
     {
         var template = new KeyboardTemplateDto

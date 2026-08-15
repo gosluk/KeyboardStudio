@@ -7,6 +7,7 @@ namespace KeyboardStudio.Windows.Tests;
 public sealed class WindowsCompatibilityValidationRuleTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public void WindowsDiagnosticCodes_WhenRead_HaveStableValues()
     {
         Assert.Equal("KSW001", WindowsDiagnosticCodes.UnsupportedLogicalKeyMapping);
@@ -16,6 +17,7 @@ public sealed class WindowsCompatibilityValidationRuleTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Validate_WhenOutputHasNoLogicalKey_ReportsWindowsCompatibilityIssue()
     {
         var project = DemoProjectFactory.Create();
@@ -29,6 +31,7 @@ public sealed class WindowsCompatibilityValidationRuleTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Validate_WhenSpecialOutputHasNoLogicalKey_ReportsWindowsCompatibilityIssue()
     {
         var project = DemoProjectFactory.Create();
@@ -41,6 +44,7 @@ public sealed class WindowsCompatibilityValidationRuleTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Validate_WhenModifierLayerIsUnknown_ReportsWindowsCompatibilityIssue()
     {
         var project = DemoProjectFactory.Create();
@@ -53,6 +57,7 @@ public sealed class WindowsCompatibilityValidationRuleTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Validate_WhenCharacterIsOutsideBmp_ReportsUnsupportedCharacterMapping()
     {
         var project = DemoProjectFactory.Create();
@@ -65,6 +70,7 @@ public sealed class WindowsCompatibilityValidationRuleTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Validate_WhenSpecialOutputChangesByLayer_ReportsUnsupportedSpecialKeyMapping()
     {
         var project = DemoProjectFactory.Create();

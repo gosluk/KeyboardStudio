@@ -6,6 +6,7 @@ namespace KeyboardStudio.Linux.Tests;
 public sealed class XkbSymbolsGeneratorTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public void Generate_SortsMappingsAndEmitsRequiredTypesAndLevelThreeInclude()
     {
         var layout = new XkbKeyboardLayout(
@@ -33,6 +34,7 @@ public sealed class XkbSymbolsGeneratorTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Generate_SameLayoutTwice_IsByteForByteDeterministic()
     {
         var layout = new XkbKeyboardLayout(

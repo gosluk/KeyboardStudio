@@ -8,6 +8,7 @@ namespace KeyboardStudio.Windows.Tests;
 public sealed class WindowsGeneratorTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task Generate_WhenInputIsIdentical_ProducesIdenticalUnicodeMappingSource()
     {
         var project = DemoProjectFactory.Create();
@@ -36,6 +37,7 @@ public sealed class WindowsGeneratorTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task Generate_WhenLayoutHasNormalAndExtendedKeys_EmitsNativeScanCodeTables()
     {
         var project = DemoProjectFactory.Create();
@@ -67,6 +69,7 @@ public sealed class WindowsGeneratorTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task Generate_WhenPrimaryTableContainsSpecialKeys_EmitsRequiredKbdFlags()
     {
         var project = DemoProjectFactory.Create();
@@ -94,6 +97,7 @@ public sealed class WindowsGeneratorTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task Generate_EmitsNativeModifierAndAltGrTables()
     {
         var artifact = await new WindowsArtifactGenerator(
@@ -113,6 +117,7 @@ public sealed class WindowsGeneratorTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task Generate_WhenAltGrIsUsed_EmitsFourColumnNativeCharacterTable()
     {
         var project = DemoProjectFactory.Create();
@@ -131,6 +136,7 @@ public sealed class WindowsGeneratorTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task Generate_EmitsCompleteMvpKeyboardTablesDescriptor()
     {
         var artifact = await new WindowsArtifactGenerator(
@@ -149,6 +155,7 @@ public sealed class WindowsGeneratorTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task Generate_ExportsTypedLayerDescriptorReturningKeyboardTables()
     {
         var artifact = await new WindowsArtifactGenerator(
@@ -163,6 +170,7 @@ public sealed class WindowsGeneratorTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task Generate_EmitsDefinitionExportAndDeterministicVersionResource()
     {
         var artifact = await new WindowsArtifactGenerator(

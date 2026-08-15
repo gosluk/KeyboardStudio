@@ -16,6 +16,7 @@ public sealed class WindowsCharacterTableTests
         };
 
     [Theory]
+    [Trait("Category", "Unit")]
     [MemberData(nameof(RepresentativeCharacterRows))]
     public void Translate_WhenCharacterLayersArePresent_CreatesTypedRow(
         LogicalKey logicalKey,
@@ -39,6 +40,7 @@ public sealed class WindowsCharacterTableTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Translate_WhenAltGrLayersArePresent_SelectsFourColumnTable()
     {
         var project = CreateProject(LogicalKey.A, 'a', 'A');

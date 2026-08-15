@@ -139,7 +139,7 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 ## Phase 11 — Windows integration CI
 
 - [x] **P11.1** Add Windows runner
-- [ ] **P11.2** Separate fast and native tests
+- [x] **P11.2** Separate fast and native tests
 - [ ] **P11.3** Artifact retention on failure
 - [ ] **P11.4** Test representative fixtures
 
@@ -154,8 +154,8 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 
 ## Progress summary
 
-- Completed work items: **73**
+- Completed work items: **74**
 - Total planned work items: **82**
-- Overall checklist progress: **73/82**
+- Overall checklist progress: **74/82**
 
 The checklist records work-item completion only. Phase-level acceptance criteria and test gates in `IMPLEMENTATION-PLAN.md` still apply before a phase is considered complete.

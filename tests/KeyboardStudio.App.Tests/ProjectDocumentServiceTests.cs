@@ -8,6 +8,7 @@ namespace KeyboardStudio.App.Tests;
 public sealed class ProjectDocumentServiceTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public void CreateNew_WhenInvoked_CreatesCleanUntitledDocument()
     {
         var service = CreateService();
@@ -21,6 +22,7 @@ public sealed class ProjectDocumentServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task SaveAsync_WhenDocumentHasNoPath_RequiresSaveAs()
     {
         var service = CreateService();
@@ -36,6 +38,7 @@ public sealed class ProjectDocumentServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task SaveAsAsync_WhenDocumentIsDirty_SavesAndClearsDirtyState()
     {
         var path = CreateTemporaryPath();
@@ -63,6 +66,7 @@ public sealed class ProjectDocumentServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task OpenAsync_WhenProjectIsValid_LoadsDocumentAndTracksPath()
     {
         var path = CreateTemporaryPath();
@@ -94,6 +98,7 @@ public sealed class ProjectDocumentServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task OpenAsync_WhenProjectIsInvalid_ReportsPresentationError()
     {
         var path = CreateTemporaryPath();
@@ -116,6 +121,7 @@ public sealed class ProjectDocumentServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task SaveAsAsync_WhenPersistenceFails_PreservesDirtyStateAndCurrentPath()
     {
         var firstPath = CreateTemporaryPath();

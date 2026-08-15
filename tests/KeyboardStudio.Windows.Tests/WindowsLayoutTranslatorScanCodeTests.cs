@@ -7,6 +7,7 @@ namespace KeyboardStudio.Windows.Tests;
 public sealed class WindowsLayoutTranslatorScanCodeTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public void Translate_WhenProjectContainsNormalAndExtendedKeys_SeparatesScanCodeTables()
     {
         var project = CreateProject(
@@ -26,6 +27,7 @@ public sealed class WindowsLayoutTranslatorScanCodeTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Translate_WhenMappingsAreOutOfOrder_OrdersEachScanCodeTableDeterministically()
     {
         var project = CreateProject(

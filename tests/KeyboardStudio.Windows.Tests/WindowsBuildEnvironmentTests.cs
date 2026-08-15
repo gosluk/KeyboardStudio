@@ -6,6 +6,7 @@ namespace KeyboardStudio.Windows.Tests;
 public sealed class WindowsBuildEnvironmentTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public void GetStatus_ReportsStructuredHostDiagnostic()
     {
         var environment = new WindowsBuildEnvironment(new StaticProbe(new BuildEnvironmentStatus(
@@ -23,6 +24,7 @@ public sealed class WindowsBuildEnvironmentTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void CanBuild_RequiresDetectedTarget()
     {
         var environment = new WindowsBuildEnvironment(new StaticProbe(new BuildEnvironmentStatus(

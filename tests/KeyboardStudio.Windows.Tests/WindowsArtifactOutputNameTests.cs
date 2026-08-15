@@ -7,6 +7,7 @@ namespace KeyboardStudio.Windows.Tests;
 public sealed class WindowsArtifactOutputNameTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task GenerateAsync_DerivesSafeDllNameFromLayoutMetadata()
     {
         var generator = new WindowsArtifactGenerator(new WindowsLayoutMetadata(

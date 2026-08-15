@@ -6,6 +6,7 @@ namespace KeyboardStudio.Windows.Tests;
 public sealed class WindowsToolchainResolutionTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public void ResolvedEnvironment_ExposesToolchainContract()
     {
         var environment = new ResolvedBuildEnvironment(

@@ -21,5 +21,6 @@ podman run --rm --pull=missing \
     sh -eu -c '
         dotnet restore KeyboardStudio.slnx
         dotnet build KeyboardStudio.slnx --configuration Release --no-restore
-        dotnet test KeyboardStudio.slnx --configuration Release --no-build --verbosity minimal
+        dotnet test KeyboardStudio.slnx --configuration Release --no-build --verbosity minimal \
+            --filter "Category=Unit|Category=Golden"
     '

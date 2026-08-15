@@ -8,6 +8,7 @@ namespace KeyboardStudio.App.Tests;
 public sealed class MainWindowDocumentLifecycleTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public void MappingMutation_WhenProjectChanges_UpdatesDirtyPresentation()
     {
         var viewModel = new MainWindowViewModel();
@@ -20,6 +21,7 @@ public sealed class MainWindowDocumentLifecycleTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task SaveAsCommand_WhenPathIsSelected_PersistsAndClearsDirtyState()
     {
         var path = CreateTemporaryPath();
@@ -43,6 +45,7 @@ public sealed class MainWindowDocumentLifecycleTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task NewCommand_WhenUnsavedReplacementIsCancelled_PreservesCurrentProject()
     {
         var interaction = new TestProjectInteractionService
@@ -63,6 +66,7 @@ public sealed class MainWindowDocumentLifecycleTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task NewCommand_WhenUnsavedReplacementIsDiscarded_CreatesSelectedTemplateProject()
     {
         var interaction = new TestProjectInteractionService
@@ -83,6 +87,7 @@ public sealed class MainWindowDocumentLifecycleTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task OpenCommand_WhenProjectIsSelected_ReopensMappingsAndClearsDirtyState()
     {
         var path = CreateTemporaryPath();

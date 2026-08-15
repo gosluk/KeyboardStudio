@@ -7,6 +7,7 @@ namespace KeyboardStudio.Core.Tests;
 public sealed class ProjectMigrationPipelineTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public void Migrate_WhenSourceAlreadyMatchesTarget_ReturnsEquivalentClone()
     {
         var source = JsonNode.Parse("""{"schemaVersion":1,"name":"demo"}""")!.AsObject();
@@ -20,6 +21,7 @@ public sealed class ProjectMigrationPipelineTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Migrate_WhenSequentialMigrationsExist_AppliesThemInOrderAndAdvancesSchema()
     {
         var source = JsonNode.Parse("""{"schemaVersion":1}""")!.AsObject();
@@ -38,6 +40,7 @@ public sealed class ProjectMigrationPipelineTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Migrate_WhenMigrationStepIsMissing_ReportsMissingVersion()
     {
         var source = JsonNode.Parse("""{"schemaVersion":1}""")!.AsObject();
@@ -50,6 +53,7 @@ public sealed class ProjectMigrationPipelineTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Constructor_WhenMigrationSkipsVersion_RejectsConfiguration()
     {
         Assert.Throws<InvalidOperationException>(
@@ -57,6 +61,7 @@ public sealed class ProjectMigrationPipelineTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Constructor_WhenTwoMigrationsShareSourceVersion_RejectsConfiguration()
     {
         Assert.Throws<InvalidOperationException>(

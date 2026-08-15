@@ -6,6 +6,7 @@ namespace KeyboardStudio.Windows.Tests;
 public sealed class MsvcCompilationTests
 {
     [Theory]
+    [Trait("Category", "Unit")]
     [InlineData(BuildTarget.WindowsX64, "/D_WIN64")]
     [InlineData(BuildTarget.WindowsArm64, "/D_ARM64_")]
     public async Task CompileAsync_ConstructsExpectedArchitectureCommand(
@@ -88,6 +89,7 @@ public sealed class MsvcCompilationTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task CompileAsync_WhenCompilerFails_ReturnsDiagnostic()
     {
         var buildRoot = Path.Combine(Path.GetTempPath(), $"KeyboardStudio-{Guid.NewGuid():N}");
@@ -126,6 +128,7 @@ public sealed class MsvcCompilationTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task CompileAsync_WhenToolchainIsMissing_ReturnsEnvironmentDiagnostic()
     {
         var compiler = new MsvcKeyboardCompiler(new MissingEnvironment(), new RecordingProcessRunner());

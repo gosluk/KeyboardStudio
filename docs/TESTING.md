@@ -4,7 +4,7 @@ This document defines the baseline testing conventions for KeyboardStudio. The d
 
 ## Local Podman validation
 
-Run the same restore, Release build, and complete solution test sequence in an isolated .NET SDK container:
+Run the same restore, Release build, and fast platform-neutral test sequence in an isolated .NET SDK container:
 
 ```bash
 ./scripts/test-in-podman.sh
@@ -29,6 +29,20 @@ contains the MSVC x64 tools and that a Windows 10/11 SDK is registered before it
 the complete solution. It then runs the platform-neutral suites and the categorized native test,
 which compiles generated source, verifies the DLL structure and export, and performs a load-level
 smoke test. A missing Windows toolchain is a CI failure, never a silent native-test skip.
+
+## Test categories
+
+Every test has exactly one `Category` trait. CI and local scripts select categories explicitly:
+
+| Category | Purpose | Runner |
+| --- | --- | --- |
+| `Unit` | Fast tests with no native tool dependency | Linux and Windows |
+| `Golden` | Deterministic source/reference comparisons | Linux and Windows |
+| `XkbIntegration` | Generated XKB compilation with `xkbcli` | Ubuntu with XKB packages |
+| `WindowsIntegration` | Generated DLL compilation and verification with MSVC | Windows with Visual Studio and Windows SDK |
+
+The platform-neutral gate is `Category=Unit|Category=Golden`. Native categories are invoked in
+dedicated steps so missing tools cannot turn into an accidental fast-test pass.
 
 ## Test method naming
 
@@ -91,7 +105,7 @@ run `scripts/test-xkb-integration-in-podman.sh` to exercise the external verifie
 ## Test project boundaries
 
 - `KeyboardStudio.Core.Tests` covers platform-neutral domain, editing, validation, and persistence-facing behavior.
-- `KeyboardStudio.Windows.Tests` covers Windows translation and source generation without requiring native compilation unless explicitly categorized later.
+- `KeyboardStudio.Windows.Tests` covers Windows translation and source generation without requiring native compilation unless explicitly categorized.
 - `KeyboardStudio.Linux.Tests` covers physical key-name mapping, keysym/level translation,
   deterministic symbols generation, manifests, verifier behavior, golden files, and categorized
   `xkbcli` integration.
