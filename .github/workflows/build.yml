@@ -14,7 +14,7 @@ permissions:
 
 env:
   DOTNET_SDK_VERSION: '10.0.302'
-  SOLUTION: KeyboardStudio.sln
+  SOLUTION: KeyboardStudio.slnx
   BUILD_CONFIGURATION: Release
 
 jobs:

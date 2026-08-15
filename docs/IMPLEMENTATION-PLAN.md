@@ -26,7 +26,7 @@ The plan intentionally keeps installation/registry registration, dead keys, liga
 
 The current Phase 10-complete baseline provides:
 
-- `KeyboardStudio.sln` targeting .NET 10;
+- `KeyboardStudio.slnx`, using the modern XML solution format and targeting .NET 10;
 - `KeyboardStudio.App` using Avalonia;
 - `KeyboardStudio.Core` with keyboard/project domain objects, editing, templates, and validation;
 - `KeyboardStudio.Persistence` with versioned DTO-based JSON persistence and migrations;

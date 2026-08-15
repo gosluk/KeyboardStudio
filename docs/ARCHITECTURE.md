@@ -105,7 +105,7 @@ from blocking XKB generation and prevents Linux tools from affecting Windows bui
 ## 3. Solution structure
 
 ```text
-KeyboardStudio.sln
+KeyboardStudio.slnx
 
 src/
   KeyboardStudio.App/

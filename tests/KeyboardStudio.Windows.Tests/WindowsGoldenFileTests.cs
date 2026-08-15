@@ -123,7 +123,7 @@ public sealed class WindowsGoldenFileTests
     private static string FindRepositoryRoot()
     {
         var directory = new DirectoryInfo(Environment.CurrentDirectory);
-        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "KeyboardStudio.sln")))
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "KeyboardStudio.slnx")))
         {
             directory = directory.Parent;
         }

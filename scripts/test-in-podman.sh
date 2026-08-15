@@ -19,7 +19,7 @@ podman run --rm --pull=missing \
     --env NUGET_PACKAGES=/tmp/nuget-packages \
     "${dotnet_image}" \
     sh -eu -c '
-        dotnet restore KeyboardStudio.sln
-        dotnet build KeyboardStudio.sln --configuration Release --no-restore
-        dotnet test KeyboardStudio.sln --configuration Release --no-build --verbosity minimal
+        dotnet restore KeyboardStudio.slnx
+        dotnet build KeyboardStudio.slnx --configuration Release --no-restore
+        dotnet test KeyboardStudio.slnx --configuration Release --no-build --verbosity minimal
     '
