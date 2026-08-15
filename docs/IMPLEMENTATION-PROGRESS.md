@@ -147,17 +147,19 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 
 ## Phase 12 — MVP stabilization and release readiness
 
-- [ ] **P12.1** End-to-end scenario tests
-- [ ] **P12.2** Error-path testing
-- [ ] **P12.3** Documentation update
-- [ ] **P12.4** Packaging the Avalonia application
-- [ ] **P12.5** Versioning
-- [ ] **P12.6** MVP exit criteria
+- [x] **P12.1** End-to-end scenario tests
+- [x] **P12.2** Error-path testing
+- [x] **P12.3** Documentation update
+- [x] **P12.4** Packaging the Avalonia application
+- [x] **P12.5** Versioning
+- [x] **P12.6** MVP exit criteria
+
+**Phase status:** 6/6 work items complete. Phase complete.
 
 ## Progress summary
 
-- Completed work items: **76**
+- Completed work items: **82**
 - Total planned work items: **82**
-- Overall checklist progress: **76/82**
+- Overall checklist progress: **82/82**
 
 The checklist records work-item completion only. Phase-level acceptance criteria and test gates in `IMPLEMENTATION-PLAN.md` still apply before a phase is considered complete.

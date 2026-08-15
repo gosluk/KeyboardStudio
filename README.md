@@ -4,6 +4,9 @@ KeyboardStudio is a modern Avalonia-based editor for defining platform-neutral c
 layouts. The implemented backends produce verified native Windows keyboard-layout DLLs and portable
 Linux XKB symbols components through a target-aware Avalonia build workflow.
 
+The Phase 12 MVP implementation is complete. Release candidates are governed by the
+[MVP release checklist](docs/MVP-RELEASE-CHECKLIST.md) and its aggregate CI gate.
+
 The repository contains the working editor/domain/persistence foundation plus verified Windows and
 Linux artifact backends. The implementation is focused on this core workflow:
 
@@ -129,6 +132,7 @@ docs/
   DIAGNOSTICS.md
   IMPLEMENTATION-PLAN.md
   LINUX-XKB.md
+  MVP-RELEASE-CHECKLIST.md
   PACKAGING.md
   VERSIONING.md
   PROJECT-FORMAT.md

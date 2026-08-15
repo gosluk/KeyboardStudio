@@ -1416,6 +1416,11 @@ The first MVP is complete only when all of the following are true:
 - Linux and Windows integration CI are green;
 - documentation matches behavior.
 
+Implementation evidence and the remaining manual visual-release observations are tracked in
+[`MVP-RELEASE-CHECKLIST.md`](MVP-RELEASE-CHECKLIST.md). CI exposes one final **MVP release gate** that
+requires managed tests, Linux XKB integration, Windows native integration, and both self-contained
+desktop package jobs for the same commit.
+
 ---
 
 ## 5. Cross-cutting technical work
