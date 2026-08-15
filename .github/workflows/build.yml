@@ -34,9 +34,6 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
 
-      - name: Install XKB verification tools
-        run: ./scripts/install-xkbcli.sh
-
       - name: Restore
         run: dotnet restore ${{ env.SOLUTION }}
 
@@ -47,7 +44,7 @@ jobs:
         run: dotnet test ${{ env.SOLUTION }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --verbosity normal --filter "Category!=XkbIntegration"
 
       - name: Test generated XKB layouts
-        run: dotnet test tests/KeyboardStudio.Linux.Tests/KeyboardStudio.Linux.Tests.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --verbosity normal --filter "Category=XkbIntegration"
+        run: ./scripts/test-xkb-integration-in-podman.sh
 
       - name: Retain failed XKB artifacts
         if: failure()

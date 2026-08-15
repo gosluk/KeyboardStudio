@@ -10,8 +10,11 @@ fi
 run_privileged() {
     if [ "$(id -u)" -eq 0 ]; then
         "$@"
-    else
+    elif command -v sudo >/dev/null 2>&1; then
         sudo "$@"
+    else
+        echo "Installing xkbcli requires root or sudo; use test-xkb-integration-in-podman.sh for isolated CI validation." >&2
+        exit 1
     fi
 }
 
