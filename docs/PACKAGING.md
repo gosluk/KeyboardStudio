@@ -27,10 +27,11 @@ dotnet publish src/KeyboardStudio.App/KeyboardStudio.App.csproj \
   --runtime linux-x64 \
   --self-contained true \
   --no-restore \
-  --output artifacts/KeyboardStudio-linux-x64
+  --output artifacts/KeyboardStudio-0.1.0-linux-x64
 ```
 
-Replace `linux-x64` with `win-x64` for Windows. Publish on the target operating system before a
+Replace `linux-x64` with `win-x64` for Windows. Release archives include the application version;
+see [`VERSIONING.md`](VERSIONING.md). Publish on the target operating system before a
 release so the packaged app can be smoke-tested in its native desktop environment. The `artifacts/`
 directory is ignored and may be deleted after inspection.
 

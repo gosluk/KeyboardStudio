@@ -148,6 +148,10 @@ jobs:
       - name: Restore Linux runtime
         run: dotnet restore src/KeyboardStudio.App/KeyboardStudio.App.csproj --runtime linux-x64
 
+      - name: Read application version
+        id: version
+        run: echo "value=$(dotnet msbuild src/KeyboardStudio.App/KeyboardStudio.App.csproj -getProperty:Version)" >> "$GITHUB_OUTPUT"
+
       - name: Publish self-contained app
         run: >-
           dotnet publish src/KeyboardStudio.App/KeyboardStudio.App.csproj
@@ -155,16 +159,22 @@ jobs:
           --runtime linux-x64
           --self-contained true
           --no-restore
-          --output artifacts/KeyboardStudio-linux-x64
+          --output artifacts/KeyboardStudio-${{ steps.version.outputs.value }}-linux-x64
+
+      - name: Smoke-test packaged app
+        run: artifacts/KeyboardStudio-${{ steps.version.outputs.value }}-linux-x64/KeyboardStudio --version
 
       - name: Archive package
-        run: tar -C artifacts -czf artifacts/KeyboardStudio-linux-x64.tar.gz KeyboardStudio-linux-x64
+        run: >-
+          tar -C artifacts
+          -czf artifacts/KeyboardStudio-${{ steps.version.outputs.value }}-linux-x64.tar.gz
+          KeyboardStudio-${{ steps.version.outputs.value }}-linux-x64
 
       - name: Upload Linux package
         uses: actions/upload-artifact@v7
         with:
-          name: KeyboardStudio-linux-x64
-          path: artifacts/KeyboardStudio-linux-x64.tar.gz
+          name: KeyboardStudio-${{ steps.version.outputs.value }}-linux-x64
+          path: artifacts/KeyboardStudio-${{ steps.version.outputs.value }}-linux-x64.tar.gz
           if-no-files-found: error
 
   package-windows:
@@ -183,6 +193,13 @@ jobs:
       - name: Restore Windows runtime
         run: dotnet restore src/KeyboardStudio.App/KeyboardStudio.App.csproj --runtime win-x64
 
+      - name: Read application version
+        id: version
+        shell: pwsh
+        run: |
+          $version = dotnet msbuild src/KeyboardStudio.App/KeyboardStudio.App.csproj -getProperty:Version
+          "value=$version" >> $env:GITHUB_OUTPUT
+
       - name: Publish self-contained app
         run: >-
           dotnet publish src/KeyboardStudio.App/KeyboardStudio.App.csproj
@@ -190,15 +207,27 @@ jobs:
           --runtime win-x64
           --self-contained true
           --no-restore
-          --output artifacts/KeyboardStudio-win-x64
+          --output artifacts/KeyboardStudio-${{ steps.version.outputs.value }}-win-x64
+
+      - name: Smoke-test packaged app
+        shell: pwsh
+        run: |
+          $executable = 'artifacts/KeyboardStudio-${{ steps.version.outputs.value }}-win-x64/KeyboardStudio.exe'
+          $process = Start-Process -FilePath $executable -ArgumentList '--version' -Wait -PassThru
+          if ($process.ExitCode -ne 0) {
+            throw "Packaged application version check failed with exit code $($process.ExitCode)."
+          }
 
       - name: Archive package
         shell: pwsh
-        run: Compress-Archive -Path artifacts/KeyboardStudio-win-x64/* -DestinationPath artifacts/KeyboardStudio-win-x64.zip
+        run: >-
+          Compress-Archive
+          -Path artifacts/KeyboardStudio-${{ steps.version.outputs.value }}-win-x64/*
+          -DestinationPath artifacts/KeyboardStudio-${{ steps.version.outputs.value }}-win-x64.zip
 
       - name: Upload Windows package
         uses: actions/upload-artifact@v7
         with:
-          name: KeyboardStudio-win-x64
-          path: artifacts/KeyboardStudio-win-x64.zip
+          name: KeyboardStudio-${{ steps.version.outputs.value }}-win-x64
+          path: artifacts/KeyboardStudio-${{ steps.version.outputs.value }}-win-x64.zip
           if-no-files-found: error
