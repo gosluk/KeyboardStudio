@@ -6,8 +6,7 @@ public sealed class WindowsBuildBackend : IBuildBackend
 {
     private static readonly HashSet<BuildTarget> Targets =
     [
-        BuildTarget.WindowsX64,
-        BuildTarget.WindowsArm64
+        BuildTarget.WindowsX64
     ];
 
     private readonly IArtifactGenerator _generator;

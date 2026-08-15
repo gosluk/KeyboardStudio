@@ -25,7 +25,7 @@ public sealed class WindowsBuildEnvironmentTests
 
     [Fact]
     [Trait("Category", "Unit")]
-    public void CanBuild_RequiresDetectedTarget()
+    public void CanBuild_WhenX64IsDetected_SupportsOnlyX64()
     {
         var environment = new WindowsBuildEnvironment(new StaticProbe(new BuildEnvironmentStatus(
             true,
@@ -34,8 +34,7 @@ public sealed class WindowsBuildEnvironmentTests
             [BuildTarget.WindowsX64])));
 
         Assert.True(environment.CanBuild(BuildTarget.WindowsX64));
-        Assert.False(environment.CanBuild(BuildTarget.WindowsArm64));
-        Assert.False(environment.GetStatus(BuildTarget.WindowsArm64).Available);
+        Assert.False(environment.CanBuild(BuildTarget.LinuxXkb));
     }
 
     [Fact]
@@ -52,7 +51,7 @@ public sealed class WindowsBuildEnvironmentTests
         _ = new WindowsBuildEnvironmentProbe(resolver);
 
         Assert.Equal(
-            [BuildTarget.WindowsX64, BuildTarget.WindowsArm64],
+            [BuildTarget.WindowsX64],
             resolver.RequestedTargets);
     }
 

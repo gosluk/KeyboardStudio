@@ -5,14 +5,11 @@ namespace KeyboardStudio.Windows.Tests;
 
 public sealed class MsvcCompilationTests
 {
-    [Theory]
+    [Fact]
     [Trait("Category", "Unit")]
-    [InlineData(BuildTarget.WindowsX64, "/D_WIN64")]
-    [InlineData(BuildTarget.WindowsArm64, "/D_ARM64_")]
-    public async Task CompileAsync_ConstructsExpectedArchitectureCommand(
-        BuildTarget target,
-        string architectureDefine)
+    public async Task CompileAsync_ConstructsExpectedX64Command()
     {
+        const BuildTarget target = BuildTarget.WindowsX64;
         var buildRoot = Path.Combine(Path.GetTempPath(), $"KeyboardStudio-{Guid.NewGuid():N}");
         try
         {
@@ -40,7 +37,7 @@ public sealed class MsvcCompilationTests
             var compileRequest = runner.Requests[0];
             Assert.Equal(@"C:\toolchain\cl.exe", compileRequest.Executable);
             Assert.Contains("/c", compileRequest.Arguments);
-            Assert.Contains(architectureDefine, compileRequest.Arguments);
+            Assert.Contains("/D_WIN64", compileRequest.Arguments);
             Assert.Contains(compileRequest.Arguments, argument => argument.StartsWith("/Fo", StringComparison.Ordinal));
             Assert.Contains(@"/IC:\toolchain\include", compileRequest.Arguments);
             Assert.Equal(@"C:\toolchain\include", compileRequest.Environment["INCLUDE"]);
@@ -51,9 +48,7 @@ public sealed class MsvcCompilationTests
 
             var linkRequest = runner.Requests[2];
             Assert.Equal(@"C:\toolchain\link.exe", linkRequest.Executable);
-            Assert.Contains(
-                target == BuildTarget.WindowsX64 ? "/MACHINE:X64" : "/MACHINE:ARM64",
-                linkRequest.Arguments);
+            Assert.Contains("/MACHINE:X64", linkRequest.Arguments);
             Assert.Contains(linkRequest.Arguments, argument => argument.EndsWith("keyboard.def", StringComparison.Ordinal));
             Assert.Contains("/Brepro", linkRequest.Arguments);
             Assert.EndsWith("kbd-demo.dll", result.ArtifactPath, StringComparison.Ordinal);
@@ -223,7 +218,7 @@ public sealed class MsvcCompilationTests
             Task.FromResult(new ArtifactVerificationResult(
                 true,
                 target,
-                target == BuildTarget.WindowsX64 ? "Amd64" : "Arm64",
+                "Amd64",
                 true,
                 true,
                 new ArtifactLoadTestResult(ArtifactLoadTestStatus.NotRun, "Test verifier."),

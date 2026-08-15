@@ -149,8 +149,8 @@ public interface IBuildEnvironment
 }
 ```
 
-`WindowsBuildEnvironment` detects the host and resolves `cl.exe`, `link.exe`, `rc.exe`, MSVC/SDK
-versions, include directories, and library directories for each target. It prefers an active Visual
+`WindowsBuildEnvironment` detects the host and resolves x64 `cl.exe`, `link.exe`, `rc.exe`, MSVC/SDK
+versions, include directories, and library directories. It prefers an active Visual
 Studio developer environment, then queries Visual Studio through `vswhere` and Windows Kits through
 the registered SDK root. Missing components are returned as structured diagnostics.
 
@@ -158,13 +158,13 @@ The UI should explain why compilation is unavailable instead of failing only aft
 
 ## Native command pipeline
 
-The initial native targets are x64 and ARM64. For each build, `MsvcKeyboardCompiler`:
+The native Windows target is x64. For each build, `MsvcKeyboardCompiler`:
 
 1. invokes `cl.exe` with the resolved headers and architecture define to create `keyboard.obj`;
 2. invokes `rc.exe` for deterministic version metadata in `keyboard.rc`;
 3. invokes `link.exe /DLL /NOENTRY` with `keyboard.def`, exporting `KbdLayerDescriptor`;
 4. writes the layout-ID-derived DLL into `output/`;
-5. parses the resulting PE and requires the requested x64/ARM64 machine, DLL characteristic, and an
+5. parses the resulting PE and requires the x64 machine, DLL characteristic, and an
    exact named export for `KbdLayerDescriptor`.
 
 PE and export-directory validation is implemented in managed code, so structural verification does
@@ -172,8 +172,8 @@ not depend on `dumpbin` and can be unit-tested on non-Windows hosts.
 
 On Windows, a matching-architecture build also performs a load-level smoke test through
 `NativeLibrary.Load` and resolves `KbdLayerDescriptor` before immediately freeing the module. The
-helper never installs or registers the layout. Cross-architecture artifacts and non-Windows hosts
-record the smoke test as not run; Windows integration CI is responsible for exercising it.
+helper never installs or registers the layout. Non-Windows hosts record the smoke test as not run;
+Windows integration CI is responsible for exercising it.
 
 Processes use `ProcessStartInfo.ArgumentList`, not a composed shell command. Standard output,
 standard error, exit code, elapsed duration, executable, arguments, environment, and working

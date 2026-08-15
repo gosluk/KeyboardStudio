@@ -18,7 +18,7 @@ Coverage includes:
 - structured Windows build-environment detection and resolution;
 - isolated workspace creation and traversal protection;
 - argument-safe process execution and cancellation;
-- x64/ARM64 compile, resource, and link command construction;
+- x64 compile, resource, and link command construction;
 - MSVC diagnostic parsing, per-tool/raw logs, diagnostic manifests, and cleanup policies;
 - native compilation of US-like letters, AltGr Unicode, ISO-105, and special/extended-key projects.
 

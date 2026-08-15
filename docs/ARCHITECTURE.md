@@ -522,7 +522,7 @@ diagnostics. The Windows model is never exposed to Avalonia or serialized into `
 The generated source ultimately describes the native Windows keyboard tables and exposes the keyboard-table descriptor expected by Windows. See [WINDOWS-BUILD.md](WINDOWS-BUILD.md).
 
 After linking, the Windows path parses the PE headers and named export directory on every host. It
-requires the selected x64/ARM64 machine, the DLL characteristic, and the exact undecorated
+requires the x64 machine, the DLL characteristic, and the exact undecorated
 `KbdLayerDescriptor` export. A matching-architecture Windows process additionally loads the module,
 resolves the export, and frees it without registering or installing the layout. Only then does
 orchestration write the versioned source/toolchain/artifact manifest. An opt-in reproducibility run
@@ -619,7 +619,6 @@ runs compatibility validation and reports its own stages.
 | Target | Backend path | Required tools | Verification | Final artifact |
 |---|---|---|---|---|
 | `WindowsX64` | C generation -> compile -> link | MSVC + Windows SDK/WDK | PE/export verifier | `<layout-id>.dll` |
-| `WindowsArm64` | C generation -> compile -> link | MSVC + Windows SDK/WDK | PE/export verifier | `<layout-id>.dll` |
 | `LinuxXkb` | symbols generation -> write | none | `xkbcli` when available; required in CI | `symbols/<layout-id>` |
 
 This is single-target dispatch, not host dispatch. A Linux XKB artifact may be generated on Windows or
@@ -630,8 +629,8 @@ macOS because it is deterministic text. A Windows DLL requires the supported Win
 `BuildOptions.Target` chooses the output kind. The associated profile supplies backend metadata:
 
 ```text
-WindowsX64 / WindowsArm64 -> WindowsLayoutMetadata
-LinuxXkb                  -> XkbLayoutMetadata
+WindowsX64 -> WindowsLayoutMetadata
+LinuxXkb   -> XkbLayoutMetadata
 ```
 
 Profiles belong to the application/project-document boundary, remain separate from Core metadata,

@@ -4,8 +4,7 @@ public sealed class WindowsBuildEnvironmentProbe : IWindowsBuildEnvironmentProbe
 {
     private static readonly BuildTarget[] WindowsTargets =
     [
-        BuildTarget.WindowsX64,
-        BuildTarget.WindowsArm64
+        BuildTarget.WindowsX64
     ];
 
     private readonly IReadOnlyDictionary<BuildTarget, ResolvedBuildEnvironment> _resolutions;

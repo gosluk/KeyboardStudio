@@ -63,7 +63,6 @@ One build invocation selects exactly one target backend:
 | Target | Materialization | Final artifact |
 |---|---|---|
 | `WindowsX64` | generate C, compile, link | x64 keyboard-layout DLL |
-| `WindowsArm64` | generate C, compile, link | ARM64 keyboard-layout DLL |
 | `LinuxXkb` | generate and write XKB text | `symbols/<layout-id>` |
 
 Changing the target reuses the project metadata, physical template, logical mappings, and four output

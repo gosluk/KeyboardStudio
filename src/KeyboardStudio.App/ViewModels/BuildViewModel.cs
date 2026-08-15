@@ -37,7 +37,6 @@ public sealed class BuildViewModel : ObservableObject
         Targets =
         [
             new(BuildTarget.WindowsX64, "Windows x64"),
-            new(BuildTarget.WindowsArm64, "Windows ARM64"),
             new(BuildTarget.LinuxXkb, "Linux XKB")
         ];
         _profiles = CreateProfiles();
@@ -525,7 +524,6 @@ public sealed class BuildViewModel : ObservableObject
         new Dictionary<BuildTarget, IReadOnlyList<BuildProfileSettingViewModel>>
         {
             [BuildTarget.WindowsX64] = CreateWindowsProfile(),
-            [BuildTarget.WindowsArm64] = CreateWindowsProfile(),
             [BuildTarget.LinuxXkb] =
             [
                 new(BuildProfileKeys.LayoutId, "Layout ID", "keyboardstudio"),

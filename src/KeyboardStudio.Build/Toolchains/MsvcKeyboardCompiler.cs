@@ -193,7 +193,7 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
             "/Gy",
             "/DWIN32",
             "/D_WINDOWS",
-            toolchain.Target == BuildTarget.WindowsX64 ? "/D_WIN64" : "/D_ARM64_",
+            "/D_WIN64",
             $"/Fo{objectPath}"
         };
         arguments.AddRange(toolchain.IncludePaths.Select(path => $"/I{path}"));
@@ -245,7 +245,7 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
             "/NOLOGO",
             "/DLL",
             "/NOENTRY",
-            toolchain.Target == BuildTarget.WindowsX64 ? "/MACHINE:X64" : "/MACHINE:ARM64",
+            "/MACHINE:X64",
             $"/DEF:{Path.Combine(workspace.GeneratedDirectory, "keyboard.def")}",
             $"/OUT:{outputPath}",
             $"/PDB:{Path.ChangeExtension(outputPath, ".pdb")}",
