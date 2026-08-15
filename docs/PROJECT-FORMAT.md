@@ -6,9 +6,20 @@ KeyboardStudio projects are persisted as human-readable JSON files with the `.kb
 
 The serialized format is a persistence contract. It is deliberately separated from the in-memory domain classes by persistence DTOs and explicit mapping.
 
-## Versioning
+## Independent version layers
 
-Every project starts with an explicit integer schema version.
+The application release, outer document, and Core project schema are independent:
+
+| Value | Purpose | MVP value |
+| --- | --- | ---: |
+| KeyboardStudio application version | Desktop release identity | `0.1.0` |
+| `documentSchemaVersion` | `.kbdproj` envelope and target-profile contract | `1` |
+| `project.schemaVersion` | Platform-neutral Core project contract | `1` |
+
+Changing the application version does not change either persistence schema. A schema version changes
+only when its JSON contract requires migration.
+
+Every Core project starts with an explicit integer schema version.
 
 ```json
 {
@@ -87,12 +98,66 @@ General metadata is platform-neutral and belongs to the core project model:
 - `language` is a BCP 47 language/locale tag, with `und` meaning unspecified.
 
 Target-only layout identity is not part of `ProjectMetadata`. Windows uses `WindowsLayoutMetadata` in
-`KeyboardStudio.Windows`; planned Linux XKB generation uses `XkbLayoutMetadata` in
+`KeyboardStudio.Windows`; Linux XKB generation uses `XkbLayoutMetadata` in
 `KeyboardStudio.Linux`. Platform concepts do not leak into `KeyboardStudio.Core`.
 
 Author metadata is intentionally omitted for now because generated resources do not consume it yet.
 
-## Current v1 document shape
+## Current application document shape
+
+KeyboardStudio writes a versioned outer envelope. The envelope keeps platform-neutral project data
+separate from backend profile settings while allowing both profiles to survive save/reopen.
+
+```json
+{
+  "documentSchemaVersion": 1,
+  "project": {
+    "schemaVersion": 1,
+    "metadata": {
+      "name": "Swiss Polish",
+      "description": "Swiss layout with Polish AltGr characters",
+      "version": "1.0.0",
+      "language": "de-CH"
+    },
+    "keyboard": {
+      "id": "iso-105",
+      "keys": []
+    },
+    "layout": {
+      "mappings": []
+    }
+  },
+  "targets": {
+    "windowsX64": {
+      "target": "windowsX64",
+      "settings": {
+        "layoutId": "kbdswisspolish",
+        "layoutName": "Swiss Polish",
+        "fileVersion": "1.0.0.0",
+        "companyName": "Example"
+      }
+    },
+    "linuxXkb": {
+      "target": "linuxXkb",
+      "settings": {
+        "layoutId": "swiss_polish",
+        "sectionId": "basic",
+        "description": "Swiss Polish"
+      }
+    }
+  }
+}
+```
+
+The target dictionary key must exactly match the entry's `target` discriminator. Missing known
+profiles are recovered with application defaults; unknown profile entries remain a persistence
+boundary concern and are not treated as Core domain data.
+
+For compatibility, the application can still open the original direct Core schema-v1 document
+shape shown below. It supplies default target profiles in memory and writes the current envelope on
+the next save.
+
+## Legacy direct Core project shape
 
 ```json
 {
@@ -135,10 +200,8 @@ Author metadata is intentionally omitted for now because generated resources do 
 ```
 
 Target layout identities remain separate from the core aggregate and are not carried by the legacy
-`IKeyboardProjectStore` contract. `IKeyboardProjectDocumentStore` provides a versioned outer envelope
-with a nested Core project and a `targets` dictionary. Each entry has a stable target discriminator
-and string settings, allowing Windows and XKB profiles to coexist without introducing backend
-dependencies into Core. The original schema-v1 project format remains readable and unchanged.
+`IKeyboardProjectStore` contract. `IKeyboardProjectDocumentStore` owns the outer envelope. The
+original schema-v1 Core project format remains readable so pre-envelope files are not stranded.
 
 ## Design rules
 
@@ -152,7 +215,7 @@ dependencies into Core. The original schema-v1 project format remains readable a
 - Historical project schemas are migrated in persistence JSON before current DTO mapping.
 - Each registered project migration advances exactly one schema version.
 
-## Persistence abstraction
+## Persistence abstractions
 
 ```csharp
 public interface IKeyboardProjectStore
@@ -163,3 +226,13 @@ public interface IKeyboardProjectStore
 ```
 
 The implementation uses `System.Text.Json` in `KeyboardStudio.Persistence`, but JSON-specific concerns are contained behind DTOs, migration transforms, and mapping rather than leaking into `KeyboardStudio.Core`.
+
+The desktop application uses the document-level contract:
+
+```csharp
+public interface IKeyboardProjectDocumentStore
+{
+    Task SaveAsync(KeyboardProjectDocument document, Stream destination);
+    Task<KeyboardProjectDocument> LoadAsync(Stream source);
+}
+```

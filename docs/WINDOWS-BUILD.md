@@ -6,6 +6,25 @@ The Windows backend converts a platform-neutral `KeyboardProject` into the nativ
 
 KeyboardStudio should not depend on MSKLC or generate `.klc` as its primary build path.
 
+## Prerequisites
+
+Running the editor does not require Visual Studio. Building a Windows keyboard-layout DLL requires:
+
+- an x64 Windows 10 or Windows 11 host;
+- the repository-pinned .NET SDK for source restore/build;
+- Visual Studio or Build Tools with the **Desktop development with C++** workload and x64 MSVC
+  tools;
+- a Windows 10/11 SDK providing headers, libraries, and `rc.exe`.
+
+KeyboardStudio resolves `cl.exe`, `link.exe`, and `rc.exe` from an active developer environment when
+available, otherwise through `vswhere` and the registered Windows Kits root. The Build panel reports
+missing components before enabling the Windows target. ARM64 and x86 DLL targets are not part of the
+MVP.
+
+No WDK installation is required for the supported source subset: the generated code uses the
+keyboard-layout declarations available through the resolved Windows SDK/toolchain headers. MSKLC is
+not used.
+
 ## Pipeline
 
 ```text
