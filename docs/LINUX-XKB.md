@@ -206,12 +206,44 @@ Unit and golden tests cover physical-key mapping, keysym translation, modifier l
 formatting, Unicode, identifiers, and target dispatch. `XkbIntegration` tests use representative ISO
 and ANSI projects and require `xkbcli --test` on Linux CI.
 
-Normal tests do not activate the keymap. Interactive desktop testing and installation guidance are
-release-documentation work, not part of generation.
+Normal tests do not activate the keymap.
+
+## Safe manual testing and installation
+
+Treat a generated layout as untrusted configuration until it compiles and behaves as expected. A
+bad active keymap can make keyboard input unusable.
+
+1. Generate the layout into a disposable output directory. Do not copy it into a system XKB root.
+2. Compile it from that isolated root before activation:
+
+   ```bash
+   xkbcli compile-keymap \
+     --include /path/to/output/xkb \
+     --include-defaults \
+     --test \
+     --layout <layout-id> \
+     --variant <section-id>
+   ```
+
+3. Keep another input method or session available while testing interactively. The official
+   libxkbcommon debugging guide documents `xkbcli interactive-evdev` for isolated behavior testing.
+4. For a user-scoped libxkbcommon/Wayland installation, back up any existing file and copy the
+   generated `symbols/<layout-id>` to
+   `${XDG_CONFIG_HOME:-$HOME/.config}/xkb/symbols/<layout-id>`. Desktop discovery may additionally
+   require a user rules registry entry and a session restart; follow the desktop environment and
+   libxkbcommon custom-configuration instructions.
+5. Do not edit `/usr/share/X11/xkb` or another distribution-owned XKB root. Package updates can
+   overwrite those files. Remove the user-scoped symbols file to roll back.
+
+The user configuration path is a libxkbcommon feature and does not work as an alternative XKB search
+path for an Xorg server. X11 testing/activation uses different tooling and should follow the
+official libxkbcommon guidance. KeyboardStudio deliberately does not automate any copy, registry,
+desktop setting, or activation step.
 
 ## Authoritative references
 
 - [libxkbcommon: XKB keymap text format v1 and v2](https://xkbcommon.org/doc/current/keymap-text-format-v1-v2.html)
 - [libxkbcommon: custom configuration](https://xkbcommon.org/doc/current/custom-configuration.html)
+- [libxkbcommon: safe configuration debugging](https://xkbcommon.org/doc/current/debugging.html)
 - [libxkbcommon: keymap creation and format compatibility](https://xkbcommon.org/doc/current/group__keymap.html)
 - [xkeyboard-config documentation](https://xkeyboard-config.freedesktop.org/doc/)

@@ -40,10 +40,14 @@ public sealed class JsonKeyboardProjectDocumentStore : IKeyboardProjectDocumentS
     {
         ArgumentNullException.ThrowIfNull(source);
 
-        var dto = await JsonSerializer.DeserializeAsync<KeyboardProjectDocumentDto>(
-            source,
-            SerializerOptions,
-            cancellationToken) ?? throw new InvalidDataException("The project document is empty.");
+        using var json = await JsonDocument.ParseAsync(source, cancellationToken: cancellationToken);
+        if (!json.RootElement.TryGetProperty("documentSchemaVersion", out _))
+        {
+            return await LoadLegacyProjectAsync(json.RootElement, cancellationToken);
+        }
+
+        var dto = json.RootElement.Deserialize<KeyboardProjectDocumentDto>(SerializerOptions)
+            ?? throw new InvalidDataException("The project document is empty.");
         if (dto.DocumentSchemaVersion != CurrentDocumentSchemaVersion)
         {
             throw new InvalidDataException(
@@ -57,6 +61,17 @@ public sealed class JsonKeyboardProjectDocumentStore : IKeyboardProjectDocumentS
         return new KeyboardProjectDocument(
             KeyboardProjectDtoMapper.ToDomain(dto.Project),
             profiles);
+    }
+
+    private static async Task<KeyboardProjectDocument> LoadLegacyProjectAsync(
+        JsonElement root,
+        CancellationToken cancellationToken)
+    {
+        await using var stream = new MemoryStream(JsonSerializer.SerializeToUtf8Bytes(root));
+        var project = await new JsonKeyboardProjectStore().LoadAsync(stream, cancellationToken);
+        return new KeyboardProjectDocument(
+            project,
+            new Dictionary<string, ProjectTargetProfile>(StringComparer.Ordinal));
     }
 
     private static ProjectTargetProfileDto ToDto(ProjectTargetProfile profile)

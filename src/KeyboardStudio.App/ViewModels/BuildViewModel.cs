@@ -2,6 +2,7 @@ using KeyboardStudio.Build;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using KeyboardStudio.Core;
+using KeyboardStudio.Persistence;
 using System.Collections.ObjectModel;
 
 namespace KeyboardStudio.App;
@@ -11,6 +12,7 @@ public sealed class BuildViewModel : ObservableObject
     private readonly Func<KeyboardProject> _projectProvider;
     private readonly ITargetBuildService _buildService;
     private readonly IBuildInteractionService _interactionService;
+    private readonly Action? _profileChanged;
     private readonly Dictionary<BuildTarget, IReadOnlyList<BuildProfileSettingViewModel>> _profiles;
     private BuildTargetOptionViewModel _selectedTarget;
     private IReadOnlyList<BuildProfileSettingViewModel> _profileSettings;
@@ -25,15 +27,19 @@ public sealed class BuildViewModel : ObservableObject
     private IReadOnlyList<BuildTextFile> _generatedFiles = [];
     private BuildTextFile? _selectedGeneratedFile;
     private string _actionStatus = string.Empty;
+    private bool _isApplyingProfiles;
 
     public BuildViewModel(
         Func<KeyboardProject> projectProvider,
         ITargetBuildService buildService,
-        IBuildInteractionService? interactionService = null)
+        IBuildInteractionService? interactionService = null,
+        IReadOnlyDictionary<string, ProjectTargetProfile>? targetProfiles = null,
+        Action? profileChanged = null)
     {
         _projectProvider = projectProvider ?? throw new ArgumentNullException(nameof(projectProvider));
         _buildService = buildService ?? throw new ArgumentNullException(nameof(buildService));
         _interactionService = interactionService ?? new NoOpBuildInteractionService();
+        _profileChanged = profileChanged;
         Targets =
         [
             new(BuildTarget.WindowsX64, "Windows x64"),
@@ -64,7 +70,7 @@ public sealed class BuildViewModel : ObservableObject
         CopyArtifactPathCommand = new AsyncRelayCommand(
             CopyArtifactPathAsync,
             () => HasArtifact);
-        Refresh();
+        ApplyTargetProfiles(targetProfiles ?? CreateDefaultTargetProfiles());
     }
 
     public IReadOnlyList<BuildTargetOptionViewModel> Targets { get; }
@@ -197,6 +203,50 @@ public sealed class BuildViewModel : ObservableObject
         RefreshReadiness();
     }
 
+    public IReadOnlyDictionary<string, ProjectTargetProfile> ExportTargetProfiles() =>
+        new Dictionary<string, ProjectTargetProfile>(StringComparer.Ordinal)
+        {
+            [BuildProfileTargetIds.WindowsX64] = CreateTargetProfile(
+                BuildProfileTargetIds.WindowsX64,
+                BuildTarget.WindowsX64),
+            [BuildProfileTargetIds.LinuxXkb] = CreateTargetProfile(
+                BuildProfileTargetIds.LinuxXkb,
+                BuildTarget.LinuxXkb)
+        };
+
+    public void ApplyTargetProfiles(IReadOnlyDictionary<string, ProjectTargetProfile> targetProfiles)
+    {
+        ArgumentNullException.ThrowIfNull(targetProfiles);
+        _isApplyingProfiles = true;
+        try
+        {
+            ResetProfiles();
+            ApplyTargetProfile(targetProfiles, BuildProfileTargetIds.WindowsX64, BuildTarget.WindowsX64);
+            ApplyTargetProfile(targetProfiles, BuildProfileTargetIds.LinuxXkb, BuildTarget.LinuxXkb);
+        }
+        finally
+        {
+            _isApplyingProfiles = false;
+        }
+
+        SetBuildResult(null);
+        RefreshReadiness();
+    }
+
+    public static IReadOnlyDictionary<string, ProjectTargetProfile> CreateDefaultTargetProfiles()
+    {
+        var profiles = CreateProfiles();
+        return new Dictionary<string, ProjectTargetProfile>(StringComparer.Ordinal)
+        {
+            [BuildProfileTargetIds.WindowsX64] = new(
+                BuildProfileTargetIds.WindowsX64,
+                ToSettings(profiles[BuildTarget.WindowsX64])),
+            [BuildProfileTargetIds.LinuxXkb] = new(
+                BuildProfileTargetIds.LinuxXkb,
+                ToSettings(profiles[BuildTarget.LinuxXkb]))
+        };
+    }
+
     private void RefreshReadiness()
     {
         var settings = GetProfileSettings();
@@ -282,7 +332,54 @@ public sealed class BuildViewModel : ObservableObject
     {
         SetBuildResult(null);
         RefreshReadiness();
+        if (!_isApplyingProfiles)
+        {
+            _profileChanged?.Invoke();
+        }
     }
+
+    private ProjectTargetProfile CreateTargetProfile(string targetId, BuildTarget target) =>
+        new(targetId, ToSettings(_profiles[target]));
+
+    private void ResetProfiles()
+    {
+        var defaults = CreateProfiles();
+        foreach (var target in _profiles.Keys)
+        {
+            var defaultValues = ToSettings(defaults[target]);
+            foreach (var setting in _profiles[target])
+            {
+                setting.Value = defaultValues[setting.Key];
+            }
+        }
+    }
+
+    private void ApplyTargetProfile(
+        IReadOnlyDictionary<string, ProjectTargetProfile> profiles,
+        string targetId,
+        BuildTarget target)
+    {
+        if (!profiles.TryGetValue(targetId, out var profile) ||
+            !string.Equals(profile.Target, targetId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        foreach (var setting in _profiles[target])
+        {
+            if (profile.Settings.TryGetValue(setting.Key, out var value))
+            {
+                setting.Value = value;
+            }
+        }
+    }
+
+    private static Dictionary<string, string> ToSettings(
+        IReadOnlyList<BuildProfileSettingViewModel> settings) =>
+        settings.ToDictionary(
+            setting => setting.Key,
+            setting => setting.Value,
+            StringComparer.Ordinal);
 
     private async Task OpenOutputDirectoryAsync()
     {

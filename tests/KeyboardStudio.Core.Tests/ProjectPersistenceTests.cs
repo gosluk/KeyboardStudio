@@ -155,6 +155,7 @@ public sealed class ProjectPersistenceTests
 
     [Fact]
     [Trait("Category", "Unit")]
+    [Trait("Category", "ErrorPath")]
     public async Task LoadAsync_WhenSchemaVersionIsFuture_RejectsProject()
     {
         var futureVersion = KeyboardProjectSchema.CurrentVersion + 1;
@@ -220,6 +221,7 @@ public sealed class ProjectPersistenceTests
 
     [Fact]
     [Trait("Category", "Unit")]
+    [Trait("Category", "ErrorPath")]
     public async Task LoadAsync_WhenJsonIsMalformed_ReportsInvalidJson()
     {
         var store = new JsonKeyboardProjectStore();

@@ -56,8 +56,8 @@ public sealed class ProjectDocumentServiceTests
             Assert.Null(service.LastError);
 
             await using var stream = File.OpenRead(path);
-            var loaded = await new JsonKeyboardProjectStore().LoadAsync(stream);
-            Assert.Equal(project.Metadata.Name, loaded.Metadata.Name);
+            var loaded = await new JsonKeyboardProjectDocumentStore().LoadAsync(stream);
+            Assert.Equal(project.Metadata.Name, loaded.Project.Metadata.Name);
         }
         finally
         {
@@ -120,6 +120,30 @@ public sealed class ProjectDocumentServiceTests
         }
     }
 
+    [Theory]
+    [Trait("Category", "Unit")]
+    [Trait("Category", "ErrorPath")]
+    [InlineData("not-json")]
+    [InlineData("{\"documentSchemaVersion\":999,\"project\":{},\"targets\":{}}")]
+    public async Task OpenAsync_WhenDocumentEnvelopeIsInvalid_ReportsInvalidProject(string contents)
+    {
+        var path = CreateTemporaryPath();
+        try
+        {
+            await File.WriteAllTextAsync(path, contents);
+            var service = CreateService();
+
+            var result = await service.OpenAsync(path);
+
+            Assert.False(result.Success);
+            Assert.Equal(ProjectDocumentErrorKind.InvalidProject, result.Error?.Kind);
+        }
+        finally
+        {
+            DeleteIfExists(path);
+        }
+    }
+
     [Fact]
     [Trait("Category", "Unit")]
     public async Task SaveAsAsync_WhenPersistenceFails_PreservesDirtyStateAndCurrentPath()
@@ -129,7 +153,7 @@ public sealed class ProjectDocumentServiceTests
         try
         {
             var store = new ControllableProjectStore();
-            var service = new ProjectDocumentService(store, DemoProjectFactory.Create);
+            var service = new ProjectDocumentService(store, CreateDocument);
             service.CreateNew();
 
             var firstResult = await service.SaveAsAsync(firstPath);
@@ -154,7 +178,10 @@ public sealed class ProjectDocumentServiceTests
     }
 
     private static ProjectDocumentService CreateService() =>
-        new(new JsonKeyboardProjectStore(), DemoProjectFactory.Create);
+        new(new JsonKeyboardProjectDocumentStore(), CreateDocument);
+
+    private static KeyboardProjectDocument CreateDocument() =>
+        new(DemoProjectFactory.Create(), BuildViewModel.CreateDefaultTargetProfiles());
 
     private static string CreateTemporaryPath() =>
         Path.Combine(Path.GetTempPath(), $"KeyboardStudio-{Guid.NewGuid():N}.kbdproj");
@@ -167,12 +194,12 @@ public sealed class ProjectDocumentServiceTests
         }
     }
 
-    private sealed class ControllableProjectStore : IKeyboardProjectStore
+    private sealed class ControllableProjectStore : IKeyboardProjectDocumentStore
     {
         public bool FailOnSave { get; set; }
 
         public Task SaveAsync(
-            KeyboardProject project,
+            KeyboardProjectDocument document,
             Stream destination,
             CancellationToken cancellationToken = default)
         {
@@ -184,9 +211,9 @@ public sealed class ProjectDocumentServiceTests
             return Task.CompletedTask;
         }
 
-        public Task<KeyboardProject> LoadAsync(
+        public Task<KeyboardProjectDocument> LoadAsync(
             Stream source,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult(DemoProjectFactory.Create());
+            Task.FromResult(CreateDocument());
     }
 }

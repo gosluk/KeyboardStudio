@@ -58,8 +58,10 @@ public sealed class MainWindowViewModel : ObservableObject
         _selectedTemplate = Templates.FirstOrDefault(template => template.Id == DefaultTemplateId)
             ?? Templates[0];
         _documentService = new ProjectDocumentService(
-            new JsonKeyboardProjectStore(),
-            () => CreateProject(_selectedTemplate));
+            new JsonKeyboardProjectDocumentStore(),
+            () => new KeyboardProjectDocument(
+                CreateProject(_selectedTemplate),
+                BuildViewModel.CreateDefaultTargetProfiles()));
         _project = _documentService.CreateNew();
         _editor = CreateEditor(_project, _selectedTemplate);
         _diagnostics = CreateDiagnostics(_editor);
@@ -67,7 +69,9 @@ public sealed class MainWindowViewModel : ObservableObject
         Build = new BuildViewModel(
             () => Project,
             new TargetBuildService(),
-            interactionService as IBuildInteractionService);
+            interactionService as IBuildInteractionService,
+            _documentService.CurrentTargetProfiles,
+            BuildProfileChanged);
         NewCommand = new AsyncRelayCommand(NewDocumentAsync);
         OpenCommand = new AsyncRelayCommand(OpenDocumentAsync);
         SaveCommand = new AsyncRelayCommand(SaveDocumentAsync);
@@ -229,6 +233,7 @@ public sealed class MainWindowViewModel : ObservableObject
         Project = project;
         Editor = CreateEditor(project, template);
         Diagnostics = CreateDiagnostics(Editor);
+        Build.ApplyTargetProfiles(_documentService.CurrentTargetProfiles);
         RefreshDiagnostics();
         RefreshDocumentState();
     }
@@ -237,6 +242,12 @@ public sealed class MainWindowViewModel : ObservableObject
     {
         _documentService.MarkDirty();
         RefreshDiagnostics();
+        RefreshDocumentState();
+    }
+
+    private void BuildProfileChanged()
+    {
+        _documentService.UpdateTargetProfiles(Build.ExportTargetProfiles());
         RefreshDocumentState();
     }
 

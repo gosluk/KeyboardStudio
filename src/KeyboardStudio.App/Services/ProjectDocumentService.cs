@@ -1,23 +1,29 @@
 using KeyboardStudio.Core;
 using KeyboardStudio.Persistence;
+using System.Text.Json;
 
 namespace KeyboardStudio.App;
 
 public sealed class ProjectDocumentService : IProjectDocumentService
 {
-    private readonly IKeyboardProjectStore _store;
-    private readonly Func<KeyboardProject> _projectFactory;
+    private readonly IKeyboardProjectDocumentStore _store;
+    private readonly Func<KeyboardProjectDocument> _documentFactory;
 
-    public ProjectDocumentService(IKeyboardProjectStore store, Func<KeyboardProject> projectFactory)
+    public ProjectDocumentService(
+        IKeyboardProjectDocumentStore store,
+        Func<KeyboardProjectDocument> documentFactory)
     {
         ArgumentNullException.ThrowIfNull(store);
-        ArgumentNullException.ThrowIfNull(projectFactory);
+        ArgumentNullException.ThrowIfNull(documentFactory);
 
         _store = store;
-        _projectFactory = projectFactory;
+        _documentFactory = documentFactory;
     }
 
     public KeyboardProject? CurrentProject { get; private set; }
+
+    public IReadOnlyDictionary<string, ProjectTargetProfile> CurrentTargetProfiles { get; private set; } =
+        new Dictionary<string, ProjectTargetProfile>(StringComparer.Ordinal);
 
     public string? CurrentFilePath { get; private set; }
 
@@ -27,12 +33,13 @@ public sealed class ProjectDocumentService : IProjectDocumentService
 
     public KeyboardProject CreateNew()
     {
-        var project = _projectFactory();
-        CurrentProject = project;
+        var document = _documentFactory();
+        CurrentProject = document.Project;
+        CurrentTargetProfiles = CopyProfiles(document.TargetProfiles);
         CurrentFilePath = null;
         IsDirty = false;
         LastError = null;
-        return project;
+        return document.Project;
     }
 
     public void MarkDirty()
@@ -41,6 +48,13 @@ public sealed class ProjectDocumentService : IProjectDocumentService
         {
             IsDirty = true;
         }
+    }
+
+    public void UpdateTargetProfiles(IReadOnlyDictionary<string, ProjectTargetProfile> targetProfiles)
+    {
+        ArgumentNullException.ThrowIfNull(targetProfiles);
+        CurrentTargetProfiles = CopyProfiles(targetProfiles);
+        MarkDirty();
     }
 
     public async Task<ProjectDocumentOperationResult> OpenAsync(
@@ -55,15 +69,20 @@ public sealed class ProjectDocumentService : IProjectDocumentService
         try
         {
             await using var stream = File.OpenRead(fullPath);
-            var project = await _store.LoadAsync(stream, cancellationToken);
+            var document = await _store.LoadAsync(stream, cancellationToken);
 
-            CurrentProject = project;
+            CurrentProject = document.Project;
+            CurrentTargetProfiles = CopyProfiles(document.TargetProfiles);
             CurrentFilePath = fullPath;
             IsDirty = false;
             LastError = null;
             return ProjectDocumentOperationResult.Succeeded();
         }
         catch (ProjectLoadException exception)
+        {
+            return Fail(ProjectDocumentErrorKind.InvalidProject, exception.Message);
+        }
+        catch (Exception exception) when (exception is JsonException or InvalidDataException)
         {
             return Fail(ProjectDocumentErrorKind.InvalidProject, exception.Message);
         }
@@ -93,7 +112,7 @@ public sealed class ProjectDocumentService : IProjectDocumentService
                 "The project does not have a file path yet. Use Save As first."));
         }
 
-        return SaveToPathAsync(CurrentProject, CurrentFilePath, updateCurrentPath: false, cancellationToken);
+        return SaveToPathAsync(CurrentFilePath, updateCurrentPath: false, cancellationToken);
     }
 
     public Task<ProjectDocumentOperationResult> SaveAsAsync(
@@ -112,11 +131,10 @@ public sealed class ProjectDocumentService : IProjectDocumentService
             return Task.FromResult(Fail(ProjectDocumentErrorKind.InvalidPath, pathError));
         }
 
-        return SaveToPathAsync(CurrentProject, fullPath, updateCurrentPath: true, cancellationToken);
+        return SaveToPathAsync(fullPath, updateCurrentPath: true, cancellationToken);
     }
 
     private async Task<ProjectDocumentOperationResult> SaveToPathAsync(
-        KeyboardProject project,
         string path,
         bool updateCurrentPath,
         CancellationToken cancellationToken)
@@ -124,7 +142,8 @@ public sealed class ProjectDocumentService : IProjectDocumentService
         try
         {
             await using var stream = File.Create(path);
-            await _store.SaveAsync(project, stream, cancellationToken);
+            var document = new KeyboardProjectDocument(CurrentProject!, CurrentTargetProfiles);
+            await _store.SaveAsync(document, stream, cancellationToken);
 
             if (updateCurrentPath)
             {
@@ -144,6 +163,15 @@ public sealed class ProjectDocumentService : IProjectDocumentService
             return Fail(ProjectDocumentErrorKind.Io, exception.Message);
         }
     }
+
+    private static Dictionary<string, ProjectTargetProfile> CopyProfiles(
+        IReadOnlyDictionary<string, ProjectTargetProfile> profiles) =>
+        profiles.ToDictionary(
+            pair => pair.Key,
+            pair => new ProjectTargetProfile(
+                pair.Value.Target,
+                new Dictionary<string, string>(pair.Value.Settings, StringComparer.Ordinal)),
+            StringComparer.Ordinal);
 
     private ProjectDocumentOperationResult Fail(ProjectDocumentErrorKind kind, string message)
     {

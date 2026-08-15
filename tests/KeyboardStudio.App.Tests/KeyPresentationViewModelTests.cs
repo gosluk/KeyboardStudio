@@ -218,8 +218,10 @@ public sealed class KeyPresentationViewModelTests
     public void MappingMutation_WhenValueChanges_MarksDocumentDirtyOnlyOnce()
     {
         var document = new ProjectDocumentService(
-            new JsonKeyboardProjectStore(),
-            DemoProjectFactory.Create);
+            new JsonKeyboardProjectDocumentStore(),
+            () => new KeyboardProjectDocument(
+                DemoProjectFactory.Create(),
+                BuildViewModel.CreateDefaultTargetProfiles()));
         var project = document.CreateNew();
         var template = new KeyboardTemplateProvider().Templates.Single(item => item.Id == "iso-105");
         var changes = 0;

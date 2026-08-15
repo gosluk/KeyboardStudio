@@ -4,6 +4,9 @@ KeyboardStudio is a modern Avalonia-based editor for defining platform-neutral c
 layouts. The implemented backends produce verified native Windows keyboard-layout DLLs and portable
 Linux XKB symbols components through a target-aware Avalonia build workflow.
 
+The Phase 12 MVP implementation is complete. Release candidates are governed by the
+[MVP release checklist](docs/MVP-RELEASE-CHECKLIST.md) and its aggregate CI gate.
+
 The repository contains the working editor/domain/persistence foundation plus verified Windows and
 Linux artifact backends. The implementation is focused on this core workflow:
 
@@ -13,6 +16,33 @@ Linux artifact backends. The implementation is focused on this core workflow:
 4. Validate the project.
 5. Select an artifact target.
 6. Generate a native Windows keyboard-layout DLL or a Linux XKB symbols file.
+
+## Quick start
+
+KeyboardStudio requires the .NET SDK version pinned in [`global.json`](global.json). From the
+repository root:
+
+```bash
+dotnet restore KeyboardStudio.slnx
+dotnet run --project src/KeyboardStudio.App/KeyboardStudio.App.csproj
+```
+
+On a Bash-capable host, `./scripts/run-app.sh` performs restore, compilation, and startup in one
+command. Self-contained Windows and Linux publishing is documented in
+[docs/PACKAGING.md](docs/PACKAGING.md).
+
+The editor runs on x64 Windows and Linux desktops. Editing, persistence, validation, and Linux XKB
+generation need no native development toolchain. A Windows DLL build additionally requires an x64
+MSVC toolchain and Windows 10/11 SDK. Installing `xkbcli` is optional for local Linux generation and
+adds external compilation verification; Linux CI always performs that verification.
+
+Start with the ISO-105 template, select a physical key, choose its logical key, and fill any of the
+four layer values. Use **File > Save As** for the `.kbdproj`, then select Windows x64 or Linux XKB in
+the Build panel. Target profile edits are stored in the same project document and restored when it
+is reopened. Builds only generate artifacts; they never install or activate a keyboard layout.
+
+See [Windows build prerequisites](docs/WINDOWS-BUILD.md#prerequisites) and
+[Linux verification and safe manual installation](docs/LINUX-XKB.md#safe-manual-testing-and-installation).
 
 Windows builds now verify PE architecture, DLL characteristics, the exact `KbdLayerDescriptor`
 export, and—on a matching Windows host—loader resolution. Successful orchestration writes a hashed
@@ -102,14 +132,17 @@ docs/
   DIAGNOSTICS.md
   IMPLEMENTATION-PLAN.md
   LINUX-XKB.md
+  MVP-RELEASE-CHECKLIST.md
+  PACKAGING.md
+  VERSIONING.md
   PROJECT-FORMAT.md
   WINDOWS-BUILD.md
   DECISIONS.md
 ```
 
-## MVP scope
+## MVP scope and limitations
 
-Implemented through Phase 10:
+The MVP supports:
 
 - visual ISO/ANSI keyboard representation;
 - physical-key selection;
@@ -121,7 +154,8 @@ Implemented through Phase 10:
 - Windows keyboard-table source generation;
 - native Windows DLL compilation;
 - PE/export/load verification and reproducibility manifests;
-- Linux XKB v1 symbols-file generation, manifests, and `xkbcli` verification.
+- Linux XKB v1 symbols-file generation, manifests, and optional local/required-CI `xkbcli`
+  verification;
 - target/profile selection, build readiness, backend-specific progress, cancellation, output actions,
   and categorized error/unverified-result presentation.
 
@@ -134,8 +168,18 @@ Explicitly out of MVP scope:
 - IMEs;
 - runtime keyboard hooks;
 - PowerToys-style remapping;
-- importing arbitrary existing keyboard DLLs.
+- importing arbitrary existing keyboard DLLs;
 - automatic installation or activation of generated XKB layouts.
+
+Additional release limitations:
+
+- Windows artifact compilation is x64-only and must run on Windows with MSVC and a Windows SDK;
+- Linux output is a symbols component, not a distribution-specific package or desktop registration;
+- user-scoped XKB discovery and activation vary by compositor/desktop, and X11 has different path
+  constraints from Wayland/libxkbcommon;
+- supplementary-plane Unicode output is supported by XKB but not by the MVP Windows backend;
+- project and target-profile settings are editable, but no installer, updater, or signing pipeline is
+  included in the MVP.
 
 ## References
 

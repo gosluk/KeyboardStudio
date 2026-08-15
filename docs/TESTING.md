@@ -39,9 +39,11 @@ Unicode mapping, an ISO-105 layout using the extra ISO key, and a special-key la
 ordinary and extended scan codes. Every fixture must produce a structurally valid x64 DLL exporting
 `KbdLayerDescriptor`, pass the matching-host load check, and reproduce byte-for-byte.
 
-## Test categories
+## Test categories and facets
 
-Every test has exactly one `Category` trait. CI and local scripts select categories explicitly:
+Every test has one primary `Category` trait. A test may also have a secondary `ErrorPath` category
+facet so the release failure matrix can be run independently. CI and local scripts select categories
+explicitly:
 
 | Category | Purpose | Runner |
 | --- | --- | --- |
@@ -49,9 +51,20 @@ Every test has exactly one `Category` trait. CI and local scripts select categor
 | `Golden` | Deterministic source/reference comparisons | Linux and Windows |
 | `XkbIntegration` | Generated XKB compilation with `xkbcli` | Ubuntu with XKB packages |
 | `WindowsIntegration` | Generated DLL compilation and verification with MSVC | Windows with Visual Studio and Windows SDK |
+| `ErrorPath` | Cross-project release failure-path facet; also retains its primary category | Any runner required by the primary category |
 
 The platform-neutral gate is `Category=Unit|Category=Golden`. Native categories are invoked in
 dedicated steps so missing tools cannot turn into an accidental fast-test pass.
+
+Run the MVP error-path matrix directly with:
+
+```bash
+dotnet test KeyboardStudio.slnx --filter "Category=ErrorPath"
+```
+
+The matrix covers invalid and future-schema project documents, missing target profiles, unsupported
+target mappings, absent Windows tooling, compiler failures, missing/rejecting XKB verification,
+unwritable output, and cancellation.
 
 ## Test method naming
 

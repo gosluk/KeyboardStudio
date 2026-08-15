@@ -18,6 +18,7 @@ public sealed class WindowsCompatibilityValidationRuleTests
 
     [Fact]
     [Trait("Category", "Unit")]
+    [Trait("Category", "ErrorPath")]
     public void Validate_WhenOutputHasNoLogicalKey_ReportsWindowsCompatibilityIssue()
     {
         var project = DemoProjectFactory.Create();

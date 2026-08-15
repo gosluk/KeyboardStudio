@@ -1,6 +1,7 @@
 using KeyboardStudio.App;
 using KeyboardStudio.Build;
 using KeyboardStudio.Core;
+using KeyboardStudio.Persistence;
 using Xunit;
 
 namespace KeyboardStudio.App.Tests;
@@ -82,6 +83,35 @@ public sealed class BuildViewModelTests
         Assert.Equal("MSVC unavailable.", viewModel.EnvironmentStatus);
         Assert.Contains(viewModel.Problems, problem =>
             problem.Kind == BuildProblemKind.MissingRequiredToolchain);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    [Trait("Category", "ErrorPath")]
+    public void Constructor_WhenLinuxTargetProfileIsMissing_UsesActionableDefaults()
+    {
+        var profiles = new Dictionary<string, ProjectTargetProfile>(StringComparer.Ordinal)
+        {
+            [BuildProfileTargetIds.WindowsX64] = new(
+                BuildProfileTargetIds.WindowsX64,
+                new Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    [BuildProfileKeys.LayoutId] = "custom-windows"
+                })
+        };
+        var viewModel = new BuildViewModel(
+            CreateProject,
+            new RecordingBuildService(),
+            targetProfiles: profiles);
+
+        viewModel.SelectedTarget = viewModel.Targets.Single(
+            target => target.Target == BuildTarget.LinuxXkb);
+
+        Assert.Equal(
+            "keyboardstudio",
+            viewModel.ProfileSettings.Single(
+                setting => setting.Key == BuildProfileKeys.LayoutId).Value);
+        Assert.True(viewModel.BuildCommand.CanExecute(null));
     }
 
     [Fact]
@@ -176,6 +206,7 @@ public sealed class BuildViewModelTests
 
     [Fact]
     [Trait("Category", "Unit")]
+    [Trait("Category", "ErrorPath")]
     public async Task CancelCommand_WhenBuildIsRunning_CancelsBackendAndPresentsCancellation()
     {
         var service = new RecordingBuildService { WaitForCancellation = true };

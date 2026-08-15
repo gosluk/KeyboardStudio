@@ -37,7 +37,7 @@ The core represents what a keyboard layout means, not how a specific operating s
 
 Windows structures such as scan-code mappings, virtual keys, modifier tables and `KBDTABLES` are generated only in `KeyboardStudio.Windows`.
 XKB symbolic key names, keysyms, levels, types, and symbols-component syntax are generated only in
-the planned `KeyboardStudio.Linux` backend.
+the implemented `KeyboardStudio.Linux` backend.
 
 The editor thinks in terms of:
 
@@ -85,7 +85,7 @@ The Phase 6 generator emits the WDK-native `VSC_VK`, `VSC_LPWSTR`, `VK_TO_BIT`, 
 export and deterministic version metadata. See
 [`WINDOWS-KBDTABLES-REFERENCE.md`](WINDOWS-KBDTABLES-REFERENCE.md) for the supported ABI subset.
 
-The planned Linux generator emits classic XKB text format v1 as an `xkb_symbols` component. The
+The Linux generator emits classic XKB text format v1 as an `xkb_symbols` component. The
 component composes with normal host keycodes/types/compat data, making it more portable than a
 self-contained keymap. See [`LINUX-XKB.md`](LINUX-XKB.md).
 
@@ -436,7 +436,7 @@ public interface IKeyboardProjectStore
 }
 ```
 
-Initial implementation:
+Core-only compatibility implementation:
 
 ```text
 KeyboardStudio.Persistence
@@ -445,10 +445,26 @@ KeyboardStudio.Persistence
 
 Use `System.Text.Json`.
 
-Every project must contain `schemaVersion` from the first release so migrations can be added later. See [PROJECT-FORMAT.md](PROJECT-FORMAT.md).
+Every project must contain `schemaVersion` from the first release so migrations can be added later.
+The desktop application persists a `KeyboardProjectDocument` envelope:
 
-`KeyboardProject` remains the platform-neutral aggregate. The application/document boundary adds
-boundary for optional target profiles such as `WindowsLayoutMetadata` and `XkbLayoutMetadata`.
+```text
+KeyboardProjectDocument
+ |- documentSchemaVersion
+ |- project -> KeyboardProject (Core schemaVersion)
+ `- targets
+     |- windowsX64 -> Windows build settings
+     `- linuxXkb   -> XKB build settings
+```
+
+`ProjectDocumentService` owns current path and dirty state. `BuildViewModel` exports both editable
+profiles through stable discriminators before a save and reapplies them after open/new. A missing
+known profile receives safe defaults; opening a legacy direct Core project remains supported.
+
+See [PROJECT-FORMAT.md](PROJECT-FORMAT.md).
+
+`KeyboardProject` remains the platform-neutral aggregate. The application/document boundary adds a
+versioned envelope for optional target profiles such as `WindowsLayoutMetadata` and `XkbLayoutMetadata`.
 Profiles are persisted with stable target discriminators without adding their fields to
 `ProjectMetadata` or making Core reference a platform backend. One project may retain profiles for
 both targets; `BuildOptions.Target` selects which one is consumed.
