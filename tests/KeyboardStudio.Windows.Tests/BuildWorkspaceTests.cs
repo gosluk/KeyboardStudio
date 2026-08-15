@@ -6,6 +6,7 @@ namespace KeyboardStudio.Windows.Tests;
 public sealed class BuildWorkspaceTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task Create_ProducesIsolatedDirectoryLayoutAndWritesSource()
     {
         var buildRoot = Path.Combine(Path.GetTempPath(), $"KeyboardStudio-{Guid.NewGuid():N}");
@@ -39,6 +40,7 @@ public sealed class BuildWorkspaceTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task WriteGeneratedSourceAsync_RejectsDirectoryTraversal()
     {
         var buildRoot = Path.Combine(Path.GetTempPath(), $"KeyboardStudio-{Guid.NewGuid():N}");

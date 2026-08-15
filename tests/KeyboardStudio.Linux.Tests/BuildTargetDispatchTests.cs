@@ -7,9 +7,10 @@ namespace KeyboardStudio.Linux.Tests;
 public sealed class BuildTargetDispatchTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task BuildAsync_WindowsAndLinuxTargets_InvokeDifferentBackends()
     {
-        var windows = new TrackingBackend(BuildTarget.WindowsX64, BuildTarget.WindowsArm64);
+        var windows = new TrackingBackend(BuildTarget.WindowsX64);
         var linux = new TrackingBackend(BuildTarget.LinuxXkb);
         var orchestrator = new BuildOrchestrator(
             new KeyboardProjectValidator([]),
@@ -17,12 +18,12 @@ public sealed class BuildTargetDispatchTests
 
         await orchestrator.BuildAsync(
             DemoProjectFactory.Create(),
-            new BuildOptions(BuildTarget.WindowsArm64, "out"));
+            new BuildOptions(BuildTarget.WindowsX64, "out"));
         await orchestrator.BuildAsync(
             DemoProjectFactory.Create(),
             new BuildOptions(BuildTarget.LinuxXkb, "out"));
 
-        Assert.Equal([BuildTarget.WindowsArm64], windows.Calls);
+        Assert.Equal([BuildTarget.WindowsX64], windows.Calls);
         Assert.Equal([BuildTarget.LinuxXkb], linux.Calls);
     }
 

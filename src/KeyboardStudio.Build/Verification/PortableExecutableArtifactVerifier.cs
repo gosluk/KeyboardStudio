@@ -145,7 +145,6 @@ public sealed class PortableExecutableArtifactVerifier : IArtifactVerifier
     private static Machine? GetExpectedMachine(BuildTarget target) => target switch
     {
         BuildTarget.WindowsX64 => Machine.Amd64,
-        BuildTarget.WindowsArm64 => Machine.Arm64,
         _ => null
     };
 

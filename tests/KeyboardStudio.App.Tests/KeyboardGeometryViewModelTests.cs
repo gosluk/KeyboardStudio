@@ -6,6 +6,7 @@ namespace KeyboardStudio.App.Tests;
 public sealed class KeyboardGeometryViewModelTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public void Constructor_WhenCreated_UsesIsoTemplateGeometryByDefault()
     {
         var viewModel = new MainWindowViewModel();
@@ -24,6 +25,7 @@ public sealed class KeyboardGeometryViewModelTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task NewCommand_WhenAnsiTemplateIsChosen_RebuildsEditorWithAnsiGeometry()
     {
         var viewModel = new MainWindowViewModel();

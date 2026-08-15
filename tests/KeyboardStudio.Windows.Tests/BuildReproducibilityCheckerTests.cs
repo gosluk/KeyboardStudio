@@ -6,6 +6,7 @@ namespace KeyboardStudio.Windows.Tests;
 public sealed class BuildReproducibilityCheckerTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task CompareAsync_WhenSourcesAndBinariesMatch_ReturnsSuccess()
     {
         var paths = await CreateArtifactsAsync("same", "same");
@@ -35,6 +36,7 @@ public sealed class BuildReproducibilityCheckerTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task CompareAsync_WhenSourcesAndBinariesDiffer_ReturnsBothDiagnostics()
     {
         var paths = await CreateArtifactsAsync("first", "second");

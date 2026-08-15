@@ -7,6 +7,7 @@ namespace KeyboardStudio.Windows.Tests;
 public sealed class WindowsTranslationFailureTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public void Translate_WhenCharacterIsAssignedToScanOnlyKey_ThrowsStructuredDiagnostic()
     {
         var project = CreateSingleKeyProject(LogicalKey.Enter, new CharacterOutput("x"));
@@ -19,6 +20,7 @@ public sealed class WindowsTranslationFailureTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Translate_WhenSpecialOutputCannotBeRepresented_ThrowsStructuredDiagnostic()
     {
         var project = CreateSingleKeyProject(LogicalKey.A, new SpecialKeyOutput(LogicalKey.Enter));
@@ -31,6 +33,7 @@ public sealed class WindowsTranslationFailureTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Translate_WhenMappingReferencesMissingPhysicalKey_PreservesCoreDiagnostic()
     {
         var project = CreateSingleKeyProject(LogicalKey.A, new CharacterOutput("a"));
@@ -44,6 +47,7 @@ public sealed class WindowsTranslationFailureTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Translate_WhenOutputIsExplicitlyUnmapped_PreservesScanCodeWithoutCharacterRow()
     {
         var project = CreateSingleKeyProject(LogicalKey.A, new NoOutput());

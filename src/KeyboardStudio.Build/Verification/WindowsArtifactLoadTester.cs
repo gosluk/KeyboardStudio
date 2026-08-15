@@ -62,7 +62,6 @@ public sealed class WindowsArtifactLoadTester : IArtifactLoadTester
     private static bool CanLoadInCurrentProcess(BuildTarget target) => target switch
     {
         BuildTarget.WindowsX64 => RuntimeInformation.ProcessArchitecture == Architecture.X64,
-        BuildTarget.WindowsArm64 => RuntimeInformation.ProcessArchitecture == Architecture.Arm64,
         _ => false
     };
 }

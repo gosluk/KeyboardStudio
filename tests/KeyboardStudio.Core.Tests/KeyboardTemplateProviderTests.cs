@@ -30,6 +30,7 @@ public sealed class KeyboardTemplateProviderTests
         """;
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Templates_WhenDefaultProviderIsCreated_EnumeratesBuiltInTemplates()
     {
         var provider = new KeyboardTemplateProvider();
@@ -55,6 +56,7 @@ public sealed class KeyboardTemplateProviderTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void OpenRead_WhenBuiltInTemplateIsRequested_ReturnsEmbeddedTemplateResource()
     {
         var source = new EmbeddedKeyboardTemplateContentSource();
@@ -67,6 +69,7 @@ public sealed class KeyboardTemplateProviderTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Load_WhenTemplateIsValid_ConvertsGeometryToPhysicalKeyboard()
     {
         var source = new DictionaryTemplateContentSource(ValidTemplate);
@@ -86,6 +89,7 @@ public sealed class KeyboardTemplateProviderTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Load_WhenTemplateIsLoadedRepeatedly_CachesValidatedTemplateAndReturnsDefensiveLists()
     {
         var source = new DictionaryTemplateContentSource(ValidTemplate);
@@ -104,6 +108,7 @@ public sealed class KeyboardTemplateProviderTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Load_WhenTemplateIdIsUnknown_ReportsUnknownTemplateWithoutOpeningSource()
     {
         var source = new DictionaryTemplateContentSource(ValidTemplate);
@@ -117,6 +122,7 @@ public sealed class KeyboardTemplateProviderTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Load_WhenSchemaVersionIsUnsupported_ReportsUnsupportedSchemaVersion()
     {
         var source = new DictionaryTemplateContentSource(
@@ -129,6 +135,7 @@ public sealed class KeyboardTemplateProviderTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Load_WhenPhysicalKeyIdIsDuplicated_ReportsDuplicateKeyId()
     {
         const string json = """
@@ -155,6 +162,7 @@ public sealed class KeyboardTemplateProviderTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Load_WhenScanCodeIdentityIsDuplicated_ReportsDuplicateScanCodeIdentity()
     {
         const string json = """
@@ -181,6 +189,7 @@ public sealed class KeyboardTemplateProviderTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Load_WhenScanCodeMatchesButExtendedIdentityDiffers_AllowsBothKeys()
     {
         const string json = """
@@ -209,6 +218,7 @@ public sealed class KeyboardTemplateProviderTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Load_WhenTemplateHasWrongKeyCount_ReportsIncompleteTemplate()
     {
         var source = new DictionaryTemplateContentSource(ValidTemplate);
@@ -222,6 +232,7 @@ public sealed class KeyboardTemplateProviderTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Load_WhenUnknownJsonPropertyExists_ReportsInvalidJson()
     {
         var source = new DictionaryTemplateContentSource(

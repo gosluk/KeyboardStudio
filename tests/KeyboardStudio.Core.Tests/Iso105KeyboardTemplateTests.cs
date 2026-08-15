@@ -8,6 +8,7 @@ public sealed class Iso105KeyboardTemplateTests
     private static readonly KeyboardTemplateProvider Provider = new();
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Load_WhenIso105Requested_ReturnsCompleteExpectedPhysicalKeySet()
     {
         string[] expectedKeyIds =
@@ -45,6 +46,7 @@ public sealed class Iso105KeyboardTemplateTests
     }
 
     [Theory]
+    [Trait("Category", "Unit")]
     [InlineData("Escape", 0x01, false)]
     [InlineData("KeyA", 0x1E, false)]
     [InlineData("IntlHash", 0x2B, false)]
@@ -74,6 +76,7 @@ public sealed class Iso105KeyboardTemplateTests
     }
 
     [Theory]
+    [Trait("Category", "Unit")]
     [InlineData("Backspace", 13, 1.5, 2, 1)]
     [InlineData("Tab", 0, 2.5, 1.5, 1)]
     [InlineData("Enter", 13.75, 2.5, 1.25, 2)]
@@ -103,6 +106,7 @@ public sealed class Iso105KeyboardTemplateTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Load_WhenIso105Requested_UsesExpectedRowStartCounts()
     {
         var keyboard = Provider.Load("iso-105");

@@ -124,7 +124,7 @@ public sealed class TargetBuildService : ITargetBuildService
                 outputError));
         }
 
-        if (target is BuildTarget.WindowsX64 or BuildTarget.WindowsArm64)
+        if (target == BuildTarget.WindowsX64)
         {
             issues.AddRange(new WindowsCompatibilityValidationRule().Validate(project));
             var version = GetSetting(settings, BuildProfileKeys.FileVersion, "1.0.0.0");
@@ -184,7 +184,7 @@ public sealed class TargetBuildService : ITargetBuildService
         IReadOnlyDictionary<string, string> settings) =>
         target switch
         {
-            BuildTarget.WindowsX64 or BuildTarget.WindowsArm64 => CreateWindowsBackend(settings),
+            BuildTarget.WindowsX64 => CreateWindowsBackend(settings),
             BuildTarget.LinuxXkb => new LinuxXkbBuildBackend(CreateXkbMetadata(settings)),
             _ => throw new ArgumentOutOfRangeException(nameof(target), target, "Unsupported build target.")
         };

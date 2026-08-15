@@ -7,6 +7,7 @@ namespace KeyboardStudio.Linux.Tests;
 public sealed class KeyboardProjectDocumentStoreTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task SaveAndLoad_PreservesWindowsAndLinuxProfiles()
     {
         var document = new KeyboardProjectDocument(

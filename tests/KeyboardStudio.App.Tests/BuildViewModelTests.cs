@@ -8,6 +8,7 @@ namespace KeyboardStudio.App.Tests;
 public sealed class BuildViewModelTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public void TargetSelection_UpdatesProfileAndEnvironmentPresentation()
     {
         var service = new RecordingBuildService();
@@ -22,24 +23,27 @@ public sealed class BuildViewModelTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task BuildCommand_UsesSelectedTargetProfileAndPresentsArtifact()
     {
         var service = new RecordingBuildService();
         var viewModel = CreateViewModel(service);
         viewModel.SelectedTarget = viewModel.Targets.Single(option => option.Target == BuildTarget.LinuxXkb);
         viewModel.ProfileSettings.Single(setting => setting.Key == BuildProfileKeys.LayoutId).Value = "custom";
-        viewModel.OutputDirectory = "/tmp/keyboard-build";
+        var outputDirectory = Path.Combine(Path.GetTempPath(), "keyboard-build");
+        viewModel.OutputDirectory = outputDirectory;
 
         await viewModel.BuildCommand.ExecuteAsync(null);
 
         Assert.Equal(BuildTarget.LinuxXkb, service.LastOptions?.Target);
-        Assert.Equal("/tmp/keyboard-build", service.LastOptions?.OutputDirectory);
+        Assert.Equal(outputDirectory, service.LastOptions?.OutputDirectory);
         Assert.Equal("custom", service.LastSettings?[BuildProfileKeys.LayoutId]);
-        Assert.Equal("/tmp/keyboard-build/xkb/symbols/custom", viewModel.ArtifactPath);
+        Assert.Equal(Path.Combine(outputDirectory, "xkb", "symbols", "custom"), viewModel.ArtifactPath);
         Assert.Equal("Build completed successfully.", viewModel.Status);
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void BuildCommand_WhenSelectedTargetHasErrors_DisablesOnlyThatTarget()
     {
         var service = new RecordingBuildService
@@ -62,6 +66,7 @@ public sealed class BuildViewModelTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void BuildCommand_WhenRequiredWindowsToolsAreUnavailable_IsDisabled()
     {
         var service = new RecordingBuildService
@@ -80,6 +85,7 @@ public sealed class BuildViewModelTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void BuildCommand_WhenOptionalXkbVerifierIsUnavailable_RemainsEnabledWithWarning()
     {
         var service = new RecordingBuildService
@@ -103,6 +109,7 @@ public sealed class BuildViewModelTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task BuildCommand_WhenCommonValidationFails_DoesNotInvokeAnyBackend()
     {
         var service = new RecordingBuildService
@@ -124,6 +131,7 @@ public sealed class BuildViewModelTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task BuildCommand_WhileBuildIsRunning_IsDisabled()
     {
         var completion = new TaskCompletionSource<KeyboardBuildResult>(
@@ -142,6 +150,7 @@ public sealed class BuildViewModelTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task BuildCommand_WhenLinuxSelected_ShowsOnlyReportedLinuxStages()
     {
         var service = new RecordingBuildService
@@ -166,6 +175,7 @@ public sealed class BuildViewModelTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task CancelCommand_WhenBuildIsRunning_CancelsBackendAndPresentsCancellation()
     {
         var service = new RecordingBuildService { WaitForCancellation = true };
@@ -181,6 +191,7 @@ public sealed class BuildViewModelTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task ResultActions_OpenInspectAndCopyBuildOutputs()
     {
         var service = new RecordingBuildService();
@@ -205,6 +216,7 @@ public sealed class BuildViewModelTests
     }
 
     [Theory]
+    [Trait("Category", "Unit")]
     [InlineData("GEN_SOURCE", BuildProblemKind.SourceGeneration, "Source generation error")]
     [InlineData("C1000", BuildProblemKind.CompilerOrLinker, "Compiler or linker error")]
     [InlineData("PE_EXPORT", BuildProblemKind.ArtifactVerification, "Artifact verification error")]
@@ -232,6 +244,7 @@ public sealed class BuildViewModelTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task BuildResult_WhenOptionalVerifierIsMissing_PresentsUnverifiedSuccess()
     {
         var result = new KeyboardBuildResult(

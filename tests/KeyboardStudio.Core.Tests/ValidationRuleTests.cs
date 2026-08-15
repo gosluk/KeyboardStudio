@@ -6,6 +6,7 @@ namespace KeyboardStudio.Core.Tests;
 public sealed class ValidationRuleTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public void KeyboardProjectDiagnosticCodes_WhenRead_HaveStableValues()
     {
         Assert.Equal("KSP001", KeyboardProjectDiagnosticCodes.DuplicatePhysicalKeyId);
@@ -22,6 +23,7 @@ public sealed class ValidationRuleTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void MetadataValidationRule_WhenRequiredFieldsAreEmpty_ReportsEachField()
     {
         var source = DemoProjectFactory.Create();
@@ -51,6 +53,7 @@ public sealed class ValidationRuleTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void PhysicalKeyboardValidationRule_WhenPhysicalIdentityIsInvalid_ReportsEachProblem()
     {
         var project = DemoProjectFactory.Create();
@@ -68,6 +71,7 @@ public sealed class ValidationRuleTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void MappingValidationRule_WhenMappingsAreInvalid_ReportsEachProblem()
     {
         var project = DemoProjectFactory.Create();
@@ -95,6 +99,7 @@ public sealed class ValidationRuleTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void KeyboardProjectValidator_WhenCustomRulesAreSupplied_ComposesTheirResults()
     {
         var validator = new KeyboardProjectValidator([
@@ -108,6 +113,7 @@ public sealed class ValidationRuleTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void ValidationResult_WhenAllSeveritiesExist_ExposesSeverityState()
     {
         var result = new ValidationResult([
@@ -123,6 +129,7 @@ public sealed class ValidationRuleTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void MetadataValidationRule_WhenDescriptionIsEmpty_ReportsInformation()
     {
         var source = DemoProjectFactory.Create();
@@ -147,6 +154,7 @@ public sealed class ValidationRuleTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void MappingValidationRule_WhenOutputsHaveNoLogicalKey_ReportsWarning()
     {
         var project = DemoProjectFactory.Create();

@@ -6,24 +6,20 @@ namespace KeyboardStudio.Windows.Tests;
 
 public sealed class PortableExecutableArtifactVerifierTests
 {
-    [Theory]
-    [InlineData(BuildTarget.WindowsX64, 0x8664, "Amd64")]
-    [InlineData(BuildTarget.WindowsArm64, 0xAA64, "Arm64")]
-    public async Task VerifyAsync_ForMatchingDll_ReturnsSuccess(
-        BuildTarget target,
-        ushort machine,
-        string expectedMachine)
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task VerifyAsync_ForMatchingX64Dll_ReturnsSuccess()
     {
         var path = CreateTemporaryImage(
-            machine,
+            0x8664,
             isDll: true,
             PortableExecutableArtifactVerifier.RequiredExportName);
         try
         {
-            var result = await CreateVerifier().VerifyAsync(path, target);
+            var result = await CreateVerifier().VerifyAsync(path, BuildTarget.WindowsX64);
 
             Assert.True(result.Success);
-            Assert.Equal(expectedMachine, result.Machine);
+            Assert.Equal("Amd64", result.Machine);
             Assert.True(result.IsDll);
             Assert.True(result.ExpectedExportFound);
             Assert.Empty(result.Messages);
@@ -35,6 +31,7 @@ public sealed class PortableExecutableArtifactVerifierTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task VerifyAsync_ForWrongArchitecture_ReturnsDiagnostic()
     {
         var path = CreateTemporaryImage(
@@ -57,6 +54,7 @@ public sealed class PortableExecutableArtifactVerifierTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task VerifyAsync_ForImageWithoutDllFlag_ReturnsDiagnostic()
     {
         var path = CreateTemporaryImage(
@@ -79,6 +77,7 @@ public sealed class PortableExecutableArtifactVerifierTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task VerifyAsync_ForMissingFile_ReturnsDiagnostic()
     {
         var path = Path.Combine(Path.GetTempPath(), $"missing-{Guid.NewGuid():N}.dll");
@@ -92,6 +91,7 @@ public sealed class PortableExecutableArtifactVerifierTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task VerifyAsync_WhenExpectedExportIsMissing_ReturnsDiagnostic()
     {
         var path = CreateTemporaryImage(0x8664, isDll: true, "DecoratedDescriptor");
@@ -114,6 +114,7 @@ public sealed class PortableExecutableArtifactVerifierTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task VerifyAsync_WhenWindowsLoaderRejectsArtifact_ReturnsDiagnostic()
     {
         var path = CreateTemporaryImage(

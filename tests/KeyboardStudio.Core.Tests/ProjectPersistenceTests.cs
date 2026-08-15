@@ -9,6 +9,7 @@ namespace KeyboardStudio.Core.Tests;
 public sealed class ProjectPersistenceTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task SaveAndLoad_WhenCurrentSchemaIsUsed_PreservesSchemaVersion()
     {
         var project = DemoProjectFactory.Create();
@@ -32,6 +33,7 @@ public sealed class ProjectPersistenceTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task SaveAndLoad_WhenAllMappedOutputKindsExist_PreservesEquivalentDomainState()
     {
         var project = DemoProjectFactory.Create();
@@ -50,6 +52,7 @@ public sealed class ProjectPersistenceTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task SaveAsync_WhenAllOutputKindsExist_WritesStableKindEncoding()
     {
         var project = DemoProjectFactory.Create();
@@ -80,6 +83,7 @@ public sealed class ProjectPersistenceTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task SaveAndLoad_WhenCharacterOutputIsSpace_PreservesWhitespaceCharacter()
     {
         var project = DemoProjectFactory.Create();
@@ -96,6 +100,7 @@ public sealed class ProjectPersistenceTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task LoadAsync_WhenOutputKindIsUnknown_ReportsInvalidProject()
     {
         var json = CreateProjectJson("{ \"kind\": \"futureOutput\" }");
@@ -109,6 +114,7 @@ public sealed class ProjectPersistenceTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task LoadAsync_WhenOutputPayloadDoesNotMatchKind_ReportsInvalidProject()
     {
         var json = CreateProjectJson("{ \"kind\": \"none\", \"value\": \"a\" }");
@@ -122,6 +128,7 @@ public sealed class ProjectPersistenceTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task LoadAsync_WhenCharacterContainsMultipleScalars_ReportsInvalidProject()
     {
         var json = CreateProjectJson("{ \"kind\": \"character\", \"value\": \"ab\" }");
@@ -134,6 +141,7 @@ public sealed class ProjectPersistenceTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task LoadAsync_WhenSchemaVersionIsMissing_ReportsMissingSchemaVersion()
     {
         var store = new JsonKeyboardProjectStore();
@@ -146,6 +154,7 @@ public sealed class ProjectPersistenceTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task LoadAsync_WhenSchemaVersionIsFuture_RejectsProject()
     {
         var futureVersion = KeyboardProjectSchema.CurrentVersion + 1;
@@ -159,6 +168,7 @@ public sealed class ProjectPersistenceTests
     }
 
     [Theory]
+    [Trait("Category", "Unit")]
     [InlineData("0")]
     [InlineData("\"1\"")]
     public async Task LoadAsync_WhenSchemaVersionIsInvalid_ReportsInvalidSchemaVersion(string schemaValue)
@@ -172,6 +182,7 @@ public sealed class ProjectPersistenceTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task LoadAsync_WhenDtoLogicalKeyIsUnknown_ReportsInvalidProject()
     {
         var json = $$"""
@@ -208,6 +219,7 @@ public sealed class ProjectPersistenceTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task LoadAsync_WhenJsonIsMalformed_ReportsInvalidJson()
     {
         var store = new JsonKeyboardProjectStore();
@@ -219,6 +231,7 @@ public sealed class ProjectPersistenceTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task SaveAsync_WhenSchemaVersionIsNotCurrent_RejectsProject()
     {
         var source = DemoProjectFactory.Create();

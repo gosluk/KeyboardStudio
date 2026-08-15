@@ -7,6 +7,7 @@ namespace KeyboardStudio.Linux.Tests;
 public sealed class XkbArtifactVerifierTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task VerifyAsync_WhenXkbCliIsMissing_ReturnsUnverifiedWarning()
     {
         var verifier = new XkbArtifactVerifier(
@@ -23,6 +24,7 @@ public sealed class XkbArtifactVerifierTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task VerifyAsync_WhenXkbCliSucceeds_CapturesInvocationAndVersion()
     {
         var root = Path.Combine(Path.GetTempPath(), $"KeyboardStudio-Verify-{Guid.NewGuid():N}");
@@ -54,6 +56,7 @@ public sealed class XkbArtifactVerifierTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task VerifyAsync_WhenXkbCliPredatesTestFlag_CompilesWithoutTestArgument()
     {
         var root = Path.Combine(Path.GetTempPath(), $"KeyboardStudio-Verify-{Guid.NewGuid():N}");

@@ -31,6 +31,7 @@ public sealed class WindowsSpecialKeyTranslationTests
     };
 
     [Theory]
+    [Trait("Category", "Unit")]
     [MemberData(nameof(ScanOnlyKeys))]
     public void ProducesCharacters_WhenKeyIsScanOnly_ReturnsFalse(LogicalKey logicalKey)
     {
@@ -38,6 +39,7 @@ public sealed class WindowsSpecialKeyTranslationTests
     }
 
     [Theory]
+    [Trait("Category", "Unit")]
     [MemberData(nameof(CharacterKeys))]
     public void ProducesCharacters_WhenKeyIsPrintable_ReturnsTrue(LogicalKey logicalKey)
     {
@@ -45,6 +47,7 @@ public sealed class WindowsSpecialKeyTranslationTests
     }
 
     [Theory]
+    [Trait("Category", "Unit")]
     [InlineData(LogicalKey.Enter, WindowsVirtualKey.Return)]
     [InlineData(LogicalKey.Tab, WindowsVirtualKey.Tab)]
     [InlineData(LogicalKey.Backspace, WindowsVirtualKey.Back)]
@@ -62,6 +65,7 @@ public sealed class WindowsSpecialKeyTranslationTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Translate_WhenNavigationKeyIsExtended_CreatesOnlyExtendedScanCodeMapping()
     {
         var project = CreateProject(LogicalKey.ArrowLeft, extended: true);

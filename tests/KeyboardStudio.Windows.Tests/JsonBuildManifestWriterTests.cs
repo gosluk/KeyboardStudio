@@ -10,6 +10,7 @@ namespace KeyboardStudio.Windows.Tests;
 public sealed class JsonBuildManifestWriterTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task WriteAsync_RecordsSourceToolchainAndVerifiedOutput()
     {
         var outputDirectory = Path.Combine(

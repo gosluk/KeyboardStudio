@@ -19,6 +19,7 @@ public sealed class WindowsVirtualKeyMapperTests
     };
 
     [Theory]
+    [Trait("Category", "Unit")]
     [MemberData(nameof(RepresentativeMappings))]
     public void TryMap_WhenLogicalKeyIsSupported_ReturnsExplicitVirtualKey(
         LogicalKey logicalKey,
@@ -31,12 +32,14 @@ public sealed class WindowsVirtualKeyMapperTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void TryMap_WhenLogicalKeyIsNone_ReturnsFalse()
     {
         Assert.False(WindowsVirtualKeyMapper.TryMap(LogicalKey.None, out _));
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void TryMap_WhenV1LogicalKeyIsDefined_MapsEveryKeyExplicitly()
     {
         var unmapped = Enum.GetValues<LogicalKey>()

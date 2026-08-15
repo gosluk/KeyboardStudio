@@ -7,6 +7,7 @@ namespace KeyboardStudio.Windows.Tests;
 public sealed class BuildOrchestratorReproducibilityTests
 {
     [Theory]
+    [Trait("Category", "Unit")]
     [InlineData(true)]
     [InlineData(false)]
     public async Task BuildAsync_WhenReproducibilityIsRequested_BuildsTwiceAndReportsResult(

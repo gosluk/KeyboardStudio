@@ -6,6 +6,7 @@ namespace KeyboardStudio.Windows.Tests;
 public sealed class ProcessRunnerTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task RunAsync_CapturesRequestAndOutput()
     {
         var request = CreateEchoRequest();
@@ -22,6 +23,7 @@ public sealed class ProcessRunnerTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public async Task RunAsync_CancellationTerminatesProcess()
     {
         var request = CreateLongRunningRequest();

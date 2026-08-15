@@ -42,7 +42,7 @@ The current Phase 10-complete baseline provides:
 - a target-aware build panel with per-target profiles, preflight gating, backend-reported stages,
   cancellation, generated-source/output actions, and categorized result presentation.
 
-Phases 0-10 are complete. The Windows path generates real `KBDTABLES` source, compiles x64 or ARM64
+Phases 0-10 are complete. The Windows path generates real `KBDTABLES` source, compiles x64
 DLLs through a discovered MSVC/Windows SDK toolchain, and verifies the resulting artifact beyond the
 linker exit code. `BuildOrchestrator` now validates once and resolves one `IBuildBackend` for the
 selected target. The Linux path materializes an XKB symbols component directly, performs managed
@@ -921,14 +921,7 @@ Avoid shell string concatenation where argument-list APIs are available.
 
 Compile with the expected Windows headers and target architecture.
 
-Initially support:
-
-- x64;
-
-Then add if straightforward:
-
-- ARM64;
-- x86 only if still worth supporting for the target Windows versions.
+Support x64. Other Windows architectures are outside the MVP scope.
 
 ### P7.6 Link keyboard-layout DLL
 
@@ -1192,7 +1185,7 @@ least an ISO layout with AltGr Unicode output plus an ANSI two-level layout.
 
 ## Acceptance criteria
 
-- one `KeyboardProject` can be built as `WindowsX64`, `WindowsArm64`, or `LinuxXkb` by changing only
+- one `KeyboardProject` can be built as `WindowsX64` or `LinuxXkb` by changing only
   the selected target/profile;
 - selecting `LinuxXkb` never probes MSVC or invokes `INativeCompiler`;
 - the generated XKB v1 symbols component is deterministic and contains all supported mappings;
@@ -1214,7 +1207,7 @@ Expose both artifact backends cleanly in Avalonia.
 
 Display:
 
-- selected target (`Windows x64`, `Windows ARM64`, or `Linux XKB`);
+- selected target (`Windows x64` or `Linux XKB`);
 - settings for the selected target profile;
 - required tool/verifier availability;
 - validation status;

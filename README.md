@@ -23,7 +23,7 @@ modifier layers to typed keysyms, and write a deterministic `symbols/<layout-id>
 hashed manifest. Managed structural verification always runs; `xkbcli` compilation runs when the
 tool is installed and is required by Linux CI. Builds never install or activate a layout.
 
-The Build panel selects Windows x64, Windows ARM64, or Linux XKB; retains an editable profile for
+The Build panel selects Windows x64 or Linux XKB; retains an editable profile for
 each target; checks common/target validation and required tools; reports only backend-owned stages;
 and supports cancellation. Completed results expose generated C/XKB text, the output directory,
 combined diagnostic/raw logs, and the canonical artifact path. Failures are grouped by project,

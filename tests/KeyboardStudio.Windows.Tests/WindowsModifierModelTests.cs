@@ -23,6 +23,7 @@ public sealed class WindowsModifierModelTests
     };
 
     [Theory]
+    [Trait("Category", "Unit")]
     [MemberData(nameof(SupportedLayers))]
     public void Map_WhenLayerIsSupported_ProducesWindowsBitsAndModifierNumber(
         ModifierLayer layer,
@@ -36,6 +37,7 @@ public sealed class WindowsModifierModelTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void CreateV1_WhenEnumerated_DefinesAllBitCombinations()
     {
         var states = WindowsModifierTable.CreateV1().States;
@@ -49,6 +51,7 @@ public sealed class WindowsModifierModelTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Translate_WhenProjectIsValid_AttachesV1ModifierTable()
     {
         var layout = WindowsLayoutTranslator.Translate(DemoProjectFactory.Create());

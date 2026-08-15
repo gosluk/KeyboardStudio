@@ -6,6 +6,7 @@ namespace KeyboardStudio.Windows.Tests;
 public sealed class WindowsBuildEnvironmentTests
 {
     [Fact]
+    [Trait("Category", "Unit")]
     public void GetStatus_ReportsStructuredHostDiagnostic()
     {
         var environment = new WindowsBuildEnvironment(new StaticProbe(new BuildEnvironmentStatus(
@@ -23,7 +24,8 @@ public sealed class WindowsBuildEnvironmentTests
     }
 
     [Fact]
-    public void CanBuild_RequiresDetectedTarget()
+    [Trait("Category", "Unit")]
+    public void CanBuild_WhenX64IsDetected_SupportsOnlyX64()
     {
         var environment = new WindowsBuildEnvironment(new StaticProbe(new BuildEnvironmentStatus(
             true,
@@ -32,8 +34,25 @@ public sealed class WindowsBuildEnvironmentTests
             [BuildTarget.WindowsX64])));
 
         Assert.True(environment.CanBuild(BuildTarget.WindowsX64));
-        Assert.False(environment.CanBuild(BuildTarget.WindowsArm64));
-        Assert.False(environment.GetStatus(BuildTarget.WindowsArm64).Available);
+        Assert.False(environment.CanBuild(BuildTarget.LinuxXkb));
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Constructor_WhenRunningOnWindows_ResolvesOnlyWindowsTargets()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        var resolver = new RecordingResolver();
+
+        _ = new WindowsBuildEnvironmentProbe(resolver);
+
+        Assert.Equal(
+            [BuildTarget.WindowsX64],
+            resolver.RequestedTargets);
     }
 
     private sealed class StaticProbe(BuildEnvironmentStatus status) : IWindowsBuildEnvironmentProbe
@@ -41,5 +60,16 @@ public sealed class WindowsBuildEnvironmentTests
         public BuildEnvironmentStatus Probe() => status;
 
         public ResolvedBuildEnvironment? Resolve(BuildTarget target) => null;
+    }
+
+    private sealed class RecordingResolver : IWindowsToolchainResolver
+    {
+        public List<BuildTarget> RequestedTargets { get; } = [];
+
+        public ResolvedBuildEnvironment? Resolve(BuildTarget target)
+        {
+            RequestedTargets.Add(target);
+            return null;
+        }
     }
 }

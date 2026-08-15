@@ -149,8 +149,8 @@ public interface IBuildEnvironment
 }
 ```
 
-`WindowsBuildEnvironment` detects the host and resolves `cl.exe`, `link.exe`, `rc.exe`, MSVC/SDK
-versions, include directories, and library directories for each target. It prefers an active Visual
+`WindowsBuildEnvironment` detects the host and resolves x64 `cl.exe`, `link.exe`, `rc.exe`, MSVC/SDK
+versions, include directories, and library directories. It prefers an active Visual
 Studio developer environment, then queries Visual Studio through `vswhere` and Windows Kits through
 the registered SDK root. Missing components are returned as structured diagnostics.
 
@@ -158,13 +158,13 @@ The UI should explain why compilation is unavailable instead of failing only aft
 
 ## Native command pipeline
 
-The initial native targets are x64 and ARM64. For each build, `MsvcKeyboardCompiler`:
+The native Windows target is x64. For each build, `MsvcKeyboardCompiler`:
 
 1. invokes `cl.exe` with the resolved headers and architecture define to create `keyboard.obj`;
 2. invokes `rc.exe` for deterministic version metadata in `keyboard.rc`;
 3. invokes `link.exe /DLL /NOENTRY` with `keyboard.def`, exporting `KbdLayerDescriptor`;
 4. writes the layout-ID-derived DLL into `output/`;
-5. parses the resulting PE and requires the requested x64/ARM64 machine, DLL characteristic, and an
+5. parses the resulting PE and requires the x64 machine, DLL characteristic, and an
    exact named export for `KbdLayerDescriptor`.
 
 PE and export-directory validation is implemented in managed code, so structural verification does
@@ -172,8 +172,8 @@ not depend on `dumpbin` and can be unit-tested on non-Windows hosts.
 
 On Windows, a matching-architecture build also performs a load-level smoke test through
 `NativeLibrary.Load` and resolves `KbdLayerDescriptor` before immediately freeing the module. The
-helper never installs or registers the layout. Cross-architecture artifacts and non-Windows hosts
-record the smoke test as not run; Windows integration CI is responsible for exercising it.
+helper never installs or registers the layout. Non-Windows hosts record the smoke test as not run;
+Windows integration CI is responsible for exercising it.
 
 Processes use `ProcessStartInfo.ArgumentList`, not a composed shell command. Standard output,
 standard error, exit code, elapsed duration, executable, arguments, environment, and working
@@ -198,6 +198,10 @@ build/
       build-manifest.json
     logs/
       build.log
+      compiler.log
+      resource-compiler.log
+      linker.log
+      native-build-diagnostics.json
 ```
 
 Generated files are build output and are not part of the `.kbdproj` source model.
@@ -212,6 +216,13 @@ two generated source dictionaries exactly and the verified DLLs by SHA-256. `lin
 `/Brepro` so supported MSVC toolchains suppress nondeterministic PE content. A mismatch fails the
 overall build with `REPRO_SOURCE` or `REPRO_BINARY`, retains the comparison workspace for diagnosis,
 and is recorded in the primary manifest.
+
+Each completed native attempt also writes one log per invoked tool and a structured
+`native-build-diagnostics.json` manifest with the target, generated-source inventory, toolchain
+versions, commands, exit codes, durations, and log-file names. This intermediate manifest is
+available even when compilation or linking fails before the final artifact manifest can be written.
+Windows CI retains the entire failed integration workspace for seven days, including generated C,
+per-tool logs, and this diagnostic manifest. Successful native intermediates are not uploaded.
 
 Each invocation receives a unique workspace and never compiles in a source directory. With the
 default `KeepFailedBuild` policy, successful builds remove `generated/` and `obj/` but retain the DLL

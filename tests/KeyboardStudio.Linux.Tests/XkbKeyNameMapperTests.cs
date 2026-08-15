@@ -7,6 +7,7 @@ namespace KeyboardStudio.Linux.Tests;
 public sealed class XkbKeyNameMapperTests
 {
     [Theory]
+    [Trait("Category", "Unit")]
     [InlineData("iso-105", "KeyA", "<AC01>")]
     [InlineData("ansi-104", "Digit1", "<AE01>")]
     [InlineData("iso-105", "IntlBackslash", "<LSGT>")]
@@ -25,6 +26,7 @@ public sealed class XkbKeyNameMapperTests
     }
 
     [Theory]
+    [Trait("Category", "Unit")]
     [InlineData("iso-105")]
     [InlineData("ansi-104")]
     public void Map_TemplateKeys_HasCompleteCoverage(string templateId)
@@ -41,6 +43,7 @@ public sealed class XkbKeyNameMapperTests
     }
 
     [Fact]
+    [Trait("Category", "Unit")]
     public void Map_UnknownPair_ReturnsStableKeyLinkedDiagnostic()
     {
         var result = new XkbKeyNameMapper().Map("iso-105", "VendorKey");

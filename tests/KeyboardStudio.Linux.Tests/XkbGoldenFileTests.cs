@@ -41,6 +41,7 @@ public sealed class XkbGoldenFileTests
     };
 
     [Theory]
+    [Trait("Category", "Golden")]
     [MemberData(nameof(Fixtures))]
     public async Task Generate_RepresentativeLayout_MatchesGoldenFile(
         string fixtureName,

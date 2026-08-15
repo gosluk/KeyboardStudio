@@ -20,8 +20,8 @@ the Windows backend keeps generation, environment resolution, MSVC compilation, 
 behind the same target boundary.
 
 ```text
-WindowsX64 / WindowsArm64 -> generate -> compile/link -> PE verify -> DLL
-LinuxXkb                  -> generate -> write -> optional xkbcli verify -> symbols file
+WindowsX64 -> generate -> compile/link -> PE verify -> DLL
+LinuxXkb   -> generate -> write -> optional xkbcli verify -> symbols file
 ```
 
 `INativeCompiler` remains a Windows-backend collaborator rather than becoming a fake universal
@@ -30,7 +30,7 @@ terminology. See [`docs/LINUX-XKB.md`](../../docs/LINUX-XKB.md).
 
 ## Windows toolchain contract
 
-`WindowsBuildEnvironment` reports structured host/tool diagnostics and resolves x64 or ARM64 MSVC,
+`WindowsBuildEnvironment` reports structured host/tool diagnostics and resolves x64 MSVC,
 Windows SDK/WDK, include, and library paths. Discovery uses developer-environment variables first,
 then Visual Studio `vswhere` and Windows Kits registration instead of fixed installation paths.
 

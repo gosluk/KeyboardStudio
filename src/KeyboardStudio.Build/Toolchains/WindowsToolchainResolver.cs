@@ -7,6 +7,14 @@ public sealed class WindowsToolchainResolver : IWindowsToolchainResolver
 {
     public ResolvedBuildEnvironment? Resolve(BuildTarget target)
     {
+        if (target != BuildTarget.WindowsX64)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(target),
+                target,
+                "Unsupported Windows build target.");
+        }
+
         if (!OperatingSystem.IsWindows())
         {
             return null;
@@ -19,7 +27,7 @@ public sealed class WindowsToolchainResolver : IWindowsToolchainResolver
             return null;
         }
 
-        var architecture = GetArchitecture(target);
+        const string architecture = "x64";
         var sdkVersion = FindSdkVersion(sdkDirectory);
         if (sdkVersion is null)
         {
@@ -177,13 +185,6 @@ public sealed class WindowsToolchainResolver : IWindowsToolchainResolver
 
     private static Version? ParseVersion(string value) =>
         Version.TryParse(value, out var version) ? version : null;
-
-    private static string GetArchitecture(BuildTarget target) => target switch
-    {
-        BuildTarget.WindowsX64 => "x64",
-        BuildTarget.WindowsArm64 => "arm64",
-        _ => throw new ArgumentOutOfRangeException(nameof(target), target, "Unsupported Windows build target.")
-    };
 
     private static bool IsDirectory(string? path) =>
         !string.IsNullOrWhiteSpace(path) && Directory.Exists(path);

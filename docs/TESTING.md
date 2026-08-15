@@ -4,7 +4,7 @@ This document defines the baseline testing conventions for KeyboardStudio. The d
 
 ## Local Podman validation
 
-Run the same restore, Release build, and complete solution test sequence in an isolated .NET SDK container:
+Run the same restore, Release build, and fast platform-neutral test sequence in an isolated .NET SDK container:
 
 ```bash
 ./scripts/test-in-podman.sh
@@ -23,6 +23,35 @@ If no matching self-hosted runner is online, the job intentionally remains queue
 silently consuming a GitHub-hosted runner. XKB integration is intentionally a separate
 `ubuntu-latest` job because the external verifier needs packages that the unprivileged self-hosted
 runner cannot install; this is verification coverage, not a fallback for the managed build.
+
+Windows native integration runs independently on `windows-latest`. The job proves that Visual Studio
+contains the MSVC x64 tools and that a Windows 10/11 SDK is registered before it restores and builds
+the complete solution. It then runs the platform-neutral suites and the categorized native test,
+which compiles generated source, verifies the DLL structure and export, and performs a load-level
+smoke test. A missing Windows toolchain is a CI failure, never a silent native-test skip.
+Failed Windows native workspaces remain under `TestResults/windows-integration` and are uploaded for
+seven days. They contain generated C and headers, per-tool compiler/resource/linker logs, the
+combined build log, and `native-build-diagnostics.json`. Successful workspaces are deleted by the
+test and are never uploaded.
+
+The native matrix compiles four project-level fixtures: simple ANSI US-like letters, an ANSI AltGr
+Unicode mapping, an ISO-105 layout using the extra ISO key, and a special-key layout containing both
+ordinary and extended scan codes. Every fixture must produce a structurally valid x64 DLL exporting
+`KbdLayerDescriptor`, pass the matching-host load check, and reproduce byte-for-byte.
+
+## Test categories
+
+Every test has exactly one `Category` trait. CI and local scripts select categories explicitly:
+
+| Category | Purpose | Runner |
+| --- | --- | --- |
+| `Unit` | Fast tests with no native tool dependency | Linux and Windows |
+| `Golden` | Deterministic source/reference comparisons | Linux and Windows |
+| `XkbIntegration` | Generated XKB compilation with `xkbcli` | Ubuntu with XKB packages |
+| `WindowsIntegration` | Generated DLL compilation and verification with MSVC | Windows with Visual Studio and Windows SDK |
+
+The platform-neutral gate is `Category=Unit|Category=Golden`. Native categories are invoked in
+dedicated steps so missing tools cannot turn into an accidental fast-test pass.
 
 ## Test method naming
 
@@ -85,7 +114,7 @@ run `scripts/test-xkb-integration-in-podman.sh` to exercise the external verifie
 ## Test project boundaries
 
 - `KeyboardStudio.Core.Tests` covers platform-neutral domain, editing, validation, and persistence-facing behavior.
-- `KeyboardStudio.Windows.Tests` covers Windows translation and source generation without requiring native compilation unless explicitly categorized later.
+- `KeyboardStudio.Windows.Tests` covers Windows translation and source generation without requiring native compilation unless explicitly categorized.
 - `KeyboardStudio.Linux.Tests` covers physical key-name mapping, keysym/level translation,
   deterministic symbols generation, manifests, verifier behavior, golden files, and categorized
   `xkbcli` integration.

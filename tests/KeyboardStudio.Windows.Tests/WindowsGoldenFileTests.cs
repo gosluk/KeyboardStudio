@@ -19,6 +19,7 @@ public sealed class WindowsGoldenFileTests
     };
 
     [Theory]
+    [Trait("Category", "Golden")]
     [MemberData(nameof(Fixtures))]
     public async Task Generate_WhenComparedWithReferenceFixture_MatchesEveryFileExactly(
         string fixtureName,
