@@ -2,27 +2,6 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="KeyboardStudio.App.Controls.KeyControl"
              x:Name="Root">
-  <UserControl.Resources>
-    <DataTemplate x:Key="KeyLegendTemplate">
-      <Grid RowDefinitions="*,Auto">
-        <TextBlock Text="{Binding Label}"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Center"
-                   TextAlignment="Center"
-                   TextTrimming="CharacterEllipsis"
-                   FontSize="12"
-                   FontWeight="SemiBold" />
-        <TextBlock Grid.Row="1"
-                   Text="{Binding Hint}"
-                   IsVisible="{Binding ShowHint}"
-                   HorizontalAlignment="Center"
-                   TextAlignment="Center"
-                   TextTrimming="CharacterEllipsis"
-                   FontSize="8"
-                   Opacity="0.6" />
-      </Grid>
-    </DataTemplate>
-  </UserControl.Resources>
   <UserControl.Styles>
     <Style Selector="Button.key-control">
       <Setter Property="Padding" Value="5,3" />
@@ -52,10 +31,26 @@
             Classes.unmapped="{Binding IsUnmapped, ElementName=Root}"
             Classes.error="{Binding HasError, ElementName=Root}"
             Command="{Binding SelectCommand, ElementName=Root}"
-            Content="{Binding ElementName=Root}"
-            ContentTemplate="{StaticResource KeyLegendTemplate}"
             IsVisible="{Binding IsRectangular, ElementName=Root}"
-            ToolTip.Tip="{Binding KeyId, ElementName=Root}" />
+            ToolTip.Tip="{Binding KeyId, ElementName=Root}">
+      <Grid RowDefinitions="*,Auto">
+        <TextBlock Text="{Binding Label, ElementName=Root}"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   TextAlignment="Center"
+                   TextTrimming="CharacterEllipsis"
+                   FontSize="12"
+                   FontWeight="SemiBold" />
+        <TextBlock Grid.Row="1"
+                   Text="{Binding Hint, ElementName=Root}"
+                   IsVisible="{Binding ShowHint, ElementName=Root}"
+                   HorizontalAlignment="Center"
+                   TextAlignment="Center"
+                   TextTrimming="CharacterEllipsis"
+                   FontSize="8"
+                   Opacity="0.6" />
+      </Grid>
+    </Button>
 
     <Button x:Name="IsoEnterButton"
             Classes="key-control"
@@ -63,15 +58,27 @@
             Classes.unmapped="{Binding IsUnmapped, ElementName=Root}"
             Classes.error="{Binding HasError, ElementName=Root}"
             Command="{Binding SelectCommand, ElementName=Root}"
-            Content="{Binding ElementName=Root}"
-            ContentTemplate="{StaticResource KeyLegendTemplate}"
+            Clip="M 0,0 L 83,0 L 83,112 L 14.5,112 L 14.5,54 L 0,54 Z"
             IsVisible="{Binding IsIsoEnter, ElementName=Root}"
-            ToolTip.Tip="{Binding KeyId, ElementName=Root}" />
+            ToolTip.Tip="{Binding KeyId, ElementName=Root}">
+      <Grid RowDefinitions="*,Auto" Margin="14.5,54,0,0">
+        <TextBlock Text="{Binding Label, ElementName=Root}"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   TextAlignment="Center"
+                   TextTrimming="CharacterEllipsis"
+                   FontSize="12"
+                   FontWeight="SemiBold" />
+        <TextBlock Grid.Row="1"
+                   Text="{Binding Hint, ElementName=Root}"
+                   IsVisible="{Binding ShowHint, ElementName=Root}"
+                   HorizontalAlignment="Center"
+                   TextAlignment="Center"
+                   TextTrimming="CharacterEllipsis"
+                   FontSize="8"
+                   Opacity="0.6" />
+      </Grid>
+    </Button>
 
-    <Path x:Name="IsoEnterOutline"
-          Stroke="{Binding BorderBrush, ElementName=IsoEnterButton}"
-          StrokeThickness="1"
-          IsHitTestVisible="False"
-          IsVisible="{Binding IsIsoEnter, ElementName=Root}" />
   </Grid>
 </UserControl>

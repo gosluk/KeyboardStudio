@@ -1,7 +1,6 @@
 using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Media;
 
 namespace KeyboardStudio.App.Controls;
 
@@ -100,49 +99,5 @@ public sealed partial class KeyControl : UserControl
     {
         get => GetValue(SelectCommandProperty);
         set => SetValue(SelectCommandProperty, value);
-    }
-
-    protected override void OnSizeChanged(SizeChangedEventArgs e)
-    {
-        base.OnSizeChanged(e);
-        UpdateIsoEnterShape(e.NewSize);
-    }
-
-    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
-    {
-        base.OnPropertyChanged(change);
-
-        if (change.Property == IsIsoEnterProperty)
-        {
-            UpdateIsoEnterShape(Bounds.Size);
-        }
-    }
-
-    private void UpdateIsoEnterShape(Size size)
-    {
-        if (!IsIsoEnter || size.Width <= 0 || size.Height <= 0)
-        {
-            return;
-        }
-
-        var width = size.Width;
-        var height = size.Height;
-        var lowerInset = width * (14.5d / 83d);
-        var elbow = height * (54d / 112d);
-        var geometry = new StreamGeometry();
-
-        using (var context = geometry.Open())
-        {
-            context.BeginFigure(new Point(0, 0), true);
-            context.LineTo(new Point(width, 0));
-            context.LineTo(new Point(width, height));
-            context.LineTo(new Point(lowerInset, height));
-            context.LineTo(new Point(lowerInset, elbow));
-            context.LineTo(new Point(0, elbow));
-            context.EndFigure(true);
-        }
-
-        IsoEnterButton.Clip = geometry;
-        IsoEnterOutline.Data = geometry;
     }
 }
