@@ -55,7 +55,7 @@ public sealed class WindowsBuildBackend : IBuildBackend
                 false,
                 null,
                 [new CompilerMessage("ENV001", status.Message)]);
-            return CreateResult(compilation, null);
+            return CreateResult(compilation, null, null);
         }
 
         progress?.Report(new BuildStageProgress(BuildStageNames.Generating, BuildStageState.Running));
@@ -117,7 +117,7 @@ public sealed class WindowsBuildBackend : IBuildBackend
             };
         }
 
-        return CreateResult(compilationResult, reproducibility);
+        return CreateResult(compilationResult, reproducibility, generated);
     }
 
     private async Task<BuildReproducibilityResult> VerifyReproducibilityAsync(
@@ -174,7 +174,8 @@ public sealed class WindowsBuildBackend : IBuildBackend
 
     private static KeyboardBuildResult CreateResult(
         CompilationResult compilation,
-        BuildReproducibilityResult? reproducibility)
+        BuildReproducibilityResult? reproducibility,
+        GeneratedArtifact? generated)
     {
         var diagnostics = compilation.Messages.Select(message => new BuildArtifactDiagnostic(
             message.Severity switch
@@ -195,7 +196,11 @@ public sealed class WindowsBuildBackend : IBuildBackend
             compilation.WorkspacePath,
             compilation.ManifestPath,
             compilation.ArtifactSha256,
-            compilation);
+            compilation,
+            generated?.Source.Files
+                .OrderBy(file => file.Key, StringComparer.Ordinal)
+                .Select(file => new BuildTextFile(file.Key, file.Value))
+                .ToArray());
         return new KeyboardBuildResult(compilation.Success, [], artifact, reproducibility);
     }
 }

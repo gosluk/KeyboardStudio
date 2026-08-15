@@ -153,8 +153,34 @@ public sealed class BuildViewModelTests
             stage.Name == BuildStageNames.Cancelled && stage.State == BuildStageState.Cancelled);
     }
 
-    private static BuildViewModel CreateViewModel(ITargetBuildService service) =>
-        new(CreateProject, service);
+    [Fact]
+    public async Task ResultActions_OpenInspectAndCopyBuildOutputs()
+    {
+        var service = new RecordingBuildService();
+        var interaction = new RecordingBuildInteractionService();
+        var viewModel = CreateViewModel(service, interaction);
+        viewModel.SelectedTarget = viewModel.Targets.Single(option => option.Target == BuildTarget.LinuxXkb);
+        viewModel.OutputDirectory = "/tmp/keyboard-output";
+
+        await viewModel.BuildCommand.ExecuteAsync(null);
+        await viewModel.OpenOutputDirectoryCommand.ExecuteAsync(null);
+        await viewModel.InspectGeneratedFileCommand.ExecuteAsync(null);
+        await viewModel.CopyBuildLogCommand.ExecuteAsync(null);
+        await viewModel.CopyArtifactPathCommand.ExecuteAsync(null);
+
+        Assert.Equal(["/tmp/keyboard-output"], interaction.OpenedDirectories);
+        var inspected = Assert.Single(interaction.InspectedFiles);
+        Assert.EndsWith("keyboardstudio", inspected.Title, StringComparison.Ordinal);
+        Assert.Equal("xkb symbols", inspected.Content);
+        Assert.Equal(2, interaction.CopiedTexts.Count);
+        Assert.Contains("build log", interaction.CopiedTexts[0], StringComparison.Ordinal);
+        Assert.Equal(viewModel.ArtifactPath, interaction.CopiedTexts[1]);
+    }
+
+    private static BuildViewModel CreateViewModel(
+        ITargetBuildService service,
+        IBuildInteractionService? interactionService = null) =>
+        new(CreateProject, service, interactionService);
 
     private static KeyboardProject CreateProject() => new()
     {
@@ -238,6 +264,33 @@ public sealed class BuildViewModelTests
         }
     }
 
+    private sealed class RecordingBuildInteractionService : IBuildInteractionService
+    {
+        public List<string> OpenedDirectories { get; } = [];
+
+        public List<(string Title, string Content)> InspectedFiles { get; } = [];
+
+        public List<string> CopiedTexts { get; } = [];
+
+        public Task OpenDirectoryAsync(string path)
+        {
+            OpenedDirectories.Add(path);
+            return Task.CompletedTask;
+        }
+
+        public Task ShowGeneratedTextAsync(string title, string content)
+        {
+            InspectedFiles.Add((title, content));
+            return Task.CompletedTask;
+        }
+
+        public Task CopyTextAsync(string text)
+        {
+            CopiedTexts.Add(text);
+            return Task.CompletedTask;
+        }
+    }
+
     private static BuildReadiness CreateReadiness(
         BuildTarget target,
         IReadOnlyList<ValidationIssue> targetIssues) =>
@@ -251,5 +304,13 @@ public sealed class BuildViewModelTests
             targetIssues);
 
     private static KeyboardBuildResult CreateSuccessfulResult(string path) =>
-        new(true, [], new ArtifactBuildResult(true, path, []));
+        new(
+            true,
+            [],
+            new ArtifactBuildResult(
+                true,
+                path,
+                [new BuildArtifactDiagnostic(BuildDiagnosticSeverity.Info, "TEST", "Build diagnostic")],
+                "build log",
+                GeneratedFiles: [new BuildTextFile(path, "xkb symbols")]));
 }

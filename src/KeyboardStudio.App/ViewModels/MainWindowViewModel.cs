@@ -66,7 +66,8 @@ public sealed class MainWindowViewModel : ObservableObject
         RefreshDiagnostics();
         Build = new BuildViewModel(
             () => Project,
-            new TargetBuildService());
+            new TargetBuildService(),
+            interactionService as IBuildInteractionService);
         NewCommand = new AsyncRelayCommand(NewDocumentAsync);
         OpenCommand = new AsyncRelayCommand(OpenDocumentAsync);
         SaveCommand = new AsyncRelayCommand(SaveDocumentAsync);

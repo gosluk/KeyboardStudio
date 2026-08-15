@@ -228,6 +228,31 @@
                      FontFamily="monospace"
                      TextWrapping="Wrap"
                      IsVisible="{Binding Build.HasArtifact}" />
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <ComboBox ItemsSource="{Binding Build.GeneratedFiles}"
+                      SelectedItem="{Binding Build.SelectedGeneratedFile}"
+                      PlaceholderText="Generated source">
+              <ComboBox.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding Name}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <Button Grid.Column="1"
+                    Content="Inspect"
+                    Command="{Binding Build.InspectGeneratedFileCommand}" />
+          </Grid>
+          <WrapPanel Orientation="Horizontal">
+            <Button Content="Open output"
+                    Margin="0,0,8,0"
+                    Command="{Binding Build.OpenOutputDirectoryCommand}" />
+            <Button Content="Copy build log"
+                    Margin="0,0,8,0"
+                    Command="{Binding Build.CopyBuildLogCommand}" />
+            <Button Content="Copy artifact path"
+                    Command="{Binding Build.CopyArtifactPathCommand}" />
+          </WrapPanel>
+          <TextBlock Text="{Binding Build.ActionStatus}" Opacity="0.7" />
         </StackPanel>
       </Border>
     </StackPanel>

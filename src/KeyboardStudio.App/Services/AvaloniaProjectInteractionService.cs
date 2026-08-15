@@ -1,9 +1,10 @@
 using Avalonia.Controls;
+using Avalonia.Input.Platform;
 using Avalonia.Platform.Storage;
 
 namespace KeyboardStudio.App;
 
-public sealed class AvaloniaProjectInteractionService : IProjectInteractionService
+public sealed class AvaloniaProjectInteractionService : IProjectInteractionService, IBuildInteractionService
 {
     private static readonly FilePickerFileType ProjectFileType = new("KeyboardStudio project")
     {
@@ -50,4 +51,31 @@ public sealed class AvaloniaProjectInteractionService : IProjectInteractionServi
 
     public Task ShowErrorAsync(string title, string message) =>
         new ProjectErrorDialog(title, message).ShowDialog(_owner);
+
+    public async Task OpenDirectoryAsync(string path)
+    {
+        var directory = new DirectoryInfo(Path.GetFullPath(path));
+        if (!directory.Exists)
+        {
+            throw new DirectoryNotFoundException($"Build output directory '{directory.FullName}' does not exist.");
+        }
+
+        if (!await _owner.Launcher.LaunchDirectoryInfoAsync(directory))
+        {
+            throw new InvalidOperationException("The desktop could not open the build output directory.");
+        }
+    }
+
+    public Task ShowGeneratedTextAsync(string title, string content) =>
+        new GeneratedTextDialog(title, content).ShowDialog(_owner);
+
+    public async Task CopyTextAsync(string text)
+    {
+        if (_owner.Clipboard is null)
+        {
+            throw new InvalidOperationException("The desktop clipboard is unavailable.");
+        }
+
+        await _owner.Clipboard.SetTextAsync(text);
+    }
 }

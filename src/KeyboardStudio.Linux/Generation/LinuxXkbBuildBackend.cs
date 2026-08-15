@@ -139,7 +139,8 @@ public sealed class LinuxXkbBuildBackend : IBuildBackend
                 verification.LogPath,
                 ManifestPath: manifestPath,
                 ArtifactSha256: hash,
-                BackendDetails: details);
+                BackendDetails: details,
+                GeneratedFiles: [new BuildTextFile(generated.RelativePath, generated.Content)]);
             return new KeyboardBuildResult(success, [], artifact);
         }
         catch (Exception exception) when (

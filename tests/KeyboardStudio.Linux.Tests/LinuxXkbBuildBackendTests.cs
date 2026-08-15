@@ -48,6 +48,8 @@ public sealed class LinuxXkbBuildBackendTests
             Assert.True(File.Exists(result.Artifact.ManifestPath));
             Assert.Null(result.Compilation);
             var details = Assert.IsType<XkbBuildDetails>(result.Artifact.BackendDetails);
+            var generatedFile = Assert.Single(result.Artifact.GeneratedFiles!);
+            Assert.Equal(details.GeneratedSymbols.Content, generatedFile.Content);
             Assert.Equal(BuildTarget.LinuxXkb, details.Manifest.Target);
             Assert.Equal(DateTimeOffset.UnixEpoch, details.Manifest.BuildTimestampUtc);
             using var json = JsonDocument.Parse(await File.ReadAllTextAsync(details.ManifestPath));

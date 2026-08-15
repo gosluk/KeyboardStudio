@@ -10,6 +10,7 @@ public sealed class BuildViewModel : ObservableObject
 {
     private readonly Func<KeyboardProject> _projectProvider;
     private readonly ITargetBuildService _buildService;
+    private readonly IBuildInteractionService _interactionService;
     private readonly Dictionary<BuildTarget, IReadOnlyList<BuildProfileSettingViewModel>> _profiles;
     private BuildTargetOptionViewModel _selectedTarget;
     private IReadOnlyList<BuildProfileSettingViewModel> _profileSettings;
@@ -20,13 +21,19 @@ public sealed class BuildViewModel : ObservableObject
     private string? _artifactPath;
     private BuildReadiness? _readiness;
     private bool _isBuilding;
+    private KeyboardBuildResult? _lastResult;
+    private IReadOnlyList<BuildTextFile> _generatedFiles = [];
+    private BuildTextFile? _selectedGeneratedFile;
+    private string _actionStatus = string.Empty;
 
     public BuildViewModel(
         Func<KeyboardProject> projectProvider,
-        ITargetBuildService buildService)
+        ITargetBuildService buildService,
+        IBuildInteractionService? interactionService = null)
     {
         _projectProvider = projectProvider ?? throw new ArgumentNullException(nameof(projectProvider));
         _buildService = buildService ?? throw new ArgumentNullException(nameof(buildService));
+        _interactionService = interactionService ?? new NoOpBuildInteractionService();
         Targets =
         [
             new(BuildTarget.WindowsX64, "Windows x64"),
@@ -46,6 +53,18 @@ public sealed class BuildViewModel : ObservableObject
 
         BuildCommand = new AsyncRelayCommand(BuildAsync, CanStartBuild);
         CancelBuildCommand = new RelayCommand(CancelBuild, () => IsBuilding);
+        OpenOutputDirectoryCommand = new AsyncRelayCommand(
+            OpenOutputDirectoryAsync,
+            () => _lastResult is not null);
+        InspectGeneratedFileCommand = new AsyncRelayCommand(
+            InspectGeneratedFileAsync,
+            () => SelectedGeneratedFile is not null);
+        CopyBuildLogCommand = new AsyncRelayCommand(
+            CopyBuildLogAsync,
+            () => !string.IsNullOrWhiteSpace(BuildLog));
+        CopyArtifactPathCommand = new AsyncRelayCommand(
+            CopyArtifactPathAsync,
+            () => HasArtifact);
         Refresh();
     }
 
@@ -60,7 +79,7 @@ public sealed class BuildViewModel : ObservableObject
             if (SetProperty(ref _selectedTarget, value))
             {
                 ProfileSettings = _profiles[value.Target];
-                ArtifactPath = null;
+                SetBuildResult(null);
                 Refresh();
             }
         }
@@ -110,6 +129,7 @@ public sealed class BuildViewModel : ObservableObject
             if (SetProperty(ref _artifactPath, value))
             {
                 OnPropertyChanged(nameof(HasArtifact));
+                CopyArtifactPathCommand.NotifyCanExecuteChanged();
             }
         }
     }
@@ -120,7 +140,41 @@ public sealed class BuildViewModel : ObservableObject
 
     public IRelayCommand CancelBuildCommand { get; }
 
+    public IAsyncRelayCommand OpenOutputDirectoryCommand { get; }
+
+    public IAsyncRelayCommand InspectGeneratedFileCommand { get; }
+
+    public IAsyncRelayCommand CopyBuildLogCommand { get; }
+
+    public IAsyncRelayCommand CopyArtifactPathCommand { get; }
+
     public ObservableCollection<BuildStageViewModel> Stages { get; } = [];
+
+    public IReadOnlyList<BuildTextFile> GeneratedFiles
+    {
+        get => _generatedFiles;
+        private set => SetProperty(ref _generatedFiles, value);
+    }
+
+    public BuildTextFile? SelectedGeneratedFile
+    {
+        get => _selectedGeneratedFile;
+        set
+        {
+            if (SetProperty(ref _selectedGeneratedFile, value))
+            {
+                InspectGeneratedFileCommand.NotifyCanExecuteChanged();
+            }
+        }
+    }
+
+    public string BuildLog { get; private set; } = string.Empty;
+
+    public string ActionStatus
+    {
+        get => _actionStatus;
+        private set => SetProperty(ref _actionStatus, value);
+    }
 
     public bool IsBuilding
     {
@@ -155,7 +209,7 @@ public sealed class BuildViewModel : ObservableObject
     private async Task BuildAsync(CancellationToken cancellationToken)
     {
         IsBuilding = true;
-        ArtifactPath = null;
+        SetBuildResult(null);
         Stages.Clear();
         Status = $"Building {SelectedTarget.DisplayName}…";
         try
@@ -169,7 +223,7 @@ public sealed class BuildViewModel : ObservableObject
                 settings,
                 progress,
                 cancellationToken);
-            ArtifactPath = result.Artifact?.ArtifactPath;
+            SetBuildResult(result);
             Status = result.Success
                 ? "Build completed successfully."
                 : "Build failed. Review the build diagnostics.";
@@ -191,6 +245,73 @@ public sealed class BuildViewModel : ObservableObject
     }
 
     private void CancelBuild() => BuildCommand.Cancel();
+
+    private async Task OpenOutputDirectoryAsync()
+    {
+        await _interactionService.OpenDirectoryAsync(OutputDirectory);
+        ActionStatus = "Opened output directory.";
+    }
+
+    private async Task InspectGeneratedFileAsync()
+    {
+        if (SelectedGeneratedFile is null)
+        {
+            return;
+        }
+
+        await _interactionService.ShowGeneratedTextAsync(
+            SelectedGeneratedFile.Name,
+            SelectedGeneratedFile.Content);
+        ActionStatus = $"Opened {SelectedGeneratedFile.Name}.";
+    }
+
+    private async Task CopyBuildLogAsync()
+    {
+        await _interactionService.CopyTextAsync(BuildLog);
+        ActionStatus = "Copied build log.";
+    }
+
+    private async Task CopyArtifactPathAsync()
+    {
+        if (ArtifactPath is null)
+        {
+            return;
+        }
+
+        await _interactionService.CopyTextAsync(ArtifactPath);
+        ActionStatus = "Copied artifact path.";
+    }
+
+    private void SetBuildResult(KeyboardBuildResult? result)
+    {
+        _lastResult = result;
+        ArtifactPath = result?.Artifact?.ArtifactPath;
+        GeneratedFiles = result?.Artifact?.GeneratedFiles ?? [];
+        SelectedGeneratedFile = GeneratedFiles.Count > 0 ? GeneratedFiles[0] : null;
+        BuildLog = CreateBuildLog(result);
+        ActionStatus = string.Empty;
+        OnPropertyChanged(nameof(BuildLog));
+        OpenOutputDirectoryCommand.NotifyCanExecuteChanged();
+        CopyBuildLogCommand.NotifyCanExecuteChanged();
+    }
+
+    private static string CreateBuildLog(KeyboardBuildResult? result)
+    {
+        if (result is null)
+        {
+            return string.Empty;
+        }
+
+        var lines = result.ValidationIssues.Select(issue =>
+            $"[{issue.Severity}] {issue.Code}: {issue.Message}").Concat(
+            result.Artifact?.Diagnostics.Select(diagnostic =>
+                $"[{diagnostic.Severity}] {diagnostic.Code}: {diagnostic.Message}") ?? []);
+        var diagnostics = string.Join(Environment.NewLine, lines);
+        var rawLog = result.Artifact?.RawLog ?? string.Empty;
+        return string.Join(
+            Environment.NewLine,
+            new[] { diagnostics, rawLog }.Where(value => !string.IsNullOrWhiteSpace(value)));
+    }
 
     private void UpdateStage(BuildStageProgress progress)
     {

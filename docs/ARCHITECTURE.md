@@ -694,6 +694,11 @@ Linux emits XKB generation, artifact writing, and verification. The orchestrator
 validation and the terminal completed, failed, or cancelled state. Cancellation flows from the build
 panel to generators and native/external processes through the invocation token.
 
+`ArtifactBuildResult.GeneratedFiles` carries the deterministic generated C companions or XKB text
+independently of workspace cleanup. The UI can inspect those snapshots, open the selected output
+directory, and copy the combined structured diagnostics/raw log or canonical artifact path through
+`IBuildInteractionService`; platform shell and clipboard APIs stay out of the ViewModel.
+
 ---
 
 ## 12. Keyboard templates
