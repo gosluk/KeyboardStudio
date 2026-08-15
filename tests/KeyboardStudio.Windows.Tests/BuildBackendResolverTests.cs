@@ -34,6 +34,7 @@ public sealed class BuildBackendResolverTests
         public Task<KeyboardBuildResult> BuildAsync(
             KeyboardProject project,
             BuildOptions options,
+            IProgress<BuildStageProgress>? progress = null,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(new KeyboardBuildResult(true, [], null));
     }

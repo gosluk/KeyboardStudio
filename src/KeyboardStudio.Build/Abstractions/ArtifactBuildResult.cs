@@ -9,4 +9,5 @@ public sealed record ArtifactBuildResult(
     string? WorkspacePath = null,
     string? ManifestPath = null,
     string? ArtifactSha256 = null,
-    object? BackendDetails = null);
+    object? BackendDetails = null,
+    IReadOnlyList<BuildTextFile>? GeneratedFiles = null);

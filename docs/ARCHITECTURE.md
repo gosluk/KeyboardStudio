@@ -105,7 +105,7 @@ from blocking XKB generation and prevents Linux tools from affecting Windows bui
 ## 3. Solution structure
 
 ```text
-KeyboardStudio.sln
+KeyboardStudio.slnx
 
 src/
   KeyboardStudio.App/
@@ -134,7 +134,7 @@ KeyboardStudio.App (composition root)
  |- KeyboardStudio.Persistence -> Core
  |- KeyboardStudio.Build       -> Core
  |- KeyboardStudio.Windows     -> Build + Core
- `- KeyboardStudio.Linux       -> Build + Core  (planned)
+ `- KeyboardStudio.Linux       -> Build + Core
 ```
 
 The application is the composition root and may reference concrete backends to register them. Its
@@ -337,7 +337,14 @@ MainWindowViewModel
 ```
 
 ViewModels must not depend on Windows- or XKB-specific generator classes. Concrete backends are
-registered at the application composition root and reached through build abstractions.
+registered at the application composition root and reached through `ITargetBuildService`. The build
+panel keeps one editable profile per target so switching targets never discards the other target's
+settings.
+
+Before enabling Build, the service returns one readiness snapshot containing common validation,
+selected-target validation, profile/output validation, and environment availability. Common errors
+therefore disable every target, while compatibility errors and required-tool failures disable only
+the selected target. The asynchronous command also disables itself for the duration of a build.
 
 ### 6.2 Keyboard rendering
 
@@ -680,6 +687,23 @@ Typed backend details
 Compiler messages remain in a detailed Windows `CompilationResult` below the backend and are exposed
 through a compatibility accessor. XKB verifier messages map to the target-neutral diagnostic envelope
 without being mislabeled as compiler output.
+
+Backends report named stage transitions through `IProgress<BuildStageProgress>`. The application
+renders exactly those reports: Windows emits generation, compilation, linking, and verification;
+Linux emits XKB generation, artifact writing, and verification. The orchestrator owns common
+validation and the terminal completed, failed, or cancelled state. Cancellation flows from the build
+panel to generators and native/external processes through the invocation token.
+
+`ArtifactBuildResult.GeneratedFiles` carries the deterministic generated C companions or XKB text
+independently of workspace cleanup. The UI can inspect those snapshots, open the selected output
+directory, and copy the combined structured diagnostics/raw log or canonical artifact path through
+`IBuildInteractionService`; platform shell and clipboard APIs stay out of the ViewModel.
+
+The build panel normalizes readiness issues, backend diagnostics, and generation exceptions into
+seven user-facing problem kinds: project validation, target compatibility, source generation,
+missing required toolchain, optional verifier unavailable, compiler/linker, and artifact
+verification. Codes and original messages remain visible. `KSL004` produces an unverified-success
+presentation rather than failure when external verification is optional.
 
 ---
 

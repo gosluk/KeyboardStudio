@@ -2,7 +2,7 @@
 
 KeyboardStudio is a modern Avalonia-based editor for defining platform-neutral custom keyboard
 layouts. The implemented backends produce verified native Windows keyboard-layout DLLs and portable
-Linux XKB symbols components; target-aware build UI is the next roadmap phase.
+Linux XKB symbols components through a target-aware Avalonia build workflow.
 
 The repository contains the working editor/domain/persistence foundation plus verified Windows and
 Linux artifact backends. The implementation is focused on this core workflow:
@@ -23,6 +23,12 @@ modifier layers to typed keysyms, and write a deterministic `symbols/<layout-id>
 hashed manifest. Managed structural verification always runs; `xkbcli` compilation runs when the
 tool is installed and is required by Linux CI. Builds never install or activate a layout.
 
+The Build panel selects Windows x64, Windows ARM64, or Linux XKB; retains an editable profile for
+each target; checks common/target validation and required tools; reports only backend-owned stages;
+and supports cancellation. Completed results expose generated C/XKB text, the output directory,
+combined diagnostic/raw logs, and the canonical artifact path. Failures are grouped by project,
+target, generation, toolchain, compiler/linker, and verification concern.
+
 ## Current editor and diagnostics workflow
 
 The Phase 3 editor supports one selected physical key at a time and displays its physical ID,
@@ -42,8 +48,9 @@ Projects use the `.kbdproj` format. The File menu and shortcuts provide:
 Mapping changes mark the document as dirty. New and Open prompt to save or discard unsaved changes
 before replacing the current document.
 
-The Phase 4 validation pipeline composes platform-neutral metadata, physical-key, and mapping rules
-with a Windows compatibility rule at the application boundary. The diagnostics panel displays
+The editor validation pipeline composes platform-neutral metadata, physical-key, and mapping rules.
+Selected-target compatibility is evaluated separately by the Build panel so a Windows-only error
+does not block Linux output. The diagnostics panel displays
 Info, Warning, and Error results using stable codes. Selecting a key-linked diagnostic selects and
 highlights the affected physical key. Lightweight validation reruns after successful edits; only
 errors block build orchestration.
@@ -102,7 +109,7 @@ docs/
 
 ## MVP scope
 
-Implemented through Phase 9:
+Implemented through Phase 10:
 
 - visual ISO/ANSI keyboard representation;
 - physical-key selection;
@@ -115,6 +122,8 @@ Implemented through Phase 9:
 - native Windows DLL compilation;
 - PE/export/load verification and reproducibility manifests;
 - Linux XKB v1 symbols-file generation, manifests, and `xkbcli` verification.
+- target/profile selection, build readiness, backend-specific progress, cancellation, output actions,
+  and categorized error/unverified-result presentation.
 
 Explicitly out of MVP scope:
 

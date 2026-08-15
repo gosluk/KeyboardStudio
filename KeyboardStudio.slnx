@@ -1,0 +1,12 @@
+<Solution>
+  <Project Path="src/KeyboardStudio.App/KeyboardStudio.App.csproj" />
+  <Project Path="src/KeyboardStudio.Build/KeyboardStudio.Build.csproj" />
+  <Project Path="src/KeyboardStudio.Core/KeyboardStudio.Core.csproj" />
+  <Project Path="src/KeyboardStudio.Linux/KeyboardStudio.Linux.csproj" />
+  <Project Path="src/KeyboardStudio.Persistence/KeyboardStudio.Persistence.csproj" />
+  <Project Path="src/KeyboardStudio.Windows/KeyboardStudio.Windows.csproj" />
+  <Project Path="tests/KeyboardStudio.App.Tests/KeyboardStudio.App.Tests.csproj" />
+  <Project Path="tests/KeyboardStudio.Core.Tests/KeyboardStudio.Core.Tests.csproj" />
+  <Project Path="tests/KeyboardStudio.Linux.Tests/KeyboardStudio.Linux.Tests.csproj" />
+  <Project Path="tests/KeyboardStudio.Windows.Tests/KeyboardStudio.Windows.Tests.csproj" />
+</Solution>

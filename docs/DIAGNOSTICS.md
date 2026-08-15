@@ -37,6 +37,7 @@ Core structural or Windows compatibility error reaches the translation boundary.
 
 | Code | Severity | Meaning |
 |---|---|---|
+| `GEN_SOURCE` | Error | The selected backend could not translate or generate source for the project. |
 | `PE_FILE` | Error | The linked artifact is missing. |
 | `PE_HEADER` | Error | The output lacks a PE optional header. |
 | `PE_TARGET` | Error | The selected target is unsupported by the PE verifier. |
@@ -79,10 +80,10 @@ activating the generated layout.
 ## Continuous editor validation
 
 The desktop editor runs the composed in-memory rules after each successful mapping mutation and
-after New or Open replaces the document. The current Core and Windows compatibility rules are
-deterministic, CPU-only checks over the project model, so they run synchronously without a debounce.
-Rejected character input and no-op edits do not trigger project validation because the domain did
-not change.
+after New or Open replaces the document. Core rules feed the editor diagnostics; selected-target
+compatibility rules feed the build panel readiness/problems list. Both are deterministic, CPU-only
+checks over the project model, so they run synchronously without a debounce. Rejected character
+input and no-op edits do not trigger project validation because the domain did not change.
 
 Continuous validation never invokes source generation, a native compiler, filesystem I/O, or the
 Windows build environment. If later rules become expensive, they must move behind a debounced or

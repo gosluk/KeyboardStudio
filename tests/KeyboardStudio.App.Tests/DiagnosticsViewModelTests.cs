@@ -1,6 +1,5 @@
 using KeyboardStudio.App;
 using KeyboardStudio.Core;
-using KeyboardStudio.Windows;
 using Xunit;
 
 namespace KeyboardStudio.App.Tests;
@@ -73,11 +72,9 @@ public sealed class DiagnosticsViewModelTests
             item.Code == KeyboardProjectDiagnosticCodes.OutputWithoutLogicalKey &&
             item.Severity == ValidationSeverity.Warning &&
             item.KeyId == "KeyA");
-        Assert.Contains(viewModel.Diagnostics.Items, item =>
-            item.Code == WindowsDiagnosticCodes.UnsupportedLogicalKeyMapping &&
-            item.Severity == ValidationSeverity.Error &&
-            item.KeyId == "KeyA");
-        Assert.True(viewModel.Editor.SelectedKey?.HasError);
+        Assert.DoesNotContain(viewModel.Diagnostics.Items, item =>
+            item.Severity == ValidationSeverity.Error && item.KeyId == "KeyA");
+        Assert.False(viewModel.Editor.SelectedKey?.HasError);
 
         viewModel.Editor.SelectedLogicalKey = LogicalKey.A;
 

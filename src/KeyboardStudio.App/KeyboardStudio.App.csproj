@@ -14,5 +14,6 @@
     <ProjectReference Include="..\KeyboardStudio.Persistence\KeyboardStudio.Persistence.csproj" />
     <ProjectReference Include="..\KeyboardStudio.Build\KeyboardStudio.Build.csproj" />
     <ProjectReference Include="..\KeyboardStudio.Windows\KeyboardStudio.Windows.csproj" />
+    <ProjectReference Include="..\KeyboardStudio.Linux\KeyboardStudio.Linux.csproj" />
   </ItemGroup>
 </Project>

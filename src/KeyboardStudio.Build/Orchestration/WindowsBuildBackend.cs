@@ -41,6 +41,7 @@ public sealed class WindowsBuildBackend : IBuildBackend
     public async Task<KeyboardBuildResult> BuildAsync(
         KeyboardProject project,
         BuildOptions options,
+        IProgress<BuildStageProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(project);
@@ -54,11 +55,13 @@ public sealed class WindowsBuildBackend : IBuildBackend
                 false,
                 null,
                 [new CompilerMessage("ENV001", status.Message)]);
-            return CreateResult(compilation, null);
+            return CreateResult(compilation, null, null);
         }
 
+        progress?.Report(new BuildStageProgress(BuildStageNames.Generating, BuildStageState.Running));
         var generated = await _generator.GenerateAsync(project, options, cancellationToken);
-        var compilationResult = await _compiler.CompileAsync(generated, options, cancellationToken);
+        progress?.Report(new BuildStageProgress(BuildStageNames.Generating, BuildStageState.Completed));
+        var compilationResult = await _compiler.CompileAsync(generated, options, progress, cancellationToken);
         BuildReproducibilityResult? reproducibility = null;
         if (compilationResult.Success)
         {
@@ -114,7 +117,7 @@ public sealed class WindowsBuildBackend : IBuildBackend
             };
         }
 
-        return CreateResult(compilationResult, reproducibility);
+        return CreateResult(compilationResult, reproducibility, generated);
     }
 
     private async Task<BuildReproducibilityResult> VerifyReproducibilityAsync(
@@ -126,7 +129,10 @@ public sealed class WindowsBuildBackend : IBuildBackend
     {
         var repeatedOptions = options with { VerifyReproducibility = false };
         var secondGeneratedArtifact = await _generator.GenerateAsync(project, repeatedOptions, cancellationToken);
-        var secondCompilation = await _compiler.CompileAsync(secondGeneratedArtifact, repeatedOptions, cancellationToken);
+        var secondCompilation = await _compiler.CompileAsync(
+            secondGeneratedArtifact,
+            repeatedOptions,
+            cancellationToken: cancellationToken);
         if (!secondCompilation.Success ||
             string.IsNullOrWhiteSpace(firstCompilation.ArtifactPath) ||
             string.IsNullOrWhiteSpace(secondCompilation.ArtifactPath))
@@ -168,7 +174,8 @@ public sealed class WindowsBuildBackend : IBuildBackend
 
     private static KeyboardBuildResult CreateResult(
         CompilationResult compilation,
-        BuildReproducibilityResult? reproducibility)
+        BuildReproducibilityResult? reproducibility,
+        GeneratedArtifact? generated)
     {
         var diagnostics = compilation.Messages.Select(message => new BuildArtifactDiagnostic(
             message.Severity switch
@@ -189,7 +196,11 @@ public sealed class WindowsBuildBackend : IBuildBackend
             compilation.WorkspacePath,
             compilation.ManifestPath,
             compilation.ArtifactSha256,
-            compilation);
+            compilation,
+            generated?.Source.Files
+                .OrderBy(file => file.Key, StringComparer.Ordinal)
+                .Select(file => new BuildTextFile(file.Key, file.Value))
+                .ToArray());
         return new KeyboardBuildResult(compilation.Success, [], artifact, reproducibility);
     }
 }

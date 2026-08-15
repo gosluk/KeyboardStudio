@@ -27,10 +27,12 @@ public sealed class MsvcCompilationTests
                 ["keyboard.h"] = "#pragma once\n",
                 ["keyboard.rc"] = "1 VERSIONINFO\n"
             }), "kbd-demo.dll");
+            var stages = new List<BuildStageProgress>();
 
             var result = await compiler.CompileAsync(
                 artifact,
-                new BuildOptions(target, buildRoot));
+                new BuildOptions(target, buildRoot),
+                new RecordingProgress(stages));
 
             Assert.True(result.Success);
             Assert.Equal(3, runner.Requests.Count);
@@ -64,6 +66,12 @@ public sealed class MsvcCompilationTests
             Assert.False(Directory.Exists(Path.Combine(result.WorkspacePath, "obj")));
             Assert.True(Directory.Exists(Path.Combine(result.WorkspacePath, "output")));
             Assert.True(Directory.Exists(Path.Combine(result.WorkspacePath, "logs")));
+            Assert.Equal(
+                [BuildStageNames.Compiling, BuildStageNames.Linking, BuildStageNames.Verifying],
+                stages.Select(stage => stage.Name).Distinct());
+            Assert.All(
+                stages.GroupBy(stage => stage.Name),
+                group => Assert.Equal(BuildStageState.Completed, group.Last().State));
         }
         finally
         {
@@ -72,6 +80,11 @@ public sealed class MsvcCompilationTests
                 Directory.Delete(buildRoot, recursive: true);
             }
         }
+    }
+
+    private sealed class RecordingProgress(List<BuildStageProgress> stages) : IProgress<BuildStageProgress>
+    {
+        public void Report(BuildStageProgress value) => stages.Add(value);
     }
 
     [Fact]

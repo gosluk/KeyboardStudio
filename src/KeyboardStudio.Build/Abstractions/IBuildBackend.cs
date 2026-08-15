@@ -11,5 +11,6 @@ public interface IBuildBackend
     Task<KeyboardBuildResult> BuildAsync(
         KeyboardProject project,
         BuildOptions options,
+        IProgress<BuildStageProgress>? progress = null,
         CancellationToken cancellationToken = default);
 }

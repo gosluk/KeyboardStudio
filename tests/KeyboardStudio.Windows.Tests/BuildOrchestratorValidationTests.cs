@@ -49,6 +49,7 @@ public sealed class BuildOrchestratorValidationTests
         Assert.True(compiler.WasCalled);
         Assert.True(manifestWriter.WasCalled);
         Assert.NotNull(result.Compilation?.Manifest);
+        Assert.Contains(result.Artifact?.GeneratedFiles ?? [], file => file.Name == "keyboard.c");
         Assert.Contains(result.ValidationIssues, issue => issue.Severity == severity);
     }
 
@@ -105,6 +106,7 @@ public sealed class BuildOrchestratorValidationTests
         public Task<CompilationResult> CompileAsync(
             GeneratedArtifact artifact,
             BuildOptions options,
+            IProgress<BuildStageProgress>? progress = null,
             CancellationToken cancellationToken = default)
         {
             WasCalled = true;

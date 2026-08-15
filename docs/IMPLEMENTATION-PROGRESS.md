@@ -2,10 +2,10 @@
 
 This file tracks execution of [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
 
-- Current work branch: `agent/phase-9-linux-xkb`
+- Current work branch: `agent/phase-10-target-aware-build-ux`
 - Last updated: 2026-08-15
-- Current phase: Phase 10 — Target-aware build user experience
-- Next work item: **P10.1 — Build panel**
+- Current phase: Phase 11 — Windows integration CI
+- Next work item: **P11.1 — Add Windows runner**
 
 Legend: `[x]` complete, `[ ]` not yet complete.
 
@@ -128,11 +128,13 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 
 ## Phase 10 — Target-aware build user experience
 
-- [ ] **P10.1** Build panel
-- [ ] **P10.2** Disable invalid actions
-- [ ] **P10.3** Build diagnostics
-- [ ] **P10.4** Open generated files/output
-- [ ] **P10.5** Error presentation
+- [x] **P10.1** Build panel
+- [x] **P10.2** Disable invalid actions
+- [x] **P10.3** Build diagnostics
+- [x] **P10.4** Open generated files/output
+- [x] **P10.5** Error presentation
+
+**Phase status:** 5/5 work items complete. Phase complete.
 
 ## Phase 11 — Windows integration CI
 
@@ -152,8 +154,8 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 
 ## Progress summary
 
-- Completed work items: **67**
+- Completed work items: **72**
 - Total planned work items: **82**
-- Overall checklist progress: **67/82**
+- Overall checklist progress: **72/82**
 
 The checklist records work-item completion only. Phase-level acceptance criteria and test gates in `IMPLEMENTATION-PLAN.md` still apply before a phase is considered complete.

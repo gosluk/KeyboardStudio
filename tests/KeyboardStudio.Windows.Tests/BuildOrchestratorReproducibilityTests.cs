@@ -64,6 +64,7 @@ public sealed class BuildOrchestratorReproducibilityTests
         public Task<CompilationResult> CompileAsync(
             GeneratedArtifact artifact,
             BuildOptions options,
+            IProgress<BuildStageProgress>? progress = null,
             CancellationToken cancellationToken = default)
         {
             CallCount++;
