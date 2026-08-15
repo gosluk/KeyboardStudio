@@ -17,5 +17,6 @@ public interface ITargetBuildService
         KeyboardProject project,
         BuildOptions options,
         IReadOnlyDictionary<string, string> profileSettings,
+        IProgress<BuildStageProgress>? progress = null,
         CancellationToken cancellationToken = default);
 }

@@ -50,6 +50,7 @@ public sealed class TargetBuildService : ITargetBuildService
         KeyboardProject project,
         BuildOptions options,
         IReadOnlyDictionary<string, string> profileSettings,
+        IProgress<BuildStageProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(project);
@@ -82,7 +83,7 @@ public sealed class TargetBuildService : ITargetBuildService
         var orchestrator = new BuildOrchestrator(
             _commonValidator,
             new BuildBackendResolver([backend]));
-        return orchestrator.BuildAsync(project, options, cancellationToken);
+        return orchestrator.BuildAsync(project, options, progress, cancellationToken);
     }
 
     private static List<ValidationIssue> ValidateTarget(

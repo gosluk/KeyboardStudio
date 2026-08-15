@@ -2,6 +2,7 @@ using KeyboardStudio.Build;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using KeyboardStudio.Core;
+using System.Collections.ObjectModel;
 
 namespace KeyboardStudio.App;
 
@@ -44,6 +45,7 @@ public sealed class BuildViewModel : ObservableObject
         }
 
         BuildCommand = new AsyncRelayCommand(BuildAsync, CanStartBuild);
+        CancelBuildCommand = new RelayCommand(CancelBuild, () => IsBuilding);
         Refresh();
     }
 
@@ -116,6 +118,10 @@ public sealed class BuildViewModel : ObservableObject
 
     public IAsyncRelayCommand BuildCommand { get; }
 
+    public IRelayCommand CancelBuildCommand { get; }
+
+    public ObservableCollection<BuildStageViewModel> Stages { get; } = [];
+
     public bool IsBuilding
     {
         get => _isBuilding;
@@ -124,6 +130,7 @@ public sealed class BuildViewModel : ObservableObject
             if (SetProperty(ref _isBuilding, value))
             {
                 BuildCommand.NotifyCanExecuteChanged();
+                CancelBuildCommand.NotifyCanExecuteChanged();
             }
         }
     }
@@ -145,16 +152,23 @@ public sealed class BuildViewModel : ObservableObject
         BuildCommand.NotifyCanExecuteChanged();
     }
 
-    private async Task BuildAsync()
+    private async Task BuildAsync(CancellationToken cancellationToken)
     {
         IsBuilding = true;
         ArtifactPath = null;
+        Stages.Clear();
         Status = $"Building {SelectedTarget.DisplayName}…";
         try
         {
             var options = new BuildOptions(SelectedTarget.Target, OutputDirectory);
             var settings = GetProfileSettings();
-            var result = await _buildService.BuildAsync(_projectProvider(), options, settings);
+            var progress = new DirectProgress<BuildStageProgress>(UpdateStage);
+            var result = await _buildService.BuildAsync(
+                _projectProvider(),
+                options,
+                settings,
+                progress,
+                cancellationToken);
             ArtifactPath = result.Artifact?.ArtifactPath;
             Status = result.Success
                 ? "Build completed successfully."
@@ -173,6 +187,21 @@ public sealed class BuildViewModel : ObservableObject
         {
             IsBuilding = false;
             Refresh();
+        }
+    }
+
+    private void CancelBuild() => BuildCommand.Cancel();
+
+    private void UpdateStage(BuildStageProgress progress)
+    {
+        var stage = Stages.FirstOrDefault(candidate => candidate.Name == progress.Name);
+        if (stage is null)
+        {
+            Stages.Add(new BuildStageViewModel(progress.Name, progress.State));
+        }
+        else
+        {
+            stage.Update(progress.State);
         }
     }
 
@@ -204,4 +233,16 @@ public sealed class BuildViewModel : ObservableObject
         new(BuildProfileKeys.FileVersion, "File version", "1.0.0.0"),
         new(BuildProfileKeys.CompanyName, "Company", "KeyboardStudio")
     ];
+
+    private sealed class DirectProgress<T> : IProgress<T>
+    {
+        private readonly Action<T> _report;
+
+        public DirectProgress(Action<T> report)
+        {
+            _report = report;
+        }
+
+        public void Report(T value) => _report(value);
+    }
 }

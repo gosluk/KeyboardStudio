@@ -76,6 +76,27 @@ public sealed class BuildViewModelTests
     }
 
     [Fact]
+    public void BuildCommand_WhenOptionalXkbVerifierIsUnavailable_RemainsEnabledWithWarning()
+    {
+        var service = new RecordingBuildService
+        {
+            ReadinessFactory = target => new BuildReadiness(
+                new BuildEnvironmentStatus(
+                    true,
+                    "Generation available; optional verifier unavailable.",
+                    [new BuildEnvironmentDiagnostic("KSL004", "xkbcli was not found.")],
+                    [target]),
+                [],
+                [])
+        };
+        var viewModel = CreateViewModel(service);
+        viewModel.SelectedTarget = viewModel.Targets.Single(option => option.Target == BuildTarget.LinuxXkb);
+
+        Assert.True(viewModel.BuildCommand.CanExecute(null));
+        Assert.Contains("optional verifier unavailable", viewModel.EnvironmentStatus, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task BuildCommand_WhileBuildIsRunning_IsDisabled()
     {
         var completion = new TaskCompletionSource<KeyboardBuildResult>(
@@ -91,6 +112,45 @@ public sealed class BuildViewModelTests
         completion.SetResult(CreateSuccessfulResult("/tmp/layout"));
         await execution;
         Assert.True(viewModel.BuildCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public async Task BuildCommand_WhenLinuxSelected_ShowsOnlyReportedLinuxStages()
+    {
+        var service = new RecordingBuildService
+        {
+            ReportedStages =
+            [
+                BuildStageNames.Validating,
+                BuildStageNames.GeneratingXkb,
+                BuildStageNames.WritingArtifact,
+                BuildStageNames.Verifying,
+                BuildStageNames.Completed
+            ]
+        };
+        var viewModel = CreateViewModel(service);
+        viewModel.SelectedTarget = viewModel.Targets.Single(option => option.Target == BuildTarget.LinuxXkb);
+
+        await viewModel.BuildCommand.ExecuteAsync(null);
+
+        Assert.Equal(service.ReportedStages, viewModel.Stages.Select(stage => stage.Name));
+        Assert.DoesNotContain(viewModel.Stages, stage => stage.Name == BuildStageNames.Compiling);
+        Assert.All(viewModel.Stages, stage => Assert.Equal(BuildStageState.Completed, stage.State));
+    }
+
+    [Fact]
+    public async Task CancelCommand_WhenBuildIsRunning_CancelsBackendAndPresentsCancellation()
+    {
+        var service = new RecordingBuildService { WaitForCancellation = true };
+        var viewModel = CreateViewModel(service);
+        var execution = viewModel.BuildCommand.ExecuteAsync(null);
+
+        viewModel.CancelBuildCommand.Execute(null);
+        await execution;
+
+        Assert.Equal("Build cancelled.", viewModel.Status);
+        Assert.Contains(viewModel.Stages, stage =>
+            stage.Name == BuildStageNames.Cancelled && stage.State == BuildStageState.Cancelled);
     }
 
     private static BuildViewModel CreateViewModel(ITargetBuildService service) =>
@@ -119,6 +179,10 @@ public sealed class BuildViewModelTests
 
         public Task<KeyboardBuildResult>? PendingResult { get; init; }
 
+        public IReadOnlyList<string>? ReportedStages { get; init; }
+
+        public bool WaitForCancellation { get; init; }
+
         public BuildEnvironmentStatus GetEnvironmentStatus(BuildTarget target) =>
             new(true, $"{(target == BuildTarget.LinuxXkb ? "Linux XKB" : target)} is available.", [], [target]);
 
@@ -133,12 +197,44 @@ public sealed class BuildViewModelTests
             KeyboardProject project,
             BuildOptions options,
             IReadOnlyDictionary<string, string> profileSettings,
+            IProgress<BuildStageProgress>? progress = null,
             CancellationToken cancellationToken = default)
         {
             LastOptions = options;
             LastSettings = profileSettings;
+            if (WaitForCancellation)
+            {
+                return WaitForCancellationAsync(cancellationToken, progress);
+            }
+
+            if (ReportedStages is not null)
+            {
+                foreach (var stage in ReportedStages)
+                {
+                    progress?.Report(new BuildStageProgress(stage, BuildStageState.Completed));
+                }
+            }
+
             var path = Path.Combine(options.OutputDirectory, "xkb", "symbols", profileSettings[BuildProfileKeys.LayoutId]);
             return PendingResult ?? Task.FromResult(CreateSuccessfulResult(path));
+        }
+
+        private static async Task<KeyboardBuildResult> WaitForCancellationAsync(
+            CancellationToken cancellationToken,
+            IProgress<BuildStageProgress>? progress)
+        {
+            progress?.Report(new BuildStageProgress(BuildStageNames.Validating, BuildStageState.Running));
+            try
+            {
+                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                progress?.Report(new BuildStageProgress(BuildStageNames.Cancelled, BuildStageState.Cancelled));
+                throw;
+            }
+
+            throw new InvalidOperationException("The cancellation test unexpectedly completed.");
         }
     }
 

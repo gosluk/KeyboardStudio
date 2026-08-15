@@ -39,6 +39,7 @@ public sealed class BuildTargetDispatchTests
         public Task<KeyboardBuildResult> BuildAsync(
             KeyboardProject project,
             BuildOptions options,
+            IProgress<BuildStageProgress>? progress = null,
             CancellationToken cancellationToken = default)
         {
             Calls.Add(options.Target);

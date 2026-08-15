@@ -13,6 +13,7 @@ public sealed class LinuxXkbBuildBackend : IBuildBackend
     private readonly IXkbSymbolsGenerator _generator;
     private readonly IXkbBuildManifestWriter _manifestWriter;
     private readonly IXkbArtifactVerifier _verifier;
+    private readonly IXkbCliLocator _cliLocator;
     private readonly bool _requireExternalVerification;
     private readonly TimeProvider _timeProvider;
 
@@ -22,6 +23,7 @@ public sealed class LinuxXkbBuildBackend : IBuildBackend
         IXkbSymbolsGenerator? generator = null,
         IXkbBuildManifestWriter? manifestWriter = null,
         IXkbArtifactVerifier? verifier = null,
+        IXkbCliLocator? cliLocator = null,
         bool requireExternalVerification = false,
         TimeProvider? timeProvider = null)
     {
@@ -30,6 +32,7 @@ public sealed class LinuxXkbBuildBackend : IBuildBackend
         _generator = generator ?? new XkbSymbolsGenerator();
         _manifestWriter = manifestWriter ?? new XkbBuildManifestWriter();
         _verifier = verifier ?? new XkbArtifactVerifier();
+        _cliLocator = cliLocator ?? new PathXkbCliLocator();
         _requireExternalVerification = requireExternalVerification;
         _timeProvider = timeProvider ?? TimeProvider.System;
     }
@@ -39,9 +42,21 @@ public sealed class LinuxXkbBuildBackend : IBuildBackend
     public BuildEnvironmentStatus GetStatus(BuildTarget target)
     {
         EnsureSupported(target);
+        var cliPath = _cliLocator.Find();
+        if (cliPath is null)
+        {
+            return new BuildEnvironmentStatus(
+                true,
+                "Linux XKB generation is available; optional xkbcli verification is unavailable.",
+                [new BuildEnvironmentDiagnostic(
+                    "KSL004",
+                    "xkbcli was not found. The symbols file will still be generated and managed validation will run.")],
+                [BuildTarget.LinuxXkb]);
+        }
+
         return new BuildEnvironmentStatus(
             true,
-            "Linux XKB symbols generation is available.",
+            $"Linux XKB generation and xkbcli verification are available ({cliPath}).",
             [],
             [BuildTarget.LinuxXkb]);
     }
@@ -49,6 +64,7 @@ public sealed class LinuxXkbBuildBackend : IBuildBackend
     public async Task<KeyboardBuildResult> BuildAsync(
         KeyboardProject project,
         BuildOptions options,
+        IProgress<BuildStageProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(project);
@@ -56,9 +72,11 @@ public sealed class LinuxXkbBuildBackend : IBuildBackend
         EnsureSupported(options.Target);
         cancellationToken.ThrowIfCancellationRequested();
 
+        progress?.Report(new BuildStageProgress(BuildStageNames.GeneratingXkb, BuildStageState.Running));
         var translation = _translator.Translate(project, _metadata);
         if (!translation.Success)
         {
+            progress?.Report(new BuildStageProgress(BuildStageNames.GeneratingXkb, BuildStageState.Failed));
             return Failure(translation.Diagnostics.Select(diagnostic => new BuildArtifactDiagnostic(
                 BuildDiagnosticSeverity.Error,
                 diagnostic.Code,
@@ -69,6 +87,8 @@ public sealed class LinuxXkbBuildBackend : IBuildBackend
         try
         {
             var generated = _generator.Generate(translation.Layout!);
+            progress?.Report(new BuildStageProgress(BuildStageNames.GeneratingXkb, BuildStageState.Completed));
+            progress?.Report(new BuildStageProgress(BuildStageNames.WritingArtifact, BuildStageState.Running));
             var outputRoot = Path.GetFullPath(Path.Combine(options.OutputDirectory, "xkb"));
             var artifactPath = GetControlledArtifactPath(outputRoot, generated.RelativePath);
             Directory.CreateDirectory(Path.GetDirectoryName(artifactPath)!);
@@ -77,12 +97,19 @@ public sealed class LinuxXkbBuildBackend : IBuildBackend
                 generated.Content,
                 new UTF8Encoding(false),
                 cancellationToken);
+            progress?.Report(new BuildStageProgress(BuildStageNames.WritingArtifact, BuildStageState.Completed));
+            progress?.Report(new BuildStageProgress(BuildStageNames.Verifying, BuildStageState.Running));
             var verification = await _verifier.VerifyAsync(
                 translation.Layout!,
                 generated,
                 outputRoot,
                 _requireExternalVerification,
                 cancellationToken);
+            progress?.Report(new BuildStageProgress(
+                BuildStageNames.Verifying,
+                verification.Status == XkbVerificationStatus.Failed
+                    ? BuildStageState.Failed
+                    : BuildStageState.Completed));
             var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(generated.Content)))
                 .ToLowerInvariant();
             var manifest = new XkbBuildManifest(
@@ -118,6 +145,7 @@ public sealed class LinuxXkbBuildBackend : IBuildBackend
         catch (Exception exception) when (
             exception is IOException or UnauthorizedAccessException or ArgumentException)
         {
+            progress?.Report(new BuildStageProgress(BuildStageNames.WritingArtifact, BuildStageState.Failed));
             return Failure([
                 new BuildArtifactDiagnostic(
                     BuildDiagnosticSeverity.Error,

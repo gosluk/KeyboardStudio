@@ -32,6 +32,7 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
     public async Task<CompilationResult> CompileAsync(
         GeneratedArtifact artifact,
         BuildOptions options,
+        IProgress<BuildStageProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(artifact);
@@ -74,11 +75,13 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
             await workspace.WriteGeneratedSourceAsync(artifact.Source, cancellationToken);
             var processResults = new List<ProcessResult>();
             var objectPath = Path.Combine(workspace.ObjectDirectory, "keyboard.obj");
+            progress?.Report(new BuildStageProgress(BuildStageNames.Compiling, BuildStageState.Running));
             var compileRequest = CreateCompileRequest(toolchain, workspace, objectPath);
             var compileResult = await _processRunner.RunAsync(compileRequest, cancellationToken);
             processResults.Add(compileResult);
             if (compileResult.ExitCode != 0)
             {
+                progress?.Report(new BuildStageProgress(BuildStageNames.Compiling, BuildStageState.Failed));
                 return await CompleteAsync(
                     false,
                     null,
@@ -91,6 +94,9 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
                     cancellationToken);
             }
 
+            progress?.Report(new BuildStageProgress(BuildStageNames.Compiling, BuildStageState.Completed));
+            progress?.Report(new BuildStageProgress(BuildStageNames.Linking, BuildStageState.Running));
+
             var resourcePath = Path.Combine(workspace.ObjectDirectory, "keyboard.res");
             var resourceResult = await _processRunner.RunAsync(
                 CreateResourceRequest(toolchain, workspace, resourcePath),
@@ -98,6 +104,7 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
             processResults.Add(resourceResult);
             if (resourceResult.ExitCode != 0)
             {
+                progress?.Report(new BuildStageProgress(BuildStageNames.Linking, BuildStageState.Failed));
                 return await CompleteAsync(
                     false,
                     null,
@@ -117,6 +124,7 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
             processResults.Add(linkResult);
             if (linkResult.ExitCode != 0)
             {
+                progress?.Report(new BuildStageProgress(BuildStageNames.Linking, BuildStageState.Failed));
                 return await CompleteAsync(
                     false,
                     null,
@@ -129,10 +137,16 @@ public sealed class MsvcKeyboardCompiler : INativeCompiler
                     cancellationToken);
             }
 
+            progress?.Report(new BuildStageProgress(BuildStageNames.Linking, BuildStageState.Completed));
+            progress?.Report(new BuildStageProgress(BuildStageNames.Verifying, BuildStageState.Running));
+
             var verification = await _artifactVerifier.VerifyAsync(
                 outputPath,
                 options.Target,
                 cancellationToken);
+            progress?.Report(new BuildStageProgress(
+                BuildStageNames.Verifying,
+                verification.Success ? BuildStageState.Completed : BuildStageState.Failed));
             return await CompleteAsync(
                 verification.Success,
                 outputPath,

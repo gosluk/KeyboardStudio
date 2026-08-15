@@ -105,6 +105,7 @@ public sealed class BuildOrchestratorValidationTests
         public Task<CompilationResult> CompileAsync(
             GeneratedArtifact artifact,
             BuildOptions options,
+            IProgress<BuildStageProgress>? progress = null,
             CancellationToken cancellationToken = default)
         {
             WasCalled = true;

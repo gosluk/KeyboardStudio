@@ -688,6 +688,12 @@ Compiler messages remain in a detailed Windows `CompilationResult` below the bac
 through a compatibility accessor. XKB verifier messages map to the target-neutral diagnostic envelope
 without being mislabeled as compiler output.
 
+Backends report named stage transitions through `IProgress<BuildStageProgress>`. The application
+renders exactly those reports: Windows emits generation, compilation, linking, and verification;
+Linux emits XKB generation, artifact writing, and verification. The orchestrator owns common
+validation and the terminal completed, failed, or cancelled state. Cancellation flows from the build
+panel to generators and native/external processes through the invocation token.
+
 ---
 
 ## 12. Keyboard templates
