@@ -43,8 +43,27 @@ jobs:
       - name: Test managed suites
         run: dotnet test ${{ env.SOLUTION }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --verbosity normal --filter "Category!=XkbIntegration"
 
+  xkb-integration:
+    name: XKB integration (Ubuntu)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
+
+      - name: Install XKB verification tools
+        run: ./scripts/install-xkbcli.sh
+
+      - name: Restore
+        run: dotnet restore tests/KeyboardStudio.Linux.Tests/KeyboardStudio.Linux.Tests.csproj
+
       - name: Test generated XKB layouts
-        run: ./scripts/test-xkb-integration-in-podman.sh
+        run: dotnet test tests/KeyboardStudio.Linux.Tests/KeyboardStudio.Linux.Tests.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore --verbosity normal --filter "Category=XkbIntegration"
 
       - name: Retain failed XKB artifacts
         if: failure()
