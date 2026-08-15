@@ -224,6 +224,29 @@
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
+          <ItemsControl ItemsSource="{Binding Build.Problems}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Border Padding="8"
+                        Margin="0,2"
+                        BorderThickness="1"
+                        BorderBrush="#A06060"
+                        CornerRadius="4">
+                  <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <TextBlock Text="{Binding Category}" FontWeight="SemiBold" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                      <TextBlock Text="{Binding Severity}" />
+                      <TextBlock Text="{Binding Code}" FontFamily="monospace" />
+                    </StackPanel>
+                    <TextBlock Grid.Row="1"
+                               Grid.ColumnSpan="2"
+                               Text="{Binding Message}"
+                               TextWrapping="Wrap" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
           <TextBlock Text="{Binding Build.ArtifactPath}"
                      FontFamily="monospace"
                      TextWrapping="Wrap"

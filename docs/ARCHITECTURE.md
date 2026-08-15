@@ -699,6 +699,12 @@ independently of workspace cleanup. The UI can inspect those snapshots, open the
 directory, and copy the combined structured diagnostics/raw log or canonical artifact path through
 `IBuildInteractionService`; platform shell and clipboard APIs stay out of the ViewModel.
 
+The build panel normalizes readiness issues, backend diagnostics, and generation exceptions into
+seven user-facing problem kinds: project validation, target compatibility, source generation,
+missing required toolchain, optional verifier unavailable, compiler/linker, and artifact
+verification. Codes and original messages remain visible. `KSL004` produces an unverified-success
+presentation rather than failure when external verification is optional.
+
 ---
 
 ## 12. Keyboard templates

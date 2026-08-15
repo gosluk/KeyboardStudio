@@ -46,7 +46,7 @@ public sealed class TargetBuildService : ITargetBuildService
             targetIssues);
     }
 
-    public Task<KeyboardBuildResult> BuildAsync(
+    public async Task<KeyboardBuildResult> BuildAsync(
         KeyboardProject project,
         BuildOptions options,
         IReadOnlyDictionary<string, string> profileSettings,
@@ -71,19 +71,42 @@ public sealed class TargetBuildService : ITargetBuildService
                     BuildDiagnosticSeverity.Error,
                     diagnostic.Code,
                     diagnostic.Message)).ToArray();
-            return Task.FromResult(new KeyboardBuildResult(
+            return new KeyboardBuildResult(
                 false,
                 validationIssues,
                 environmentDiagnostics.Length == 0
                     ? null
-                    : new ArtifactBuildResult(false, null, environmentDiagnostics)));
+                    : new ArtifactBuildResult(false, null, environmentDiagnostics));
         }
 
         var backend = CreateBackend(options.Target, profileSettings);
         var orchestrator = new BuildOrchestrator(
             _commonValidator,
             new BuildBackendResolver([backend]));
-        return orchestrator.BuildAsync(project, options, progress, cancellationToken);
+        try
+        {
+            return await orchestrator.BuildAsync(project, options, progress, cancellationToken);
+        }
+        catch (Exception exception) when (
+            exception is WindowsTranslationException or ArgumentException or InvalidOperationException)
+        {
+            progress?.Report(new BuildStageProgress(
+                options.Target == BuildTarget.LinuxXkb
+                    ? BuildStageNames.GeneratingXkb
+                    : BuildStageNames.Generating,
+                BuildStageState.Failed));
+            progress?.Report(new BuildStageProgress(BuildStageNames.Failed, BuildStageState.Failed));
+            return new KeyboardBuildResult(
+                false,
+                [],
+                new ArtifactBuildResult(
+                    false,
+                    null,
+                    [new BuildArtifactDiagnostic(
+                        BuildDiagnosticSeverity.Error,
+                        "GEN_SOURCE",
+                        $"Source generation failed: {exception.Message}")]));
+        }
     }
 
     private static List<ValidationIssue> ValidateTarget(

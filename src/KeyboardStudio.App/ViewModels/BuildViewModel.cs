@@ -48,7 +48,7 @@ public sealed class BuildViewModel : ObservableObject
             "KeyboardStudio Builds");
         foreach (var setting in _profiles.Values.SelectMany(settings => settings))
         {
-            setting.PropertyChanged += (_, _) => Refresh();
+            setting.PropertyChanged += (_, _) => ProfileSettingChanged();
         }
 
         BuildCommand = new AsyncRelayCommand(BuildAsync, CanStartBuild);
@@ -80,7 +80,7 @@ public sealed class BuildViewModel : ObservableObject
             {
                 ProfileSettings = _profiles[value.Target];
                 SetBuildResult(null);
-                Refresh();
+                RefreshReadiness();
             }
         }
     }
@@ -98,7 +98,8 @@ public sealed class BuildViewModel : ObservableObject
         {
             if (SetProperty(ref _outputDirectory, value))
             {
-                Refresh();
+                SetBuildResult(null);
+                RefreshReadiness();
             }
         }
     }
@@ -150,6 +151,8 @@ public sealed class BuildViewModel : ObservableObject
 
     public ObservableCollection<BuildStageViewModel> Stages { get; } = [];
 
+    public ObservableCollection<BuildProblemViewModel> Problems { get; } = [];
+
     public IReadOnlyList<BuildTextFile> GeneratedFiles
     {
         get => _generatedFiles;
@@ -191,6 +194,12 @@ public sealed class BuildViewModel : ObservableObject
 
     public void Refresh()
     {
+        SetBuildResult(null);
+        RefreshReadiness();
+    }
+
+    private void RefreshReadiness()
+    {
         var settings = GetProfileSettings();
         _readiness = _buildService.GetReadiness(
             _projectProvider(),
@@ -203,11 +212,21 @@ public sealed class BuildViewModel : ObservableObject
         ValidationStatus = commonErrorCount + targetErrorCount > 0
             ? $"{commonErrorCount} common and {targetErrorCount} target error(s) block this build."
             : "Common and selected-target validation passed.";
+        if (_lastResult is null && !IsBuilding)
+        {
+            SetProblems(CreateReadinessProblems(_readiness));
+        }
+
         BuildCommand.NotifyCanExecuteChanged();
     }
 
     private async Task BuildAsync(CancellationToken cancellationToken)
     {
+        if (!CanStartBuild())
+        {
+            return;
+        }
+
         IsBuilding = true;
         SetBuildResult(null);
         Stages.Clear();
@@ -224,9 +243,15 @@ public sealed class BuildViewModel : ObservableObject
                 progress,
                 cancellationToken);
             SetBuildResult(result);
+            var isUnverified = Problems.Any(problem =>
+                problem.Kind == BuildProblemKind.OptionalVerifierUnavailable);
             Status = result.Success
-                ? "Build completed successfully."
-                : "Build failed. Review the build diagnostics.";
+                ? isUnverified
+                    ? "Build completed without external XKB verification."
+                    : "Build completed successfully."
+                : Problems.Count > 0
+                    ? $"Build failed: {Problems[0].Category}."
+                    : "Build failed. Review the build diagnostics.";
         }
         catch (OperationCanceledException)
         {
@@ -236,20 +261,35 @@ public sealed class BuildViewModel : ObservableObject
             exception is IOException or UnauthorizedAccessException or InvalidOperationException or ArgumentException)
         {
             Status = $"Build failed: {exception.Message}";
+            SetProblems([
+                new BuildProblemViewModel(
+                    BuildProblemKind.SourceGeneration,
+                    "Source generation error",
+                    BuildDiagnosticSeverity.Error,
+                    "GEN_SOURCE",
+                    exception.Message)
+            ]);
         }
         finally
         {
             IsBuilding = false;
-            Refresh();
+            RefreshReadiness();
         }
     }
 
     private void CancelBuild() => BuildCommand.Cancel();
 
+    private void ProfileSettingChanged()
+    {
+        SetBuildResult(null);
+        RefreshReadiness();
+    }
+
     private async Task OpenOutputDirectoryAsync()
     {
-        await _interactionService.OpenDirectoryAsync(OutputDirectory);
-        ActionStatus = "Opened output directory.";
+        await RunActionAsync(
+            () => _interactionService.OpenDirectoryAsync(OutputDirectory),
+            "Opened output directory.");
     }
 
     private async Task InspectGeneratedFileAsync()
@@ -259,27 +299,46 @@ public sealed class BuildViewModel : ObservableObject
             return;
         }
 
-        await _interactionService.ShowGeneratedTextAsync(
-            SelectedGeneratedFile.Name,
-            SelectedGeneratedFile.Content);
-        ActionStatus = $"Opened {SelectedGeneratedFile.Name}.";
+        var generatedFile = SelectedGeneratedFile;
+        await RunActionAsync(
+            () => _interactionService.ShowGeneratedTextAsync(
+                generatedFile.Name,
+                generatedFile.Content),
+            $"Opened {generatedFile.Name}.");
     }
 
     private async Task CopyBuildLogAsync()
     {
-        await _interactionService.CopyTextAsync(BuildLog);
-        ActionStatus = "Copied build log.";
+        await RunActionAsync(
+            () => _interactionService.CopyTextAsync(BuildLog),
+            "Copied build log.");
     }
 
     private async Task CopyArtifactPathAsync()
     {
-        if (ArtifactPath is null)
+        var artifactPath = ArtifactPath;
+        if (artifactPath is null)
         {
             return;
         }
 
-        await _interactionService.CopyTextAsync(ArtifactPath);
-        ActionStatus = "Copied artifact path.";
+        await RunActionAsync(
+            () => _interactionService.CopyTextAsync(artifactPath),
+            "Copied artifact path.");
+    }
+
+    private async Task RunActionAsync(Func<Task> action, string successStatus)
+    {
+        try
+        {
+            await action();
+            ActionStatus = successStatus;
+        }
+        catch (Exception exception) when (
+            exception is IOException or UnauthorizedAccessException or InvalidOperationException or ArgumentException)
+        {
+            ActionStatus = $"Action failed: {exception.Message}";
+        }
     }
 
     private void SetBuildResult(KeyboardBuildResult? result)
@@ -290,10 +349,138 @@ public sealed class BuildViewModel : ObservableObject
         SelectedGeneratedFile = GeneratedFiles.Count > 0 ? GeneratedFiles[0] : null;
         BuildLog = CreateBuildLog(result);
         ActionStatus = string.Empty;
+        SetProblems(CreateResultProblems(result));
         OnPropertyChanged(nameof(BuildLog));
         OpenOutputDirectoryCommand.NotifyCanExecuteChanged();
         CopyBuildLogCommand.NotifyCanExecuteChanged();
     }
+
+    private void SetProblems(IEnumerable<BuildProblemViewModel> problems)
+    {
+        Problems.Clear();
+        foreach (var problem in problems)
+        {
+            Problems.Add(problem);
+        }
+    }
+
+    private static IEnumerable<BuildProblemViewModel> CreateReadinessProblems(BuildReadiness readiness)
+    {
+        foreach (var issue in readiness.CommonIssues)
+        {
+            yield return CreateProblem(
+                BuildProblemKind.ProjectValidation,
+                issue.Severity,
+                issue.Code,
+                issue.Message);
+        }
+
+        foreach (var issue in readiness.TargetIssues)
+        {
+            yield return CreateProblem(
+                BuildProblemKind.TargetCompatibility,
+                issue.Severity,
+                issue.Code,
+                issue.Message);
+        }
+
+        foreach (var diagnostic in readiness.Environment.Diagnostics)
+        {
+            yield return CreateProblem(
+                diagnostic.Code == "KSL004"
+                    ? BuildProblemKind.OptionalVerifierUnavailable
+                    : BuildProblemKind.MissingRequiredToolchain,
+                readiness.Environment.Available
+                    ? ValidationSeverity.Warning
+                    : ValidationSeverity.Error,
+                diagnostic.Code,
+                diagnostic.Message);
+        }
+
+        if (!readiness.Environment.Available && readiness.Environment.Diagnostics.Count == 0)
+        {
+            yield return CreateProblem(
+                BuildProblemKind.MissingRequiredToolchain,
+                ValidationSeverity.Error,
+                "ENV001",
+                readiness.Environment.Message);
+        }
+    }
+
+    private static IEnumerable<BuildProblemViewModel> CreateResultProblems(KeyboardBuildResult? result)
+    {
+        if (result is null)
+        {
+            yield break;
+        }
+
+        foreach (var issue in result.ValidationIssues)
+        {
+            var kind = issue.Code.StartsWith("KSW", StringComparison.Ordinal) ||
+                       issue.Code is "KSL001" or "KSL002" or "TARGET_OUTPUT" or "TARGET_PROFILE"
+                ? BuildProblemKind.TargetCompatibility
+                : BuildProblemKind.ProjectValidation;
+            yield return CreateProblem(kind, issue.Severity, issue.Code, issue.Message);
+        }
+
+        foreach (var diagnostic in result.Artifact?.Diagnostics ?? [])
+        {
+            yield return CreateProblem(
+                ClassifyArtifactDiagnostic(diagnostic.Code),
+                diagnostic.Severity,
+                diagnostic.Code,
+                diagnostic.Message);
+        }
+    }
+
+    private static BuildProblemKind ClassifyArtifactDiagnostic(string code) =>
+        code switch
+        {
+            "KSL001" or "KSL002" => BuildProblemKind.TargetCompatibility,
+            "GEN_SOURCE" or "KSL006" => BuildProblemKind.SourceGeneration,
+            "KSL004" => BuildProblemKind.OptionalVerifierUnavailable,
+            "KSL003" or "KSL005" => BuildProblemKind.ArtifactVerification,
+            _ when code.StartsWith("PE_", StringComparison.Ordinal) => BuildProblemKind.ArtifactVerification,
+            _ when code.StartsWith("ENV", StringComparison.Ordinal) => BuildProblemKind.MissingRequiredToolchain,
+            _ => BuildProblemKind.CompilerOrLinker
+        };
+
+    private static BuildProblemViewModel CreateProblem(
+        BuildProblemKind kind,
+        ValidationSeverity severity,
+        string code,
+        string message) =>
+        new(
+            kind,
+            GetCategory(kind),
+            severity switch
+            {
+                ValidationSeverity.Info => BuildDiagnosticSeverity.Info,
+                ValidationSeverity.Warning => BuildDiagnosticSeverity.Warning,
+                _ => BuildDiagnosticSeverity.Error
+            },
+            code,
+            message);
+
+    private static BuildProblemViewModel CreateProblem(
+        BuildProblemKind kind,
+        BuildDiagnosticSeverity severity,
+        string code,
+        string message) =>
+        new(kind, GetCategory(kind), severity, code, message);
+
+    private static string GetCategory(BuildProblemKind kind) =>
+        kind switch
+        {
+            BuildProblemKind.ProjectValidation => "Project validation error",
+            BuildProblemKind.TargetCompatibility => "Target compatibility error",
+            BuildProblemKind.SourceGeneration => "Source generation error",
+            BuildProblemKind.MissingRequiredToolchain => "Missing required toolchain",
+            BuildProblemKind.OptionalVerifierUnavailable => "Optional verifier unavailable",
+            BuildProblemKind.CompilerOrLinker => "Compiler or linker error",
+            BuildProblemKind.ArtifactVerification => "Artifact verification error",
+            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unknown build problem kind.")
+        };
 
     private static string CreateBuildLog(KeyboardBuildResult? result)
     {

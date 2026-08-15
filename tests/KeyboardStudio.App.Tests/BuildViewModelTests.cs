@@ -53,6 +53,8 @@ public sealed class BuildViewModelTests
         var viewModel = CreateViewModel(service);
 
         Assert.False(viewModel.BuildCommand.CanExecute(null));
+        Assert.Contains(viewModel.Problems, problem =>
+            problem.Kind == BuildProblemKind.TargetCompatibility);
 
         viewModel.SelectedTarget = viewModel.Targets.Single(option => option.Target == BuildTarget.LinuxXkb);
 
@@ -73,6 +75,8 @@ public sealed class BuildViewModelTests
 
         Assert.False(viewModel.BuildCommand.CanExecute(null));
         Assert.Equal("MSVC unavailable.", viewModel.EnvironmentStatus);
+        Assert.Contains(viewModel.Problems, problem =>
+            problem.Kind == BuildProblemKind.MissingRequiredToolchain);
     }
 
     [Fact]
@@ -94,6 +98,29 @@ public sealed class BuildViewModelTests
 
         Assert.True(viewModel.BuildCommand.CanExecute(null));
         Assert.Contains("optional verifier unavailable", viewModel.EnvironmentStatus, StringComparison.Ordinal);
+        Assert.Contains(viewModel.Problems, problem =>
+            problem.Kind == BuildProblemKind.OptionalVerifierUnavailable);
+    }
+
+    [Fact]
+    public async Task BuildCommand_WhenCommonValidationFails_DoesNotInvokeAnyBackend()
+    {
+        var service = new RecordingBuildService
+        {
+            ReadinessFactory = target => new BuildReadiness(
+                new BuildEnvironmentStatus(true, "Available", [], [target]),
+                [new ValidationIssue(ValidationSeverity.Error, "KSP101", "Project name is required.")],
+                [])
+        };
+        var viewModel = CreateViewModel(service);
+
+        await viewModel.BuildCommand.ExecuteAsync(null);
+        viewModel.SelectedTarget = viewModel.Targets.Single(option => option.Target == BuildTarget.LinuxXkb);
+        await viewModel.BuildCommand.ExecuteAsync(null);
+
+        Assert.Equal(0, service.BuildCallCount);
+        Assert.Contains(viewModel.Problems, problem =>
+            problem.Kind == BuildProblemKind.ProjectValidation);
     }
 
     [Fact]
@@ -177,6 +204,56 @@ public sealed class BuildViewModelTests
         Assert.Equal(viewModel.ArtifactPath, interaction.CopiedTexts[1]);
     }
 
+    [Theory]
+    [InlineData("GEN_SOURCE", BuildProblemKind.SourceGeneration, "Source generation error")]
+    [InlineData("C1000", BuildProblemKind.CompilerOrLinker, "Compiler or linker error")]
+    [InlineData("PE_EXPORT", BuildProblemKind.ArtifactVerification, "Artifact verification error")]
+    public async Task BuildResult_WhenBackendFails_PresentsCategorizedProblem(
+        string code,
+        BuildProblemKind expectedKind,
+        string expectedCategory)
+    {
+        var result = new KeyboardBuildResult(
+            false,
+            [],
+            new ArtifactBuildResult(
+                false,
+                null,
+                [new BuildArtifactDiagnostic(BuildDiagnosticSeverity.Error, code, "Failure")]));
+        var service = new RecordingBuildService { PendingResult = Task.FromResult(result) };
+        var viewModel = CreateViewModel(service);
+
+        await viewModel.BuildCommand.ExecuteAsync(null);
+
+        var problem = Assert.Single(viewModel.Problems);
+        Assert.Equal(expectedKind, problem.Kind);
+        Assert.Equal(expectedCategory, problem.Category);
+        Assert.Contains(expectedCategory, viewModel.Status, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task BuildResult_WhenOptionalVerifierIsMissing_PresentsUnverifiedSuccess()
+    {
+        var result = new KeyboardBuildResult(
+            true,
+            [],
+            new ArtifactBuildResult(
+                true,
+                "/tmp/layout",
+                [new BuildArtifactDiagnostic(
+                    BuildDiagnosticSeverity.Warning,
+                    "KSL004",
+                    "xkbcli was not found.")]));
+        var service = new RecordingBuildService { PendingResult = Task.FromResult(result) };
+        var viewModel = CreateViewModel(service);
+
+        await viewModel.BuildCommand.ExecuteAsync(null);
+
+        Assert.Contains(viewModel.Problems, problem =>
+            problem.Kind == BuildProblemKind.OptionalVerifierUnavailable);
+        Assert.Equal("Build completed without external XKB verification.", viewModel.Status);
+    }
+
     private static BuildViewModel CreateViewModel(
         ITargetBuildService service,
         IBuildInteractionService? interactionService = null) =>
@@ -209,6 +286,8 @@ public sealed class BuildViewModelTests
 
         public bool WaitForCancellation { get; init; }
 
+        public int BuildCallCount { get; private set; }
+
         public BuildEnvironmentStatus GetEnvironmentStatus(BuildTarget target) =>
             new(true, $"{(target == BuildTarget.LinuxXkb ? "Linux XKB" : target)} is available.", [], [target]);
 
@@ -226,6 +305,7 @@ public sealed class BuildViewModelTests
             IProgress<BuildStageProgress>? progress = null,
             CancellationToken cancellationToken = default)
         {
+            BuildCallCount++;
             LastOptions = options;
             LastSettings = profileSettings;
             if (WaitForCancellation)
