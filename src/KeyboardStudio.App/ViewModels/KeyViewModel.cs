@@ -6,6 +6,48 @@ namespace KeyboardStudio.App;
 
 public sealed class KeyViewModel : ObservableObject
 {
+    private static readonly Dictionary<string, string> PhysicalLabels =
+        new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["Escape"] = "Esc",
+            ["Backquote"] = "`",
+            ["Minus"] = "−",
+            ["Equal"] = "=",
+            ["PrintScreen"] = "Prt Sc",
+            ["ScrollLock"] = "Scroll",
+            ["Backspace"] = "Backspace",
+            ["PageUp"] = "Pg Up",
+            ["PageDown"] = "Pg Dn",
+            ["BracketLeft"] = "[",
+            ["BracketRight"] = "]",
+            ["Backslash"] = "\\",
+            ["IntlBackslash"] = "\\",
+            ["IntlHash"] = "#",
+            ["CapsLock"] = "Caps Lock",
+            ["Semicolon"] = ";",
+            ["Quote"] = "'",
+            ["ShiftLeft"] = "Shift",
+            ["ShiftRight"] = "Shift",
+            ["ControlLeft"] = "Ctrl",
+            ["ControlRight"] = "Ctrl",
+            ["MetaLeft"] = "Meta",
+            ["MetaRight"] = "Meta",
+            ["AltLeft"] = "Alt",
+            ["AltRight"] = "Alt Gr",
+            ["ContextMenu"] = "Menu",
+            ["ArrowUp"] = "↑",
+            ["ArrowLeft"] = "←",
+            ["ArrowDown"] = "↓",
+            ["ArrowRight"] = "→",
+            ["NumLock"] = "Num",
+            ["NumpadDivide"] = "/",
+            ["NumpadMultiply"] = "×",
+            ["NumpadSubtract"] = "−",
+            ["NumpadAdd"] = "+",
+            ["NumpadEnter"] = "Enter",
+            ["NumpadDecimal"] = "."
+        };
+
     private bool _hasError;
     private string _hint;
     private bool _isSelected;
@@ -25,9 +67,11 @@ public sealed class KeyViewModel : ObservableObject
         _hint = GetHint(key.Id, mapping);
         _isUnmapped = true;
         SelectCommand = new RelayCommand(() => select(this));
-        Left = ToPosition(key.X, unitWidth, unitGap);
+        IsIsoEnter = string.Equals(key.Id, "Enter", StringComparison.Ordinal) && key.Height > 1;
+        var shapeOffset = IsIsoEnter ? 0.25 : 0;
+        Left = ToPosition(key.X - shapeOffset, unitWidth, unitGap);
         Top = ToPosition(key.Y, unitWidth, unitGap);
-        Width = ToLength(key.Width, unitWidth, unitGap);
+        Width = ToLength(key.Width + shapeOffset, unitWidth, unitGap);
         Height = ToLength(key.Height, unitWidth, unitGap);
     }
 
@@ -40,6 +84,8 @@ public sealed class KeyViewModel : ObservableObject
     public double Top { get; }
     public double Width { get; }
     public double Height { get; }
+    public bool IsIsoEnter { get; }
+    public bool IsRectangular => !IsIsoEnter;
 
     public string Hint
     {
@@ -93,8 +139,21 @@ public sealed class KeyViewModel : ObservableObject
             ? logicalKey.ToString()
             : keyId;
 
-    private static string GetPhysicalLabel(string keyId) =>
-        keyId.Replace("Key", string.Empty, StringComparison.Ordinal);
+    private static string GetPhysicalLabel(string keyId)
+    {
+        if (PhysicalLabels.TryGetValue(keyId, out var label))
+        {
+            return label;
+        }
+
+        if (keyId.StartsWith("Digit", StringComparison.Ordinal) ||
+            keyId.StartsWith("Numpad", StringComparison.Ordinal))
+        {
+            return keyId[^1].ToString();
+        }
+
+        return keyId.Replace("Key", string.Empty, StringComparison.Ordinal);
+    }
 
     private static double ToPosition(double coordinate, double unitWidth, double unitGap) =>
         coordinate * (unitWidth + unitGap);

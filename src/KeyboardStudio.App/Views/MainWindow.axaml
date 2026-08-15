@@ -59,11 +59,16 @@
           </ComboBox>
         </StackPanel>
         <Border Grid.Row="2"
-                Padding="8"
-                Background="#18000000"
-                CornerRadius="4"
+                Padding="14"
+                Background="#202327"
+                BorderBrush="#3C434B"
+                BorderThickness="1"
+                CornerRadius="10"
                 ClipToBounds="True">
-          <Viewbox Stretch="Uniform" StretchDirection="Both">
+          <Viewbox Stretch="Uniform"
+                   StretchDirection="DownOnly"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center">
             <ItemsControl ItemsSource="{Binding Editor.Keys}"
                           Width="{Binding Editor.KeyboardWidth}"
                           Height="{Binding Editor.KeyboardHeight}">
@@ -87,6 +92,8 @@
                                        IsSelected="{Binding IsSelected}"
                                        IsUnmapped="{Binding IsUnmapped}"
                                        HasError="{Binding HasError}"
+                                       IsIsoEnter="{Binding IsIsoEnter}"
+                                       IsRectangular="{Binding IsRectangular}"
                                        SelectCommand="{Binding SelectCommand}"
                                        Width="{Binding Width}"
                                        Height="{Binding Height}" />

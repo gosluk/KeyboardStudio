@@ -7,6 +7,20 @@ namespace KeyboardStudio.App.Tests;
 
 public sealed class KeyPresentationViewModelTests
 {
+    [Theory]
+    [Trait("Category", "Unit")]
+    [InlineData("Escape", "Esc")]
+    [InlineData("Digit1", "1")]
+    [InlineData("BracketLeft", "[")]
+    [InlineData("ArrowUp", "↑")]
+    [InlineData("NumpadMultiply", "×")]
+    public void Keys_WhenCreated_UseKeyboardLegendsInsteadOfPhysicalIds(string keyId, string label)
+    {
+        var key = Assert.Single(new MainWindowViewModel().Editor.Keys, item => item.KeyId == keyId);
+
+        Assert.Equal(label, key.Label);
+    }
+
     [Fact]
     [Trait("Category", "Unit")]
     public void Layers_WhenCreated_ExposeTheFourSupportedFriendlyLabels()
