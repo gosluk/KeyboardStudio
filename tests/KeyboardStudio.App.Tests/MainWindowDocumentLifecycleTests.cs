@@ -93,11 +93,16 @@ public sealed class MainWindowDocumentLifecycleTests
         var path = CreateTemporaryPath();
         try
         {
-            var source = new MainWindowViewModel().Project;
+            var sourceViewModel = new MainWindowViewModel();
+            var source = sourceViewModel.Project;
             new KeyboardEditor(source).MapCharacter("KeyA", ModifierLayer.AltGr, "ą");
             await using (var stream = File.Create(path))
             {
-                await new JsonKeyboardProjectStore().SaveAsync(source, stream);
+                await new JsonKeyboardProjectDocumentStore().SaveAsync(
+                    new KeyboardProjectDocument(
+                        source,
+                        sourceViewModel.Build.ExportTargetProfiles()),
+                    stream);
             }
 
             var interaction = new TestProjectInteractionService
