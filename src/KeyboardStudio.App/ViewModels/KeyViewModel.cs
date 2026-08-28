@@ -8,6 +8,7 @@ public sealed class KeyViewModel : ObservableObject
 {
     private bool _hasError;
     private string _hint;
+    private bool _hasHint;
     private bool _isSelected;
     private bool _isUnmapped;
     private string _label;
@@ -23,6 +24,7 @@ public sealed class KeyViewModel : ObservableObject
         Mapping = mapping;
         _label = GetPhysicalLabel(key.Id);
         _hint = GetHint(key.Id, mapping);
+        _hasHint = HasLogicalKey(mapping);
         _isUnmapped = true;
         SelectCommand = new RelayCommand(() => select(this));
         Left = ToPosition(key.X, unitWidth, unitGap);
@@ -45,6 +47,16 @@ public sealed class KeyViewModel : ObservableObject
     {
         get => _hint;
         private set => SetProperty(ref _hint, value);
+    }
+
+    /// <summary>
+    /// True when the hint carries information the legend does not already show, so that keycaps
+    /// only gain a second line once a logical key has been assigned.
+    /// </summary>
+    public bool HasHint
+    {
+        get => _hasHint;
+        private set => SetProperty(ref _hasHint, value);
     }
 
     public bool IsSelected
@@ -85,16 +97,20 @@ public sealed class KeyViewModel : ObservableObject
             }
             : GetPhysicalLabel(KeyId);
         Hint = GetHint(KeyId, Mapping);
+        HasHint = HasLogicalKey(Mapping);
         IsUnmapped = !hasOutput;
     }
 
+    private static bool HasLogicalKey(KeyMapping? mapping) =>
+        mapping?.LogicalKey is not (null or LogicalKey.None);
+
     private static string GetHint(string keyId, KeyMapping? mapping) =>
-        mapping?.LogicalKey is { } logicalKey and not LogicalKey.None
-            ? logicalKey.ToString()
+        HasLogicalKey(mapping)
+            ? mapping!.LogicalKey.ToString()
             : keyId;
 
     private static string GetPhysicalLabel(string keyId) =>
-        keyId.Replace("Key", string.Empty, StringComparison.Ordinal);
+        PhysicalKeyLegend.For(keyId);
 
     private static double ToPosition(double coordinate, double unitWidth, double unitGap) =>
         coordinate * (unitWidth + unitGap);

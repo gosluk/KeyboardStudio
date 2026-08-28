@@ -1,49 +1,92 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="KeyboardStudio.App.Controls.KeyControl"
-             x:Name="Root">
-  <UserControl.Styles>
-    <Style Selector="Button.key-control">
-      <Setter Property="Padding" Value="4,2" />
+             x:Name="Root"
+             RenderOptions.EdgeMode="Antialias"
+             TextOptions.TextRenderingMode="Antialias">
+  <UserControl.Resources>
+    <!-- The Fluent Button theme aligns itself to its content, which collapsed every key
+         down to the width of its legend. The key face owns its whole cell instead. -->
+    <ControlTheme x:Key="KeyFaceTheme" TargetType="Button">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="VerticalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
       <Setter Property="VerticalContentAlignment" Value="Stretch" />
+      <Setter Property="Padding" Value="4,3" />
+      <Setter Property="CornerRadius" Value="5" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Background" Value="{DynamicResource KeyFaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource KeyBorderBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource KeyLegendBrush}" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Name="PART_Face"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="{TemplateBinding CornerRadius}"
+                  Padding="{TemplateBinding Padding}">
+            <ContentPresenter Content="{TemplateBinding Content}"
+                              HorizontalContentAlignment="Stretch"
+                              VerticalContentAlignment="Stretch" />
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </ControlTheme>
+  </UserControl.Resources>
+
+  <UserControl.Styles>
+    <Style Selector="TextBlock.key-legend">
+      <Setter Property="Foreground" Value="{DynamicResource KeyLegendBrush}" />
     </Style>
-    <Style Selector="Button.key-control.unmapped">
-      <Setter Property="Opacity" Value="0.65" />
+    <Style Selector="Button.key-face:pointerover">
+      <Setter Property="Background" Value="{DynamicResource KeyFaceHoverBrush}" />
     </Style>
-    <Style Selector="Button.key-control.selected">
-      <Setter Property="Background" Value="#334A90E2" />
-      <Setter Property="BorderBrush" Value="#4A90E2" />
+    <Style Selector="Button.key-face:pressed">
+      <Setter Property="Background" Value="{DynamicResource KeyFacePressedBrush}" />
+    </Style>
+    <Style Selector="Button.key-face.unmapped TextBlock.key-legend">
+      <Setter Property="Foreground" Value="{DynamicResource KeyLegendMutedBrush}" />
+    </Style>
+    <Style Selector="Button.key-face.error, Button.key-face.error:pointerover">
+      <Setter Property="Background" Value="{DynamicResource KeyErrorFaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource KeyErrorBorderBrush}" />
       <Setter Property="BorderThickness" Value="2" />
     </Style>
-    <Style Selector="Button.key-control.error">
-      <Setter Property="Background" Value="#33D13438" />
-      <Setter Property="BorderBrush" Value="#D13438" />
+    <Style Selector="Button.key-face.selected, Button.key-face.selected:pointerover">
+      <Setter Property="Background" Value="{DynamicResource KeySelectedFaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource KeySelectedBorderBrush}" />
       <Setter Property="BorderThickness" Value="2" />
     </Style>
   </UserControl.Styles>
 
-  <Button Classes="key-control"
+  <Button Theme="{StaticResource KeyFaceTheme}"
+          Classes="key-face"
           Classes.selected="{Binding IsSelected, ElementName=Root}"
           Classes.unmapped="{Binding IsUnmapped, ElementName=Root}"
           Classes.error="{Binding HasError, ElementName=Root}"
           Command="{Binding SelectCommand, ElementName=Root}"
           ToolTip.Tip="{Binding KeyId, ElementName=Root}">
     <Grid RowDefinitions="*,Auto">
-      <TextBlock Text="{Binding Label, ElementName=Root}"
+      <TextBlock Classes="key-legend"
+                 Text="{Binding Label, ElementName=Root}"
                  HorizontalAlignment="Center"
                  VerticalAlignment="Center"
                  TextAlignment="Center"
+                 TextWrapping="Wrap"
+                 MaxLines="2"
                  TextTrimming="CharacterEllipsis"
-                 FontSize="12" />
+                 FontSize="13"
+                 FontWeight="Medium" />
       <TextBlock Grid.Row="1"
                  Text="{Binding Hint, ElementName=Root}"
                  IsVisible="{Binding ShowHint, ElementName=Root}"
+                 Foreground="{DynamicResource KeyHintBrush}"
                  HorizontalAlignment="Center"
                  TextAlignment="Center"
                  TextTrimming="CharacterEllipsis"
-                 FontSize="8"
-                 Opacity="0.7" />
+                 FontSize="9" />
     </Grid>
   </Button>
 </UserControl>

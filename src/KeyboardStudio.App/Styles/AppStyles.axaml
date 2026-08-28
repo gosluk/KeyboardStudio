@@ -1,0 +1,118 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Styles.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="AppSurfaceBrush" Color="#F2F3F5" />
+          <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="CardBorderBrush" Color="#DEE1E6" />
+          <SolidColorBrush x:Key="HeadingForegroundBrush" Color="#1F2328" />
+          <SolidColorBrush x:Key="MutedForegroundBrush" Color="#6B7280" />
+          <SolidColorBrush x:Key="DangerForegroundBrush" Color="#C62828" />
+          <SolidColorBrush x:Key="WarningForegroundBrush" Color="#B45309" />
+          <SolidColorBrush x:Key="KeyboardBezelBrush" Color="#FCFCFD" />
+          <SolidColorBrush x:Key="KeyboardBezelBorderBrush" Color="#C4C9D0" />
+          <SolidColorBrush x:Key="KeyFaceBrush" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="KeyFaceHoverBrush" Color="#EEF3FB" />
+          <SolidColorBrush x:Key="KeyFacePressedBrush" Color="#DFE5EE" />
+          <SolidColorBrush x:Key="KeyBorderBrush" Color="#8A9099" />
+          <SolidColorBrush x:Key="KeyLegendBrush" Color="#1F2328" />
+          <SolidColorBrush x:Key="KeyLegendMutedBrush" Color="#767E88" />
+          <SolidColorBrush x:Key="KeyHintBrush" Color="#8A9099" />
+          <SolidColorBrush x:Key="KeySelectedFaceBrush" Color="#DCE9FF" />
+          <SolidColorBrush x:Key="KeySelectedBorderBrush" Color="#2F6FEB" />
+          <SolidColorBrush x:Key="KeyErrorFaceBrush" Color="#FCE4E5" />
+          <SolidColorBrush x:Key="KeyErrorBorderBrush" Color="#D13438" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="AppSurfaceBrush" Color="#1B1D21" />
+          <SolidColorBrush x:Key="CardBackgroundBrush" Color="#24272C" />
+          <SolidColorBrush x:Key="CardBorderBrush" Color="#383C43" />
+          <SolidColorBrush x:Key="HeadingForegroundBrush" Color="#F0F2F5" />
+          <SolidColorBrush x:Key="MutedForegroundBrush" Color="#9AA1AB" />
+          <SolidColorBrush x:Key="DangerForegroundBrush" Color="#FF7B7B" />
+          <SolidColorBrush x:Key="WarningForegroundBrush" Color="#F0A93B" />
+          <SolidColorBrush x:Key="KeyboardBezelBrush" Color="#2B2F35" />
+          <SolidColorBrush x:Key="KeyboardBezelBorderBrush" Color="#3C424A" />
+          <SolidColorBrush x:Key="KeyFaceBrush" Color="#383D44" />
+          <SolidColorBrush x:Key="KeyFaceHoverBrush" Color="#454B54" />
+          <SolidColorBrush x:Key="KeyFacePressedBrush" Color="#2E3339" />
+          <SolidColorBrush x:Key="KeyBorderBrush" Color="#5A626C" />
+          <SolidColorBrush x:Key="KeyLegendBrush" Color="#EDEFF2" />
+          <SolidColorBrush x:Key="KeyLegendMutedBrush" Color="#8B939D" />
+          <SolidColorBrush x:Key="KeyHintBrush" Color="#98A0AA" />
+          <SolidColorBrush x:Key="KeySelectedFaceBrush" Color="#1E3A63" />
+          <SolidColorBrush x:Key="KeySelectedBorderBrush" Color="#5B9BFF" />
+          <SolidColorBrush x:Key="KeyErrorFaceBrush" Color="#4A2224" />
+          <SolidColorBrush x:Key="KeyErrorBorderBrush" Color="#FF7B7B" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+    </ResourceDictionary>
+  </Styles.Resources>
+
+  <Style Selector="Window">
+    <Setter Property="Background" Value="{DynamicResource AppSurfaceBrush}" />
+    <Setter Property="FontFamily" Value="Inter, $Default" />
+  </Style>
+
+  <Style Selector="Border.card">
+    <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="10" />
+    <Setter Property="BoxShadow" Value="0 1 2 0 #12000000" />
+  </Style>
+
+  <Style Selector="TextBlock.app-title">
+    <Setter Property="FontSize" Value="18" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{DynamicResource HeadingForegroundBrush}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <Style Selector="TextBlock.section-title">
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{DynamicResource HeadingForegroundBrush}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <Style Selector="TextBlock.muted">
+    <Setter Property="Foreground" Value="{DynamicResource MutedForegroundBrush}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <Style Selector="TextBlock.field-label">
+    <Setter Property="Foreground" Value="{DynamicResource MutedForegroundBrush}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <Style Selector="TextBlock.mono">
+    <Setter Property="FontFamily" Value="monospace" />
+    <Setter Property="FontSize" Value="12" />
+  </Style>
+
+  <Style Selector="Button:not(.key-face)">
+    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="MinHeight" Value="26" />
+    <Setter Property="Padding" Value="10,3" />
+  </Style>
+
+  <Style Selector="TextBox">
+    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="MinHeight" Value="26" />
+    <Setter Property="Padding" Value="7,2" />
+  </Style>
+
+  <Style Selector="ComboBox">
+    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="MinHeight" Value="26" />
+    <Setter Property="Padding" Value="8,2" />
+  </Style>
+
+  <Style Selector="Menu">
+    <Setter Property="Padding" Value="4,1" />
+  </Style>
+</Styles>

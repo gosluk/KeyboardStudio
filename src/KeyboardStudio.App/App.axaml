@@ -4,5 +4,6 @@
              RequestedThemeVariant="Default">
   <Application.Styles>
     <FluentTheme />
+    <StyleInclude Source="avares://KeyboardStudio/Styles/AppStyles.axaml" />
   </Application.Styles>
 </Application>

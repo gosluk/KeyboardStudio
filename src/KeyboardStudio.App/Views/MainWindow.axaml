@@ -3,9 +3,9 @@
         xmlns:controls="using:KeyboardStudio.App.Controls"
         x:Class="KeyboardStudio.App.MainWindow"
         Title="{Binding WindowTitle}"
-        Width="1180"
-        Height="760"
-        MinWidth="900"
+        Width="1400"
+        Height="820"
+        MinWidth="980"
         MinHeight="600">
   <Window.KeyBindings>
     <KeyBinding Gesture="Ctrl+N" Command="{Binding NewCommand}" />
@@ -14,8 +14,8 @@
     <KeyBinding Gesture="Ctrl+Shift+S" Command="{Binding SaveAsCommand}" />
   </Window.KeyBindings>
 
-  <Grid RowDefinitions="Auto,Auto,*" ColumnDefinitions="2*,*" Margin="16">
-    <Menu Grid.ColumnSpan="2" Margin="-8,-8,-8,10">
+  <DockPanel>
+    <Menu DockPanel.Dock="Top">
       <MenuItem Header="_File">
         <MenuItem Header="_New" Command="{Binding NewCommand}" />
         <MenuItem Header="_Open…" Command="{Binding OpenCommand}" />
@@ -25,260 +25,303 @@
       </MenuItem>
     </Menu>
 
-    <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="12" Margin="0,0,0,12">
-      <TextBlock Text="KeyboardStudio" FontSize="24" FontWeight="Bold" />
-      <TextBlock Text="{Binding DocumentStatus}" VerticalAlignment="Center" Opacity="0.7" />
-      <TextBlock Text="Unsaved changes"
-                 VerticalAlignment="Center"
-                 Foreground="#D97706"
-                 IsVisible="{Binding IsDirty}" />
-    </StackPanel>
+    <Grid RowDefinitions="Auto,*" ColumnDefinitions="*,360" Margin="10,6,10,10" ColumnSpacing="8" RowSpacing="6">
+      <StackPanel Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="8">
+        <TextBlock Classes="app-title" Text="KeyboardStudio" />
+        <TextBlock Classes="muted" Text="{Binding DocumentStatus}" FontSize="12" />
+        <Border VerticalAlignment="Center"
+                Padding="7,1"
+                CornerRadius="9"
+                Background="#1FB45309"
+                IsVisible="{Binding IsDirty}">
+          <TextBlock Text="Unsaved changes"
+                     FontSize="11"
+                     Foreground="{DynamicResource WarningForegroundBrush}" />
+        </Border>
+      </StackPanel>
 
-    <Border Grid.Row="2" Grid.Column="0" Padding="16" Margin="0,0,12,0" BorderThickness="1" BorderBrush="#707070" CornerRadius="6">
-      <Grid RowDefinitions="Auto,Auto,*" RowSpacing="12">
-        <TextBlock Text="Keyboard" FontSize="18" FontWeight="SemiBold" />
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="12">
-          <TextBlock Text="Template for new project" VerticalAlignment="Center" />
-          <ComboBox ItemsSource="{Binding Templates}"
-                    SelectedItem="{Binding SelectedTemplate}"
-                    Width="220">
-            <ComboBox.ItemTemplate>
-              <DataTemplate>
-                <TextBlock Text="{Binding Name}" />
-              </DataTemplate>
-            </ComboBox.ItemTemplate>
-          </ComboBox>
-          <ComboBox ItemsSource="{Binding Editor.Layers}"
-                    SelectedItem="{Binding Editor.ActiveLayerOption}"
-                    Width="180">
-            <ComboBox.ItemTemplate>
-              <DataTemplate>
-                <TextBlock Text="{Binding Label}" />
-              </DataTemplate>
-            </ComboBox.ItemTemplate>
-          </ComboBox>
-        </StackPanel>
-        <Border Grid.Row="2"
-                Padding="8"
-                Background="#18000000"
-                CornerRadius="4"
-                ClipToBounds="True">
-          <Viewbox Stretch="Uniform" StretchDirection="Both">
-            <ItemsControl ItemsSource="{Binding Editor.Keys}"
-                          Width="{Binding Editor.KeyboardWidth}"
-                          Height="{Binding Editor.KeyboardHeight}">
-              <ItemsControl.ItemContainerTheme>
-                <ControlTheme TargetType="ContentPresenter">
-                  <Setter Property="Canvas.Left" Value="{Binding Left}" />
-                  <Setter Property="Canvas.Top" Value="{Binding Top}" />
-                </ControlTheme>
-              </ItemsControl.ItemContainerTheme>
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                  <Canvas ClipToBounds="True" />
-                </ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-              <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                  <controls:KeyControl KeyId="{Binding KeyId}"
-                                       Label="{Binding Label}"
-                                       Hint="{Binding Hint}"
-                                       ShowHint="True"
-                                       IsSelected="{Binding IsSelected}"
-                                       IsUnmapped="{Binding IsUnmapped}"
-                                       HasError="{Binding HasError}"
-                                       SelectCommand="{Binding SelectCommand}"
-                                       Width="{Binding Width}"
-                                       Height="{Binding Height}" />
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </Viewbox>
+      <Grid Grid.Row="1" Grid.Column="0" RowDefinitions="Auto,*" RowSpacing="8">
+        <Border Classes="card" VerticalAlignment="Top">
+          <Grid RowDefinitions="Auto,Auto" RowSpacing="8">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" ColumnSpacing="6">
+              <TextBlock Classes="section-title" Text="Keyboard" />
+              <TextBlock Grid.Column="2" Classes="field-label" Text="Layer" />
+              <ComboBox Grid.Column="3"
+                        ItemsSource="{Binding Editor.Layers}"
+                        SelectedItem="{Binding Editor.ActiveLayerOption}"
+                        Width="140">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding Label}" />
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+              <TextBlock Grid.Column="4"
+                         Classes="field-label"
+                         Text="Template for new project"
+                         Margin="8,0,0,0" />
+              <ComboBox Grid.Column="5"
+                        ItemsSource="{Binding Templates}"
+                        SelectedItem="{Binding SelectedTemplate}"
+                        Width="150">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding Name}" />
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </Grid>
+
+            <Border Grid.Row="1"
+                    Padding="9"
+                    Background="{DynamicResource KeyboardBezelBrush}"
+                    BorderBrush="{DynamicResource KeyboardBezelBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="10"
+                    ClipToBounds="True">
+              <Viewbox Stretch="Uniform" StretchDirection="Both">
+                <ItemsControl ItemsSource="{Binding Editor.Keys}"
+                              Width="{Binding Editor.KeyboardWidth}"
+                              Height="{Binding Editor.KeyboardHeight}"
+                              UseLayoutRounding="False"
+                              RenderOptions.EdgeMode="Antialias">
+                  <ItemsControl.ItemContainerTheme>
+                    <ControlTheme TargetType="ContentPresenter">
+                      <Setter Property="Canvas.Left" Value="{Binding Left}" />
+                      <Setter Property="Canvas.Top" Value="{Binding Top}" />
+                    </ControlTheme>
+                  </ItemsControl.ItemContainerTheme>
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <Canvas />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <controls:KeyControl KeyId="{Binding KeyId}"
+                                           Label="{Binding Label}"
+                                           Hint="{Binding Hint}"
+                                           ShowHint="{Binding HasHint}"
+                                           IsSelected="{Binding IsSelected}"
+                                           IsUnmapped="{Binding IsUnmapped}"
+                                           HasError="{Binding HasError}"
+                                           SelectCommand="{Binding SelectCommand}"
+                                           Width="{Binding Width}"
+                                           Height="{Binding Height}" />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </Viewbox>
+            </Border>
+          </Grid>
+        </Border>
+
+        <Border Grid.Row="1" Classes="card">
+          <Grid RowDefinitions="Auto,*" RowSpacing="6">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Classes="section-title" Text="Diagnostics" />
+              <TextBlock Classes="muted" Text="{Binding Diagnostics.Summary}" FontSize="12" />
+            </StackPanel>
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+              <ItemsControl ItemsSource="{Binding Diagnostics.Items}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Button Command="{Binding SelectCommand}"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Stretch"
+                            Padding="8,4"
+                            Margin="0,1">
+                      <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="7">
+                        <TextBlock Text="{Binding Severity}" FontWeight="SemiBold" FontSize="12" />
+                        <TextBlock Grid.Column="1" Classes="mono" Text="{Binding Code}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2"
+                                   Text="{Binding Message}"
+                                   TextWrapping="Wrap"
+                                   FontSize="12" />
+                        <TextBlock Grid.Column="3"
+                                   Classes="muted"
+                                   Text="{Binding KeyAssociation}"
+                                   FontSize="11" />
+                      </Grid>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </Grid>
         </Border>
       </Grid>
-    </Border>
 
-    <ScrollViewer Grid.Row="2" Grid.Column="1" VerticalScrollBarVisibility="Auto">
-    <StackPanel Spacing="12">
-      <Border Padding="16" BorderThickness="1" BorderBrush="#707070" CornerRadius="6">
+      <ScrollViewer Grid.Row="1" Grid.Column="1" VerticalScrollBarVisibility="Auto" Padding="0,0,4,0">
         <StackPanel Spacing="8">
-          <TextBlock Text="Selected key" FontSize="18" FontWeight="SemiBold" />
-          <TextBlock Text="{Binding Editor.SelectedKey.KeyId}" />
-          <TextBlock Text="{Binding Editor.SelectedKey.ScanCode}" Opacity="0.7" />
-          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-            <TextBlock Text="Logical key" />
-            <ComboBox Grid.Column="1"
-                      ItemsSource="{Binding Editor.LogicalKeys}"
-                      SelectedItem="{Binding Editor.SelectedLogicalKey}" />
-          </Grid>
-          <TextBlock Text="Layer outputs" Margin="0,8,0,0" FontWeight="SemiBold" />
-          <ItemsControl ItemsSource="{Binding Editor.LayerMappings}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate>
-                <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="110,*,Auto" ColumnSpacing="8" Margin="0,2">
-                  <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
-                  <TextBox Grid.Column="1"
-                           Text="{Binding Output, Mode=TwoWay}"
-                           PlaceholderText="No output" />
-                  <Button Grid.Column="2"
-                          Content="Clear"
-                          Command="{Binding ClearCommand}" />
-                  <TextBlock Grid.Row="1"
-                             Grid.Column="1"
-                             Text="{Binding ValidationMessage}"
-                             Foreground="#D32F2F"
-                             FontSize="11"
-                             TextWrapping="Wrap"
-                             IsVisible="{Binding HasValidationError}" />
-                </Grid>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
-            <Button Content="Clear all outputs" Command="{Binding Editor.ClearAllOutputsCommand}" />
-            <Button Content="Unmap logical key" Command="{Binding Editor.UnmapLogicalKeyCommand}" />
-          </StackPanel>
-        </StackPanel>
-      </Border>
-
-      <Border Padding="16" BorderThickness="1" BorderBrush="#707070" CornerRadius="6">
-        <Grid RowDefinitions="Auto,*" RowSpacing="8">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <TextBlock Text="Diagnostics" FontSize="18" FontWeight="SemiBold" />
-            <TextBlock Text="{Binding Diagnostics.Summary}"
-                       VerticalAlignment="Center"
-                       Opacity="0.7" />
-          </StackPanel>
-          <ScrollViewer Grid.Row="1" MaxHeight="190" VerticalScrollBarVisibility="Auto">
-            <ItemsControl ItemsSource="{Binding Diagnostics.Items}">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                  <Button Command="{Binding SelectCommand}"
-                          HorizontalContentAlignment="Stretch"
-                          Padding="8"
-                          Margin="0,2">
-                    <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*" ColumnSpacing="8">
-                      <TextBlock Text="{Binding Severity}" FontWeight="SemiBold" />
-                      <TextBlock Grid.Column="1" Text="{Binding Code}" FontFamily="monospace" />
+          <Border Classes="card">
+            <StackPanel Spacing="5">
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="7">
+                <TextBlock Classes="section-title" Text="Selected key" />
+                <TextBlock Grid.Column="1"
+                           Text="{Binding Editor.SelectedKey.KeyId}"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Right" />
+                <TextBlock Grid.Column="2"
+                           Classes="muted mono"
+                           Text="{Binding Editor.SelectedKey.ScanCode}" />
+              </Grid>
+              <Grid ColumnDefinitions="96,*" ColumnSpacing="6">
+                <TextBlock Classes="field-label" Text="Logical key" />
+                <ComboBox Grid.Column="1"
+                          HorizontalAlignment="Stretch"
+                          ItemsSource="{Binding Editor.LogicalKeys}"
+                          SelectedItem="{Binding Editor.SelectedLogicalKey}" />
+              </Grid>
+              <TextBlock Text="Layer outputs" Margin="0,3,0,0" FontWeight="SemiBold" FontSize="12" />
+              <ItemsControl ItemsSource="{Binding Editor.LayerMappings}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="96,*,Auto" ColumnSpacing="6" Margin="0,1">
+                      <TextBlock Classes="field-label" Text="{Binding Label}" />
+                      <TextBox Grid.Column="1"
+                               Text="{Binding Output, Mode=TwoWay}"
+                               PlaceholderText="No output" />
+                      <Button Grid.Column="2"
+                              Content="Clear"
+                              Command="{Binding ClearCommand}" />
                       <TextBlock Grid.Row="1"
-                                 Grid.ColumnSpan="2"
-                                 Text="{Binding Message}"
-                                 TextWrapping="Wrap" />
-                      <TextBlock Grid.Row="2"
-                                 Grid.ColumnSpan="2"
-                                 Text="{Binding KeyAssociation}"
-                                 Opacity="0.7" />
+                                 Grid.Column="1"
+                                 Text="{Binding ValidationMessage}"
+                                 Foreground="{DynamicResource DangerForegroundBrush}"
+                                 FontSize="11"
+                                 TextWrapping="Wrap"
+                                 IsVisible="{Binding HasValidationError}" />
                     </Grid>
-                  </Button>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </ScrollViewer>
-        </Grid>
-      </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,3,0,0">
+                <Button Content="Clear all outputs" Command="{Binding Editor.ClearAllOutputsCommand}" />
+                <Button Content="Unmap logical key" Command="{Binding Editor.UnmapLogicalKeyCommand}" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
 
-      <Border Padding="16" BorderThickness="1" BorderBrush="#707070" CornerRadius="6">
-        <StackPanel Spacing="8">
-          <TextBlock Text="Build" FontSize="18" FontWeight="SemiBold" />
-          <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="8">
-            <TextBlock Text="Target" VerticalAlignment="Center" />
-            <ComboBox Grid.Column="1"
-                      ItemsSource="{Binding Build.Targets}"
-                      SelectedItem="{Binding Build.SelectedTarget}">
-              <ComboBox.ItemTemplate>
-                <DataTemplate>
-                  <TextBlock Text="{Binding DisplayName}" />
-                </DataTemplate>
-              </ComboBox.ItemTemplate>
-            </ComboBox>
-            <TextBlock Grid.Row="1" Text="Tool availability" />
-            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Build.EnvironmentStatus}" TextWrapping="Wrap" />
-            <TextBlock Grid.Row="2" Text="Validation" />
-            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Build.ValidationStatus}" TextWrapping="Wrap" />
-            <TextBlock Grid.Row="3" Text="Output directory" VerticalAlignment="Center" />
-            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Build.OutputDirectory, Mode=TwoWay}" />
-            <TextBlock Grid.Row="4" Text="Profile" FontWeight="SemiBold" Margin="0,4,0,0" />
-            <ItemsControl Grid.Row="4" Grid.Column="1" ItemsSource="{Binding Build.ProfileSettings}">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                  <Grid ColumnDefinitions="100,*" ColumnSpacing="8" Margin="0,2">
-                    <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
-                    <TextBox Grid.Column="1" Text="{Binding Value, Mode=TwoWay}" />
-                  </Grid>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </Grid>
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Content="Build" Command="{Binding Build.BuildCommand}" />
-            <Button Content="Cancel" Command="{Binding Build.CancelBuildCommand}" />
-            <TextBlock Text="{Binding Build.Status}" VerticalAlignment="Center" TextWrapping="Wrap" />
-          </StackPanel>
-          <ItemsControl ItemsSource="{Binding Build.Stages}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate>
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,2">
-                  <TextBlock Text="{Binding Name}" />
-                  <TextBlock Grid.Column="1" Text="{Binding State}" FontWeight="SemiBold" />
-                </Grid>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-          <ItemsControl ItemsSource="{Binding Build.Problems}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate>
-                <Border Padding="8"
-                        Margin="0,2"
-                        BorderThickness="1"
-                        BorderBrush="#A06060"
-                        CornerRadius="4">
-                  <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                    <TextBlock Text="{Binding Category}" FontWeight="SemiBold" />
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-                      <TextBlock Text="{Binding Severity}" />
-                      <TextBlock Text="{Binding Code}" FontFamily="monospace" />
-                    </StackPanel>
-                    <TextBlock Grid.Row="1"
-                               Grid.ColumnSpan="2"
-                               Text="{Binding Message}"
-                               TextWrapping="Wrap" />
-                  </Grid>
-                </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-          <TextBlock Text="{Binding Build.ArtifactPath}"
-                     FontFamily="monospace"
-                     TextWrapping="Wrap"
-                     IsVisible="{Binding Build.HasArtifact}" />
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-            <ComboBox ItemsSource="{Binding Build.GeneratedFiles}"
-                      SelectedItem="{Binding Build.SelectedGeneratedFile}"
-                      PlaceholderText="Generated source">
-              <ComboBox.ItemTemplate>
-                <DataTemplate>
-                  <TextBlock Text="{Binding Name}" />
-                </DataTemplate>
-              </ComboBox.ItemTemplate>
-            </ComboBox>
-            <Button Grid.Column="1"
-                    Content="Inspect"
-                    Command="{Binding Build.InspectGeneratedFileCommand}" />
-          </Grid>
-          <WrapPanel Orientation="Horizontal">
-            <Button Content="Open output"
-                    Margin="0,0,8,0"
-                    Command="{Binding Build.OpenOutputDirectoryCommand}" />
-            <Button Content="Copy build log"
-                    Margin="0,0,8,0"
-                    Command="{Binding Build.CopyBuildLogCommand}" />
-            <Button Content="Copy artifact path"
-                    Command="{Binding Build.CopyArtifactPathCommand}" />
-          </WrapPanel>
-          <TextBlock Text="{Binding Build.ActionStatus}" Opacity="0.7" />
+          <Border Classes="card">
+            <StackPanel Spacing="6">
+              <TextBlock Classes="section-title" Text="Build" />
+              <Grid ColumnDefinitions="96,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="6" RowSpacing="5">
+                <TextBlock Classes="field-label" Text="Target" />
+                <ComboBox Grid.Column="1"
+                          HorizontalAlignment="Stretch"
+                          ItemsSource="{Binding Build.Targets}"
+                          SelectedItem="{Binding Build.SelectedTarget}">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="{Binding DisplayName}" />
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+                <TextBlock Grid.Row="1" Classes="field-label" Text="Tools" VerticalAlignment="Top" />
+                <TextBlock Grid.Row="1"
+                           Grid.Column="1"
+                           Text="{Binding Build.EnvironmentStatus}"
+                           TextWrapping="Wrap"
+                           FontSize="12" />
+                <TextBlock Grid.Row="2" Classes="field-label" Text="Validation" VerticalAlignment="Top" />
+                <TextBlock Grid.Row="2"
+                           Grid.Column="1"
+                           Text="{Binding Build.ValidationStatus}"
+                           TextWrapping="Wrap"
+                           FontSize="12" />
+                <TextBlock Grid.Row="3" Classes="field-label" Text="Output" />
+                <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Build.OutputDirectory, Mode=TwoWay}" />
+                <TextBlock Grid.Row="4" Classes="field-label" Text="Profile" VerticalAlignment="Top" Margin="0,3,0,0" />
+                <ItemsControl Grid.Row="4" Grid.Column="1" ItemsSource="{Binding Build.ProfileSettings}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Grid ColumnDefinitions="88,*" ColumnSpacing="6" Margin="0,1">
+                        <TextBlock Classes="field-label" Text="{Binding Label}" FontSize="12" />
+                        <TextBox Grid.Column="1" Text="{Binding Value, Mode=TwoWay}" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </Grid>
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Button Content="Build" Command="{Binding Build.BuildCommand}" />
+                <Button Content="Cancel" Command="{Binding Build.CancelBuildCommand}" />
+                <TextBlock Classes="muted" Text="{Binding Build.Status}" TextWrapping="Wrap" FontSize="12" />
+              </StackPanel>
+              <ItemsControl ItemsSource="{Binding Build.Stages}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6" Margin="0,1">
+                      <TextBlock Text="{Binding Name}" FontSize="12" />
+                      <TextBlock Grid.Column="1" Text="{Binding State}" FontWeight="SemiBold" FontSize="12" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <ItemsControl ItemsSource="{Binding Build.Problems}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Border Padding="8,6"
+                            Margin="0,1"
+                            BorderThickness="1"
+                            BorderBrush="{DynamicResource DangerForegroundBrush}"
+                            CornerRadius="5">
+                      <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                        <TextBlock Text="{Binding Category}" FontWeight="SemiBold" FontSize="12" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5">
+                          <TextBlock Text="{Binding Severity}" FontSize="12" />
+                          <TextBlock Classes="mono" Text="{Binding Code}" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock Grid.Row="1"
+                                   Grid.ColumnSpan="2"
+                                   Text="{Binding Message}"
+                                   TextWrapping="Wrap"
+                                   FontSize="12" />
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Classes="mono"
+                         Text="{Binding Build.ArtifactPath}"
+                         TextWrapping="Wrap"
+                         IsVisible="{Binding Build.HasArtifact}" />
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                <ComboBox HorizontalAlignment="Stretch"
+                          ItemsSource="{Binding Build.GeneratedFiles}"
+                          SelectedItem="{Binding Build.SelectedGeneratedFile}"
+                          PlaceholderText="Generated source">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="{Binding Name}" />
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+                <Button Grid.Column="1"
+                        Content="Inspect"
+                        Command="{Binding Build.InspectGeneratedFileCommand}" />
+              </Grid>
+              <WrapPanel Orientation="Horizontal">
+                <Button Content="Open output"
+                        Margin="0,0,6,3"
+                        Command="{Binding Build.OpenOutputDirectoryCommand}" />
+                <Button Content="Copy build log"
+                        Margin="0,0,6,3"
+                        Command="{Binding Build.CopyBuildLogCommand}" />
+                <Button Content="Copy artifact path"
+                        Margin="0,0,0,3"
+                        Command="{Binding Build.CopyArtifactPathCommand}" />
+              </WrapPanel>
+              <TextBlock Classes="muted"
+                         Text="{Binding Build.ActionStatus}"
+                         TextWrapping="Wrap"
+                         FontSize="12" />
+            </StackPanel>
+          </Border>
         </StackPanel>
-      </Border>
-    </StackPanel>
-    </ScrollViewer>
-  </Grid>
+      </ScrollViewer>
+    </Grid>
+  </DockPanel>
 </Window>
