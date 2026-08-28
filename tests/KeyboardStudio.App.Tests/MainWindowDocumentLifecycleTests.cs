@@ -131,6 +131,67 @@ public sealed class MainWindowDocumentLifecycleTests
         }
     }
 
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task OpenCommand_WhenDocumentCarriesAHiddenTargetProfile_PreservesItAcrossASave()
+    {
+        // The shipped policy hides the Windows target on Linux. A document authored on a
+        // Windows-enabled build must still round-trip unedited through this session.
+        var sourcePath = CreateTemporaryPath();
+        var resavedPath = CreateTemporaryPath();
+        try
+        {
+            var authoredWindowsProfile = new ProjectTargetProfile(
+                BuildProfileTargetIds.WindowsX64,
+                new Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    [BuildProfileKeys.LayoutId] = "authored-on-windows",
+                    [BuildProfileKeys.LayoutName] = "Authored layout",
+                    [BuildProfileKeys.FileVersion] = "2.0.0.0",
+                    [BuildProfileKeys.CompanyName] = "Contoso"
+                });
+            var profiles = BuildViewModel.CreateDefaultTargetProfiles().ToDictionary(
+                entry => entry.Key,
+                entry => entry.Value,
+                StringComparer.Ordinal);
+            profiles[BuildProfileTargetIds.WindowsX64] = authoredWindowsProfile;
+            var store = new JsonKeyboardProjectDocumentStore();
+            await using (var stream = File.Create(sourcePath))
+            {
+                await store.SaveAsync(
+                    new KeyboardProjectDocument(new MainWindowViewModel().Project, profiles),
+                    stream);
+            }
+
+            var interaction = new TestProjectInteractionService
+            {
+                OpenPath = sourcePath,
+                SavePath = resavedPath,
+                ReplacementChoice = ProjectReplacementChoice.Discard
+            };
+            var viewModel = new MainWindowViewModel(interaction);
+            await viewModel.OpenCommand.ExecuteAsync(null);
+
+            Assert.False(viewModel.Build.IsTargetSelectorVisible);
+            Assert.Equal(
+                authoredWindowsProfile.Settings,
+                viewModel.Build.ExportTargetProfiles()[BuildProfileTargetIds.WindowsX64].Settings);
+
+            await viewModel.SaveAsCommand.ExecuteAsync(null);
+
+            await using var resaved = File.OpenRead(resavedPath);
+            var document = await store.LoadAsync(resaved);
+            Assert.Equal(
+                authoredWindowsProfile.Settings,
+                document.TargetProfiles[BuildProfileTargetIds.WindowsX64].Settings);
+        }
+        finally
+        {
+            DeleteIfExists(sourcePath);
+            DeleteIfExists(resavedPath);
+        }
+    }
+
     private static string CreateTemporaryPath() =>
         Path.Combine(Path.GetTempPath(), $"KeyboardStudio-{Guid.NewGuid():N}.kbdproj");
 

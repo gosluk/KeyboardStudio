@@ -1493,6 +1493,12 @@ KeyboardStudio.App/Services/
 target is visible the selector is not rendered and the target name moves to a badge on the Build
 card. `KEYBOARDSTUDIO_TARGETS=all` restores both.
 
+`EnvironmentBuildTargetVisibilityPolicy` has a second constructor taking the override value directly,
+so tests never mutate the process environment that xUnit shares across parallel collections.
+`MainWindowViewModel` gained a constructor overload that accepts the policy; the shorter overloads
+supply the environment-backed one. A policy that hid every target would leave a Build card with
+nothing to build, so `BuildViewModel` falls back to the full list in that case.
+
 Nothing is deleted. `KeyboardStudio.Windows` stays referenced and registered, `BuildTarget.WindowsX64`
 stays in the enum, the `windowsX64` profile stays populated and persisted, and Windows CI is
 untouched. Hidden profiles are still exported and reapplied by `ExportTargetProfiles` /

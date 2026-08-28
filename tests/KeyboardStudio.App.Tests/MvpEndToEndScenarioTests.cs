@@ -19,7 +19,10 @@ public sealed class MvpEndToEndScenarioTests
         try
         {
             var saveInteraction = new ScenarioInteractionService { SavePath = projectPath };
-            var source = new MainWindowViewModel(saveInteraction);
+
+            // This scenario edits both target profiles, so it runs with the developer override that
+            // reveals the Windows target. The shipped Linux-only policy is covered separately.
+            var source = TestMainWindow.WithAllBuildTargets(saveInteraction);
             Assert.Equal("iso-105", source.SelectedTemplate.Id);
             Assert.True(source.Editor.SelectKey("KeyA"));
             source.Editor.SelectedLogicalKey = LogicalKey.A;
@@ -41,7 +44,7 @@ public sealed class MvpEndToEndScenarioTests
             Assert.False(source.IsDirty);
 
             var openInteraction = new ScenarioInteractionService { OpenPath = projectPath };
-            var reopened = new MainWindowViewModel(openInteraction);
+            var reopened = TestMainWindow.WithAllBuildTargets(openInteraction);
             await reopened.OpenCommand.ExecuteAsync(null);
 
             Assert.Equal("iso-105", reopened.Project.Keyboard.Id);

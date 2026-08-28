@@ -56,11 +56,27 @@ public sealed class MainWindowViewModel : ObservableObject
         IProjectInteractionService interactionService,
         IKeyboardProjectValidator validator,
         ISeedProjectSource seedProjectSource)
+        : this(
+            templateProvider,
+            interactionService,
+            validator,
+            seedProjectSource,
+            new EnvironmentBuildTargetVisibilityPolicy())
+    {
+    }
+
+    public MainWindowViewModel(
+        IKeyboardTemplateProvider templateProvider,
+        IProjectInteractionService interactionService,
+        IKeyboardProjectValidator validator,
+        ISeedProjectSource seedProjectSource,
+        IBuildTargetVisibilityPolicy buildTargetVisibility)
     {
         ArgumentNullException.ThrowIfNull(templateProvider);
         ArgumentNullException.ThrowIfNull(interactionService);
         ArgumentNullException.ThrowIfNull(validator);
         ArgumentNullException.ThrowIfNull(seedProjectSource);
+        ArgumentNullException.ThrowIfNull(buildTargetVisibility);
 
         _templateProvider = templateProvider;
         _interactionService = interactionService;
@@ -83,7 +99,8 @@ public sealed class MainWindowViewModel : ObservableObject
             new TargetBuildService(),
             interactionService as IBuildInteractionService,
             _documentService.CurrentTargetProfiles,
-            BuildProfileChanged);
+            BuildProfileChanged,
+            buildTargetVisibility);
         NewCommand = new AsyncRelayCommand(NewDocumentAsync);
         OpenCommand = new AsyncRelayCommand(OpenDocumentAsync);
         SaveCommand = new AsyncRelayCommand(SaveDocumentAsync);

@@ -108,7 +108,7 @@ from blocking XKB generation and prevents Linux tools from affecting Windows bui
 
 ### 2.6 Target visibility is a presentation policy, not a capability change
 
-*Adopted design, implemented by P13.2. Today the panel still offers both targets.*
+*Implemented by P13.2.*
 
 The editor exposes the Linux XKB target and hides the Windows target. Hiding is enforced by one
 presentation-layer policy object, `IBuildTargetVisibilityPolicy`, and nowhere else.
@@ -135,6 +135,11 @@ The rules that keep this reversible:
 Visibility must never be expressed by deleting profiles, mutating `BuildOptions`, or short-circuiting
 validation. A hidden target is a target the user cannot select, not a target the application has
 forgotten how to build.
+
+`BuildViewModel` builds a profile for every target, visible or not, so `ExportTargetProfiles` keeps
+returning both entries and hiding a target cannot silently drop its settings on the next save. A
+policy that hid every target would leave a Build card that cannot build anything, so the view model
+falls back to the full target list in that case rather than rendering dead UI.
 
 
 ---

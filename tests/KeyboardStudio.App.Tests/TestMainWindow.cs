@@ -1,9 +1,11 @@
 using KeyboardStudio.Core;
+using KeyboardStudio.Persistence;
 
 namespace KeyboardStudio.App.Tests;
 
 /// <summary>
-/// Builds view models for tests whose subject is unmapped-key behaviour.
+/// Builds view models configured away from the shipping defaults, for tests whose subject is a
+/// behaviour those defaults hide.
 /// </summary>
 internal static class TestMainWindow
 {
@@ -17,6 +19,20 @@ internal static class TestMainWindow
             interactionService ?? new SilentProjectInteractionService(),
             validator ?? CreateValidator(),
             new EmptySeedProjectSource());
+
+    /// <summary>
+    /// Creates a view model that offers every build target, as a developer build started with
+    /// <c>KEYBOARDSTUDIO_TARGETS=all</c> does. Tests that drive the Windows target through the UI
+    /// need this: the shipped policy hides it.
+    /// </summary>
+    public static MainWindowViewModel WithAllBuildTargets(
+        IProjectInteractionService interactionService) =>
+        new(new KeyboardTemplateProvider(),
+            interactionService,
+            CreateValidator(),
+            new EmbeddedSeedProjectSource(),
+            new EnvironmentBuildTargetVisibilityPolicy(
+                EnvironmentBuildTargetVisibilityPolicy.AllTargetsValue));
 
     private static KeyboardProjectValidator CreateValidator() =>
         new KeyboardProjectValidator([

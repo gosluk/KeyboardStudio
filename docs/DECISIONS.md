@@ -203,3 +203,7 @@ AD-016 single-target dispatch still resolves whichever target it is given — th
 for the hidden one. `KEYBOARDSTUDIO_TARGETS=all` restores the full selector for development and for
 tests. Visibility is never expressed by deleting profiles, mutating `BuildOptions`, or skipping
 validation, so the Windows path cannot rot while it is hidden.
+
+The policy filters the target list only. Profiles are still constructed for every target, so
+`ExportTargetProfiles` keeps returning both entries whatever is on screen, and a policy that hid
+everything falls back to the full list rather than producing a Build card with nothing to build.

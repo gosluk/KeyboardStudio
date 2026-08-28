@@ -21,4 +21,10 @@ The main editor loads ISO-105 and ANSI-104 through `IKeyboardTemplateProvider`. 
 
 `DiagnosticsViewModel` presents the composed Core and Windows compatibility results ordered by severity. Key-associated error diagnostics drive `KeyControl` highlighting, and their commands navigate selection to the affected key. Successful mapping mutations rerun only the lightweight in-memory validation rules; native generation and compilation remain outside the edit path.
 
+`IBuildTargetVisibilityPolicy` decides which build targets `BuildViewModel` offers, and is the only
+place that decision is made. The shipped `EnvironmentBuildTargetVisibilityPolicy` offers Linux XKB
+alone unless `KEYBOARDSTUDIO_TARGETS=all` is set. Hiding is presentation-only: every target keeps its
+profile, `ExportTargetProfiles` keeps returning all of them, and the build orchestration below this
+layer is unchanged.
+
 Must not contain Windows keyboard-table generation logic.

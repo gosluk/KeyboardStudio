@@ -34,17 +34,27 @@ public sealed class BuildViewModel : ObservableObject
         ITargetBuildService buildService,
         IBuildInteractionService? interactionService = null,
         IReadOnlyDictionary<string, ProjectTargetProfile>? targetProfiles = null,
-        Action? profileChanged = null)
+        Action? profileChanged = null,
+        IBuildTargetVisibilityPolicy? visibilityPolicy = null)
     {
         _projectProvider = projectProvider ?? throw new ArgumentNullException(nameof(projectProvider));
         _buildService = buildService ?? throw new ArgumentNullException(nameof(buildService));
         _interactionService = interactionService ?? new NoOpBuildInteractionService();
         _profileChanged = profileChanged;
-        Targets =
+        BuildTargetOptionViewModel[] allTargets =
         [
             new(BuildTarget.WindowsX64, "Windows x64"),
             new(BuildTarget.LinuxXkb, "Linux XKB")
         ];
+        var policy = visibilityPolicy ?? new EnvironmentBuildTargetVisibilityPolicy();
+        var visibleTargets = Array.FindAll(allTargets, option => policy.IsVisible(option.Target));
+
+        // A policy that hides everything would leave a Build card that cannot build anything.
+        // Fall back to the full list rather than presenting dead UI.
+        Targets = visibleTargets.Length > 0 ? visibleTargets : allTargets;
+
+        // Profiles are built for every target, visible or not: a hidden target keeps its settings so
+        // ExportTargetProfiles still round-trips a document authored on a Windows-enabled build.
         _profiles = CreateProfiles();
         _selectedTarget = Targets[0];
         _profileSettings = _profiles[_selectedTarget.Target];
@@ -74,6 +84,12 @@ public sealed class BuildViewModel : ObservableObject
     }
 
     public IReadOnlyList<BuildTargetOptionViewModel> Targets { get; }
+
+    /// <summary>
+    /// Whether the Build card renders a target selector. With a single visible target there is
+    /// nothing to choose, so the view shows the target name as a badge instead.
+    /// </summary>
+    public bool IsTargetSelectorVisible => Targets.Count > 1;
 
     public BuildTargetOptionViewModel SelectedTarget
     {
