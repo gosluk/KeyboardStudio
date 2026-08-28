@@ -7,6 +7,7 @@
           <SolidColorBrush x:Key="AppSurfaceBrush" Color="#F2F3F5" />
           <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FFFFFF" />
           <SolidColorBrush x:Key="CardBorderBrush" Color="#DEE1E6" />
+          <SolidColorBrush x:Key="BadgeBackgroundBrush" Color="#EDEFF2" />
           <SolidColorBrush x:Key="HeadingForegroundBrush" Color="#1F2328" />
           <SolidColorBrush x:Key="MutedForegroundBrush" Color="#6B7280" />
           <SolidColorBrush x:Key="DangerForegroundBrush" Color="#C62828" />
@@ -29,6 +30,7 @@
           <SolidColorBrush x:Key="AppSurfaceBrush" Color="#1B1D21" />
           <SolidColorBrush x:Key="CardBackgroundBrush" Color="#24272C" />
           <SolidColorBrush x:Key="CardBorderBrush" Color="#383C43" />
+          <SolidColorBrush x:Key="BadgeBackgroundBrush" Color="#31353B" />
           <SolidColorBrush x:Key="HeadingForegroundBrush" Color="#F0F2F5" />
           <SolidColorBrush x:Key="MutedForegroundBrush" Color="#9AA1AB" />
           <SolidColorBrush x:Key="DangerForegroundBrush" Color="#FF7B7B" />

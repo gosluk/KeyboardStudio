@@ -43,33 +43,52 @@
       <Grid Grid.Row="1" Grid.Column="0" RowDefinitions="Auto,*" RowSpacing="8">
         <Border Classes="card" VerticalAlignment="Top">
           <Grid RowDefinitions="Auto,Auto" RowSpacing="8">
-            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" ColumnSpacing="6">
-              <TextBlock Classes="section-title" Text="Keyboard" />
-              <TextBlock Grid.Column="2" Classes="field-label" Text="Layer" />
-              <ComboBox Grid.Column="3"
-                        ItemsSource="{Binding Editor.Layers}"
-                        SelectedItem="{Binding Editor.ActiveLayerOption}"
-                        Width="140">
-                <ComboBox.ItemTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding Label}" />
-                  </DataTemplate>
-                </ComboBox.ItemTemplate>
-              </ComboBox>
-              <TextBlock Grid.Column="4"
-                         Classes="field-label"
-                         Text="Template for new project"
-                         Margin="8,0,0,0" />
-              <ComboBox Grid.Column="5"
-                        ItemsSource="{Binding Templates}"
-                        SelectedItem="{Binding SelectedTemplate}"
-                        Width="150">
-                <ComboBox.ItemTemplate>
-                  <DataTemplate>
-                    <TextBlock Text="{Binding Name}" />
-                  </DataTemplate>
-                </ComboBox.ItemTemplate>
-              </ComboBox>
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+              <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <TextBlock Classes="section-title" Text="Keyboard" />
+                <Border VerticalAlignment="Center"
+                        Padding="7,1"
+                        CornerRadius="9"
+                        Background="{DynamicResource BadgeBackgroundBrush}">
+                  <TextBlock Text="{Binding Editor.TemplateName}"
+                             FontSize="11"
+                             Foreground="{DynamicResource MutedForegroundBrush}" />
+                </Border>
+              </StackPanel>
+
+              <!-- Wraps to a second line instead of clipping once the window is narrow. -->
+              <WrapPanel Grid.Column="1" HorizontalAlignment="Right">
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,14,2">
+                  <TextBlock Classes="field-label" Text="Layer" />
+                  <ComboBox ItemsSource="{Binding Editor.Layers}"
+                            SelectedItem="{Binding Editor.ActiveLayerOption}"
+                            Width="130">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate>
+                        <TextBlock Text="{Binding Label}" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                  <TextBlock Classes="muted"
+                             Text="{Binding Editor.LayerSummary}"
+                             FontSize="12" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,2">
+                  <TextBlock Classes="field-label" Text="New from" />
+                  <ComboBox ItemsSource="{Binding Templates}"
+                            SelectedItem="{Binding SelectedTemplate}"
+                            Width="140">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate>
+                        <TextBlock Text="{Binding Name}" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                  <Button Content="Create"
+                          Command="{Binding NewCommand}"
+                          ToolTip.Tip="Replace the current project with a new one built from the selected template" />
+                </StackPanel>
+              </WrapPanel>
             </Grid>
 
             <Border Grid.Row="1"

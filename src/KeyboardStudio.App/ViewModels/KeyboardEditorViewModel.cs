@@ -33,7 +33,13 @@ public sealed class KeyboardEditorViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(template);
 
         _editor = editor;
-        _documentChanged = documentChanged ?? (() => { });
+        var notifyDocumentChanged = documentChanged ?? (() => { });
+        _documentChanged = () =>
+        {
+            notifyDocumentChanged();
+            OnPropertyChanged(nameof(LayerSummary));
+        };
+        TemplateName = template.Name;
         Layers = ModifierLayers;
         LogicalKeys = EditableLogicalKeys;
         Keys = new ObservableCollection<KeyViewModel>(
@@ -55,6 +61,7 @@ public sealed class KeyboardEditorViewModel : ObservableObject
     }
 
     public ObservableCollection<KeyViewModel> Keys { get; }
+    public string TemplateName { get; }
     public IReadOnlyList<ModifierLayerOptionViewModel> Layers { get; }
     public IReadOnlyList<LogicalKey> LogicalKeys { get; }
     public double KeyboardWidth { get; }
@@ -98,6 +105,7 @@ public sealed class KeyboardEditorViewModel : ObservableObject
                 RefreshLabels();
                 OnPropertyChanged(nameof(ActiveLayerOption));
                 OnPropertyChanged(nameof(SelectedOutput));
+                OnPropertyChanged(nameof(LayerSummary));
             }
         }
     }
@@ -109,6 +117,19 @@ public sealed class KeyboardEditorViewModel : ObservableObject
         {
             ArgumentNullException.ThrowIfNull(value);
             ActiveLayer = value.Value;
+        }
+    }
+
+    /// <summary>
+    /// Human readable count of the keys that produce output on the active layer, so that
+    /// switching layers gives visible feedback even while most keys are still unmapped.
+    /// </summary>
+    public string LayerSummary
+    {
+        get
+        {
+            var mapped = Keys.Count(key => HasOutput(key.KeyId, ActiveLayer));
+            return $"{mapped} of {Keys.Count} keys mapped";
         }
     }
 
@@ -278,6 +299,11 @@ public sealed class KeyboardEditorViewModel : ObservableObject
     {
         SelectedLogicalKey = LogicalKey.None;
     }
+
+    private bool HasOutput(string keyId, ModifierLayer layer) =>
+        _editor.Project.Layout.Find(keyId) is { } mapping &&
+        mapping.Outputs.TryGetValue(layer, out var output) &&
+        output is not NoOutput;
 
     private void RefreshLabels()
     {

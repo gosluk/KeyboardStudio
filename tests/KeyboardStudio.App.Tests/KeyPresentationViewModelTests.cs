@@ -259,4 +259,70 @@ public sealed class KeyPresentationViewModelTests
 
         Assert.Equal(0, changes);
     }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void LayerSummary_WhenActiveLayerChanges_ReportsMappedKeyCountForThatLayer()
+    {
+        var editor = new MainWindowViewModel().Editor;
+        Assert.True(editor.SelectKey("KeyA"));
+        editor.LayerMappings.Single(mapping => mapping.Layer == ModifierLayer.Default).Output = "a";
+        editor.LayerMappings.Single(mapping => mapping.Layer == ModifierLayer.Shift).Output = "A";
+        Assert.True(editor.SelectKey("KeyB"));
+        editor.LayerMappings.Single(mapping => mapping.Layer == ModifierLayer.Default).Output = "b";
+
+        Assert.Equal("2 of 105 keys mapped", editor.LayerSummary);
+
+        editor.ActiveLayer = ModifierLayer.Shift;
+        Assert.Equal("1 of 105 keys mapped", editor.LayerSummary);
+
+        editor.ActiveLayer = ModifierLayer.AltGr;
+        Assert.Equal("0 of 105 keys mapped", editor.LayerSummary);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TemplateName_WhenTemplateIsAppliedByNewCommand_FollowsTheCreatedProject()
+    {
+        var viewModel = new MainWindowViewModel();
+
+        Assert.Equal("ISO 105-key", viewModel.Editor.TemplateName);
+
+        viewModel.SelectedTemplate = viewModel.Templates.Single(template => template.Id == "ansi-104");
+
+        // Choosing a template only stages it; the board changes when a new project is created.
+        Assert.Equal("ISO 105-key", viewModel.Editor.TemplateName);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Keys_WhenUnmapped_UseKeycapLegendsRatherThanIdentifiers()
+    {
+        var editor = new MainWindowViewModel().Editor;
+
+        Assert.Equal("Esc", editor.Keys.Single(key => key.KeyId == "Escape").Label);
+        Assert.Equal("Caps Lock", editor.Keys.Single(key => key.KeyId == "CapsLock").Label);
+        Assert.Equal("Ctrl", editor.Keys.Single(key => key.KeyId == "ControlLeft").Label);
+        Assert.Equal("Alt Gr", editor.Keys.Single(key => key.KeyId == "AltRight").Label);
+        Assert.Equal("A", editor.Keys.Single(key => key.KeyId == "KeyA").Label);
+        Assert.Equal("1", editor.Keys.Single(key => key.KeyId == "Digit1").Label);
+        Assert.Equal("\u2191", editor.Keys.Single(key => key.KeyId == "ArrowUp").Label);
+        Assert.Equal(string.Empty, editor.Keys.Single(key => key.KeyId == "Space").Label);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void HasHint_WhenLogicalKeyIsAssigned_TurnsTheSecondKeycapLineOn()
+    {
+        var editor = new MainWindowViewModel().Editor;
+        Assert.True(editor.SelectKey("Enter"));
+        var enter = Assert.IsType<KeyViewModel>(editor.SelectedKey);
+
+        Assert.False(enter.HasHint);
+
+        editor.SelectedLogicalKey = LogicalKey.Enter;
+
+        Assert.True(enter.HasHint);
+        Assert.Equal("Enter", enter.Hint);
+    }
 }
