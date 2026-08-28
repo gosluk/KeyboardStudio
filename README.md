@@ -38,9 +38,10 @@ generation need no native development toolchain. A Windows DLL build additionall
 MSVC toolchain and Windows 10/11 SDK. Installing `xkbcli` is optional for local Linux generation and
 adds external compilation verification; Linux CI always performs that verification.
 
-Start with the ISO-105 template, select a physical key, choose its logical key, and fill any of the
-four layer values. Use **File > Save As** for the `.kbdproj`, then select Windows x64 or Linux XKB in
-the Build panel. Target profile edits are stored in the same project document and restored when it
+A new document opens on the `us-basic` seed — a US layout on ISO-105 hardware with all 105 keys
+already mapped — rather than an empty keyboard, so there is always something to modify. Select a
+physical key, change its logical key or any of the four layer values, then use **File > Save As** for
+the `.kbdproj` and select Windows x64 or Linux XKB in the Build panel. Target profile edits are stored in the same project document and restored when it
 is reopened. Builds only generate artifacts; they never install or activate a keyboard layout.
 
 See [Windows build prerequisites](docs/WINDOWS-BUILD.md#prerequisites) and
@@ -128,6 +129,7 @@ tests/
   KeyboardStudio.App.Tests/
 
 templates/
+  seeds/
 
 docs/
   ARCHITECTURE.md
@@ -147,6 +149,7 @@ docs/
 The MVP supports:
 
 - visual ISO/ANSI keyboard representation;
+- a fully mapped seed layout in every new document;
 - physical-key selection;
 - physical key to logical-key mapping;
 - `Default`, `Shift`, `AltGr`, and `Shift+AltGr` output layers;

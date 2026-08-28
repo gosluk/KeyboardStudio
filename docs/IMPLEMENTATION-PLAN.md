@@ -1445,19 +1445,39 @@ AD-024.
 
 ### P13.1 Embedded `us-basic` seed project
 
-Add `templates/seeds/us-basic.kbdproj` as an embedded resource in `KeyboardStudio.Core`, alongside the
-existing geometry templates, and make it the content of every new document.
+Add `templates/seeds/us-basic.kbdproj` as an embedded resource and make it the content of every new
+document.
 
 ```text
 KeyboardStudio.Core/Projects/Seeds/
   ISeedProjectSource.cs
-  EmbeddedSeedProjectSource.cs
   SeedProjectId.cs
+  SeedProjectException.cs
+
+KeyboardStudio.Persistence/Seeds/
+  EmbeddedSeedProjectSource.cs
 ```
 
-The seed targets `iso-105`, covers the alphanumeric block, digits, punctuation, and the common
-special keys across `Default` and `Shift`, and validates clean. `DemoProjectFactory` is deleted; it
-exists only to populate the skeleton and the seed supersedes it.
+The seed is stored in the project file format, so the embedded source lives in
+`KeyboardStudio.Persistence` and reads it through that assembly's DTOs and mapper; Core keeps only
+the contract. `Create` is synchronous — a new document is built in a constructor, and the seed is an
+embedded resource — and returns a fresh object graph per call so documents cannot share mapping
+state.
+
+The seed targets `iso-105` and maps all 105 keys: the alphanumeric block, digits, and punctuation
+across `Default` and `Shift`, and every remaining key as a `Default`-layer special-key output. It
+follows `us(basic)` for `<BKSL>` (backslash/bar) and the `pc` default for `<LSGT>` (less/greater),
+which `us(basic)` does not define. It validates clean and translates to XKB with no diagnostics. On
+`ansi-104` the mappings whose key is absent are dropped.
+
+`scripts/generate-us-basic-seed.py` regenerates the seed from `templates/iso-105.json`; a test
+asserts the seed's geometry matches that template key-for-key.
+
+`DemoProjectFactory` is removed from `KeyboardStudio.Core` and becomes
+`tests/Shared/TestProjectFactory.cs`, compiled into all four test assemblies. It stays a small
+fixture rather than becoming the seed, so revising the seed cannot break unrelated tests. Tests whose
+subject is unmapped-key behaviour inject an empty seed source instead of relying on what a new
+document happens to contain.
 
 Ships alone. No dependency on any other item in this phase.
 

@@ -1,4 +1,5 @@
 using KeyboardStudio.Core;
+using KeyboardStudio.Testing;
 using Xunit;
 
 namespace KeyboardStudio.Core.Tests;
@@ -26,7 +27,7 @@ public sealed class ValidationRuleTests
     [Trait("Category", "Unit")]
     public void MetadataValidationRule_WhenRequiredFieldsAreEmpty_ReportsEachField()
     {
-        var source = DemoProjectFactory.Create();
+        var source = TestProjectFactory.Create();
         var project = new KeyboardProject
         {
             Metadata = new ProjectMetadata
@@ -56,7 +57,7 @@ public sealed class ValidationRuleTests
     [Trait("Category", "Unit")]
     public void PhysicalKeyboardValidationRule_WhenPhysicalIdentityIsInvalid_ReportsEachProblem()
     {
-        var project = DemoProjectFactory.Create();
+        var project = TestProjectFactory.Create();
         project.Keyboard.Keys.Add(new PhysicalKey { Id = "KeyA", ScanCode = 0x1E });
         project.Keyboard.Keys.Add(new PhysicalKey { Id = "OutOfRange", ScanCode = 0x100 });
 
@@ -74,7 +75,7 @@ public sealed class ValidationRuleTests
     [Trait("Category", "Unit")]
     public void MappingValidationRule_WhenMappingsAreInvalid_ReportsEachProblem()
     {
-        var project = DemoProjectFactory.Create();
+        var project = TestProjectFactory.Create();
         project.Layout.Mappings.Add(new KeyMapping
         {
             KeyId = "MissingKey",
@@ -107,7 +108,7 @@ public sealed class ValidationRuleTests
             new StaticValidationRule("TEST002")
         ]);
 
-        var issues = validator.Validate(DemoProjectFactory.Create()).Issues;
+        var issues = validator.Validate(TestProjectFactory.Create()).Issues;
 
         Assert.Equal(["TEST001", "TEST002"], issues.Select(issue => issue.Code));
     }
@@ -132,7 +133,7 @@ public sealed class ValidationRuleTests
     [Trait("Category", "Unit")]
     public void MetadataValidationRule_WhenDescriptionIsEmpty_ReportsInformation()
     {
-        var source = DemoProjectFactory.Create();
+        var source = TestProjectFactory.Create();
         var project = new KeyboardProject
         {
             Metadata = new ProjectMetadata
@@ -157,7 +158,7 @@ public sealed class ValidationRuleTests
     [Trait("Category", "Unit")]
     public void MappingValidationRule_WhenOutputsHaveNoLogicalKey_ReportsWarning()
     {
-        var project = DemoProjectFactory.Create();
+        var project = TestProjectFactory.Create();
         project.Layout.Find("KeyA")!.LogicalKey = LogicalKey.None;
 
         var issues = new MappingValidationRule().Validate(project);

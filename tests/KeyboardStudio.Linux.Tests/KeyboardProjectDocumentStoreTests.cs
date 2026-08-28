@@ -1,5 +1,6 @@
 using KeyboardStudio.Core;
 using KeyboardStudio.Persistence;
+using KeyboardStudio.Testing;
 using Xunit;
 
 namespace KeyboardStudio.Linux.Tests;
@@ -11,7 +12,7 @@ public sealed class KeyboardProjectDocumentStoreTests
     public async Task SaveAndLoad_PreservesWindowsAndLinuxProfiles()
     {
         var document = new KeyboardProjectDocument(
-            DemoProjectFactory.Create(),
+            TestProjectFactory.Create(),
             new Dictionary<string, ProjectTargetProfile>(StringComparer.Ordinal)
             {
                 ["windows"] = new("windows", new Dictionary<string, string>

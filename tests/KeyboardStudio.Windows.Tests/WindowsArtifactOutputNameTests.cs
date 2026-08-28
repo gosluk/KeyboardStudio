@@ -1,5 +1,6 @@
 using KeyboardStudio.Build;
 using KeyboardStudio.Core;
+using KeyboardStudio.Testing;
 using Xunit;
 
 namespace KeyboardStudio.Windows.Tests;
@@ -15,7 +16,7 @@ public sealed class WindowsArtifactOutputNameTests
             "Demo layout"));
 
         var artifact = await generator.GenerateAsync(
-            DemoProjectFactory.Create(),
+            TestProjectFactory.Create(),
             new BuildOptions(BuildTarget.WindowsX64, "out"));
 
         Assert.Equal("demo_layout_international.dll", artifact.OutputFileName);

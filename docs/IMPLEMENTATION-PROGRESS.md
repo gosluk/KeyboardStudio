@@ -5,7 +5,7 @@ This file tracks execution of [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md)
 - Current work branch: `main`
 - Last updated: 2026-08-28
 - Current phase: Phase 13 — Linux focus and layout import
-- Next work item: **P13.1 — Embedded `us-basic` seed project**
+- Next work item: **P13.2 — Target visibility policy**
 
 Legend: `[x]` complete, `[ ]` not yet complete.
 
@@ -158,7 +158,7 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 
 ## Phase 13 — Linux focus and layout import
 
-- [ ] **P13.1** Embedded `us-basic` seed project
+- [x] **P13.1** Embedded `us-basic` seed project
 - [ ] **P13.2** Target visibility policy
 - [ ] **P13.3** Core import contract
 - [ ] **P13.4** XKB data roots and registry reader
@@ -171,12 +171,12 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 - [ ] **P13.11** Host layout detection and startup import
 - [ ] **P13.12** Import test coverage
 
-**Phase status:** 0/12 work items complete. Phase not started.
+**Phase status:** 1/12 work items complete. Phase in progress.
 
 ## Progress summary
 
-- Completed work items: **82**
+- Completed work items: **83**
 - Total planned work items: **94**
-- Overall checklist progress: **82/94**
+- Overall checklist progress: **83/94**
 
 The checklist records work-item completion only. Phase-level acceptance criteria and test gates in `IMPLEMENTATION-PLAN.md` still apply before a phase is considered complete.

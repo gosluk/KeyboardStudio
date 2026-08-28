@@ -1,6 +1,7 @@
 using KeyboardStudio.App;
 using KeyboardStudio.Core;
 using KeyboardStudio.Persistence;
+using KeyboardStudio.Testing;
 using Xunit;
 
 namespace KeyboardStudio.App.Tests;
@@ -72,7 +73,7 @@ public sealed class ProjectDocumentServiceTests
         var path = CreateTemporaryPath();
         try
         {
-            var source = DemoProjectFactory.Create();
+            var source = TestProjectFactory.Create();
             await using (var stream = File.Create(path))
             {
                 await new JsonKeyboardProjectStore().SaveAsync(source, stream);
@@ -181,7 +182,7 @@ public sealed class ProjectDocumentServiceTests
         new(new JsonKeyboardProjectDocumentStore(), CreateDocument);
 
     private static KeyboardProjectDocument CreateDocument() =>
-        new(DemoProjectFactory.Create(), BuildViewModel.CreateDefaultTargetProfiles());
+        new(TestProjectFactory.Create(), BuildViewModel.CreateDefaultTargetProfiles());
 
     private static string CreateTemporaryPath() =>
         Path.Combine(Path.GetTempPath(), $"KeyboardStudio-{Guid.NewGuid():N}.kbdproj");

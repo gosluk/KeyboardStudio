@@ -1,5 +1,6 @@
 using KeyboardStudio.Core;
 using KeyboardStudio.Persistence;
+using KeyboardStudio.Testing;
 using Xunit;
 
 namespace KeyboardStudio.Core.Tests;
@@ -10,7 +11,7 @@ public sealed class KeyboardEditorTests
     [Trait("Category", "Unit")]
     public void MapCharacter_WhenAltGrCharacterIsAssigned_UpdatesSelectedLayer()
     {
-        var project = DemoProjectFactory.Create();
+        var project = TestProjectFactory.Create();
         var editor = new KeyboardEditor(project);
 
         editor.MapCharacter("KeyA", ModifierLayer.AltGr, "ą");
@@ -30,7 +31,7 @@ public sealed class KeyboardEditorTests
     [InlineData(LogicalKey.ArrowLeft)]
     public void MapLogicalKey_WhenSupportedConceptIsAssigned_UpdatesMapping(LogicalKey logicalKey)
     {
-        var project = DemoProjectFactory.Create();
+        var project = TestProjectFactory.Create();
         var editor = new KeyboardEditor(project);
 
         editor.MapLogicalKey("KeyA", logicalKey);
@@ -42,7 +43,7 @@ public sealed class KeyboardEditorTests
     [Trait("Category", "Unit")]
     public void MapCharacter_WhenSupplementaryUnicodeScalarIsAssigned_AcceptsOutput()
     {
-        var project = DemoProjectFactory.Create();
+        var project = TestProjectFactory.Create();
         var editor = new KeyboardEditor(project);
 
         editor.MapCharacter("KeyA", ModifierLayer.AltGr, "😀");
@@ -60,7 +61,7 @@ public sealed class KeyboardEditorTests
     [InlineData("\uD800")]
     public void MapCharacter_WhenValueIsNotOneUnicodeScalar_RejectsOutput(string value)
     {
-        var project = DemoProjectFactory.Create();
+        var project = TestProjectFactory.Create();
         var editor = new KeyboardEditor(project);
 
         var exception = Assert.Throws<ArgumentException>(() =>
@@ -74,7 +75,7 @@ public sealed class KeyboardEditorTests
     [Trait("Category", "Unit")]
     public void ClearMapping_WhenLayerIsMapped_RemovesOnlySelectedLayer()
     {
-        var project = DemoProjectFactory.Create();
+        var project = TestProjectFactory.Create();
         var editor = new KeyboardEditor(project);
 
         editor.ClearMapping("KeyA", ModifierLayer.Default);
@@ -88,7 +89,7 @@ public sealed class KeyboardEditorTests
     [Trait("Category", "Unit")]
     public void ClearAllOutputs_WhenKeyHasMappings_RemovesEveryLayerButKeepsLogicalKey()
     {
-        var project = DemoProjectFactory.Create();
+        var project = TestProjectFactory.Create();
         var editor = new KeyboardEditor(project);
         editor.MapCharacter("KeyA", ModifierLayer.AltGr, "ą");
 
@@ -103,7 +104,7 @@ public sealed class KeyboardEditorTests
     [Trait("Category", "Unit")]
     public void Mutations_WhenValueChanges_ReturnChangeInformation()
     {
-        var editor = new KeyboardEditor(DemoProjectFactory.Create());
+        var editor = new KeyboardEditor(TestProjectFactory.Create());
 
         Assert.True(editor.MapCharacter("KeyA", ModifierLayer.AltGr, "ą"));
         Assert.False(editor.MapCharacter("KeyA", ModifierLayer.AltGr, "ą"));
@@ -122,7 +123,7 @@ public sealed class KeyboardEditorTests
     [InlineData("ClearAll")]
     public void Mutation_WhenPhysicalKeyIdIsUnknown_RejectsOperation(string operation)
     {
-        var editor = new KeyboardEditor(DemoProjectFactory.Create());
+        var editor = new KeyboardEditor(TestProjectFactory.Create());
 
         Assert.Throws<ArgumentException>(() =>
         {
@@ -145,7 +146,7 @@ public sealed class KeyboardEditorTests
     [Trait("Category", "Unit")]
     public void Validate_WhenPhysicalKeyIdIsDuplicated_ReportsKey001Error()
     {
-        var project = DemoProjectFactory.Create();
+        var project = TestProjectFactory.Create();
         project.Keyboard.Keys.Add(new PhysicalKey
         {
             Id = "KeyA",
@@ -163,7 +164,7 @@ public sealed class KeyboardEditorTests
     [Trait("Category", "Unit")]
     public void Validate_WhenProjectVersionIsEmpty_ReportsMeta002Error()
     {
-        var source = DemoProjectFactory.Create();
+        var source = TestProjectFactory.Create();
         var project = new KeyboardProject
         {
             Metadata = new ProjectMetadata
@@ -188,7 +189,7 @@ public sealed class KeyboardEditorTests
     [Trait("Category", "Unit")]
     public void Validate_WhenLanguageIsEmpty_ReportsMeta003Error()
     {
-        var source = DemoProjectFactory.Create();
+        var source = TestProjectFactory.Create();
         var project = new KeyboardProject
         {
             Metadata = new ProjectMetadata
@@ -213,7 +214,7 @@ public sealed class KeyboardEditorTests
     [Trait("Category", "Unit")]
     public async Task SaveAndLoad_WhenCharacterOutputExists_PreservesPolymorphicOutput()
     {
-        var project = DemoProjectFactory.Create();
+        var project = TestProjectFactory.Create();
         new KeyboardEditor(project).MapCharacter("KeyA", ModifierLayer.AltGr, "ą");
         var store = new JsonKeyboardProjectStore();
         await using var stream = new MemoryStream();
@@ -231,7 +232,7 @@ public sealed class KeyboardEditorTests
     [Trait("Category", "Unit")]
     public async Task SaveAndLoad_WhenProjectMetadataExists_PreservesMetadata()
     {
-        var project = DemoProjectFactory.Create();
+        var project = TestProjectFactory.Create();
         var store = new JsonKeyboardProjectStore();
         await using var stream = new MemoryStream();
 

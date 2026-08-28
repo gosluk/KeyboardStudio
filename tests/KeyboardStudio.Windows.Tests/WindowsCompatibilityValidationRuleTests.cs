@@ -1,4 +1,5 @@
 using KeyboardStudio.Core;
+using KeyboardStudio.Testing;
 using KeyboardStudio.Windows;
 using Xunit;
 
@@ -21,7 +22,7 @@ public sealed class WindowsCompatibilityValidationRuleTests
     [Trait("Category", "ErrorPath")]
     public void Validate_WhenOutputHasNoLogicalKey_ReportsWindowsCompatibilityIssue()
     {
-        var project = DemoProjectFactory.Create();
+        var project = TestProjectFactory.Create();
         var mapping = project.Layout.Find("KeyA")!;
         mapping.LogicalKey = LogicalKey.None;
 
@@ -35,7 +36,7 @@ public sealed class WindowsCompatibilityValidationRuleTests
     [Trait("Category", "Unit")]
     public void Validate_WhenSpecialOutputHasNoLogicalKey_ReportsWindowsCompatibilityIssue()
     {
-        var project = DemoProjectFactory.Create();
+        var project = TestProjectFactory.Create();
         project.Layout.Find("KeyA")!.Outputs[ModifierLayer.Default] = new SpecialKeyOutput(LogicalKey.None);
 
         var issues = new WindowsCompatibilityValidationRule().Validate(project);
@@ -48,7 +49,7 @@ public sealed class WindowsCompatibilityValidationRuleTests
     [Trait("Category", "Unit")]
     public void Validate_WhenModifierLayerIsUnknown_ReportsWindowsCompatibilityIssue()
     {
-        var project = DemoProjectFactory.Create();
+        var project = TestProjectFactory.Create();
         project.Layout.Find("KeyA")!.Outputs[(ModifierLayer)99] = new CharacterOutput("a");
 
         var issues = new WindowsCompatibilityValidationRule().Validate(project);
@@ -61,7 +62,7 @@ public sealed class WindowsCompatibilityValidationRuleTests
     [Trait("Category", "Unit")]
     public void Validate_WhenCharacterIsOutsideBmp_ReportsUnsupportedCharacterMapping()
     {
-        var project = DemoProjectFactory.Create();
+        var project = TestProjectFactory.Create();
         project.Layout.Find("KeyA")!.Outputs[ModifierLayer.AltGr] = new CharacterOutput("😀");
 
         var issues = new WindowsCompatibilityValidationRule().Validate(project);
@@ -74,7 +75,7 @@ public sealed class WindowsCompatibilityValidationRuleTests
     [Trait("Category", "Unit")]
     public void Validate_WhenSpecialOutputChangesByLayer_ReportsUnsupportedSpecialKeyMapping()
     {
-        var project = DemoProjectFactory.Create();
+        var project = TestProjectFactory.Create();
         project.Layout.Find("KeyA")!.Outputs[ModifierLayer.Default] = new SpecialKeyOutput(LogicalKey.Enter);
 
         var issues = new WindowsCompatibilityValidationRule().Validate(project);

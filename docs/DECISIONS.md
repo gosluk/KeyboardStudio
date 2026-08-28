@@ -180,6 +180,17 @@ guarantee holds on every platform, including hosts with no XKB data. Host detect
 no process; `localectl` and `gsettings` write those same files and would add a process dependency to
 the startup path. A failed host import degrades to the seed rather than blocking the editor.
 
+The seed is stored in the project file format, so `EmbeddedSeedProjectSource` lives in
+`KeyboardStudio.Persistence` and reuses that assembly's DTOs and mapper; only the contract lives in
+Core. A seed parser inside Core would be a second implementation of the same format, free to drift
+from the one that reads user files. The seed's geometry is generated from the `iso-105` template and
+tested against it for the same reason.
+
+`DemoProjectFactory` is removed from `KeyboardStudio.Core`. It shipped a fixture in the production
+assembly; the tests that used it now compile `tests/Shared/TestProjectFactory.cs`, which is
+deliberately not the seed — a fixture that tracked the seed would make seed edits break unrelated
+tests.
+
 ## AD-024 - Target visibility is presentation-only and reversible
 
 The shipping UI exposes `LinuxXkb` and hides `WindowsX64`. Hiding is enforced solely by

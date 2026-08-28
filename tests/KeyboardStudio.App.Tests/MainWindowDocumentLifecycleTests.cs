@@ -14,7 +14,9 @@ public sealed class MainWindowDocumentLifecycleTests
         var viewModel = new MainWindowViewModel();
         Assert.True(viewModel.Editor.SelectKey("KeyA"));
 
-        viewModel.Editor.LayerMappings[0].Output = "a";
+        // The seed already maps KeyA to "a"; the edit has to change something to mark the
+        // document dirty.
+        viewModel.Editor.LayerMappings[0].Output = "z";
 
         Assert.True(viewModel.IsDirty);
         Assert.Contains("*", viewModel.WindowTitle, StringComparison.Ordinal);
@@ -30,7 +32,7 @@ public sealed class MainWindowDocumentLifecycleTests
             var interaction = new TestProjectInteractionService { SavePath = path };
             var viewModel = new MainWindowViewModel(interaction);
             Assert.True(viewModel.Editor.SelectKey("KeyA"));
-            viewModel.Editor.LayerMappings[0].Output = "a";
+            viewModel.Editor.LayerMappings[0].Output = "z";
 
             await viewModel.SaveAsCommand.ExecuteAsync(null);
 
@@ -55,7 +57,7 @@ public sealed class MainWindowDocumentLifecycleTests
         var viewModel = new MainWindowViewModel(interaction);
         var originalProject = viewModel.Project;
         Assert.True(viewModel.Editor.SelectKey("KeyA"));
-        viewModel.Editor.LayerMappings[0].Output = "a";
+        viewModel.Editor.LayerMappings[0].Output = "z";
         viewModel.SelectedTemplate = viewModel.Templates.Single(template => template.Id == "ansi-104");
 
         await viewModel.NewCommand.ExecuteAsync(null);
@@ -75,7 +77,7 @@ public sealed class MainWindowDocumentLifecycleTests
         };
         var viewModel = new MainWindowViewModel(interaction);
         Assert.True(viewModel.Editor.SelectKey("KeyA"));
-        viewModel.Editor.LayerMappings[0].Output = "a";
+        viewModel.Editor.LayerMappings[0].Output = "z";
         viewModel.SelectedTemplate = viewModel.Templates.Single(template => template.Id == "ansi-104");
 
         await viewModel.NewCommand.ExecuteAsync(null);

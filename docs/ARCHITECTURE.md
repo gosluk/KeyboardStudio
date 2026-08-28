@@ -854,9 +854,29 @@ same interface without reshaping the editor.
 
 ### 13.2 Seed project
 
-`KeyboardStudio.Core` embeds a `us-basic` seed project beside the geometry templates. It is the
-content of every new document and is host-independent, so the empty-keyboard state cannot occur on
-any platform, including hosts with no XKB data at all.
+A `us-basic` seed project is the content of every new document. It is host-independent, so the
+empty-keyboard state cannot occur on any platform, including hosts with no XKB data at all.
+
+`KeyboardStudio.Core` owns the contract — `ISeedProjectSource`, `SeedProjectId`,
+`SeedProjectException` — and `KeyboardStudio.Persistence` owns `EmbeddedSeedProjectSource`, which
+embeds `templates/seeds/us-basic.kbdproj` and reads it through the same DTOs and mapper that read a
+user's `.kbdproj`. The implementation sits in the persistence assembly rather than beside its
+contract because the seed is stored in the project file format, and 3's rule that Core must not know
+the storage format outranks keeping the two files adjacent. The alternative — a second parser in
+Core — would drift from the real one.
+
+`ISeedProjectSource.Create` is synchronous and returns a fresh object graph per call. A new document
+is created from the application's constructor, where nothing can be awaited, and the seed is an
+embedded resource with no I/O latency; returning a shared instance would leak one document's edits
+into the next, because `KeyboardLayout.Mappings` and `KeyMapping.Outputs` are mutable by design.
+
+The seed is authored against `iso-105`. On any other geometry the mappings whose physical key is
+absent are dropped, so `ansi-104` starts with 103 of its 104 keys mapped and its `Backslash` key
+blank — ANSI names that key differently from the ISO key carrying the same characters.
+
+The seed's geometry is generated from `templates/iso-105.json` by
+`scripts/generate-us-basic-seed.py`, and a test asserts the two agree key-for-key. Without that
+guard the repository would carry two copies of the same keyboard, free to disagree.
 
 ### 13.3 Linux XKB import pipeline
 

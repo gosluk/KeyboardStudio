@@ -1,7 +1,8 @@
-using System.Text;
-using System.Text.Json;
 using KeyboardStudio.Core;
 using KeyboardStudio.Persistence;
+using KeyboardStudio.Testing;
+using System.Text.Json;
+using System.Text;
 using Xunit;
 
 namespace KeyboardStudio.Core.Tests;
@@ -12,7 +13,7 @@ public sealed class ProjectPersistenceTests
     [Trait("Category", "Unit")]
     public async Task SaveAndLoad_WhenCurrentSchemaIsUsed_PreservesSchemaVersion()
     {
-        var project = DemoProjectFactory.Create();
+        var project = TestProjectFactory.Create();
         var store = new JsonKeyboardProjectStore();
         await using var stream = new MemoryStream();
 
@@ -36,7 +37,7 @@ public sealed class ProjectPersistenceTests
     [Trait("Category", "Unit")]
     public async Task SaveAndLoad_WhenAllMappedOutputKindsExist_PreservesEquivalentDomainState()
     {
-        var project = DemoProjectFactory.Create();
+        var project = TestProjectFactory.Create();
         var mapping = project.Layout.Find("KeyA")!;
         mapping.Outputs[ModifierLayer.Default] = new CharacterOutput("ą");
         mapping.Outputs[ModifierLayer.AltGr] = new SpecialKeyOutput(LogicalKey.Space);
@@ -55,7 +56,7 @@ public sealed class ProjectPersistenceTests
     [Trait("Category", "Unit")]
     public async Task SaveAsync_WhenAllOutputKindsExist_WritesStableKindEncoding()
     {
-        var project = DemoProjectFactory.Create();
+        var project = TestProjectFactory.Create();
         var mapping = project.Layout.Find("KeyA")!;
         mapping.Outputs[ModifierLayer.Default] = new CharacterOutput("ą");
         mapping.Outputs[ModifierLayer.AltGr] = new SpecialKeyOutput(LogicalKey.Space);
@@ -86,7 +87,7 @@ public sealed class ProjectPersistenceTests
     [Trait("Category", "Unit")]
     public async Task SaveAndLoad_WhenCharacterOutputIsSpace_PreservesWhitespaceCharacter()
     {
-        var project = DemoProjectFactory.Create();
+        var project = TestProjectFactory.Create();
         project.Layout.Find("KeyA")!.Outputs[ModifierLayer.Default] = new CharacterOutput(" ");
         var store = new JsonKeyboardProjectStore();
         await using var stream = new MemoryStream();
@@ -236,7 +237,7 @@ public sealed class ProjectPersistenceTests
     [Trait("Category", "Unit")]
     public async Task SaveAsync_WhenSchemaVersionIsNotCurrent_RejectsProject()
     {
-        var source = DemoProjectFactory.Create();
+        var source = TestProjectFactory.Create();
         var project = new KeyboardProject
         {
             SchemaVersion = KeyboardProjectSchema.CurrentVersion + 1,

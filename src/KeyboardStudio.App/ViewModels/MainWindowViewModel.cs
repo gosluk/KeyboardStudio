@@ -15,6 +15,7 @@ public sealed class MainWindowViewModel : ObservableObject
     private readonly IProjectInteractionService _interactionService;
     private readonly IKeyboardTemplateProvider _templateProvider;
     private readonly IKeyboardProjectValidator _validator;
+    private readonly ISeedProjectSource _seedProjectSource;
     private DiagnosticsViewModel _diagnostics;
     private KeyboardTemplateDescriptor _selectedTemplate;
     private KeyboardProject _project;
@@ -46,14 +47,25 @@ public sealed class MainWindowViewModel : ObservableObject
         IKeyboardTemplateProvider templateProvider,
         IProjectInteractionService interactionService,
         IKeyboardProjectValidator validator)
+        : this(templateProvider, interactionService, validator, new EmbeddedSeedProjectSource())
+    {
+    }
+
+    public MainWindowViewModel(
+        IKeyboardTemplateProvider templateProvider,
+        IProjectInteractionService interactionService,
+        IKeyboardProjectValidator validator,
+        ISeedProjectSource seedProjectSource)
     {
         ArgumentNullException.ThrowIfNull(templateProvider);
         ArgumentNullException.ThrowIfNull(interactionService);
         ArgumentNullException.ThrowIfNull(validator);
+        ArgumentNullException.ThrowIfNull(seedProjectSource);
 
         _templateProvider = templateProvider;
         _interactionService = interactionService;
         _validator = validator;
+        _seedProjectSource = seedProjectSource;
         Templates = templateProvider.Templates;
         _selectedTemplate = Templates.FirstOrDefault(template => template.Id == DefaultTemplateId)
             ?? Templates[0];
@@ -122,18 +134,44 @@ public sealed class MainWindowViewModel : ObservableObject
 
     public string WindowTitle => $"{Project.Metadata.Name}{(IsDirty ? " *" : string.Empty)} — KeyboardStudio";
 
-    private KeyboardProject CreateProject(KeyboardTemplateDescriptor template) => new()
+    /// <summary>
+    /// Produces the content of a new document. A new document is never empty: it starts from
+    /// the seed project, so the user has a working layout to modify rather than bare geometry.
+    /// </summary>
+    private KeyboardProject CreateProject(KeyboardTemplateDescriptor template)
     {
-        Metadata = new ProjectMetadata
+        var seed = _seedProjectSource.Create(SeedProjectId.Default);
+        if (string.Equals(seed.Keyboard.Id, template.Id, StringComparison.Ordinal))
         {
-            Name = $"{template.Name} layout",
-            Description = "Template-driven project used by the application editor.",
-            Version = "0.1.0",
-            Language = "und"
-        },
-        Keyboard = _templateProvider.Load(template.Id),
-        Layout = new KeyboardLayout()
-    };
+            return seed;
+        }
+
+        // The seed is authored against one geometry. On any other template, keep the mappings
+        // whose physical key exists there and drop the rest; a key the template does not have
+        // would otherwise fail mapping validation.
+        var keyboard = _templateProvider.Load(template.Id);
+        var availableKeyIds = keyboard.Keys
+            .Select(key => key.Id)
+            .ToHashSet(StringComparer.Ordinal);
+
+        return new KeyboardProject
+        {
+            Metadata = new ProjectMetadata
+            {
+                Name = $"{seed.Metadata.Name} ({template.Name})",
+                Description = seed.Metadata.Description,
+                Version = seed.Metadata.Version,
+                Language = seed.Metadata.Language
+            },
+            Keyboard = keyboard,
+            Layout = new KeyboardLayout
+            {
+                Mappings = seed.Layout.Mappings
+                    .Where(mapping => availableKeyIds.Contains(mapping.KeyId))
+                    .ToList()
+            }
+        };
+    }
 
     private KeyboardEditorViewModel CreateEditor(
         KeyboardProject project,

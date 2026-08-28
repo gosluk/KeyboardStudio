@@ -1,6 +1,13 @@
-namespace KeyboardStudio.Core;
+using KeyboardStudio.Core;
 
-public static class DemoProjectFactory
+namespace KeyboardStudio.Testing;
+
+/// <summary>
+/// Builds a small, fully mapped project used as a fixture across the test assemblies.
+/// This is deliberately not the shipping <c>us-basic</c> seed: tests want a stable,
+/// minimal graph that does not change when the seed's content is revised.
+/// </summary>
+public static class TestProjectFactory
 {
     private static readonly (string Key, int ScanCode, double X, double Y)[] Keys =
     [

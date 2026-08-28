@@ -1,5 +1,6 @@
 using KeyboardStudio.Build;
 using KeyboardStudio.Core;
+using KeyboardStudio.Testing;
 using Xunit;
 
 namespace KeyboardStudio.Linux.Tests;
@@ -17,10 +18,10 @@ public sealed class BuildTargetDispatchTests
             new BuildBackendResolver([windows, linux]));
 
         await orchestrator.BuildAsync(
-            DemoProjectFactory.Create(),
+            TestProjectFactory.Create(),
             new BuildOptions(BuildTarget.WindowsX64, "out"));
         await orchestrator.BuildAsync(
-            DemoProjectFactory.Create(),
+            TestProjectFactory.Create(),
             new BuildOptions(BuildTarget.LinuxXkb, "out"));
 
         Assert.Equal([BuildTarget.WindowsX64], windows.Calls);

@@ -15,4 +15,7 @@
     <ProjectReference Include="..\..\src\KeyboardStudio.Core\KeyboardStudio.Core.csproj" />
     <ProjectReference Include="..\..\src\KeyboardStudio.Persistence\KeyboardStudio.Persistence.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\Shared\TestProjectFactory.cs" Link="Shared\TestProjectFactory.cs" />
+  </ItemGroup>
 </Project>

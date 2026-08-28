@@ -1,8 +1,9 @@
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.Json;
 using KeyboardStudio.Build;
 using KeyboardStudio.Core;
+using KeyboardStudio.Testing;
+using System.Security.Cryptography;
+using System.Text.Json;
+using System.Text;
 using Xunit;
 
 namespace KeyboardStudio.Windows.Tests;
@@ -53,7 +54,7 @@ public sealed class JsonBuildManifestWriterTests
                 []);
 
             var result = await writer.WriteAsync(
-                DemoProjectFactory.Create(),
+                TestProjectFactory.Create(),
                 new GeneratedArtifact(source, "kbd-demo.dll"),
                 new BuildOptions(BuildTarget.WindowsX64, outputDirectory),
                 compilation,
