@@ -138,7 +138,14 @@ Phase 11 Windows integration CI
    |
    v
 Phase 12 MVP stabilization and release readiness
+   |
+   v
+Phase 13 Linux focus and layout import
 ```
+
+Phase 13 narrows the shipping user interface to the Linux target and removes the empty-keyboard
+starting state. It deliberately hides rather than deletes the Windows path, so Phases 5-8 and 11 stay
+green and the target can be re-exposed by a policy change.
 
 The Linux phase follows Windows artifact verification so the completed Windows path remains intact,
 but precedes build UX so target selection is designed once for both outputs. Linux integration coverage
@@ -1423,6 +1430,257 @@ desktop package jobs for the same commit.
 
 ---
 
+# Phase 13 — Linux focus and layout import
+
+## Objective
+
+Narrow the shipping user interface to the Linux XKB target, and remove the empty-keyboard starting
+state by seeding every new document and letting the user list and import layouts already installed on
+the host.
+
+Design detail lives in [`LINUX-LAYOUT-IMPORT.md`](LINUX-LAYOUT-IMPORT.md); decisions in AD-019 to
+AD-024.
+
+## Work items
+
+### P13.1 Embedded `us-basic` seed project
+
+Add `templates/seeds/us-basic.kbdproj` as an embedded resource in `KeyboardStudio.Core`, alongside the
+existing geometry templates, and make it the content of every new document.
+
+```text
+KeyboardStudio.Core/Projects/Seeds/
+  ISeedProjectSource.cs
+  EmbeddedSeedProjectSource.cs
+  SeedProjectId.cs
+```
+
+The seed targets `iso-105`, covers the alphanumeric block, digits, punctuation, and the common
+special keys across `Default` and `Shift`, and validates clean. `DemoProjectFactory` is deleted; it
+exists only to populate the skeleton and the seed supersedes it.
+
+Ships alone. No dependency on any other item in this phase.
+
+### P13.2 Target visibility policy
+
+```text
+KeyboardStudio.App/Services/
+  IBuildTargetVisibilityPolicy.cs
+  EnvironmentBuildTargetVisibilityPolicy.cs
+```
+
+`BuildViewModel` filters `Targets` through the policy and exposes `IsTargetSelectorVisible`. When one
+target is visible the selector is not rendered and the target name moves to a badge on the Build
+card. `KEYBOARDSTUDIO_TARGETS=all` restores both.
+
+Nothing is deleted. `KeyboardStudio.Windows` stays referenced and registered, `BuildTarget.WindowsX64`
+stays in the enum, the `windowsX64` profile stays populated and persisted, and Windows CI is
+untouched. Hidden profiles are still exported and reapplied by `ExportTargetProfiles` /
+`ApplyTargetProfiles`, so a document authored on a Windows-enabled build round-trips unedited.
+
+Ships alone.
+
+### P13.3 Core import contract
+
+```text
+KeyboardStudio.Core/Layouts/Import/
+  ILayoutImportSource.cs         ILayoutImportCatalog.cs      LayoutImportCatalog.cs
+  ImportableLayoutDescriptor.cs  ImportableLayoutReference.cs LayoutSourceOrigin.cs
+  LayoutImportOptions.cs         LayoutImportResult.cs        LayoutImportReport.cs
+  LayoutImportFidelity.cs        LayoutImportDiagnostic.cs    LayoutImportDiagnosticCodes.cs
+```
+
+Identifiers are opaque strings; Core gains no XKB vocabulary. `LayoutImportDiagnostic` reuses
+`ValidationSeverity` and adds `KeyId` and `ModifierLayer?`. Diagnostic codes use the `KSI` prefix,
+registered in `LayoutImportDiagnosticCodes` beside the existing `KSL` XKB codes.
+
+### P13.4 XKB data roots and registry reader
+
+```text
+KeyboardStudio.Linux/Import/Discovery/   IXkbDataRootLocator, XkbDataRootLocator, XkbDataRoot
+KeyboardStudio.Linux/Import/Registry/    IXkbLayoutRegistryReader, XkbRulesRegistryReader,
+                                         XkbRegistryEntry
+```
+
+Roots resolve in libxkbcommon precedence order: `$XKB_CONFIG_ROOT`, then
+`${XDG_CONFIG_HOME:-$HOME/.config}/xkb`, then `/etc/xkb`, then `/usr/share/X11/xkb` and
+`/usr/local/share/X11/xkb`. The locator takes the environment and a filesystem abstraction as
+constructor arguments so ordering is testable without touching the host.
+
+`rules/evdev.xml` and `evdev.extras.xml` supply names, short descriptions, languages, and countries.
+The file carries `<!DOCTYPE xkbConfigRegistry SYSTEM "xkb.dtd">`, so the reader **must** use
+`XmlReaderSettings { DtdProcessing = DtdProcessing.Ignore, XmlResolver = null }`. Layouts present in
+`symbols/` but absent from the registry are still listed, with a `KSI010` informational diagnostic.
+
+Ships a browsable catalog with no preview.
+
+### P13.5 Symbols lexer and parser
+
+```text
+KeyboardStudio.Linux/Import/Symbols/  XkbSymbolsLexer, XkbSymbolsToken, XkbSymbolsTokenKind,
+                                      XkbSymbolsParser, XkbSymbolsFile, XkbSymbolsSection,
+                                      XkbSymbolsStatement (+ one file per derived statement)
+```
+
+The parser accepts the full statement vocabulary and consumes only what the model can hold: includes,
+section flags (`default`, `partial`, `hidden`), `name[Group1]`, `key <NAME> { ... }`, and
+`symbols[Group1]`. `type[GroupN]`, `key.type`, `modifier_map`, and `virtual_modifiers` are parsed and
+ignored. Group2+, `actions[]`, `redirect`, and `overlay` produce `KSI020`/`KSI021` warnings. Unknown
+statements skip to the next `;` with `KSI022` rather than aborting.
+
+### P13.6 Include resolution
+
+```text
+IXkbIncludeResolver, XkbIncludeResolver, XkbIncludeSpec, XkbMergeMode,
+IXkbSymbolsResolver, XkbSymbolsResolver, ResolvedXkbSymbols, ResolvedXkbKey
+```
+
+Resolves `"file(section)"` and bare `"file"` (the file's `default` section) across the ordered roots,
+including subdirectory forms such as `sun_vndr/us(sun_type6)`. Merge modes: default and `override`
+let the includer win; `augment` keeps existing definitions; `replace` rebuilds the key; `alternate` is
+treated as `override` with `KSI023` (six occurrences in the whole corpus).
+
+**Cycle detection keys on `(resolved absolute path, section name)`, not on the file.** A file
+legitimately includes other sections of itself — `pl(lefty)` includes `pl(basic)` — and a
+file-granular visited set both breaks those layouts and hides real cycles. Depth cap 16, `KSI024`.
+
+The resolved include chain is retained for the report.
+
+### P13.7 Keysym table and decoder
+
+`scripts/generate-keysym-table` reads X.org `keysymdef.h` and libxkbcommon's legacy
+keysym-to-Unicode table and emits a committed `XkbKeysymTable.g.cs` whose header records the upstream
+source and version. CI regenerates and diffs. Both upstreams are permissively licensed (MIT / X11 /
+HPND); attribution goes in the generated header and `templates/README.md`.
+
+Neither `keysymdef.h` nor `xkbcommon-keysyms.h` can be assumed present at runtime, which is why the
+table is generated at development time rather than read from the host.
+
+`XkbKeysymDecoder` inverts `XkbKeysymMapper`: `NoSymbol`/`VoidSymbol` to `NoOutput`; `U0105` and
+`0x01000105` forms and the direct Unicode/Latin-1 ranges to `CharacterOutput`; named keysyms through
+the table; non-character function keys to `SpecialKeyOutput`; `dead_*` to `NoOutput` with `KSI031`;
+anything unrecognized to `NoOutput` with `KSI032`.
+
+### P13.8 Bidirectional key-name tables
+
+Add a table accessor to `IXkbKeyNameMapper` and derive `XkbKeyNameResolver` from the same data, so
+generation and import cannot disagree about keys such as `<LSGT>`:
+
+```csharp
+public interface IXkbKeyNameMapper
+{
+    XkbKeyNameMappingResult Map(string templateId, string keyId);
+    IReadOnlyDictionary<string, string> GetMappings(string templateId);
+}
+```
+
+XKB keys with no template counterpart (`<I120>`, media keys, `<FK13>`+) are skipped with `KSI033` and
+counted in `KeysSkipped`.
+
+### P13.9 Importer, template selection, fidelity report
+
+`XkbLayoutImporter` and `XkbLayoutImportSource : ILayoutImportSource` assemble the project.
+
+Levels map back as the inverse of generation: 1 to `Default`, 2 to `Shift`, 3 to `AltGr`, 4 to
+`ShiftAltGr`, 5+ dropped with `KSI030`.
+
+`XkbTemplateSelector` suggests geometry: `<LSGT>` present implies `iso-105`, otherwise `ansi-104`,
+with registry country hints breaking ties. The suggestion is user-overridable because the registry
+does not record physical geometry.
+
+`KeyMapping.LogicalKey` is derived in order: the level-1 `SpecialKeyOutput`'s key; else the level-1
+single ASCII letter or digit; else the template key ID's conventional logical key; else
+`LogicalKey.None`. Rule three is what stops a Dvorak import from labelling every key by its produced
+character instead of its physical identity.
+
+### P13.10 Import dialog and provenance
+
+```text
+KeyboardStudio.App/Views/ImportLayoutDialog.axaml(.cs)
+KeyboardStudio.App/ViewModels/  LayoutImportViewModel, ImportableLayoutViewModel,
+                                LayoutImportReportViewModel
+```
+
+Entry points: **File > Import layout…**, an **Import…** button beside the existing
+`New from [template] [Create]` control, and **File > Import from file…** for an arbitrary symbols
+file. The dialog holds search, the grouped catalog list, variant selection, the geometry override, a
+read-only `KeyControl` preview, and the fidelity summary, then commits as a new project or as a
+mapping replacement that keeps geometry, target profiles, and file path.
+
+`LayoutImportViewModel` depends only on `ILayoutImportCatalog`. Both commit paths route through the
+existing unsaved-changes confirmation, and mapping replacement goes through `KeyboardEditor`.
+
+`KeyboardProjectDocument` gains `importProvenance` (source, layout, variant, location, description,
+timestamp) behind a `documentSchemaVersion` bump and a migration. Import pre-fills `XkbLayoutMetadata`
+and always suffixes the layout ID (`pl` becomes `pl-custom`), never reusing the source ID: an artifact
+named `symbols/pl` would shadow the distribution's own file if copied into an XKB root.
+
+### P13.11 Host layout detection and startup import
+
+```text
+IXkbActiveLayoutProbe, XkbActiveLayoutProbe, XkbActiveLayout
+```
+
+Detection order: `XKB_DEFAULT_LAYOUT`/`XKB_DEFAULT_VARIANT`, then `Option "XkbLayout"`/`"XkbVariant"`
+in `/etc/X11/xorg.conf.d/00-keyboard.conf`, then `KEYMAP=` in `/etc/vconsole.conf`, then `us`. File
+and environment reads only — no process is spawned.
+
+The seed loads first so the first frame never waits on the filesystem; the host import runs
+asynchronously and replaces the seed only while the document is still pristine. Failure is silent
+apart from a diagnostics entry.
+
+### P13.12 Import test coverage
+
+Golden imports of vendored, pinned `us`/`pl`/`de`/`fr` fixtures; a full import to generation to
+re-import round trip; a Linux CI soak importing every layout and variant the host advertises; and an
+`xkbcli` conformance oracle skipped when the tool is absent.
+
+## Tests
+
+`KeyboardStudio.Core.Tests`
+
+- the seed project deserializes, validates clean, and matches its declared template;
+- catalog aggregation, source ordering, and unavailable-source handling.
+
+`KeyboardStudio.Linux.Tests`
+
+- lexer and parser: every statement kind, comments, malformed input, unterminated sections;
+- include resolver: default/`augment`/`replace`/`alternate`, cross-file, subdirectory,
+  self-referencing sections, genuine cycles, depth cap;
+- registry reader: DTD not resolved, malformed XML, missing variant lists, user/system merge;
+- decoder symmetry: exhaustive round trip against `XkbKeysymMapper`;
+- key-name resolver symmetry against `XkbKeyNameMapper` for both templates;
+- template selection from `<LSGT>` presence and country hints;
+- golden imported projects snapshot-compared as JSON;
+- `[Trait("Category", "XkbIntegration")]` soak and `xkbcli` oracle.
+
+`KeyboardStudio.App.Tests`
+
+- new documents are non-empty and validate clean;
+- default policy hides the target selector and edits the Linux profile; a loaded Windows profile
+  survives save and reload unedited; `KEYBOARDSTUDIO_TARGETS=all` restores both targets;
+- catalog listing, filtering, variant and geometry selection, fidelity presentation;
+- import as new project versus replace mappings, including the unsaved-changes path;
+- startup fallback chain: env, then `00-keyboard.conf`, then `vconsole.conf`, then `us`, then seed on
+  failure.
+
+## Acceptance criteria
+
+- no user action produces a document with zero mappings;
+- the build panel shows no target selector and no Windows-specific field, while
+  `KeyboardStudio.Windows.Tests` and the Windows CI job remain green and unmodified;
+- a saved document authored before this phase reloads with its `windowsX64` profile byte-identical;
+- the import dialog lists the host's layouts and variants, grouped by user and system origin, and
+  filters by name, ID, language, and country;
+- importing `pl(basic)` on a stock xkeyboard-config yields a validating project whose four layers
+  match the source for every key the model can represent, with each dropped dead key reported against
+  its key and layer;
+- import, generate, re-import returns an equal Core model for `us(basic)`;
+- a missing, empty, or malformed XKB database degrades to the seed without an unhandled exception;
+- no import path writes to any XKB root.
+
+---
+
 ## 5. Cross-cutting technical work
 
 ### 5.1 Logging
@@ -1746,11 +2004,19 @@ The architecture should not block these features, but MVP code should not pay th
 
 ## 12. Immediate next implementation order
 
-The recommended next work from the current Phase 10-complete baseline is:
+Phases 0-12 are complete. The recommended next work is:
 
-1. **Add the Windows native integration runner and separate managed/native categories (P11.1-P11.2).**
-2. **Retain failure artifacts and exercise representative Windows fixtures (P11.3-P11.4).**
-3. **Run multi-target end-to-end and error-path stabilization (P12.1-P12.2).**
-4. **Finish user documentation, packaging, versioning, and MVP exit checks (P12.3-P12.6).**
+1. **Ship the `us-basic` seed so no document opens empty (P13.1).** No dependencies; fixes the
+   starting-state problem on its own.
+2. **Apply the target visibility policy and narrow the build panel to XKB (P13.2).** Independent of
+   the importer.
+3. **Build the catalog: Core contract, data-root discovery, registry reader (P13.3-P13.4).** Ends
+   with a browsable, previewless layout list.
+4. **Build the resolver: lexer, parser, include resolution (P13.5-P13.6).**
+5. **Build the translators: keysym table and decoder, bidirectional key names (P13.7-P13.8).**
+6. **Assemble the importer and the import dialog (P13.9-P13.10).**
+7. **Detect and import the host layout at startup (P13.11).**
+8. **Close with golden, round-trip, soak, and oracle coverage (P13.12).**
 
-This ordering continuously proves the already exposed Windows workflow before packaging and release.
+Each of items 1, 2, 3, 6, and 7 is independently shippable, so the empty-keyboard fix and the
+Linux-only UI land long before the parser is finished.

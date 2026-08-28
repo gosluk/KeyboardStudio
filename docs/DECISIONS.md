@@ -127,3 +127,68 @@ ISO-105/ANSI-104 tables to map stable key IDs to XKB symbolic names such as `<AC
 
 XKB names must not be inferred from Windows scan codes or stored in Core. Unknown template/key pairs
 fail with structured, key-linked target diagnostics.
+
+## AD-019 - Layout import is a target-neutral Core contract with platform sources
+
+`KeyboardStudio.Core` defines `ILayoutImportSource` and `ILayoutImportCatalog` over opaque
+source/layout/variant identifiers. Every XKB parser, resolver, and table lives in
+`KeyboardStudio.Linux/Import/`, and ViewModels see only the catalog.
+
+Import produces a `KeyboardProject`, so the contract belongs in Core; naming layouts by opaque strings
+keeps Core free of XKB vocabulary under AD-002 and architecture 2.1. A future Windows `.klc` or
+installed-DLL source implements the same interface without reshaping the editor.
+
+## AD-020 - XKB import uses a managed parser, not `xkbcli`
+
+Import lexes, parses, and resolves `xkb_symbols` includes in managed code. `xkbcli` stays an optional
+CI conformance oracle whose resolved key/level tables are diffed against the managed resolver.
+
+`xkbcli compile-keymap` would return a flat resolved keymap and remove the need for an include
+resolver, but libxkbcommon-tools is absent from most desktop installs, and AD-017 already fixes
+`xkbcli` as an optional verifier that never produces a result. Depending on it at runtime would
+invert that and make import non-deterministic across hosts. The corpus makes a managed resolver
+affordable: of 1933 include statements in xkeyboard-config 2.47, all but six use the default merge
+mode, and `Group2` appears in two statements.
+
+## AD-021 - Import is lossy by design and reports every loss
+
+Dead keys, groups beyond the first, levels beyond four, XKB actions, and unmappable keysyms are
+dropped with key- and layer-linked diagnostics. They never fail the import.
+
+The purpose of import is a usable starting point for editing. Refusing every layout that uses a
+`dead_*` keysym would reject most European layouts, including the ones the feature exists to serve.
+`LayoutImportReport` carries the fidelity level, counts, resolved include chain, and diagnostics, and
+the import dialog shows it before the project is replaced.
+
+## AD-022 - XKB key-name tables are bidirectional and single-sourced
+
+`XkbKeyNameMapper` owns one `(templateId, keyId) -> XKB name` table and exposes it. Generation reads
+it forward and import reads it inverted.
+
+Two independently maintained tables would drift, and the first disagreement would be silent: an
+exported layout that no longer re-imports to the same model. XKB names stay out of Core and are still
+never inferred from `PhysicalKey.ScanCode`, preserving AD-018.
+
+## AD-023 - A new document is never empty
+
+An embedded `us-basic` seed project is the content of every new document. On Linux the host's
+configured layout is imported over it asynchronously while the document is still pristine.
+
+Bare geometry with zero mappings is not a usable starting point. The seed is host-independent so the
+guarantee holds on every platform, including hosts with no XKB data. Host detection reads
+`XKB_DEFAULT_LAYOUT`, `/etc/X11/xorg.conf.d/00-keyboard.conf`, then `/etc/vconsole.conf`, and spawns
+no process; `localectl` and `gsettings` write those same files and would add a process dependency to
+the startup path. A failed host import degrades to the seed rather than blocking the editor.
+
+## AD-024 - Target visibility is presentation-only and reversible
+
+The shipping UI exposes `LinuxXkb` and hides `WindowsX64`. Hiding is enforced solely by
+`IBuildTargetVisibilityPolicy` in the application layer.
+
+`KeyboardStudio.Windows` stays referenced, registered, and tested; `BuildTarget.WindowsX64` stays in
+the enum; and `windowsX64` stays a persisted profile discriminator so existing documents round-trip
+their Windows profile unedited. `BuildOrchestrator` and `IBuildBackendResolver` are unchanged, so
+AD-016 single-target dispatch still resolves whichever target it is given — the UI simply never asks
+for the hidden one. `KEYBOARDSTUDIO_TARGETS=all` restores the full selector for development and for
+tests. Visibility is never expressed by deleting profiles, mutating `BuildOptions`, or skipping
+validation, so the Windows path cannot rot while it is hidden.

@@ -6,14 +6,19 @@ KeyboardStudio is a cross-platform keyboard-layout editor written with Avalonia.
 platform-neutral keyboard project model. Platform backends translate that model into either a native
 Windows keyboard-layout DLL or a Linux XKB symbols component.
 
-The first version focuses on four capabilities:
+The first version focuses on five capabilities:
 
 1. displaying a physical keyboard;
-2. editing key mappings;
-3. saving and loading a project;
-4. selecting an artifact target and producing a Windows DLL or Linux XKB layout file.
+2. starting from an existing layout rather than from an empty one;
+3. editing key mappings;
+4. saving and loading a project;
+5. selecting an artifact target and producing a Windows DLL or Linux XKB layout file.
 
 Everything not required by those capabilities is intentionally excluded from the first implementation.
+
+Both backends are implemented and tested. Capability 2 and the narrowing of the user interface to the
+Linux XKB target are adopted design landing in Phase 13; sections 2.6 and 13 describe the target
+state, not currently shipped behavior.
 
 ---
 
@@ -100,6 +105,38 @@ one backend from `BuildOptions.Target`. Common validation runs before dispatch; 
 artifact stages run only inside the selected backend. This prevents an unavailable Windows toolchain
 from blocking XKB generation and prevents Linux tools from affecting Windows builds.
 
+
+### 2.6 Target visibility is a presentation policy, not a capability change
+
+*Adopted design, implemented by P13.2. Today the panel still offers both targets.*
+
+The editor exposes the Linux XKB target and hides the Windows target. Hiding is enforced by one
+presentation-layer policy object, `IBuildTargetVisibilityPolicy`, and nowhere else.
+
+```text
+BuildTarget.LinuxXkb    visible    default and only selectable target
+BuildTarget.WindowsX64  hidden     backend registered, resolvable, fully tested
+```
+
+The rules that keep this reversible:
+
+- `KeyboardStudio.Windows`, `WindowsBuildBackend`, and their tests stay in the solution, stay
+  referenced by the application, and stay green in CI. Hiding is not deletion;
+- `BuildTarget.WindowsX64` remains in the enum and `windowsX64` remains a persisted target-profile
+  discriminator, so existing `.kbdproj` documents keep round-tripping their Windows profile
+  untouched even though no UI edits it;
+- `BuildOrchestrator` and `IBuildBackendResolver` are unchanged. Single-target dispatch (2.5) still
+  resolves whichever target it is given; the UI simply never asks for the hidden one;
+- when exactly one target is visible, the target selector is not rendered at all rather than rendered
+  with one entry, and the visible target's identity moves to a badge on the build panel;
+- `KEYBOARDSTUDIO_TARGETS=all` restores the full selector for development and for the Windows
+  integration tests, which drive the ViewModel rather than the window.
+
+Visibility must never be expressed by deleting profiles, mutating `BuildOptions`, or short-circuiting
+validation. A hidden target is a target the user cannot select, not a target the application has
+forgotten how to build.
+
+
 ---
 
 ## 3. Solution structure
@@ -140,6 +177,10 @@ KeyboardStudio.App (composition root)
 The application is the composition root and may reference concrete backends to register them. Its
 ViewModels depend on build abstractions, not Windows or Linux generator types. Platform and UI
 concerns point inward; Core never references them.
+
+The same split applies to layout import: `KeyboardStudio.Core/Layouts/Import/` owns the neutral
+contract and `KeyboardStudio.Linux/Import/` owns every XKB-specific parser, resolver, and table. See
+section 13.
 
 ---
 
@@ -311,7 +352,8 @@ The initial shell contains three functional areas.
 MainWindow
  |- KeyboardEditorView
  |- KeyMappingView
- `- BuildView
+ |- BuildView
+ `- ImportLayoutDialog   (modal, opened on demand)
 ```
 
 ### 6.1 ViewModels
@@ -340,6 +382,9 @@ ViewModels must not depend on Windows- or XKB-specific generator classes. Concre
 registered at the application composition root and reached through `ITargetBuildService`. The build
 panel keeps one editable profile per target so switching targets never discards the other target's
 settings.
+
+Once target visibility (2.6) is in place, the panel renders no target selector while only one target
+is visible, and keeps the hidden target's profile in memory and in the saved document, unedited.
 
 Before enabling Build, the service returns one readiness snapshot containing common validation,
 selected-target validation, profile/output validation, and environment availability. Common errors
@@ -421,6 +466,39 @@ KeyboardEditor.MapCharacter(...)
       v
 KeyboardProject updated
 ```
+
+
+### 6.6 Layout import UI
+
+The host's installed layout catalog is large — 99 layouts and 496 variants on a current
+xkeyboard-config — so it is presented in a modal `ImportLayoutDialog` rather than in a dropdown or a
+permanent panel. The main window keeps its current proportions.
+
+```text
+Entry points
+  File > Import layout...
+  "Import..." button beside the existing "New from [template] [Create]" control
+  File > Import from file...     (an arbitrary symbols file)
+        |
+        v
+ImportLayoutDialog
+ |- search box            filters name, layout ID, language, country
+ |- catalog list          grouped User / System, layout -> variants
+ |- geometry selector     suggested template, user-overridable
+ |- preview               read-only KeyboardEditorView over the resolved project
+ |- fidelity summary      keys imported, dropped, skipped
+ `- [Import as new project] [Replace mappings in current project] [Cancel]
+```
+
+The dialog reuses `KeyControl` and the existing geometry rendering for its preview, so an import is
+seen before it is committed. Import is lossy (13.4), which makes previewing the fidelity report
+before replacement a correctness requirement rather than a nicety.
+
+`LayoutImportViewModel` depends only on `ILayoutImportCatalog`. It must not reference
+`KeyboardStudio.Linux` types, exactly as `BuildViewModel` must not reference generator types (6.1).
+Both commit paths route through the existing unsaved-changes confirmation, and mapping replacement
+goes through `KeyboardEditor` so the future undo/redo boundary (2.4) stays intact.
+
 
 ---
 
@@ -739,7 +817,136 @@ key IDs to native physical identities.
 
 ---
 
-## 13. Testing strategy
+## 13. Layout import
+
+*Adopted design, implemented by Phase 13. Not yet built.*
+
+A new document must never open as bare geometry with zero mappings. Import supplies a starting point,
+either from an embedded seed or from a layout already installed on the host. Full design detail lives
+in [`LINUX-LAYOUT-IMPORT.md`](LINUX-LAYOUT-IMPORT.md).
+
+### 13.1 Neutral contract, platform sources
+
+Import yields a `KeyboardProject`, which is a Core concept, so the contract lives in Core and names a
+layout only by opaque identifiers. Core acquires no XKB vocabulary.
+
+```csharp
+public interface ILayoutImportSource
+{
+    string Id { get; }
+    string DisplayName { get; }
+    bool IsAvailable { get; }
+
+    Task<IReadOnlyList<ImportableLayoutDescriptor>> ListAsync(
+        CancellationToken cancellationToken = default);
+
+    Task<LayoutImportResult> ImportAsync(
+        ImportableLayoutReference reference,
+        LayoutImportOptions options,
+        CancellationToken cancellationToken = default);
+}
+```
+
+`ILayoutImportCatalog` aggregates the registered sources and is the only import type the ViewModels
+see, mirroring how `IBuildBackendResolver` keeps backends out of `BuildViewModel`. The Linux source is
+registered at the composition root. A future Windows `.klc` or installed-DLL source implements the
+same interface without reshaping the editor.
+
+### 13.2 Seed project
+
+`KeyboardStudio.Core` embeds a `us-basic` seed project beside the geometry templates. It is the
+content of every new document and is host-independent, so the empty-keyboard state cannot occur on
+any platform, including hosts with no XKB data at all.
+
+### 13.3 Linux XKB import pipeline
+
+```text
+ordered XKB data roots
+        |
+        v
+rules/evdev.xml  -->  catalog of layout + variant descriptors
+        |
+   user selects one
+        |
+        v
+symbols/<layout>  -->  lex  -->  parse  -->  section "<variant>"
+        |
+        v
+include graph resolution (merge modes, cycle detection, depth cap)
+        |
+        v
+ResolvedXkbSymbols: XKB key name -> ordered Group1 levels
+        |
+        +--> XkbKeyNameResolver   <AC01>  -> (template, "KeyA")
+        +--> XkbKeysymDecoder     aogonek -> CharacterOutput("ą")
+        +--> level index          1..4    -> ModifierLayer
+        |
+        v
+KeyboardProject + LayoutImportReport
+```
+
+Resolution is a managed, deterministic transformation. `xkbcli` is not a runtime dependency; it is
+absent from most desktop installs and [AD-017](DECISIONS.md) already fixes it as an optional
+verifier. It is used instead as a CI conformance oracle against the managed resolver.
+
+XKB key names are resolved through the same tables `XkbKeyNameMapper` already uses for generation.
+`IXkbKeyNameMapper` gains a table accessor so both directions derive from one source and cannot
+disagree about keys such as `<LSGT>`. XKB names stay out of Core and are still never inferred from
+`PhysicalKey.ScanCode`, preserving [AD-018](DECISIONS.md).
+
+### 13.4 Import is lossy and reports its losses
+
+The domain model has no dead keys, no groups beyond the first, and no levels beyond four. Import does
+not fail on them; it drops them and says so, because a starting point that is 95% correct is more
+useful than a refused import.
+
+```csharp
+public sealed record LayoutImportReport(
+    LayoutImportFidelity Fidelity,          // Exact | Reduced | Partial
+    int KeysImported,
+    int KeysSkipped,
+    IReadOnlyList<string> ResolvedIncludeChain,
+    IReadOnlyList<LayoutImportDiagnostic> Diagnostics);
+```
+
+`LayoutImportDiagnostic` reuses `ValidationSeverity` and carries the key ID and modifier layer, so
+import findings render through the existing diagnostics list with a working jump-to-key target. The
+resolved include chain is retained so an import can be explained and reproduced.
+
+### 13.5 Provenance and round-tripping
+
+Import provenance is editor bookkeeping rather than layout semantics, so it lives in the document
+envelope alongside target profiles, not in `ProjectMetadata`:
+
+```text
+KeyboardProjectDocument
+ |- documentSchemaVersion        bumped; handled by the existing migration pipeline
+ |- project
+ |- targets
+ `- importProvenance
+     |- sourceId / layoutId / variantId
+     |- sourceLocation / sourceDescription
+     `- importedAtUtc
+```
+
+Import also pre-fills the `XkbLayoutMetadata` profile so an imported layout can be built straight
+back out. The generated layout ID is always suffixed (`pl` becomes `pl-custom`) and never reuses the
+source ID, because an artifact named `symbols/pl` would shadow the distribution's own file if copied
+into an XKB root.
+
+### 13.6 Startup
+
+The seed project loads first so the first frame never waits on the filesystem. On Linux the host's
+configured layout is then resolved and imported asynchronously, replacing the seed only while the
+document is still pristine. Detection reads `XKB_DEFAULT_LAYOUT`, then
+`/etc/X11/xorg.conf.d/00-keyboard.conf`, then `/etc/vconsole.conf`, then falls back to `us`. No
+process is spawned: `localectl` and `gsettings` would work but add a process dependency to startup
+and write those same files anyway. Any failure is silent apart from a diagnostics entry — a broken
+host XKB database must never stop the editor from opening.
+
+---
+
+## 14. Testing strategy
 
 ### KeyboardStudio.Core.Tests
 
@@ -780,20 +987,40 @@ Test:
 - two- and four-level modifier behavior;
 - Unicode keysym generation;
 - deterministic symbols-component golden files;
-- `xkbcli` verification in Linux integration tests.
+- `xkbcli` verification in Linux integration tests;
+- symbols lexing, parsing, and include resolution including merge modes, self-referencing sections,
+  genuine cycles, and the depth cap;
+- registry reading with DTD resolution disabled;
+- keysym decoding, asserted exhaustively symmetric with `XkbKeysymMapper`;
+- golden imports of vendored `us`, `pl`, `de`, and `fr` fixtures, pinned so results do not depend on
+  the host's installed xkeyboard-config version;
+- a full import to generation to re-import round trip asserting model equality;
+- a Linux CI soak test importing every layout and variant the host registry advertises;
+- an `xkbcli` conformance oracle comparing resolved key/level tables, skipped when the tool is
+  absent.
 
 ### KeyboardStudio.App.Tests
 
 Test target selection, backend resolution, target-specific command enablement, dynamic stage
 presentation, cancellation, and result/error presentation without referencing concrete generators.
 
+Also test target visibility as behavior rather than markup: with the default policy the target
+selector is absent, the Linux profile is the edited one, and a loaded Windows profile survives a
+save/reload unedited; with `KEYBOARDSTUDIO_TARGETS=all` both targets are selectable again.
+
+Layout import is tested against a fake `ILayoutImportCatalog`: catalog listing and filtering, variant
+selection, geometry override, fidelity presentation, import-as-new versus replace-mappings, the
+unsaved-changes confirmation path, and the startup seed and host-import fallback chain.
+
 ---
 
-## 14. Initial MVP boundary
+## 15. Initial MVP boundary
 
 ### Included
 
 - display ISO/ANSI physical keyboard;
+- open every new document on a populated layout rather than bare geometry;
+- list and import layouts installed on the host, with a previewed fidelity report;
 - select keys;
 - map physical key to logical key;
 - map `Default`, `Shift`, `AltGr`, and `ShiftAltGr`;
@@ -815,13 +1042,18 @@ presentation, cancellation, and result/error presentation without referencing co
 - arbitrary scripts;
 - IMEs;
 - runtime hooks/remapping;
-- importing existing native artifacts.
+- importing existing native artifacts;
+- importing geometry: physical layout still comes from the bundled templates;
+- editing, installing, or activating anything in a system or session XKB root.
+
+Import is deliberately included in the boundary while dead keys are not, which is why import is
+specified as lossy: it drops what the model cannot hold and reports each loss (13.4).
 
 The domain model should remain extensible enough to add these later without complicating the first implementation.
 
 ---
 
-## 15. Critical abstractions
+## 16. Critical abstractions
 
 ```text
 IKeyboardProjectStore
@@ -830,21 +1062,30 @@ IBuildBackendResolver
 IBuildBackend
 IArtifactGenerator             (backend-internal generation)
 INativeCompiler                (Windows backend only)
+ILayoutImportCatalog           (the only import type ViewModels see)
+ILayoutImportSource            (one per platform layout source)
+IBuildTargetVisibilityPolicy   (presentation-only target exposure)
 ```
 
 These boundaries protect the editor from persistence and platform-specific implementation details.
 
 ---
 
-## 16. Architectural summary
+## 17. Architectural summary
 
 ```text
 KeyboardStudio.App (composition + target-aware UI)
+ |
+ +--> ILayoutImportCatalog
+ |         `--> KeyboardStudio.Linux/Import
+ |                  XKB roots -> registry -> symbols parse -> include resolve
+ |                  -> keysym/key-name decode -> KeyboardProject + fidelity report
  |
  +--> KeyboardStudio.Persistence --> KeyboardStudio.Core
  |
  +--> KeyboardStudio.Build --> common validation --> backend resolver
  |                                               /          \
+ |                                    (UI-hidden)          (UI-visible)
  |                                              v            v
  |                              KeyboardStudio.Windows   KeyboardStudio.Linux
  |                              C/.def/.rc generation    XKB symbols generation
