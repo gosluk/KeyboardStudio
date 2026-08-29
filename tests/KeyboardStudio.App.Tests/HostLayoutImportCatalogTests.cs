@@ -72,6 +72,29 @@ public sealed class HostLayoutImportCatalogTests
         Assert.True(viewModel.PreviewWidth > 0);
     }
 
+    [Fact]
+    [Trait("Category", "XkbIntegration")]
+    public async Task CreateHostProbe_NamesALayoutThisHostCanActuallyImport()
+    {
+        // The startup import is the one path that runs with nobody watching, so the only thing
+        // that can tell whether the probe and the catalog agree on their vocabulary is a host
+        // that has both a configuration and a database.
+        var templateProvider = new KeyboardTemplateProvider();
+        var catalog = HostLayoutImportCatalog.Create(templateProvider);
+        if (!HasInstalledDatabase(catalog))
+        {
+            return;
+        }
+
+        var reference = HostLayoutImportCatalog.CreateHostProbe().Detect();
+        Assert.NotNull(reference);
+
+        var result = await catalog.ImportAsync(reference, LayoutImportOptions.Default);
+
+        Assert.True(result.Success, $"Importing this host's own layout '{reference.LayoutId}' failed.");
+        Assert.NotEmpty(result.Project!.Layout.Mappings);
+    }
+
     /// <summary>
     /// Whether this host has an XKB database to test against. A developer machine without one
     /// skips; Linux CI installs the package deliberately, so an absence there is a broken workflow

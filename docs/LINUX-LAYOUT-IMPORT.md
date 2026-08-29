@@ -659,6 +659,63 @@ The import runs asynchronously behind the seeded project so a slow or pathologic
 cannot delay the first frame, and any failure is silent apart from a diagnostics entry — a broken
 host XKB database must never prevent the editor from opening.
 
+### 5.1 As built
+
+`XkbActiveLayoutProbe` reads the chain above, taking the environment and the filesystem as
+constructor arguments so the ordering can be exercised without a host that has actually been
+configured that way. Each step reads a file and either supplies an answer or declines; an unreadable
+file is not distinguished from a missing one, because either way that step has nothing to contribute
+and the next one down is a better answer than an error nobody asked a question to get.
+
+**Two refinements to the chain.** In `/etc/vconsole.conf` the probe prefers `XKBLAYOUT`/`XKBVARIANT`
+over `KEYMAP`, and the chain gained a fourth file, `/etc/default/keyboard`, ahead of the `us`
+fallback.
+
+The first is a vocabulary problem. Recent systemd records the X keyboard configuration in
+`vconsole.conf` alongside the console keymap, and the two are not the same names: `XKBLAYOUT` is an
+XKB layout, while `KEYMAP` names a console keymap that only sometimes coincides with one — a host set
+to `KEYMAP=pl2` has no XKB layout called `pl2`. The console keymap is still read, because on a host
+only ever configured for the console it is the only statement of intent there is; it is simply the
+weaker of the two.
+
+The second is coverage. `/etc/default/keyboard` is where the Debian family keeps `XKBLAYOUT`, and
+without it the whole feature falls through to `us` on Debian and Ubuntu — the machines most likely to
+have a layout worth detecting. It parses identically to `vconsole.conf` and sits below it, since a
+host with both has had the systemd file written more recently.
+
+**One layout, not the list.** A host configured with `us,pl` switches between two layouts where a
+project has exactly one, and the variants are positional against the layouts (`us,pl` with
+`,dvorak` means an unmodified `us` and then `pl(dvorak)`). The probe takes the first pair, which is
+what the session starts in, and treats an empty variant in that position as the layout's default
+rather than as a variant named by the empty string.
+
+**Detection ends at a layout, not at nothing.** `XkbActiveLayout.Fallback` is `us`, so the probe is
+total and the caller never has to decide what to do with a null. Whether `us` exists on this host is
+the import's question to answer, not the probe's.
+
+`XkbHostLayoutProbe` translates the result into an `ImportableLayoutReference` naming the
+`linux-xkb` source, and is the only place the two vocabularies meet. Core sees `IHostLayoutProbe`,
+which returns a reference or nothing, so the detection rules stay testable against files with no
+catalog in sight and a second platform can answer the same question its own way.
+
+**What startup does with it.** `MainWindowViewModel.ImportHostLayoutAsync` is started by `App` after
+the window exists and is deliberately not awaited: the editor already has a working document to draw
+from, and a source composes a layout from files as it is asked for it and hands back a task that is
+already finished, so awaiting it on the UI thread would hold the window for the whole of the work
+rather than none of it. The import therefore goes onto the thread pool in one hop.
+
+It replaces the document only if that document is still the untouched one the constructor made —
+same instance, not dirty, no path. A user who has typed, opened a file, or made a new document has
+said what they want to work on, and having it swapped out a moment later would be worse than never
+importing at all. What lands is a fresh document exactly like an accepted import: no path, not
+dirty, XKB profile pre-filled with the suffixed layout ID.
+
+Failures are quiet. A host with no source at all reports nothing, because that is an ordinary
+situation rather than a failure. A layout that was named but could not be read leaves a `KSI011`
+`Info` entry in the diagnostics list, folded in at every refresh rather than appended once, since
+the list is rebuilt from validation on every edit and anything merely added to it would vanish at
+the next keystroke.
+
 ---
 
 ## 6. Keysym table generation

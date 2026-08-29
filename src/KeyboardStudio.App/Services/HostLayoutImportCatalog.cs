@@ -47,6 +47,13 @@ public static class HostLayoutImportCatalog
     }
 
     /// <summary>
+    /// Builds the probe that says which layout this host is configured to type with, so a freshly
+    /// started editor can open onto it rather than onto something generic.
+    /// </summary>
+    public static IHostLayoutProbe CreateHostProbe() =>
+        new XkbHostLayoutProbe(new XkbActiveLayoutProbe(new HostXkbEnvironment(), new HostXkbFileSystem()));
+
+    /// <summary>
     /// Describes a file the user picked, so it can be imported through the same catalog, dialog and
     /// commit path as an entry the host advertises.
     /// </summary>

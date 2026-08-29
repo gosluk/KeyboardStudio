@@ -11,6 +11,7 @@ public sealed class FakeXkbFileSystem : IXkbFileSystem
 {
     private readonly Dictionary<string, string> _files = new(StringComparer.Ordinal);
     private readonly HashSet<string> _directories = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _unreadable = new(StringComparer.Ordinal);
 
     public FakeXkbFileSystem AddDirectory(string path)
     {
@@ -36,6 +37,18 @@ public sealed class FakeXkbFileSystem : IXkbFileSystem
         return this;
     }
 
+    /// <summary>
+    /// Adds a file that exists but cannot be opened, as one owned by another user is. Readers are
+    /// expected to treat it as they treat a missing one, and the two cases only look alike from
+    /// the outside if a test can produce both.
+    /// </summary>
+    public FakeXkbFileSystem AddUnreadableFile(string path)
+    {
+        AddFile(path, string.Empty);
+        _unreadable.Add(Normalize(path));
+        return this;
+    }
+
     public bool DirectoryExists(string path) => _directories.Contains(Normalize(path));
 
     public bool FileExists(string path) => _files.ContainsKey(Normalize(path));
@@ -49,6 +62,11 @@ public sealed class FakeXkbFileSystem : IXkbFileSystem
     public Stream OpenRead(string path)
     {
         var normalized = Normalize(path);
+        if (_unreadable.Contains(normalized))
+        {
+            throw new UnauthorizedAccessException($"Access to '{normalized}' is denied.");
+        }
+
         return _files.TryGetValue(normalized, out var content)
             ? new MemoryStream(Encoding.UTF8.GetBytes(content))
             : throw new FileNotFoundException($"No fake file at '{normalized}'.", normalized);

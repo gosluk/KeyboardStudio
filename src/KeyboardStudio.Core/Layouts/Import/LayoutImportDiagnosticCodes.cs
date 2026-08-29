@@ -21,6 +21,17 @@ public static class LayoutImportDiagnosticCodes
     public const string LayoutMetadataUnavailable = "KSI010";
 
     /// <summary>
+    /// Info. The layout this host is configured to use could not be imported, so whatever the
+    /// editor was going to start from was kept instead.
+    ///
+    /// Not a warning: nothing is wrong with the document the user ends up with, and an import
+    /// nobody asked for should not raise an alarm when it declines. The entry exists so the
+    /// difference between "your host uses this layout" and "we could not read it" is discoverable
+    /// rather than invisible.
+    /// </summary>
+    public const string HostLayoutUnavailable = "KSI011";
+
+    /// <summary>
     /// Warning. The definition carried more than one alternative group of outputs per key. Only the
     /// primary group was imported; the model has no place for the rest.
     /// </summary>

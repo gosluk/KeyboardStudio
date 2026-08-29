@@ -74,6 +74,7 @@ activating the generated layout.
 | Code | Severity | Meaning | Key linked |
 |---|---|---|---|
 | `KSI010` | Info | The source has no descriptive metadata for the layout, which is listed under its bare identifier. | No |
+| `KSI011` | Info | The layout this host is configured to use could not be imported at startup, so whatever the editor was going to start from was kept. | No |
 | `KSI020` | Warning | The definition carried more than one alternative group of outputs per key; only the primary group was imported. | Yes |
 | `KSI021` | Warning | A construct the model cannot express — an action, redirection, or overlay — was read and ignored. | Yes |
 | `KSI022` | Info | An unrecognized statement was skipped so the import could continue. | No |
@@ -95,6 +96,13 @@ wording is correspondingly source-neutral.
 Import findings never block anything, because import produces a starting point rather than an
 artifact. A `KSI024` or `KSI034` error means the import itself produced no project; it does not mark
 a project invalid.
+
+`KSI011` is the only import finding that can appear without the user having asked for an import. The
+editor imports the host's own layout at startup, and that import declines quietly: it is `Info`
+rather than `Warning` because nothing is wrong with the document the user ends up with, and the
+entry exists only so the difference between "your host uses this layout" and "we could not read it"
+is discoverable instead of invisible. It is cleared as soon as another document takes over, since by
+then it explains something that is no longer on screen.
 
 ## Compatibility policy
 

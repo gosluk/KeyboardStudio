@@ -261,3 +261,32 @@ name — the same shadowing an XKB root of one's own performs. Its other include
 the installed database, which is the only place `latin` and `us` exist. That is also why the source
 reports itself unavailable without a database: symbols files are written as differences, so importing
 one without the database yields the dozen keys it overrides and a report full of missing includes.
+
+## AD-027 - The host's layout is detected from files, and only replaces a document nobody has touched
+
+Startup detection reads `XKB_DEFAULT_LAYOUT`, then `/etc/X11/xorg.conf.d/00-keyboard.conf`, then
+`/etc/vconsole.conf`, then `/etc/default/keyboard`, then falls back to `us`. No process is spawned.
+
+`localectl` and `gsettings` would both answer the question, but each adds a process dependency to
+the startup path, each depends on which desktop happens to be installed, and both write the files
+above anyway. Files are readable whether or not anything is running, which matters on a machine
+where the editor may be among the first things started.
+
+The chain has two wrinkles worth stating. `KEYMAP` in `vconsole.conf` names a console keymap rather
+than an XKB layout — a host set to `KEYMAP=pl2` has no XKB layout called `pl2` — so `XKBLAYOUT` in
+the same file outranks it, while `KEYMAP` stays as the only statement of intent a console-only host
+makes. And `/etc/default/keyboard` is in the chain because it is where the Debian family keeps
+`XKBLAYOUT`; without it the whole feature falls through to `us` on the distributions most likely to
+have a layout worth detecting.
+
+Detection is total rather than nullable: it ends at `us`, so the caller never has to decide what
+nothing means, and whether that layout exists is the import's question to answer. Detection speaks
+XKB's vocabulary because that is what it reads; Core sees `IHostLayoutProbe` returning an
+`ImportableLayoutReference`, and `XkbHostLayoutProbe` is the one line between them.
+
+The import replaces the open document only while it is still the untouched one the editor started
+with — same instance, not dirty, no path. Nobody asked for this import, so a user who has typed,
+opened a file, or made a new document has already said what they want to work on, and having it
+swapped out a moment later would be worse than never importing at all. For the same reason failure
+is quiet: a host with no source reports nothing, and a layout that could not be read leaves a
+`KSI011` `Info` entry rather than a dialog about a layout the user never mentioned.

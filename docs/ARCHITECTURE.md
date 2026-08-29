@@ -511,6 +511,11 @@ before replacement a correctness requirement rather than a nicety.
 Both commit paths route through the existing unsaved-changes confirmation, and mapping replacement
 goes through `KeyboardEditor` so the future undo/redo boundary (2.4) stays intact.
 
+`HostLayoutImportCatalog` is the composition root for import and the only place in the application
+that names a concrete source or a concrete probe. `MainWindowViewModel` takes both as interfaces,
+which is what lets every import test but the integration ones run against a fake rather than
+whatever the machine happens to have installed.
+
 
 ---
 
@@ -832,10 +837,10 @@ key IDs to native physical identities.
 
 ## 13. Layout import
 
-*Adopted design, implemented by Phase 13. Sections 13.1, 13.2, and 13.4 are built, as is the front
-of the 13.3 pipeline — data-root discovery, registry reading, the symbols lexer and parser, include
-resolution, and both translators; the importer that assembles them and the UI and startup paths in
-13.5 and 13.6 are not.*
+*Adopted design, built by Phase 13. Sections 13.1 through 13.6 are implemented: the neutral
+contract, the seed, the whole XKB pipeline, the fidelity report, provenance, and the startup import.
+What remains of the phase is test coverage — golden fixtures, a round trip, a soak, and an `xkbcli`
+oracle — rather than behaviour.*
 
 A new document must never open as bare geometry with zero mappings. Import supplies a starting point,
 either from an embedded seed or from a layout already installed on the host. Full design detail lives
@@ -1085,10 +1090,23 @@ on — and what to do with the document is decided by `MainWindowViewModel`, whe
 The seed project loads first so the first frame never waits on the filesystem. On Linux the host's
 configured layout is then resolved and imported asynchronously, replacing the seed only while the
 document is still pristine. Detection reads `XKB_DEFAULT_LAYOUT`, then
-`/etc/X11/xorg.conf.d/00-keyboard.conf`, then `/etc/vconsole.conf`, then falls back to `us`. No
-process is spawned: `localectl` and `gsettings` would work but add a process dependency to startup
-and write those same files anyway. Any failure is silent apart from a diagnostics entry — a broken
-host XKB database must never stop the editor from opening.
+`/etc/X11/xorg.conf.d/00-keyboard.conf`, then `/etc/vconsole.conf`, then `/etc/default/keyboard`,
+then falls back to `us`. No process is spawned: `localectl` and `gsettings` would work but add a
+process dependency to startup and write those same files anyway. Any failure is silent apart from a
+diagnostics entry — a broken host XKB database must never stop the editor from opening.
+
+Detection is `IXkbActiveLayoutProbe` in `KeyboardStudio.Linux`, which answers in XKB's own
+vocabulary because that is what it reads. Core sees `IHostLayoutProbe`, which returns an
+`ImportableLayoutReference` or nothing, and `XkbHostLayoutProbe` is the single line between them.
+The split is what keeps the detection rules testable against files with no catalog present, and
+leaves room for a second platform to answer the same question its own way.
+
+`MainWindowViewModel.ImportHostLayoutAsync` is started by `App` after the window exists and is not
+awaited. It replaces the document only when that document is still the untouched one the constructor
+made — same instance, not dirty, no path — because a user who has already started working has said
+what they want, and swapping it out a moment later would be worse than never importing. Its result
+is a document in exactly the state an accepted dialog import leaves: no path, not dirty, XKB profile
+pre-filled.
 
 ---
 

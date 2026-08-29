@@ -15,10 +15,13 @@ public sealed class MainWindowViewModel : ObservableObject
     private readonly ProjectDocumentService _documentService;
     private readonly IProjectInteractionService _interactionService;
     private readonly ILayoutImportCatalog _importCatalog;
+    private readonly IHostLayoutProbe _hostLayoutProbe;
     private readonly IKeyboardTemplateProvider _templateProvider;
     private readonly IKeyboardProjectValidator _validator;
     private readonly ISeedProjectSource _seedProjectSource;
     private DiagnosticsViewModel _diagnostics;
+    private ValidationIssue? _hostImportIssue;
+    private KeyboardProject _startupProject;
     private string _importStatus = string.Empty;
     private KeyboardTemplateDescriptor _selectedTemplate;
     private KeyboardProject _project;
@@ -74,7 +77,8 @@ public sealed class MainWindowViewModel : ObservableObject
         IKeyboardProjectValidator validator,
         ISeedProjectSource seedProjectSource,
         IBuildTargetVisibilityPolicy buildTargetVisibility,
-        ILayoutImportCatalog? importCatalog = null)
+        ILayoutImportCatalog? importCatalog = null,
+        IHostLayoutProbe? hostLayoutProbe = null)
     {
         ArgumentNullException.ThrowIfNull(templateProvider);
         ArgumentNullException.ThrowIfNull(interactionService);
@@ -84,6 +88,7 @@ public sealed class MainWindowViewModel : ObservableObject
 
         _templateProvider = templateProvider;
         _importCatalog = importCatalog ?? HostLayoutImportCatalog.Create(templateProvider);
+        _hostLayoutProbe = hostLayoutProbe ?? HostLayoutImportCatalog.CreateHostProbe();
         _interactionService = interactionService;
         _validator = validator;
         _seedProjectSource = seedProjectSource;
@@ -96,6 +101,7 @@ public sealed class MainWindowViewModel : ObservableObject
                 CreateProject(_selectedTemplate),
                 BuildViewModel.CreateDefaultTargetProfiles()));
         _project = _documentService.CreateNew();
+        _startupProject = _project;
         _editor = CreateEditor(_project, _selectedTemplate);
         _diagnostics = CreateDiagnostics(_editor);
         RefreshDiagnostics();
@@ -267,6 +273,117 @@ public sealed class MainWindowViewModel : ObservableObject
     }
 
     /// <summary>
+    /// Replaces the starting document with the layout this host is already configured to type
+    /// with, if it can be read and if the user has not started working in the meantime.
+    /// </summary>
+    /// <remarks>
+    /// Not run from the constructor. The editor has a working document the moment it is built, and
+    /// the first frame is drawn from it; detecting and importing the host's layout takes hundreds
+    /// of file reads and is worth none of that delay. So this is started separately, after the
+    /// window exists, and the document it produces arrives a moment later or not at all.
+    ///
+    /// Everything that can fail here fails quietly. Nobody asked for this import: a dialog about a
+    /// layout the user never mentioned would be an interruption, so a failure leaves a diagnostics
+    /// entry and the document the editor already had.
+    /// </remarks>
+    public async Task ImportHostLayoutAsync(CancellationToken cancellationToken = default)
+    {
+        if (!_importCatalog.HasAvailableSources)
+        {
+            // Nothing on this host can list a layout, so there is nothing to detect and nothing to
+            // report either: the starting document was always going to be the only one there was.
+            return;
+        }
+
+        var reference = _hostLayoutProbe.Detect();
+        if (reference is null)
+        {
+            return;
+        }
+
+        LayoutImportResult result;
+        try
+        {
+            // Onto the thread pool in one hop. A source composes a layout from files as it is
+            // asked for it and hands back a task that is already finished, so awaiting it on the
+            // UI thread would hold the window for the whole of the work rather than none of it.
+            result = await Task.Run(
+                () => _importCatalog.ImportAsync(reference, LayoutImportOptions.Default, cancellationToken),
+                cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        catch (Exception exception) when (
+            exception is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            NoteHostLayoutUnavailable(reference, exception.Message);
+            return;
+        }
+
+        if (result is not { Success: true, Project: { } imported })
+        {
+            NoteHostLayoutUnavailable(reference, "it could not be read on this host");
+            return;
+        }
+
+        if (!IsUntouchedStartupDocument)
+        {
+            // The user got there first. Whatever they are working in now is what they asked for,
+            // and replacing it because a background task finished would be the editor overruling
+            // them on the strength of a guess.
+            return;
+        }
+
+        var provenance = new LayoutImportProvenance(
+            reference.SourceId,
+            reference.LayoutId,
+            reference.VariantId,
+            reference.SourceLocation,
+            imported.Metadata.Name,
+            DateTimeOffset.UtcNow);
+
+        var project = _documentService.Adopt(new KeyboardProjectDocument(
+            imported,
+            CreateImportedTargetProfiles(reference.LayoutId, reference.VariantId, imported.Metadata.Name),
+            provenance));
+        var template = Templates.FirstOrDefault(candidate => candidate.Id == project.Keyboard.Id)
+            ?? _selectedTemplate;
+
+        ReplaceProject(project, template);
+        _startupProject = project;
+        ImportStatus = $"Started from this host's layout, {provenance.Describe()}.";
+    }
+
+    /// <summary>
+    /// Whether the document is still the untouched one the editor started with. The host import
+    /// replaces only that: a user who has typed, opened a file, or made a new document has said
+    /// what they want to work on, and having it swapped out a moment later would be worse than
+    /// never importing at all.
+    /// </summary>
+    private bool IsUntouchedStartupDocument =>
+        ReferenceEquals(Project, _startupProject) && !IsDirty && CurrentFilePath is null;
+
+    /// <summary>
+    /// Records that the host's own layout could not be imported. It goes in the diagnostics list
+    /// rather than in a dialog because it explains something the user can see — the layout they
+    /// type with is not the one on screen — without demanding anything of them.
+    /// </summary>
+    private void NoteHostLayoutUnavailable(ImportableLayoutReference reference, string reason)
+    {
+        var name = reference.VariantId is null
+            ? reference.LayoutId
+            : $"{reference.LayoutId}({reference.VariantId})";
+
+        _hostImportIssue = new ValidationIssue(
+            ValidationSeverity.Info,
+            LayoutImportDiagnosticCodes.HostLayoutUnavailable,
+            $"This host is configured for '{name}', but {reason}. The starting layout was kept.");
+        RefreshDiagnostics();
+    }
+
+    /// <summary>
     /// Imports a layout the host advertises, from <b>File &gt; Import layout…</b> or the editor's
     /// own Import button.
     /// </summary>
@@ -329,7 +446,10 @@ public sealed class MainWindowViewModel : ObservableObject
 
         var project = _documentService.Adopt(new KeyboardProjectDocument(
             imported,
-            CreateImportedTargetProfiles(descriptor),
+            CreateImportedTargetProfiles(
+                descriptor.LayoutId,
+                descriptor.VariantId,
+                descriptor.DisplayName),
             provenance));
         var template = Templates.FirstOrDefault(candidate => candidate.Id == project.Keyboard.Id)
             ?? _selectedTemplate;
@@ -366,7 +486,9 @@ public sealed class MainWindowViewModel : ObservableObject
     /// root. The variant becomes the section, which is where XKB keeps it.
     /// </remarks>
     private static Dictionary<string, ProjectTargetProfile> CreateImportedTargetProfiles(
-        ImportableLayoutDescriptor descriptor)
+        string layoutId,
+        string? variantId,
+        string description)
     {
         var profiles = new Dictionary<string, ProjectTargetProfile>(
             BuildViewModel.CreateDefaultTargetProfiles(),
@@ -382,12 +504,12 @@ public sealed class MainWindowViewModel : ObservableObject
             new Dictionary<string, string>(linux.Settings, StringComparer.Ordinal)
             {
                 [BuildProfileKeys.LayoutId] = XkbLayoutMetadata.SanitizeIdentifier(
-                    $"{descriptor.LayoutId}-custom",
+                    $"{layoutId}-custom",
                     "keyboardstudio"),
                 [BuildProfileKeys.SectionId] = XkbLayoutMetadata.SanitizeIdentifier(
-                    descriptor.VariantId,
+                    variantId,
                     "basic"),
-                [BuildProfileKeys.Description] = descriptor.DisplayName
+                [BuildProfileKeys.Description] = description
             });
 
         return profiles;
@@ -451,9 +573,11 @@ public sealed class MainWindowViewModel : ObservableObject
     private void ReplaceProject(KeyboardProject project, KeyboardTemplateDescriptor template)
     {
         // Cleared here rather than at each call site, so a new or opened document never inherits
-        // the line describing where the previous one was imported from. Whoever put a document in
-        // place sets it again afterwards if there is something to say.
+        // the line describing where the previous one was imported from, nor the note about a host
+        // layout that could not be read for a document that is no longer on screen. Whoever put a
+        // document in place sets them again afterwards if there is something to say.
         ImportStatus = string.Empty;
+        _hostImportIssue = null;
         _selectedTemplate = template;
         OnPropertyChanged(nameof(SelectedTemplate));
         Project = project;
@@ -488,10 +612,19 @@ public sealed class MainWindowViewModel : ObservableObject
     private static DiagnosticsViewModel CreateDiagnostics(KeyboardEditorViewModel editor) =>
         new(keyId => editor.SelectKey(keyId));
 
+    /// <summary>
+    /// Re-runs validation and shows what it found, plus the standing note about a host layout that
+    /// could not be imported. The note is folded in here rather than appended to the list, because
+    /// the list is rebuilt from validation on every edit and anything merely added to it would
+    /// vanish at the next keystroke. Only validation reaches the keyboard: the note concerns no
+    /// key, and marking one would send the user somewhere with nothing to see.
+    /// </summary>
     private void RefreshDiagnostics()
     {
         var result = _validator.Validate(Project);
-        Diagnostics.Refresh(result);
+        Diagnostics.Refresh(_hostImportIssue is null
+            ? result
+            : new ValidationResult([.. result.Issues, _hostImportIssue]));
         Editor.ApplyDiagnostics(result.Issues);
         Build?.Refresh();
     }

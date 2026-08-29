@@ -124,6 +124,14 @@ runner. The tests never activate a layout. On failure, the generated symbols com
 Locally, categorized tests return without running when `xkbcli` is unavailable; install the tool or
 run `scripts/test-xkb-integration-in-podman.sh` to exercise the external verifier in isolation.
 
+The same category also covers layout import against the installed database, in both
+`KeyboardStudio.Linux.Tests` and `KeyboardStudio.App.Tests`. The application half is where the
+composition root lives, so it is the only place the real sources and the real host probe can be
+shown to be wired together at all — including that the probe and the catalog agree on their
+vocabulary well enough for this host's own configured layout to import. Those tests skip on a
+developer machine with no XKB database and fail loudly in Linux CI, where the package is installed
+deliberately.
+
 ## Test project boundaries
 
 - `KeyboardStudio.Core.Tests` covers platform-neutral domain, editing, validation, and persistence-facing behavior.

@@ -1853,6 +1853,45 @@ The seed loads first so the first frame never waits on the filesystem; the host 
 asynchronously and replaces the seed only while the document is still pristine. Failure is silent
 apart from a diagnostics entry.
 
+**As built.** The chain gained two refinements, both flagged rather than silent. In
+`/etc/vconsole.conf` the probe prefers `XKBLAYOUT`/`XKBVARIANT` over `KEYMAP`: recent systemd writes
+the X keyboard configuration into that file alongside the console keymap, and the two are not the
+same vocabulary — a host set to `KEYMAP=pl2` has no XKB layout called `pl2`. `KEYMAP` is still read
+last within that file, because on a host only ever configured for the console it is the only
+statement of intent there is. And `/etc/default/keyboard` was added as a fourth step ahead of the
+`us` fallback: it is where the Debian family keeps `XKBLAYOUT`, and without it the feature falls
+through to `us` on exactly the distributions most likely to have a layout worth detecting. It parses
+identically to `vconsole.conf` and sits below it, since a host with both has had the systemd file
+written more recently.
+
+Detection is total: `XkbActiveLayout.Fallback` is `us`, so the probe returns a layout rather than a
+null and the caller never has to decide what nothing means. Whether that layout exists on this host
+is the import's question. A host configured with several layouts yields the first — the one the
+session starts in — with the variant taken positionally against it, so `us,pl` with `,dvorak` gives
+an unmodified `us` rather than `us(dvorak)`. An unreadable file is treated exactly as a missing one,
+because either way that step has nothing to contribute.
+
+Core gained `IHostLayoutProbe`, which returns an `ImportableLayoutReference` or nothing, and
+`XkbHostLayoutProbe` is the one line between it and XKB's own vocabulary. That split is what keeps
+the detection rules testable against files with no catalog present, and it is why the fallback-chain
+tests live in `KeyboardStudio.Linux.Tests` rather than in `KeyboardStudio.App.Tests` as the test list
+below anticipated; the application tests cover what startup does with an answer, which is the part
+that belongs there.
+
+`App` starts `MainWindowViewModel.ImportHostLayoutAsync` after the window exists and does not await
+it. The work goes onto the thread pool in one hop, because a source composes a layout from files as
+it is asked for it and returns a task that is already complete — awaiting it on the UI thread would
+hold the first frame for all of the work rather than none of it. The result replaces the document
+only if that document is still the untouched one the constructor made: same instance, not dirty, no
+path.
+
+Failure is quieter than a single rule. A host with no source reports nothing at all, since that is
+an ordinary situation rather than a failure. A layout that was named but could not be read leaves a
+`KSI011` `Info` entry, folded into the diagnostics list at every refresh rather than appended once —
+the list is rebuilt from validation on every edit, so anything merely added to it would vanish at
+the next keystroke — and cleared when another document takes over, by which point it explains
+something no longer on screen.
+
 ### P13.12 Import test coverage
 
 Golden imports of vendored, pinned `us`/`pl`/`de`/`fr` fixtures; a full import to generation to

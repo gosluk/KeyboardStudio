@@ -40,14 +40,16 @@ internal static class TestMainWindow
     /// </summary>
     public static MainWindowViewModel WithImportCatalog(
         ILayoutImportCatalog catalog,
-        IProjectInteractionService interactionService) =>
+        IProjectInteractionService interactionService,
+        IHostLayoutProbe? hostLayoutProbe = null) =>
         new(new KeyboardTemplateProvider(),
             interactionService,
             CreateValidator(),
             new EmbeddedSeedProjectSource(),
             new EnvironmentBuildTargetVisibilityPolicy(
                 EnvironmentBuildTargetVisibilityPolicy.AllTargetsValue),
-            catalog);
+            catalog,
+            hostLayoutProbe ?? new FakeHostLayoutProbe(null));
 
     private static KeyboardProjectValidator CreateValidator() =>
         new KeyboardProjectValidator([
