@@ -82,4 +82,10 @@ public static class LayoutImportDiagnosticCodes
     /// the whole key was skipped. Expected for media and vendor keys.
     /// </summary>
     public const string PhysicalKeyNotInTemplate = "KSI033";
+
+    /// <summary>
+    /// Error. The suggested physical keyboard template is not available on this host. No import
+    /// is possible.
+    /// </summary>
+    public const string TemplateNotAvailable = "KSI034";
 }
