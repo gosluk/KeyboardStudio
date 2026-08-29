@@ -1796,6 +1796,49 @@ timestamp) behind a `documentSchemaVersion` bump and a migration. Import pre-fil
 and always suffixes the layout ID (`pl` becomes `pl-custom`), never reusing the source ID: an artifact
 named `symbols/pl` would shadow the distribution's own file if copied into an XKB root.
 
+**As built.** `LayoutImportViewModel` reaches the platform only through `ILayoutImportCatalog`; its
+other arguments are the geometry descriptors the application already has, not the provider that
+produces them. `ImportableLayoutViewModel` groups the flat catalog by layout and
+`ImportableVariantViewModel` is one choice inside it — the catalog arrives as one descriptor per
+layout-and-variant pair, several hundred of them, which is the right shape to import from and the
+wrong shape to choose from.
+
+Selecting a layout imports it immediately: the import *is* the preview. A fidelity report the user
+cannot see until after they commit is a report they cannot act on, and re-importing to commit would
+risk showing one result and committing another. `PreviewTask` exposes the in-flight import so a
+caller can wait for it; a newer selection cancels the older one.
+
+The read-only preview is built from the editor's own `KeyViewModel` with no select command attached,
+so it renders exactly what the editor will. A preview that is a second rendering can disagree with
+the first, and the empty-keyboard defect P13.9 fixed was invisible until a project was drawn.
+
+The geometry override is a checkbox plus a selector rather than a nullable selection, and the
+suggestion is echoed back into the selector after each import so a user who takes it can still see
+what they took. Choosing mapping replacement pins the geometry to the open document's own: that mode
+keeps the document's keyboard, so a second geometry there would only invite keys that cannot fit.
+
+`KeyboardEditor.ReplaceMappings` commits the replacement path, copying what it is given and
+reporting how many mappings named a key the keyboard does not have. The commit decision lives in
+`MainWindowViewModel` rather than in the dialog, and the unsaved-changes prompt runs after the
+dialog rather than before it: both paths discard work in progress, and neither is worth prompting
+about until the user has said which one they want.
+
+`XkbSymbolsFileImportSource` (`linux-xkb-file`) serves **Import from file…**. It lists nothing and
+imports the path on the reference, resolving that file under its own name — so a section it includes
+from itself reaches the picked file rather than an installed layout of the same name — while its
+other includes still come from the database. It is available only where a database is: symbols files
+are written as differences, so without one an import yields the dozen keys the file overrides and a
+report full of missing includes. `HostLayoutImportCatalog` registers both sources and is the only
+place in the application that names a concrete one.
+
+The envelope moved to `2` for `importProvenance`, with the `1`-to-`2` step registered even though it
+changes nothing, so the chain has no gap for version 3 to fall through. `ProjectDocumentService`
+owns provenance beside the current path and dirty flag, so every save carries it.
+
+An imported document is not dirty and has no path, exactly like a new one: nothing has been written
+yet and nothing changed since it was made. Replacement marks the document dirty, because it changed
+one the user may already have saved.
+
 ### P13.11 Host layout detection and startup import
 
 ```text

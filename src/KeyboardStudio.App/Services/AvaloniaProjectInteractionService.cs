@@ -12,6 +12,15 @@ public sealed class AvaloniaProjectInteractionService : IProjectInteractionServi
         MimeTypes = ["application/json"]
     };
 
+    /// <summary>
+    /// XKB symbols files carry no extension, so the picker cannot filter by one and offers "any
+    /// file" alongside the couple of suffixes people give their own copies.
+    /// </summary>
+    private static readonly FilePickerFileType SymbolsFileType = new("Keyboard symbols file")
+    {
+        Patterns = ["*", "*.xkb", "*.symbols"]
+    };
+
     private readonly Window _owner;
 
     public AvaloniaProjectInteractionService(Window owner)
@@ -47,6 +56,21 @@ public sealed class AvaloniaProjectInteractionService : IProjectInteractionServi
         });
 
         return file?.TryGetLocalPath();
+    }
+
+    public Task<bool> ShowLayoutImportAsync(LayoutImportViewModel viewModel) =>
+        new ImportLayoutDialog(viewModel).ShowDialog<bool>(_owner);
+
+    public async Task<string?> SelectSymbolsFilePathAsync()
+    {
+        var files = await _owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Import keyboard symbols file",
+            AllowMultiple = false,
+            FileTypeFilter = [SymbolsFileType]
+        });
+
+        return files.Count == 1 ? files[0].TryGetLocalPath() : null;
     }
 
     public Task ShowErrorAsync(string title, string message) =>

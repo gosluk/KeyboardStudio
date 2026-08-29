@@ -374,13 +374,20 @@ MainWindowViewModel
  |- KeyMappingViewModel
  |   `- Selected key mapping fields
  |
- `- BuildViewModel
-     |- SelectedTarget
-     |- TargetProfile
-     |- EnvironmentStatus
-     |- BuildCommand
-     |- Stages
-     `- BuildResult
+ |- BuildViewModel
+ |   |- SelectedTarget
+ |   |- TargetProfile
+ |   |- EnvironmentStatus
+ |   |- BuildCommand
+ |   |- Stages
+ |   `- BuildResult
+ |
+ `- LayoutImportViewModel        (built per dialog, not held open)
+     |- Layouts -> ImportableLayoutViewModel -> ImportableVariantViewModel
+     |- SelectedTemplate / UseSuggestedGeometry
+     |- CommitMode
+     |- PreviewKeys -> KeyViewModel
+     `- Report -> LayoutImportReportViewModel
 ```
 
 ViewModels must not depend on Windows- or XKB-specific generator classes. Concrete backends are
@@ -535,9 +542,10 @@ The desktop application persists a `KeyboardProjectDocument` envelope:
 KeyboardProjectDocument
  |- documentSchemaVersion
  |- project -> KeyboardProject (Core schemaVersion)
- `- targets
-     |- windowsX64 -> Windows build settings
-     `- linuxXkb   -> XKB build settings
+ |- targets
+ |   |- windowsX64 -> Windows build settings
+ |   `- linuxXkb   -> XKB build settings
+ `- importProvenance   (absent unless the document began as an import)
 ```
 
 `ProjectDocumentService` owns current path and dirty state. `BuildViewModel` exports both editable
@@ -1040,7 +1048,7 @@ envelope alongside target profiles, not in `ProjectMetadata`:
 
 ```text
 KeyboardProjectDocument
- |- documentSchemaVersion        bumped; handled by the existing migration pipeline
+ |- documentSchemaVersion        2; version 1 migrates forward
  |- project
  |- targets
  `- importProvenance
@@ -1049,10 +1057,28 @@ KeyboardProjectDocument
      `- importedAtUtc
 ```
 
+Provenance records what the source said at the time and is never re-read on load. The layout it
+names may since have been edited, upgraded, or uninstalled, and a record of where something came
+from has to keep saying so even when the answer has changed. `ProjectDocumentService` owns it beside
+the current path and dirty flag, so every save carries it without the editor having to remember to.
+
 Import also pre-fills the `XkbLayoutMetadata` profile so an imported layout can be built straight
-back out. The generated layout ID is always suffixed (`pl` becomes `pl-custom`) and never reuses the
+back out: the layout ID becomes `pl-custom`, the variant becomes the section, and the registry's
+description becomes the description. The generated layout ID is always suffixed and never reuses the
 source ID, because an artifact named `symbols/pl` would shadow the distribution's own file if copied
 into an XKB root.
+
+An import commits one of two ways. **A new project** replaces the document outright — new geometry,
+new mappings, default build settings, no file path — and is what a fresh start means. **Replacement
+mappings** keep the open document's keyboard, its build settings and the file it is saved as, and
+change only what the keys produce; the dialog pins the geometry to that document's own, because a
+second geometry there would only invite keys that cannot fit. Both paths run the existing
+unsaved-changes prompt, after the dialog rather than before it: both discard work in progress, and
+neither is worth prompting about until the user has said which one they want.
+
+The dialog imports but never commits. Selecting a layout imports it immediately and shows the
+result — a fidelity report the user cannot see until after they commit is a report they cannot act
+on — and what to do with the document is decided by `MainWindowViewModel`, where the document lives.
 
 ### 13.6 Startup
 

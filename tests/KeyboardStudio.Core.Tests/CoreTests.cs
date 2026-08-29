@@ -102,6 +102,70 @@ public sealed class KeyboardEditorTests
 
     [Fact]
     [Trait("Category", "Unit")]
+    public void ReplaceMappings_ReplacesTheWholeLayoutAndKeepsTheGeometry()
+    {
+        var project = TestProjectFactory.Create();
+        var editor = new KeyboardEditor(project);
+        var keyCount = project.Keyboard.Keys.Count;
+
+        var skipped = editor.ReplaceMappings([
+            new KeyMapping
+            {
+                KeyId = "KeyA",
+                LogicalKey = LogicalKey.Q,
+                Outputs = { [ModifierLayer.Default] = new CharacterOutput("q") }
+            }
+        ]);
+
+        Assert.Equal(0, skipped);
+        Assert.Equal(keyCount, project.Keyboard.Keys.Count);
+
+        // Replacement, not merge: the twenty-five other mappings the fixture came with are gone.
+        var mapping = Assert.Single(project.Layout.Mappings);
+        Assert.Equal("KeyA", mapping.KeyId);
+        Assert.Equal(LogicalKey.Q, mapping.LogicalKey);
+        Assert.Equal(new CharacterOutput("q"), mapping.Outputs[ModifierLayer.Default]);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void ReplaceMappings_ForAKeyThisKeyboardDoesNotHave_SkipsItAndCountsIt()
+    {
+        // A layout read on one geometry laid onto another. The keys that fit are kept rather than
+        // the whole operation being refused, and the count is what lets the caller say so.
+        var project = TestProjectFactory.Create();
+
+        var skipped = new KeyboardEditor(project).ReplaceMappings([
+            new KeyMapping { KeyId = "KeyA", LogicalKey = LogicalKey.A },
+            new KeyMapping { KeyId = "IntlBackslash", LogicalKey = LogicalKey.InternationalBackslash }
+        ]);
+
+        Assert.Equal(1, skipped);
+        Assert.Equal("KeyA", Assert.Single(project.Layout.Mappings).KeyId);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void ReplaceMappings_CopiesWhatItIsGiven_SoTheSourceStaysIndependent()
+    {
+        var project = TestProjectFactory.Create();
+        var source = new KeyMapping
+        {
+            KeyId = "KeyA",
+            LogicalKey = LogicalKey.A,
+            Outputs = { [ModifierLayer.Default] = new CharacterOutput("a") }
+        };
+
+        new KeyboardEditor(project).ReplaceMappings([source]);
+        source.Outputs[ModifierLayer.Shift] = new CharacterOutput("A");
+
+        Assert.DoesNotContain(
+            ModifierLayer.Shift,
+            project.Layout.Find("KeyA")!.Outputs.Keys);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
     public void Mutations_WhenValueChanges_ReturnChangeInformation()
     {
         var editor = new KeyboardEditor(TestProjectFactory.Create());

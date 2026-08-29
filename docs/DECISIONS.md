@@ -219,3 +219,45 @@ validation, so the Windows path cannot rot while it is hidden.
 The policy filters the target list only. Profiles are still constructed for every target, so
 `ExportTargetProfiles` keeps returning both entries whatever is on screen, and a policy that hid
 everything falls back to the full list rather than producing a Build card with nothing to build.
+
+## AD-025 - Import previews by importing, and commits in two ways
+
+Selecting a layout in the import dialog runs the real import. The result is the preview, the
+fidelity report, and — if accepted — the committed project.
+
+Import is lossy by design, so a report the user cannot see until after they commit is a report they
+cannot act on. Importing once and reusing the result also removes the class of bug where the preview
+and the commit disagree, which a second import to commit would reintroduce. The preview keycaps are
+the editor's own `KeyViewModel` with no select command attached, for the same reason: a second
+rendering can disagree with the first, and the empty-keyboard defect fixed in P13.9 was invisible
+until a project was drawn.
+
+An accepted import commits one of two ways. **A new project** replaces the document outright and
+carries default build settings with the XKB profile pre-filled; it has no path and is not dirty,
+exactly like a new document. **Replacement mappings** keep the open document's geometry, build
+settings and file, changing only what the keys produce, and mark it dirty. The dialog pins the
+geometry to the open document in that mode, because that document's keyboard is what the mappings
+must land on. Both paths run the existing unsaved-changes prompt, after the dialog rather than
+before it: both discard work in progress, and neither is worth prompting about until the user has
+said which one they want.
+
+`LayoutImportViewModel` depends on `ILayoutImportCatalog` and on geometry descriptors, never on a
+source. The commit decision lives in `MainWindowViewModel`, where the document lives; the dialog
+imports and reports, and decides nothing.
+
+## AD-026 - A file the user names is a second source, not a mode of the first
+
+`XkbSymbolsFileImportSource` (`linux-xkb-file`) imports one symbols file by path.
+`XkbLayoutImportSource` (`linux-xkb`) imports what the host advertises. They are separate sources.
+
+The two answer different questions — "what can I import?" against "import this" — and provenance has
+to record which of them a document came from: a catalogued layout can be found again by name, a
+loose file only by path. The file source therefore lists nothing, and a file outside the roots is
+never offered for browsing, because that would mean guessing where the user keeps their layouts.
+
+The picked file answers to its own name through `XkbPinnedFileIncludeResolver`, so a section it
+includes from itself reaches that file rather than an installed layout that happens to share the
+name — the same shadowing an XKB root of one's own performs. Its other includes still resolve out of
+the installed database, which is the only place `latin` and `us` exist. That is also why the source
+reports itself unavailable without a database: symbols files are written as differences, so importing
+one without the database yields the dozen keys it overrides and a report full of missing includes.

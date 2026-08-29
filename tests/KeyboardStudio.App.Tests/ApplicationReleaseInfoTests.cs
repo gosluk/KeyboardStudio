@@ -12,6 +12,10 @@ public sealed class ApplicationReleaseInfoTests
         Assert.Equal("0.1.0", ApplicationReleaseInfo.Version);
         Assert.Equal("KeyboardStudio 0.1.0", ApplicationReleaseInfo.DisplayVersion);
         Assert.Equal(1, ApplicationReleaseInfo.ProjectSchemaVersion);
-        Assert.Equal(1, ApplicationReleaseInfo.DocumentSchemaVersion);
+
+        // The envelope moved to 2 when it gained import provenance, while the release and the
+        // Core project schema stayed where they were. That the three numbers disagree is the
+        // point of having three of them.
+        Assert.Equal(2, ApplicationReleaseInfo.DocumentSchemaVersion);
     }
 }

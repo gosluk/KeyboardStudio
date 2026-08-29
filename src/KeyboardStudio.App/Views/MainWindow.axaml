@@ -20,6 +20,9 @@
         <MenuItem Header="_New" Command="{Binding NewCommand}" />
         <MenuItem Header="_Open…" Command="{Binding OpenCommand}" />
         <Separator />
+        <MenuItem Header="_Import layout…" Command="{Binding ImportLayoutCommand}" />
+        <MenuItem Header="Import _from file…" Command="{Binding ImportFromFileCommand}" />
+        <Separator />
         <MenuItem Header="_Save" Command="{Binding SaveCommand}" />
         <MenuItem Header="Save _As…" Command="{Binding SaveAsCommand}" />
       </MenuItem>
@@ -38,6 +41,12 @@
                      FontSize="11"
                      Foreground="{DynamicResource WarningForegroundBrush}" />
         </Border>
+        <TextBlock Classes="muted"
+                   Text="{Binding ImportStatus}"
+                   VerticalAlignment="Center"
+                   TextTrimming="CharacterEllipsis"
+                   FontSize="12"
+                   IsVisible="{Binding HasImportStatus}" />
       </StackPanel>
 
       <Grid Grid.Row="1" Grid.Column="0" RowDefinitions="Auto,*" RowSpacing="8">
@@ -87,6 +96,9 @@
                   <Button Content="Create"
                           Command="{Binding NewCommand}"
                           ToolTip.Tip="Replace the current project with a new one built from the selected template" />
+                  <Button Content="Import…"
+                          Command="{Binding ImportLayoutCommand}"
+                          ToolTip.Tip="Start from a layout this host already has installed" />
                 </StackPanel>
               </WrapPanel>
             </Grid>

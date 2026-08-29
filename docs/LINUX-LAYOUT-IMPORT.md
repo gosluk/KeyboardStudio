@@ -605,7 +605,7 @@ an XKB-shaped field:
 
 ```text
 KeyboardProjectDocument
- |- documentSchemaVersion        (bumped; handled by the existing migration pipeline)
+ |- documentSchemaVersion        (2; version 1 migrates forward)
  |- project
  |- targets
  `- importProvenance
@@ -618,9 +618,18 @@ KeyboardProjectDocument
 ```
 
 Import also pre-fills the `XkbLayoutMetadata` target profile so the project can immediately be built
-back out. The generated layout ID is **suffixed** (`pl` -> `pl-custom`), never reused verbatim: an
-artifact named `symbols/pl` would shadow the distribution's own file if a user copied it into an XKB
-root, which is precisely the failure mode `LINUX-XKB.md` warns about.
+back out: the layout ID becomes `pl-custom`, the variant becomes the section ID, and the registry's
+description becomes the description. The generated layout ID is **suffixed**, never reused verbatim:
+an artifact named `symbols/pl` would shadow the distribution's own file if a user copied it into an
+XKB root, which is precisely the failure mode `LINUX-XKB.md` warns about.
+
+A second source, `XkbSymbolsFileImportSource` (`linux-xkb-file`), imports one file the user points
+at, for a layout no catalog lists. It lists nothing — a file outside the roots is not something to
+browse for, it is something the user names — and resolves that file under its own name while its
+includes still come from the installed database, which is the only place `latin` and `us` exist. It
+is a separate source rather than a mode of the first because provenance should record which of the
+two a document came from: a catalogued layout can be found again by name, a loose file only by path.
+Both are registered in `HostLayoutImportCatalog`, the application's composition root for import.
 
 ---
 

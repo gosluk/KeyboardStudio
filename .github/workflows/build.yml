@@ -69,8 +69,16 @@ jobs:
       - name: Restore
         run: dotnet restore tests/KeyboardStudio.Linux.Tests/KeyboardStudio.Linux.Tests.csproj
 
+      - name: Restore application tests
+        run: dotnet restore tests/KeyboardStudio.App.Tests/KeyboardStudio.App.Tests.csproj
+
       - name: Test generated XKB layouts
         run: dotnet test tests/KeyboardStudio.Linux.Tests/KeyboardStudio.Linux.Tests.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore --verbosity normal --filter "Category=XkbIntegration"
+
+      # The import composition root lives in the application, so the only test that proves the real
+      # sources are wired together has to run from there.
+      - name: Test layout import against the installed database
+        run: dotnet test tests/KeyboardStudio.App.Tests/KeyboardStudio.App.Tests.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore --verbosity normal --filter "Category=XkbIntegration"
 
       - name: Retain failed XKB artifacts
         if: failure()

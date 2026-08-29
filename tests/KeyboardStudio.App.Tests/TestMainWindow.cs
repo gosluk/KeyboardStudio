@@ -34,6 +34,21 @@ internal static class TestMainWindow
             new EnvironmentBuildTargetVisibilityPolicy(
                 EnvironmentBuildTargetVisibilityPolicy.AllTargetsValue));
 
+    /// <summary>
+    /// Creates a view model whose import catalog is the one supplied, rather than whatever the
+    /// test host happens to have installed.
+    /// </summary>
+    public static MainWindowViewModel WithImportCatalog(
+        ILayoutImportCatalog catalog,
+        IProjectInteractionService interactionService) =>
+        new(new KeyboardTemplateProvider(),
+            interactionService,
+            CreateValidator(),
+            new EmbeddedSeedProjectSource(),
+            new EnvironmentBuildTargetVisibilityPolicy(
+                EnvironmentBuildTargetVisibilityPolicy.AllTargetsValue),
+            catalog);
+
     private static KeyboardProjectValidator CreateValidator() =>
         new KeyboardProjectValidator([
             new MetadataValidationRule(),

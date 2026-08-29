@@ -5,7 +5,7 @@ This file tracks execution of [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md)
 - Current work branch: `import`
 - Last updated: 2026-08-29
 - Current phase: Phase 13 — Linux focus and layout import
-- Next work item: **P13.10 — Import dialog and provenance**
+- Next work item: **P13.11 — Host layout detection and startup import**
 
 Legend: `[x]` complete, `[ ]` not yet complete.
 
@@ -167,16 +167,16 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 - [x] **P13.7** Keysym table and decoder
 - [x] **P13.8** Bidirectional key-name tables
 - [x] **P13.9** Importer, template selection, fidelity report
-- [ ] **P13.10** Import dialog and provenance
+- [x] **P13.10** Import dialog and provenance
 - [ ] **P13.11** Host layout detection and startup import
 - [ ] **P13.12** Import test coverage
 
-**Phase status:** 9/12 work items complete. Phase in progress.
+**Phase status:** 10/12 work items complete. Phase in progress.
 
 ## Progress summary
 
-- Completed work items: **91**
+- Completed work items: **92**
 - Total planned work items: **94**
-- Overall checklist progress: **91/94**
+- Overall checklist progress: **92/94**
 
 The checklist records work-item completion only. Phase-level acceptance criteria and test gates in `IMPLEMENTATION-PLAN.md` still apply before a phase is considered complete.

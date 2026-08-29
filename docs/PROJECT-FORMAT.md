@@ -10,10 +10,10 @@ The serialized format is a persistence contract. It is deliberately separated fr
 
 The application release, outer document, and Core project schema are independent:
 
-| Value | Purpose | MVP value |
+| Value | Purpose | Current value |
 | --- | --- | ---: |
 | KeyboardStudio application version | Desktop release identity | `0.1.0` |
-| `documentSchemaVersion` | `.kbdproj` envelope and target-profile contract | `1` |
+| `documentSchemaVersion` | `.kbdproj` envelope, target profiles and import provenance | `2` |
 | `project.schemaVersion` | Platform-neutral Core project contract | `1` |
 
 Changing the application version does not change either persistence schema. A schema version changes
@@ -110,7 +110,7 @@ separate from backend profile settings while allowing both profiles to survive s
 
 ```json
 {
-  "documentSchemaVersion": 1,
+  "documentSchemaVersion": 2,
   "project": {
     "schemaVersion": 1,
     "metadata": {
@@ -145,6 +145,14 @@ separate from backend profile settings while allowing both profiles to survive s
         "description": "Swiss Polish"
       }
     }
+  },
+  "importProvenance": {
+    "sourceId": "linux-xkb",
+    "layoutId": "pl",
+    "variantId": "qwertz",
+    "sourceLocation": "/usr/share/X11/xkb/symbols/pl",
+    "sourceDescription": "Polish (QWERTZ)",
+    "importedAtUtc": "2026-08-29T09:15:00+00:00"
   }
 }
 ```
@@ -152,6 +160,34 @@ separate from backend profile settings while allowing both profiles to survive s
 The target dictionary key must exactly match the entry's `target` discriminator. Missing known
 profiles are recovered with application defaults; unknown profile entries remain a persistence
 boundary concern and are not treated as Core domain data.
+
+## Import provenance
+
+`importProvenance` is present only on a document that began as an import, and is absent — not null,
+not empty — on one that was authored. It records what the source said at the time and is never
+re-read on load: the layout it names may since have been edited, upgraded, or uninstalled, and a
+record of where something came from has to keep saying so even when the answer has changed.
+
+Provenance lives in the envelope rather than in `project.metadata` because it is editor bookkeeping
+rather than layout semantics. A `KeyboardProject` typed out by hand has no meaningful value for it,
+and `KeyboardStudio.Core` would otherwise carry a concept only the application uses.
+
+## Envelope versions
+
+| Version | Introduced |
+| ---: | --- |
+| `1` | The original envelope: project plus target profiles. |
+| `2` | Added `importProvenance`. |
+
+`JsonKeyboardProjectDocumentStore` accepts every version from `FirstDocumentSchemaVersion` to
+`CurrentDocumentSchemaVersion` and rejects anything outside that range, a newer version included: a
+document written by a later release may mean something this one would misread.
+
+An older envelope is migrated as raw JSON, one version per step, before the current DTO contract
+reads it — the same rule the Core project migrations follow, and for the same reason, that a DTO
+describes today's format and a historical document is by definition not in it. The `1` to `2` step
+is registered even though it changes nothing, because `importProvenance` is optional and its absence
+already reads as "not imported"; registering it keeps the chain gapless for the version after.
 
 For compatibility, the application can still open the original direct Core schema-v1 document
 shape shown below. It supplies default target profiles in memory and writes the current envelope on

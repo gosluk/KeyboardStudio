@@ -38,8 +38,14 @@ public sealed class XkbLayoutImportSource : ILayoutImportSource
         _templateProvider = templateProvider ?? throw new ArgumentNullException(nameof(templateProvider));
     }
 
+    /// <summary>
+    /// The source's identifier, written into saved documents as provenance. Changing it orphans
+    /// the provenance of every document already imported through it.
+    /// </summary>
+    public const string SourceId = "linux-xkb";
+
     /// <inheritdoc />
-    public string Id => "linux-xkb";
+    public string Id => SourceId;
 
     /// <inheritdoc />
     public string DisplayName => "Installed XKB layouts";

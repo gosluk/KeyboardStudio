@@ -222,6 +222,11 @@ public sealed class MainWindowDocumentLifecycleTests
         public Task<string?> SelectSavePathAsync(string suggestedFileName) =>
             Task.FromResult(SavePath);
 
+        public Task<bool> ShowLayoutImportAsync(LayoutImportViewModel viewModel) =>
+            Task.FromResult(false);
+
+        public Task<string?> SelectSymbolsFilePathAsync() => Task.FromResult<string?>(null);
+
         public Task ShowErrorAsync(string title, string message)
         {
             Errors.Add($"{title}: {message}");

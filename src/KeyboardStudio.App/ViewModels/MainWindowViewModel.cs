@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using KeyboardStudio.Core;
 using KeyboardStudio.Persistence;
+using KeyboardStudio.Linux;
 using KeyboardStudio.Windows;
 
 namespace KeyboardStudio.App;
@@ -13,10 +14,12 @@ public sealed class MainWindowViewModel : ObservableObject
 
     private readonly ProjectDocumentService _documentService;
     private readonly IProjectInteractionService _interactionService;
+    private readonly ILayoutImportCatalog _importCatalog;
     private readonly IKeyboardTemplateProvider _templateProvider;
     private readonly IKeyboardProjectValidator _validator;
     private readonly ISeedProjectSource _seedProjectSource;
     private DiagnosticsViewModel _diagnostics;
+    private string _importStatus = string.Empty;
     private KeyboardTemplateDescriptor _selectedTemplate;
     private KeyboardProject _project;
     private KeyboardEditorViewModel _editor;
@@ -70,7 +73,8 @@ public sealed class MainWindowViewModel : ObservableObject
         IProjectInteractionService interactionService,
         IKeyboardProjectValidator validator,
         ISeedProjectSource seedProjectSource,
-        IBuildTargetVisibilityPolicy buildTargetVisibility)
+        IBuildTargetVisibilityPolicy buildTargetVisibility,
+        ILayoutImportCatalog? importCatalog = null)
     {
         ArgumentNullException.ThrowIfNull(templateProvider);
         ArgumentNullException.ThrowIfNull(interactionService);
@@ -79,6 +83,7 @@ public sealed class MainWindowViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(buildTargetVisibility);
 
         _templateProvider = templateProvider;
+        _importCatalog = importCatalog ?? HostLayoutImportCatalog.Create(templateProvider);
         _interactionService = interactionService;
         _validator = validator;
         _seedProjectSource = seedProjectSource;
@@ -105,6 +110,8 @@ public sealed class MainWindowViewModel : ObservableObject
         OpenCommand = new AsyncRelayCommand(OpenDocumentAsync);
         SaveCommand = new AsyncRelayCommand(SaveDocumentAsync);
         SaveAsCommand = new AsyncRelayCommand(SaveAsDocumentAsync);
+        ImportLayoutCommand = new AsyncRelayCommand(ImportLayoutAsync, () => CanImportLayout);
+        ImportFromFileCommand = new AsyncRelayCommand(ImportFromFileAsync, () => CanImportLayout);
     }
 
     public IReadOnlyList<KeyboardTemplateDescriptor> Templates { get; }
@@ -136,6 +143,32 @@ public sealed class MainWindowViewModel : ObservableObject
     public IAsyncRelayCommand OpenCommand { get; }
     public IAsyncRelayCommand SaveCommand { get; }
     public IAsyncRelayCommand SaveAsCommand { get; }
+    public IAsyncRelayCommand ImportLayoutCommand { get; }
+    public IAsyncRelayCommand ImportFromFileCommand { get; }
+
+    /// <summary>
+    /// Whether any source can list layouts on this host. A host with no installed keyboard
+    /// database gets the action disabled rather than a dialog that opens onto nothing.
+    /// </summary>
+    public bool CanImportLayout => _importCatalog.HasAvailableSources;
+
+    /// <summary>
+    /// What the last import did, or empty when none has run. It sits beside the document status
+    /// rather than in the build card because it describes the document, not a build.
+    /// </summary>
+    public string ImportStatus
+    {
+        get => _importStatus;
+        private set
+        {
+            if (SetProperty(ref _importStatus, value))
+            {
+                OnPropertyChanged(nameof(HasImportStatus));
+            }
+        }
+    }
+
+    public bool HasImportStatus => ImportStatus.Length > 0;
 
     public DiagnosticsViewModel Diagnostics
     {
@@ -224,6 +257,140 @@ public sealed class MainWindowViewModel : ObservableObject
         var template = Templates.FirstOrDefault(candidate => candidate.Id == project.Keyboard.Id)
             ?? _selectedTemplate;
         ReplaceProject(project, template);
+
+        // An opened document says where it came from if it was ever imported, so provenance is
+        // visible without having to open the file.
+        if (_documentService.CurrentProvenance is { } provenance)
+        {
+            ImportStatus = $"Imported from {provenance.Describe()} on {provenance.ImportedAtUtc:yyyy-MM-dd}.";
+        }
+    }
+
+    /// <summary>
+    /// Imports a layout the host advertises, from <b>File &gt; Import layout…</b> or the editor's
+    /// own Import button.
+    /// </summary>
+    private Task ImportLayoutAsync() =>
+        RunImportAsync(new LayoutImportViewModel(_importCatalog, Templates, _selectedTemplate));
+
+    /// <summary>
+    /// Imports one symbols file the user points at, for a layout no catalog lists — one they are
+    /// writing themselves, or one that came with something other than the distribution.
+    /// </summary>
+    private async Task ImportFromFileAsync()
+    {
+        var path = await _interactionService.SelectSymbolsFilePathAsync();
+        if (path is null)
+        {
+            return;
+        }
+
+        await RunImportAsync(LayoutImportViewModel.ForDescriptor(
+            _importCatalog,
+            Templates,
+            HostLayoutImportCatalog.DescribeFile(path),
+            _selectedTemplate));
+    }
+
+    /// <summary>
+    /// Runs the import dialog and commits what it produced.
+    ///
+    /// The dialog imports but never commits: it hands back a project and a report, and the decision
+    /// of what to do with the open document is taken here, where the document lives. That is also
+    /// why the unsaved-changes prompt comes after the dialog rather than before it — both commit
+    /// paths discard work in progress, and neither is worth prompting about until the user has said
+    /// which one they want.
+    /// </summary>
+    private async Task RunImportAsync(LayoutImportViewModel importViewModel)
+    {
+        await importViewModel.LoadAsync();
+
+        if (!await _interactionService.ShowLayoutImportAsync(importViewModel) ||
+            importViewModel.Result is not { Success: true, Project: { } imported } ||
+            importViewModel.SelectedDescriptor is not { } descriptor ||
+            !await ConfirmDocumentReplacementAsync())
+        {
+            return;
+        }
+
+        var provenance = new LayoutImportProvenance(
+            descriptor.SourceId,
+            descriptor.LayoutId,
+            descriptor.VariantId,
+            descriptor.SourceLocation,
+            descriptor.DisplayName,
+            DateTimeOffset.UtcNow);
+
+        if (importViewModel.CommitMode == LayoutImportCommitMode.ReplaceMappings)
+        {
+            ReplaceMappingsFromImport(imported, provenance);
+            return;
+        }
+
+        var project = _documentService.Adopt(new KeyboardProjectDocument(
+            imported,
+            CreateImportedTargetProfiles(descriptor),
+            provenance));
+        var template = Templates.FirstOrDefault(candidate => candidate.Id == project.Keyboard.Id)
+            ?? _selectedTemplate;
+        ReplaceProject(project, template);
+        ImportStatus = $"Imported {provenance.Describe()} from {descriptor.SourceLocation}.";
+    }
+
+    /// <summary>
+    /// Lays an imported layout onto the open document, keeping its geometry, its build settings and
+    /// the file it is saved as. Only what the keys produce changes.
+    /// </summary>
+    private void ReplaceMappingsFromImport(
+        KeyboardProject imported,
+        LayoutImportProvenance provenance)
+    {
+        var skipped = new KeyboardEditor(Project).ReplaceMappings(imported.Layout.Mappings);
+        _documentService.RecordProvenance(provenance);
+        ReplaceProject(Project, _selectedTemplate);
+
+        // The dialog pins the geometry to this document's own, so a key that does not fit is a
+        // surprise worth naming rather than a routine part of the operation.
+        ImportStatus = skipped == 0
+            ? $"Mappings replaced from {provenance.Describe()}."
+            : $"Mappings replaced from {provenance.Describe()}; {skipped} key(s) do not exist on {_selectedTemplate.Name} and were dropped.";
+    }
+
+    /// <summary>
+    /// Build settings for a freshly imported project, with the XKB profile filled in from what was
+    /// imported so the layout can be built straight back out.
+    /// </summary>
+    /// <remarks>
+    /// The generated layout ID is always suffixed and never reuses the source's own: an artifact
+    /// named <c>symbols/pl</c> would shadow the distribution's file if it were copied into an XKB
+    /// root. The variant becomes the section, which is where XKB keeps it.
+    /// </remarks>
+    private static Dictionary<string, ProjectTargetProfile> CreateImportedTargetProfiles(
+        ImportableLayoutDescriptor descriptor)
+    {
+        var profiles = new Dictionary<string, ProjectTargetProfile>(
+            BuildViewModel.CreateDefaultTargetProfiles(),
+            StringComparer.Ordinal);
+
+        if (!profiles.TryGetValue(BuildProfileTargetIds.LinuxXkb, out var linux))
+        {
+            return profiles;
+        }
+
+        profiles[BuildProfileTargetIds.LinuxXkb] = new ProjectTargetProfile(
+            linux.Target,
+            new Dictionary<string, string>(linux.Settings, StringComparer.Ordinal)
+            {
+                [BuildProfileKeys.LayoutId] = XkbLayoutMetadata.SanitizeIdentifier(
+                    $"{descriptor.LayoutId}-custom",
+                    "keyboardstudio"),
+                [BuildProfileKeys.SectionId] = XkbLayoutMetadata.SanitizeIdentifier(
+                    descriptor.VariantId,
+                    "basic"),
+                [BuildProfileKeys.Description] = descriptor.DisplayName
+            });
+
+        return profiles;
     }
 
     private async Task SaveDocumentAsync()
@@ -283,6 +450,10 @@ public sealed class MainWindowViewModel : ObservableObject
 
     private void ReplaceProject(KeyboardProject project, KeyboardTemplateDescriptor template)
     {
+        // Cleared here rather than at each call site, so a new or opened document never inherits
+        // the line describing where the previous one was imported from. Whoever put a document in
+        // place sets it again afterwards if there is something to say.
+        ImportStatus = string.Empty;
         _selectedTemplate = template;
         OnPropertyChanged(nameof(SelectedTemplate));
         Project = project;
