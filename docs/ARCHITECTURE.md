@@ -961,6 +961,28 @@ Over the same 199-file corpus every one of the 1,673 sections resolves and every
 is found: `KSI025` and `KSI024` are absent, and a corpus test holds them at zero, so either
 appearing means the resolver lost its way rather than that the distribution shipped a broken layout.
 
+`XkbKeysymDecoder` turns keysym names back into outputs, inverting `XkbKeysymMapper`. Its table is
+generated at development time from pinned upstream sources under `third_party/keysyms` and committed
+as `XkbKeysymTable.g.cs`, because no keysym header ships with a desktop system and an import that
+needed one would fail on exactly the machines it exists to serve. CI regenerates the table and diffs
+it, so a stale table cannot quietly import layouts that look plausible and are wrong.
+
+The order the decoder tries things in carries the design. Function keys are read before the character
+table, because `Return`, `Tab` and `KP_Multiply` all carry Unicode annotations upstream and would
+otherwise import as control characters or a stray asterisk. Letters and digits are deliberately not
+function keys, for the mirror reason: `a` must stay the character `a`, or a Dvorak import would label
+every key by its physical position and lose the layout. Dead keys are dropped with `KSI031` and
+keysyms outside the model with `KSI032`, and the result says which of the two happened even though
+the code is shared, because "your model has no volume key" and "this file is broken" call for
+different responses. Where the decoder could have invented a rule it follows libxkbcommon instead —
+one to eight hex digits after `U`, the four case-insensitive empty-level keywords, the `XF86_`
+underscore that XKeysymDB added and the headers never had — so that import describes what the user's
+own machine does rather than what would have been tidier.
+
+Over the same corpus the decoder reads 173,528 characters, 14,177 keys and 7,259 dead keys, and
+recognises every keysym the corpus names. The 505 it cannot represent are media, IME and vendor keys,
+each reported rather than dropped.
+
 XKB key names are resolved through the same tables `XkbKeyNameMapper` already uses for generation.
 `IXkbKeyNameMapper` gains a table accessor so both directions derive from one source and cannot
 disagree about keys such as `<LSGT>`. XKB names stay out of Core and are still never inferred from

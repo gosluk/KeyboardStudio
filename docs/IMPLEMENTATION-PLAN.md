@@ -1642,6 +1642,40 @@ table is generated at development time rather than read from the host.
 the table; non-character function keys to `SpecialKeyOutput`; `dead_*` to `NoOutput` with `KSI031`;
 anything unrecognized to `NoOutput` with `KSI032`.
 
+**As built.** Five vendored sources rather than two, and several rules taken from libxkbcommon rather
+than invented.
+
+`scripts/generate-keysym-table.py` reads pinned copies under `third_party/keysyms` and emits
+`XkbKeysymTable.g.cs`: 2,652 keysyms, 1,740 with a character. `keysymdef.h` alone was not enough —
+the corpus test found `XF86*` in eleven files including `pc`, `Sun*` in `sun_vndr/`, `hp*` in
+`hp_vndr/` and `apLineDel` in `digital_vndr/vt` — so `XF86keysym.h`, `Sunkeysym.h`, `HPkeysym.h` and
+`ap_keysym.h` were added, each on that evidence. `DECkeysym.h` was not: nothing names a DEC keysym.
+Over half of `XF86keysym.h` writes its value through an `_EVDEVK` macro, whose base is read from the
+header rather than hard-coded. `HPkeysym.h` redefines `XK_Ydiaeresis` to something that is not
+Y-with-diaeresis, so headers are read standard-first and later definitions are ignored and listed.
+Where `keysym-utf.c` and a header disagree, libxkbcommon wins — it is what the user's machine
+consults — and both current disagreements are listed in the generated header. Sources are vendored
+rather than fetched so generation is reproducible offline and CI can diff without a network. CI runs
+the script with `--check` in the managed build job. Attribution lives in the generated header and in
+`third_party/keysyms/README.md` rather than `templates/README.md`, where the table does not belong.
+
+The decoder's ordering is what makes it correct. Function keys are matched before the character
+table, because `Return`, `Tab` and `KP_Multiply` all carry Unicode annotations upstream and would
+otherwise import as control characters or a stray asterisk; letters and digits are deliberately not
+function keys, or a Dvorak import would lose the layout. Four rules follow libxkbcommon's parser: `U`
+takes one to eight hex digits and rejects `U+`; `any`, `none`, `nosymbol` and `voidsymbol` are empty
+levels matched case-insensitively while every other name stays case-sensitive; `XF86_ClearGrab` is
+the keysym `XF86ClearGrab`; and keysyms from `0x01000100` up are their character plus `0x01000000`,
+a rule the generator also applies to seven unannotated aliases in `keysymdef.h`.
+
+`XkbKeysymDecodeResult` gained an `XkbKeysymDecodeOutcome`. Three outcomes produce `NoOutput` and two
+share `KSI032`, so without it a fidelity report could not distinguish a keysym the model has no place
+for from text that names no keysym at all.
+
+Corpus check: every keysym the host's 199-file corpus writes is recognised — 173,528 characters,
+14,177 keys and 7,259 dead keys — with 505 distinct media, IME and vendor keysyms reported as
+unrepresentable rather than dropped.
+
 ### P13.8 Bidirectional key-name tables
 
 Add a table accessor to `IXkbKeyNameMapper` and derive `XkbKeyNameResolver` from the same data, so

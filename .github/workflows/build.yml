@@ -34,6 +34,13 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
 
+      # The keysym table is generated from the pinned sources in third_party/keysyms and
+      # committed. Regenerating and diffing is what stops the committed file and its sources
+      # drifting apart, which nothing else would notice: a stale table imports layouts that
+      # look plausible and are quietly wrong.
+      - name: Verify the generated keysym table
+        run: python3 scripts/generate-keysym-table.py --check
+
       - name: Restore
         run: dotnet restore ${{ env.SOLUTION }}
 

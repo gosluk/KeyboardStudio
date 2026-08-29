@@ -467,6 +467,50 @@ The inverse of the export table in `LINUX-XKB.md`:
 existing `XkbKeysymMapper` can emit, the decoder must return the original value. Both directions are
 derived from the same table data so they cannot drift.
 
+### 3.7.1 As built
+
+The shape above survived; what the corpus added was a set of rules that had to be taken from
+libxkbcommon rather than invented.
+
+**Order decides correctness.** `Return` is annotated `U+000D` upstream, `Tab` is `U+0009` and
+`KP_Multiply` is `U+002A`, so reading the character table before the function keys would import the
+Enter key as an invisible control character and the keypad's multiply key as a stray asterisk.
+Function keys are therefore matched first. Letters and digits are deliberately *not* in the function
+table even though `XkbKeysymMapper` writes `a` for `LogicalKey.A` as well as for the character: an
+over-eager inverse would turn every Dvorak key back into its physical position and lose the layout
+entirely. Dead keys are checked before the table rather than after, because a dead key is a known
+loss with its own code, not merely something the table lacks.
+
+**Matching libxkbcommon, not a tidier rule.** Four behaviours came from reading its parser, and each
+one is exercised by the corpus:
+
+- `U` takes **one to eight** hex digits, not four to six. `symbols/macintosh_vndr/is` writes `U192`
+  and `U3A9`. `U+0105` is *not* accepted, because libxkbcommon's parser does not accept it either;
+  reading a form the user's machine rejects would be worse than refusing it.
+- `any`, `none`, `nosymbol` and `voidsymbol` are resolved by the keymap parser before any lookup, and
+  **case-insensitively**. `symbols/ge` writes `noSymbol`, `symbols/th` writes
+  `Voidsymbol` and `symbols/ancient` writes `none`; all are empty levels on a real machine, and
+  reporting them as losses would invent diagnostics for keys that were deliberately left blank.
+  Every other keysym name stays case-sensitive — `aogonek` and `Aogonek` are different letters.
+- `XF86_ClearGrab` is the keysym `XF86ClearGrab`: XKeysymDB spelt these with a separating underscore
+  the headers never had, and libxkbcommon still strips it. Only the lookup is rewritten; diagnostics
+  quote what the file wrote.
+- Keysyms from `0x01000100` up are the character's own code plus `0x01000000`. Seven of keysymdef.h's
+  own names are deprecated aliases carrying no Unicode annotation, so the table applies the rule to
+  derive their characters rather than reporting them unrepresentable.
+
+**Three outcomes share `KSI032`, so the result names which.** `XkbKeysymDecodeResult` carries an
+`XkbKeysymDecodeOutcome` alongside the output and the diagnostic. A keysym the model has no place for
+(`XF86AudioPlay`) is a limit of this application; text that names no keysym is a fault in the file;
+a keysym producing a control character is neither. The codes stay as specified, but a fidelity report
+that ran the three together would leave a user unable to tell which they were looking at.
+
+**Corpus result.** Every keysym the host's corpus writes is recognised — 173,528 characters, 14,177
+keys and 7,259 dead keys decoded, with no unrecognised name left over. The 505 distinct keysyms the
+model cannot hold are media, IME, `F25`-and-above and vendor keys, all reported rather than dropped.
+`XkbKeysymDecoderCorpusTests` holds the unrecognised set empty, which is the assertion the generated
+table exists to satisfy.
+
 ### 3.8 Physical key resolution
 
 `XkbKeyNameResolver` inverts the `(templateId, keyId) -> <XKB name>` tables that
@@ -570,17 +614,41 @@ host XKB database must never prevent the editor from opening.
 
 ## 6. Keysym table generation
 
-The 2443 named keysyms in the corpus are table data, and neither `keysymdef.h` nor
-`xkbcommon-keysyms.h` is guaranteed to be installed (neither is present on the reference host). The
-table is therefore **generated at development time and committed**:
+The named keysyms in the corpus are table data, and no keysym header is guaranteed to be installed
+(none is present on the reference host). The table is therefore **generated at development time and
+committed**:
 
-- `scripts/generate-keysym-table` reads X.org `keysymdef.h` and libxkbcommon's legacy keysym-to-Unicode
-  table and emits `XkbKeysymTable.g.cs`;
-- the generated file header records the upstream source and version;
-- CI regenerates and diffs, so the table cannot silently drift from upstream.
+- `scripts/generate-keysym-table.py` reads pinned copies under `third_party/keysyms` and emits
+  `src/KeyboardStudio.Linux/Translation/XkbKeysymTable.g.cs`;
+- the generated file header records every upstream source and its pinned commit;
+- CI runs the script with `--check`, so the table cannot silently drift from its sources.
 
-Both upstreams are permissively licensed (MIT / X11 / HPND); attribution goes in the generated header
-and in `templates/README.md`'s licensing note.
+All upstreams are permissively licensed (MIT / X11 / HPND / public domain); attribution goes in the
+generated header and in [`third_party/keysyms/README.md`](../third_party/keysyms/README.md).
+
+### 6.1 As built
+
+**Five sources, not two.** `keysymdef.h` names the standard keysyms; `XF86keysym.h`, `Sunkeysym.h`,
+`HPkeysym.h` and `ap_keysym.h` name the media and vendor keys it does not mention. Each vendor header
+was added because the corpus test found keysyms without it — `XF86*` in eleven files including `pc`,
+`Sun*` in `sun_vndr/`, `hp*` in `hp_vndr/`, `apLineDel` in `digital_vndr/vt` — and none was added
+speculatively. `DECkeysym.h` is deliberately absent for the same reason: no file names a DEC keysym,
+and a source nothing exercises is a source nothing would catch going wrong.
+
+**libxkbcommon settles disagreements.** `keysym-utf.c` is the table the user's machine actually
+consults, so where it and a header differ it decides. Two do differ: `leftanglebracket` and
+`rightanglebracket` are `U+2329`/`U+232A` in `keysymdef.h` and `U+27E8`/`U+27E9` in libxkbcommon,
+Unicode having since deprecated the first pair. Both disagreements are listed in the generated
+header, so a source bump that changes what an imported layout produces shows up in review rather
+than in a user's keyboard.
+
+**First definition wins on a name collision.** `HPkeysym.h` redefines `XK_Ydiaeresis` to a value that
+is not Y-with-diaeresis at all, so headers are read standard-first and a later definition is ignored
+and listed rather than allowed to corrupt a standard keysym.
+
+**Vendoring rather than fetching.** The sources are committed under `third_party/keysyms` so that
+generation is reproducible and offline, and so CI can regenerate and diff without a network
+dependency. The result is 2,652 keysyms, 1,740 of which name a character.
 
 ---
 

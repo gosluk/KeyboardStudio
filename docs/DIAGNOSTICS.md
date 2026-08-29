@@ -82,7 +82,7 @@ activating the generated layout.
 | `KSI025` | Warning | A composed definition could not be contributed — no source holds it, or it repeats one already being read. The rest was imported. | No |
 | `KSI030` | Warning | An output sat on a modifier level beyond the four the model has and was dropped. | Yes |
 | `KSI031` | Warning | A dead-key output was dropped; the layer was left unmapped rather than given a misleading character. | Yes |
-| `KSI032` | Warning | An output has no equivalent in the model, so the layer was left unmapped. | Yes |
+| `KSI032` | Warning | An output has no equivalent in the model, so the layer was left unmapped. The message distinguishes an output the model cannot hold, such as a media key, from text that names no output at all. | Yes |
 | `KSI033` | Info | The definition described a key the chosen template does not have, so the key was skipped. | Yes |
 
 `KSI` codes are declared in `KeyboardStudio.Core`, unlike `KSL` codes, which belong to
