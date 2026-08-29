@@ -25,33 +25,33 @@ its runners are already containers:
 
 The main managed GitHub Actions build targets runners labeled `self-hosted`, `Linux`, and `X64`.
 Using the generic platform labels lets any matching repository runner accept the job while keeping
-the workflow independent of a machine-specific label such as `cherry-home-runner-1`.
+the workflow independent of a machine-specific label such as `keyboardstudio-runner-1`.
 
 GitHub Actions does not provide an ordered `runs-on` fallback from self-hosted to hosted runners.
 If no matching self-hosted runner is online, the job intentionally remains queued instead of
 silently consuming a GitHub-hosted runner.
 
-The managed build and the release gate run on that pool. Two Linux jobs need software beyond the
-SDK and do not: XKB integration needs `xkbcli` and `xkeyboard-config`, and packaging needs a display
-server and the libraries Avalonia binds. The runners are unprivileged podman containers — uid 10001,
-no `sudo`, `apt-get` present but unusable — so they can install nothing at runtime, and the two jobs
-run on `ubuntu-latest` instead.
-
-Running them in a container on the pool was considered and rejected: that nests a container inside
-the runner, which is already one, needing privileged mode and nested user namespaces to buy an
-isolation boundary that already exists.
-
-**Moving them onto the pool** takes one change to the runner image and one line per job. Add to the
-image (the base is Debian/Ubuntu):
+All four Linux jobs — managed build, XKB integration, Linux packaging, and the release gate — run
+on that pool. The runners are unprivileged podman containers (`github-runner/`) — uid 10001, no
+`sudo`, `apt-get` present but unusable — so they can install nothing at runtime. XKB integration
+needs `xkbcli` and `xkeyboard-config`; packaging needs a display server and the libraries Avalonia
+binds. Both sets of packages are baked into the runner image at build time instead
+(`github-runner/Dockerfile`, built as root before the image drops to the unprivileged runner user):
 
 ```
-libxkbcommon-tools xkb-data                                    # XKB integration
-xvfb libx11-6 libxrandr2 libxi6 libxcursor1 libxext6     libxrender1 libice6 libsm6 libfontconfig1 libgl1 libegl1   # packaging
+libxkbcommon-tools xkb-data                                                                        # XKB integration
+xvfb libx11-6 libxrandr2 libxi6 libxcursor1 libxext6 libxrender1 libice6 libsm6 libfontconfig1 libgl1 libegl1   # packaging
 ```
 
-Then change each job's `runs-on: ubuntu-latest` to `runs-on: [self-hosted, Linux, X64]` and drop
-its package-installation step. The `scripts/install-xkbcli.sh` and `scripts/install-xvfb.sh` helpers
-stay useful for a developer machine, where sudo does exist.
+Each job still calls `scripts/install-xkbcli.sh` / `scripts/install-xvfb.sh` first; both check for
+the tool and exit immediately when it is already present, so on the pool they are a no-op and only
+do real work on a developer machine that has sudo but lacks the tool.
+
+Running these jobs in a nested container on the pool was considered and rejected: that needs
+privileged mode and nested user namespaces to buy an isolation boundary the runner, itself already
+a container, already has. The runner image ships `buildah`, `fuse-overlayfs`, `slirp4netns`, and a
+subordinate UID/GID range instead, so a job that genuinely needs an ad hoc container can build and
+run one rootless without nesting privilege — see `github-runner/README.md`.
 
 Windows integration and packaging share one `windows-latest` job, the only one that cannot move to
 the pool: it needs MSVC, the Windows SDK, and a Windows loader. Running them together stops the two

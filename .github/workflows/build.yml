@@ -58,11 +58,11 @@ jobs:
         run: dotnet test ${{ env.SOLUTION }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --verbosity normal --filter "Category=Unit|Category=Golden"
 
   xkb-integration:
-    name: XKB integration (Ubuntu)
-      # The runners are unprivileged podman containers -- uid 10001, no sudo -- so they can install
-      # nothing at runtime. This job runs hosted until the runner image carries the packages it
-      # needs; see docs/TESTING.md for the list and the one-line change that moves it back.
-    runs-on: ubuntu-latest
+    name: XKB integration
+    # libxkbcommon-tools and xkb-data are baked into the self-hosted runner image
+    # (github-runner/Dockerfile) at build time, since the runners are unprivileged and cannot
+    # install packages at job runtime. See docs/TESTING.md.
+    runs-on: [self-hosted, Linux, X64]
 
     steps:
       - name: Checkout
@@ -99,10 +99,10 @@ jobs:
 
   package-linux:
     name: Package desktop app (Linux x64)
-      # The runners are unprivileged podman containers -- uid 10001, no sudo -- so they can install
-      # nothing at runtime. This job runs hosted until the runner image carries the packages it
-      # needs; see docs/TESTING.md for the list and the one-line change that moves it back.
-    runs-on: ubuntu-latest
+    # Xvfb and the Avalonia X11 client libraries are baked into the self-hosted runner image
+    # (github-runner/Dockerfile) at build time, since the runners are unprivileged and cannot
+    # install packages at job runtime. See docs/TESTING.md.
+    runs-on: [self-hosted, Linux, X64]
 
     steps:
       - name: Checkout

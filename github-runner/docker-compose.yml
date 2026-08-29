@@ -1,0 +1,80 @@
+# Static 2-runner default. For a custom runner name prefix, count, or RAM
+# limit (CPU limit is always the full host core count), use start-runners.sh
+# instead — it generates docker-compose.generated.yml from these same
+# settings rather than editing this file.
+services:
+  runner-volume-init:
+    image: alpine:3.22
+    user: "0:0"
+    command:
+      - /bin/sh
+      - -c
+      - |
+        mkdir -p /runner-work-1/_temp /runner-work-1/_tool
+        mkdir -p /runner-work-2/_temp /runner-work-2/_tool
+        chown -R 10001:10001 /runner-work-1 /runner-work-2
+        chmod -R u+rwX /runner-work-1 /runner-work-2
+    volumes:
+      - runner-work-1:/runner-work-1
+      - runner-work-2:/runner-work-2
+    restart: "no"
+
+  keyboardstudio-runner-1:
+    image: localhost/keyboardstudio-runner:latest
+    container_name: keyboardstudio-runner-1
+    restart: always
+    user: "10001:10001"
+    depends_on:
+      runner-volume-init:
+        condition: service_completed_successfully
+    environment:
+      # REPO_URL/RUNNER_TOKEN are supplied by the caller (see start-runners.sh),
+      # which lets you pick an org or a specific repo at start time instead of
+      # hardcoding one target here. Generate a fresh registration token per
+      # deployment (never commit one):
+      #   org:  gh api -X POST orgs/<org>/actions/runners/registration-token --jq .token
+      #   repo: gh api -X POST repos/<owner>/<repo>/actions/runners/registration-token --jq .token
+      - REPO_URL=${REPO_URL:?set REPO_URL before starting (see comment above)}
+      - RUNNER_NAME=keyboardstudio-runner-1
+      - RUNNER_LABELS=self-hosted,Linux,X64,keyboardstudio-runner-1
+      - RUNNER_EPHEMERAL=false
+      - RUNNER_TOKEN=${RUNNER_TOKEN:?set RUNNER_TOKEN before starting (see comment above)}
+    deploy:
+      resources:
+        limits:
+          cpus: '6.0'
+          memory: 8gb
+        reservations:
+          cpus: '0.5'
+          memory: 512mb
+    volumes:
+      - runner-work-1:/home/runner/actions-runner/_work
+
+  keyboardstudio-runner-2:
+    image: localhost/keyboardstudio-runner:latest
+    container_name: keyboardstudio-runner-2
+    restart: always
+    user: "10001:10001"
+    depends_on:
+      runner-volume-init:
+        condition: service_completed_successfully
+    environment:
+      - REPO_URL=${REPO_URL:?set REPO_URL before starting (see comment above)}
+      - RUNNER_NAME=keyboardstudio-runner-2
+      - RUNNER_LABELS=self-hosted,Linux,X64,keyboardstudio-runner-2
+      - RUNNER_EPHEMERAL=false
+      - RUNNER_TOKEN=${RUNNER_TOKEN:?set RUNNER_TOKEN before starting (see comment above)}
+    deploy:
+      resources:
+        limits:
+          cpus: '6.0'
+          memory: 8gb
+        reservations:
+          cpus: '0.5'
+          memory: 512mb
+    volumes:
+      - runner-work-2:/home/runner/actions-runner/_work
+
+volumes:
+  runner-work-1:
+  runner-work-2:
