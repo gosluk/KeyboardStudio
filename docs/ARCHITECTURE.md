@@ -824,8 +824,9 @@ key IDs to native physical identities.
 
 ## 13. Layout import
 
-*Adopted design, implemented by Phase 13. Sections 13.1, 13.2, and 13.4 are built; the Linux
-pipeline in 13.3 and the UI and startup paths in 13.5 and 13.6 are not.*
+*Adopted design, implemented by Phase 13. Sections 13.1, 13.2, and 13.4 are built, as is the
+front of the 13.3 pipeline — data-root discovery and registry reading; the rest of 13.3 and the UI
+and startup paths in 13.5 and 13.6 are not.*
 
 A new document must never open as bare geometry with zero mappings. Import supplies a starting point,
 either from an embedded seed or from a layout already installed on the host. Full design detail lives
@@ -914,6 +915,17 @@ KeyboardProject + LayoutImportReport
 Resolution is a managed, deterministic transformation. `xkbcli` is not a runtime dependency; it is
 absent from most desktop installs and [AD-017](DECISIONS.md) already fixes it as an optional
 verifier. It is used instead as a CI conformance oracle against the managed resolver.
+
+Data-root discovery and registry reading are built. `XkbDataRootLocator` takes `IXkbEnvironment`
+and `IXkbFileSystem` as constructor arguments so libxkbcommon's search order is unit-testable
+without an XKB installation and without mutating the test host's environment. `IXkbFileSystem`
+exposes no way to create or modify anything, which keeps import's read-only boundary a property of
+the interface rather than a rule implementers must remember. `XkbRulesRegistryReader` parses
+`rules/evdev.xml` with `DtdProcessing.Ignore` and a null `XmlResolver`; the file declares
+`SYSTEM "xkb.dtd"`, and a resolver would fetch an external entity from a path the application does
+not own. A root with no registry is empty rather than failing — roots legitimately carry symbols
+without rules — but a registry that will not parse throws, because listing nothing silently would
+leave the user hunting for a layout they can see is installed.
 
 XKB key names are resolved through the same tables `XkbKeyNameMapper` already uses for generation.
 `IXkbKeyNameMapper` gains a table accessor so both directions derive from one source and cannot

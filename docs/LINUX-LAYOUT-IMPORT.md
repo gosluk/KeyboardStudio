@@ -4,9 +4,9 @@
 
 This document specifies the Phase 13 layout-import subsystem. The design is adopted
 ([AD-019](DECISIONS.md) to [AD-023](DECISIONS.md)) and tracked as work items P13.1 and P13.3 to
-P13.12 in [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md). The seed (P13.1) and the Core
-contract in section 2 (P13.3) are implemented; the Linux pipeline, dialog, and startup import are
-not.
+P13.12 in [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md). The seed (P13.1), the Core contract
+in section 2 (P13.3), and data-root discovery and registry reading in sections 3.2 and 3.3 (P13.4)
+are implemented; the rest of the Linux pipeline, the dialog, and startup import are not.
 
 Two related problems are addressed:
 
@@ -285,6 +285,39 @@ does not own.
 A layout with no `<variantList>` yields one descriptor with `VariantId = null`, which resolves to the
 file's `default` section. Layouts present in `symbols/` but absent from the registry are still
 listed, with the file name as the display name and a `KSI010` informational diagnostic.
+
+### 3.3.1 As built
+
+`XkbDataRootLocator` and `XkbRulesRegistryReader` live under `Import/Discovery/` and
+`Import/Registry/`, over two small host abstractions in `Import/Hosting/`: `IXkbEnvironment`, a
+single `GetVariable`, and `IXkbFileSystem`, which exposes existence checks, a directory listing, and
+`OpenRead`. `IXkbFileSystem` deliberately has no way to create or modify anything, so import's
+read-only boundary is enforced by the interface rather than by convention.
+
+Four resolution rules were settled while implementing section 3.2:
+
+- `$XKB_CONFIG_ROOT` outranks the user's own directory. Whoever set the variable meant to redirect
+  the whole search, and it names a database rather than the layouts this user wrote, so it is tagged
+  `System`.
+- A relative `XDG_CONFIG_HOME` is ignored rather than resolved. The base-directory specification
+  calls it invalid, and resolving it would point the search at wherever the application happened to
+  be launched from.
+- Roots that resolve to the same path appear once, first occurrence winning. `XKB_CONFIG_ROOT` set
+  to `/usr/share/X11/xkb` is common, and without this every layout in it would be listed twice.
+- A host with no root at all yields an empty list, not an error. That is the ordinary state on
+  Windows and in containers without X11 data.
+
+For section 3.3, the reader emits the bare layout as an entry with `VariantId = null` alongside one
+entry per variant, since the layout itself is importable and resolves to the symbols file's
+`default` section. `evdev.xml` is read before `evdev.extras.xml` and the first description of a name
+wins. A variant that lists no languages or countries inherits its layout's, because most variants
+list none and without inheritance a search for "English" would find `us` but not `us(dvorak)`. An
+entry with no `<name>` is skipped: the identifier is what addresses the symbols, so there is nothing
+to import without it.
+
+The `KSI010` diagnostic for layouts present in `symbols/` but absent from the registry is raised by
+`XkbLayoutImportSource` (P13.9), which is where the two listings are unioned; the registry reader
+reports only what the registry says.
 
 ### 3.4 Symbols parsing
 

@@ -1548,6 +1548,18 @@ The file carries `<!DOCTYPE xkbConfigRegistry SYSTEM "xkb.dtd">`, so the reader 
 
 Ships a browsable catalog with no preview.
 
+**As built.** The locator and reader sit over two host abstractions in
+`KeyboardStudio.Linux/Import/Hosting/`: `IXkbEnvironment` and `IXkbFileSystem`, the latter exposing
+no way to create or modify anything so import's read-only boundary is a property of the interface.
+`$XKB_CONFIG_ROOT` outranks the user's directory and is tagged `System`; a relative
+`XDG_CONFIG_HOME` is ignored per the base-directory specification; duplicate roots are listed once;
+a host with no root yields an empty list rather than an error. The registry reader emits the bare
+layout as a `VariantId = null` entry beside its variants, lets `evdev.xml` win over
+`evdev.extras.xml` for a shared name, has variants inherit their layout's languages and countries
+when they list none, skips entries with no `<name>`, treats a root with no registry as empty, and
+lets a malformed registry throw rather than list nothing. `KSI010` for symbols-only layouts is
+raised in P13.9, where the registry and symbols listings are unioned.
+
 ### P13.5 Symbols lexer and parser
 
 ```text
