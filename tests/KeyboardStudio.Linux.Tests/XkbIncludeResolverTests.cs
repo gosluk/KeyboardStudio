@@ -112,7 +112,7 @@ public sealed class XkbIncludeResolverTests
         var fileSystem = new FakeXkbFileSystem().AddFile($"{SystemRoot}/symbols/us", string.Empty);
 
         Assert.Equal(
-            Path.Combine(SystemRoot, "symbols", "us"),
+            $"{SystemRoot}/symbols/us",
             Resolver(fileSystem).ResolveFilePath("us"));
     }
 
@@ -124,7 +124,7 @@ public sealed class XkbIncludeResolverTests
             .AddFile($"{SystemRoot}/symbols/sun_vndr/us", string.Empty);
 
         Assert.Equal(
-            Path.Combine(SystemRoot, "symbols", "sun_vndr", "us"),
+            $"{SystemRoot}/symbols/sun_vndr/us",
             Resolver(fileSystem).ResolveFilePath("sun_vndr/us"));
     }
 
@@ -141,7 +141,7 @@ public sealed class XkbIncludeResolverTests
             fileSystem,
             [new XkbDataRoot(UserRoot, LayoutSourceOrigin.User), new XkbDataRoot(SystemRoot, LayoutSourceOrigin.System)]);
 
-        Assert.Equal(Path.Combine(UserRoot, "symbols", "us"), resolver.ResolveFilePath("us"));
+        Assert.Equal($"{UserRoot}/symbols/us", resolver.ResolveFilePath("us"));
     }
 
     [Fact]

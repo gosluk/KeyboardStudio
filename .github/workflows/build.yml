@@ -58,8 +58,11 @@ jobs:
         run: dotnet test ${{ env.SOLUTION }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --verbosity normal --filter "Category=Unit|Category=Golden"
 
   xkb-integration:
-    name: XKB integration (self-hosted Linux x64)
-    runs-on: [self-hosted, Linux, X64]
+    name: XKB integration (Ubuntu)
+      # The runners are unprivileged podman containers -- uid 10001, no sudo -- so they can install
+      # nothing at runtime. This job runs hosted until the runner image carries the packages it
+      # needs; see docs/TESTING.md for the list and the one-line change that moves it back.
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
@@ -69,19 +72,6 @@ jobs:
         uses: actions/setup-dotnet@v6
         with:
           dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
-
-      # The runners are containers, so nesting another one under them would need privileged mode
-      # and nested user namespaces to buy an isolation boundary the runner container already is.
-      # The tools are installed here instead, which works directly when the runner is root in its
-      # own namespace. If it is not, this prints what the runner actually is so the packages can be
-      # baked into its image rather than guessed at.
-      - name: Report the runner environment
-        run: |
-          echo "user=$(id -un) uid=$(id -u)"
-          echo "sudo=$(command -v sudo || echo none)"
-          echo "package manager=$(command -v apt-get || command -v dnf || echo none)"
-          echo "container=${container:-no}"
-          cat /etc/os-release 2>/dev/null | head -2 || true
 
       - name: Install XKB verification tools
         run: ./scripts/install-xkbcli.sh
@@ -108,8 +98,11 @@ jobs:
           if-no-files-found: ignore
 
   package-linux:
-    name: Package desktop app (self-hosted Linux x64)
-    runs-on: [self-hosted, Linux, X64]
+    name: Package desktop app (Linux x64)
+      # The runners are unprivileged podman containers -- uid 10001, no sudo -- so they can install
+      # nothing at runtime. This job runs hosted until the runner image carries the packages it
+      # needs; see docs/TESTING.md for the list and the one-line change that moves it back.
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
@@ -119,19 +112,6 @@ jobs:
         uses: actions/setup-dotnet@v6
         with:
           dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
-
-      # The runners are containers, so nesting another one under them would need privileged mode
-      # and nested user namespaces to buy an isolation boundary the runner container already is.
-      # The tools are installed here instead, which works directly when the runner is root in its
-      # own namespace. If it is not, this prints what the runner actually is so the packages can be
-      # baked into its image rather than guessed at.
-      - name: Report the runner environment
-        run: |
-          echo "user=$(id -un) uid=$(id -u)"
-          echo "sudo=$(command -v sudo || echo none)"
-          echo "package manager=$(command -v apt-get || command -v dnf || echo none)"
-          echo "container=${container:-no}"
-          cat /etc/os-release 2>/dev/null | head -2 || true
 
       - name: Install virtual display
         run: ./scripts/install-xvfb.sh

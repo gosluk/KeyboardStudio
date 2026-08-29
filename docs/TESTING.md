@@ -31,15 +31,27 @@ GitHub Actions does not provide an ordered `runs-on` fallback from self-hosted t
 If no matching self-hosted runner is online, the job intentionally remains queued instead of
 silently consuming a GitHub-hosted runner.
 
-Every Linux job runs on that pool, including the two that need software beyond the SDK: XKB
-integration needs `xkbcli` and `xkeyboard-config`, and packaging needs a display server and the
-libraries Avalonia binds. Both install what they need through `scripts/install-xkbcli.sh` and
-`scripts/install-xvfb.sh`, which work as root and escalate with sudo when it is there. Running them
-inside a container instead was considered and rejected: the runners are themselves containers, so
-that would nest one container in another — privileged mode and nested user namespaces — to buy an
-isolation boundary the runner already is. Where the runner cannot install packages, the answer is
-to bake them into its image, and the jobs print what the runner actually is so that decision is
-made from facts rather than from a failed step.
+The managed build and the release gate run on that pool. Two Linux jobs need software beyond the
+SDK and do not: XKB integration needs `xkbcli` and `xkeyboard-config`, and packaging needs a display
+server and the libraries Avalonia binds. The runners are unprivileged podman containers — uid 10001,
+no `sudo`, `apt-get` present but unusable — so they can install nothing at runtime, and the two jobs
+run on `ubuntu-latest` instead.
+
+Running them in a container on the pool was considered and rejected: that nests a container inside
+the runner, which is already one, needing privileged mode and nested user namespaces to buy an
+isolation boundary that already exists.
+
+**Moving them onto the pool** takes one change to the runner image and one line per job. Add to the
+image (the base is Debian/Ubuntu):
+
+```
+libxkbcommon-tools xkb-data                                    # XKB integration
+xvfb libx11-6 libxrandr2 libxi6 libxcursor1 libxext6     libxrender1 libice6 libsm6 libfontconfig1 libgl1 libegl1   # packaging
+```
+
+Then change each job's `runs-on: ubuntu-latest` to `runs-on: [self-hosted, Linux, X64]` and drop
+its package-installation step. The `scripts/install-xkbcli.sh` and `scripts/install-xvfb.sh` helpers
+stay useful for a developer machine, where sudo does exist.
 
 Windows integration and packaging share one `windows-latest` job, the only one that cannot move to
 the pool: it needs MSVC, the Windows SDK, and a Windows loader. Running them together stops the two
@@ -143,9 +155,9 @@ test is reported as not run unless the test process is Windows and matches the a
 Reproducibility unit tests compare source dictionaries and binary hashes without MSVC; the native
 integration path can enable `BuildOptions.VerifyReproducibility` on a configured Windows runner.
 
-Linux XKB integration tests use the `XkbIntegration` category. A self-hosted job installs `xkbcli`
-and `xkeyboard-config`, then compiles an ISO AltGr/Unicode fixture and an ANSI two-level fixture in
-isolated roots. The tests never activate a layout. On failure, the generated symbols component and
+Linux XKB integration tests use the `XkbIntegration` category. A dedicated Ubuntu job installs
+`xkbcli` and `xkeyboard-config`, then compiles an ISO AltGr/Unicode fixture and an ANSI two-level
+fixture in isolated roots. The tests never activate a layout. On failure, the generated symbols component and
 `xkbcli.log` remain under `TestResults/xkb-integration` and are uploaded as a workflow artifact.
 Locally, categorized tests return without running when `xkbcli` is unavailable; install the tool or
 run `scripts/test-xkb-integration-in-podman.sh` to exercise the external verifier in isolation.

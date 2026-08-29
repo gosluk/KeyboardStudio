@@ -138,7 +138,10 @@ public sealed class XkbDataRootLocatorTests
     {
         var root = new XkbDataRoot("/usr/share/X11/xkb", LayoutSourceOrigin.System);
 
-        Assert.Equal(Path.Combine("/usr/share/X11/xkb", "rules"), root.RulesDirectory);
-        Assert.Equal(Path.Combine("/usr/share/X11/xkb", "symbols"), root.SymbolsDirectory);
+        // Written out rather than composed with Path.Combine: an XKB database is a POSIX path space
+        // whatever host is reading it, and composing the expectation the same way the code does
+        // would assert only that the two agree, including when both are wrong.
+        Assert.Equal("/usr/share/X11/xkb/rules", root.RulesDirectory);
+        Assert.Equal("/usr/share/X11/xkb/symbols", root.SymbolsDirectory);
     }
 }
