@@ -25,6 +25,47 @@ env:
   BUILD_CONFIGURATION: Release
 
 jobs:
+  detect-changes:
+    name: Detect Windows-specific changes
+    # A separate job (rather than a workflow-level `paths:` filter) so only the Windows job is
+    # gated: managed-build, xkb-integration, and package-linux still run on every push/PR.
+    runs-on: [self-hosted, Linux, X64]
+    outputs:
+      windows: ${{ steps.filter.outputs.windows }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Determine if Windows-specific paths changed
+        id: filter
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+          fi
+
+          if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ] \
+            || ! git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
+            echo "No usable base commit (new branch or force-push); running the Windows job to be safe."
+            echo "windows=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          CHANGED_FILES="$(git diff --name-only "$BASE_SHA" "${{ github.sha }}")"
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+          if echo "$CHANGED_FILES" | grep -Eq '^(src/KeyboardStudio\.Windows/|tests/KeyboardStudio\.Windows\.Tests/|docs/WINDOWS-BUILD\.md$|docs/WINDOWS-KBDTABLES-REFERENCE\.md$|\.github/workflows/build\.yml$)'; then
+            echo "windows=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "windows=false" >> "$GITHUB_OUTPUT"
+          fi
+
   managed-build:
     name: Managed build (self-hosted Linux x64)
     # Prefer the repository's self-hosted pool. GitHub matches all three
@@ -58,11 +99,11 @@ jobs:
         run: dotnet test ${{ env.SOLUTION }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --verbosity normal --filter "Category=Unit|Category=Golden"
 
   xkb-integration:
-    name: XKB integration (Ubuntu)
-      # The runners are unprivileged podman containers -- uid 10001, no sudo -- so they can install
-      # nothing at runtime. This job runs hosted until the runner image carries the packages it
-      # needs; see docs/TESTING.md for the list and the one-line change that moves it back.
-    runs-on: ubuntu-latest
+    name: XKB integration
+    # libxkbcommon-tools and xkb-data are baked into the self-hosted runner image
+    # (github-runner/Dockerfile) at build time, since the runners are unprivileged and cannot
+    # install packages at job runtime. See docs/TESTING.md.
+    runs-on: [self-hosted, Linux, X64]
 
     steps:
       - name: Checkout
@@ -99,10 +140,10 @@ jobs:
 
   package-linux:
     name: Package desktop app (Linux x64)
-      # The runners are unprivileged podman containers -- uid 10001, no sudo -- so they can install
-      # nothing at runtime. This job runs hosted until the runner image carries the packages it
-      # needs; see docs/TESTING.md for the list and the one-line change that moves it back.
-    runs-on: ubuntu-latest
+    # Xvfb and the Avalonia X11 client libraries are baked into the self-hosted runner image
+    # (github-runner/Dockerfile) at build time, since the runners are unprivileged and cannot
+    # install packages at job runtime. See docs/TESTING.md.
+    runs-on: [self-hosted, Linux, X64]
 
     steps:
       - name: Checkout
@@ -168,6 +209,14 @@ jobs:
     # Windows loader, and the pool is Linux. Integration and packaging share one runner because
     # they otherwise repeat the same checkout, SDK setup and restore on two, and because an
     # artifact is worth producing only from a tree whose tests have passed.
+    #
+    # Gated on detect-changes: a hosted Windows runner is the only paid/quota-limited runner in
+    # this workflow, so it only runs when Windows-specific paths change (see the filter above)
+    # instead of on every push/PR. This is a narrower gate than "anything that could affect the
+    # win-x64 build" — a Core-only change that happens to break Windows packaging will not be
+    # caught until a Windows-path change next runs this job. See docs/TESTING.md.
+    needs: detect-changes
+    if: needs.detect-changes.outputs.windows == 'true'
     runs-on: windows-latest
 
     steps:
@@ -307,11 +356,18 @@ jobs:
           for result in \
             "$MANAGED_RESULT" \
             "$XKB_RESULT" \
-            "$LINUX_PACKAGE_RESULT" \
-            "$WINDOWS_RESULT"; do
+            "$LINUX_PACKAGE_RESULT"; do
             if [ "$result" != "success" ]; then
               echo "An MVP prerequisite job finished with result: $result" >&2
               exit 1
             fi
           done
-          echo "All managed, native integration, and packaging jobs passed." >> "$GITHUB_STEP_SUMMARY"
+
+          # windows is gated on detect-changes and legitimately reports "skipped" when no
+          # Windows-specific paths changed; only failure/cancelled should block the gate.
+          if [ "$WINDOWS_RESULT" != "success" ] && [ "$WINDOWS_RESULT" != "skipped" ]; then
+            echo "Windows integration and package job finished with result: $WINDOWS_RESULT" >&2
+            exit 1
+          fi
+
+          echo "All managed, native integration, and packaging jobs passed (windows: $WINDOWS_RESULT)." >> "$GITHUB_STEP_SUMMARY"

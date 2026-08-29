@@ -1,0 +1,156 @@
+# Registration tokens expire after ~1 hour and must never be committed.
+# Create the secret out-of-band before applying this manifest, e.g.:
+#   kubectl create secret generic keyboardstudio-runner-token \
+#     --namespace github-runners \
+#     --from-literal=runner-token="$(gh api -X POST orgs/<your-org>/actions/runners/registration-token --jq .token)"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keyboardstudio-runner-1
+  namespace: github-runners
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: keyboardstudio-runner-1
+  template:
+    metadata:
+      labels:
+        app: keyboardstudio-runner-1
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: runner
+          image: localhost/keyboardstudio-runner:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: REPO_URL
+              value: https://github.com/<your-org-or-owner>
+            - name: RUNNER_NAME
+              value: keyboardstudio-runner-1
+            - name: RUNNER_LABELS
+              value: self-hosted,Linux,X64,k3s,keyboardstudio-runner-1
+            - name: RUNNER_EPHEMERAL
+              value: "false"
+            - name: RUNNER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: keyboardstudio-runner-token
+                  key: runner-token
+          resources:
+            requests:
+              cpu: "500m"
+              memory: 512Mi
+            limits:
+              cpu: "3"
+              memory: 2Gi
+          volumeMounts:
+            - name: runner-work
+              mountPath: /home/runner/actions-runner/_work
+      volumes:
+        - name: runner-work
+          emptyDir: {}
+---
+#apiVersion: apps/v1
+#kind: Deployment
+#metadata:
+#  name: keyboardstudio-runner-2
+#  namespace: github-runners
+#spec:
+#  replicas: 1
+#  strategy:
+#    type: Recreate
+#  selector:
+#    matchLabels:
+#      app: keyboardstudio-runner-2
+#  template:
+#    metadata:
+#      labels:
+#        app: keyboardstudio-runner-2
+#    spec:
+#      terminationGracePeriodSeconds: 30
+#      containers:
+#        - name: runner
+#          image: localhost/keyboardstudio-runner:latest
+#          imagePullPolicy: IfNotPresent
+#          env:
+#            - name: REPO_URL
+#              value: https://github.com/gosluk/KeyboardStudio
+#            - name: RUNNER_NAME
+#              value: keyboardstudio-runner-2
+#            - name: RUNNER_LABELS
+#              value: self-hosted,Linux,X64,k3s,keyboardstudio-runner-2
+#            - name: RUNNER_EPHEMERAL
+#              value: "false"
+#            - name: RUNNER_TOKEN
+#              valueFrom:
+#                secretKeyRef:
+#                  name: keyboardstudio-runner-token
+#                  key: runner-token
+#          resources:
+#            requests:
+#              cpu: "250m"
+#              memory: 512Mi
+#            limits:
+#              cpu: "2"
+#              memory: 4Gi
+#          volumeMounts:
+#            - name: runner-work
+#              mountPath: /home/runner/actions-runner/_work
+#      volumes:
+#        - name: runner-work
+#          emptyDir: {}
+#---
+#apiVersion: apps/v1
+#kind: Deployment
+#metadata:
+#  name: keyboardstudio-runner-3
+#  namespace: github-runners
+#spec:
+#  replicas: 1
+#  strategy:
+#    type: Recreate
+#  selector:
+#    matchLabels:
+#      app: keyboardstudio-runner-3
+#  template:
+#    metadata:
+#      labels:
+#        app: keyboardstudio-runner-3
+#    spec:
+#      terminationGracePeriodSeconds: 30
+#      containers:
+#        - name: runner
+#          image: localhost/keyboardstudio-runner:latest
+#          imagePullPolicy: IfNotPresent
+#          env:
+#            - name: REPO_URL
+#              value: https://github.com/gosluk/KeyboardStudio
+#            - name: RUNNER_NAME
+#              value: keyboardstudio-runner-3
+#            - name: RUNNER_LABELS
+#              value: self-hosted,Linux,X64,k3s,keyboardstudio-runner-3
+#            - name: RUNNER_EPHEMERAL
+#              value: "false"
+#            - name: RUNNER_TOKEN
+#              valueFrom:
+#                secretKeyRef:
+#                  name: keyboardstudio-runner-token
+#                  key: runner-token
+#          resources:
+#            requests:
+#              cpu: "250m"
+#              memory: 512Mi
+#            limits:
+#              cpu: "2"
+#              memory: 4Gi
+#          volumeMounts:
+#            - name: runner-work
+#              mountPath: /home/runner/actions-runner/_work
+#      volumes:
+#        - name: runner-work
+#          emptyDir: {}
+#

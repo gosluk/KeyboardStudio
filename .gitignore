@@ -55,3 +55,9 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# Self-hosted runner deploy-time artifacts (docs/TESTING.md, github-runner/README.md).
+# start-runners.sh regenerates these per deployment (host-specific prefix/count/RAM); they
+# are never edited by hand and must never carry a registration token.
+github-runner/docker-compose.generated.yml
+github-runner/docker-compose.generated.*.yml

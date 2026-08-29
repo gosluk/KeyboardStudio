@@ -1,0 +1,19 @@
+unzip keyboardstudio-runner-dotnet10.zip
+cd keyboardstudio-runner-dotnet10
+
+podman build \
+  -t localhost/keyboardstudio-runner:2.335.1-dotnet10 \
+  .
+
+podman save \
+  --format docker-archive \
+  -o keyboardstudio-runner-dotnet10.tar \
+  localhost/keyboardstudio-runner:2.335.1-dotnet10
+
+sudo k3s ctr images import keyboardstudio-runner-dotnet10.tar
+
+-------
+podman build -t keyboardstudio-runner . 
+podman save --format docker-archive -o keyboardstudio-runner.tar localhost/keyboardstudio-runner:latest
+
+sudo k3s ctr images import keyboardstudio-runner.tar
