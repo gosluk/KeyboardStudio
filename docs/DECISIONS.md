@@ -138,6 +138,13 @@ Import produces a `KeyboardProject`, so the contract belongs in Core; naming lay
 keeps Core free of XKB vocabulary under AD-002 and architecture 2.1. A future Windows `.klc` or
 installed-DLL source implements the same interface without reshaping the editor.
 
+The `KSI` diagnostic codes are declared in Core too, unlike the `KSL` codes that belong to
+`KeyboardStudio.Linux`. What import loses is a property of the domain model rather than of a file
+format, so a second source would report the same losses, and one shared range stops two sources from
+giving one number two meanings. `LayoutImportCatalog` skips a source that reports itself unavailable
+but lets a failure from an available one propagate: returning a silently shorter list would leave the
+user hunting for an installed layout with nothing on screen to explain its absence.
+
 ## AD-020 - XKB import uses a managed parser, not `xkbcli`
 
 Import lexes, parses, and resolves `xkb_symbols` includes in managed code. `xkbcli` stays an optional
@@ -159,6 +166,11 @@ The purpose of import is a usable starting point for editing. Refusing every lay
 `dead_*` keysym would reject most European layouts, including the ones the feature exists to serve.
 `LayoutImportReport` carries the fidelity level, counts, resolved include chain, and diagnostics, and
 the import dialog shows it before the project is replaced.
+
+The fidelity level is derived by `LayoutImportReport.Classify` rather than by each source: any
+skipped key makes an import `Partial`, any finding above `Info` makes it `Reduced`, and everything
+else is `Exact`. Left to the sources, `Reduced` would come to mean something different per platform
+and the badge in the import dialog would stop carrying information.
 
 ## AD-022 - XKB key-name tables are bidirectional and single-sourced
 

@@ -824,7 +824,8 @@ key IDs to native physical identities.
 
 ## 13. Layout import
 
-*Adopted design, implemented by Phase 13. Not yet built.*
+*Adopted design, implemented by Phase 13. Sections 13.1, 13.2, and 13.4 are built; the Linux
+pipeline in 13.3 and the UI and startup paths in 13.5 and 13.6 are not.*
 
 A new document must never open as bare geometry with zero mappings. Import supplies a starting point,
 either from an embedded seed or from a layout already installed on the host. Full design detail lives
@@ -937,6 +938,13 @@ public sealed record LayoutImportReport(
 `LayoutImportDiagnostic` reuses `ValidationSeverity` and carries the key ID and modifier layer, so
 import findings render through the existing diagnostics list with a working jump-to-key target. The
 resolved include chain is retained so an import can be explained and reproduced.
+
+The fidelity level is not each source's own judgement. `LayoutImportReport.Classify` derives it:
+any skipped key makes an import `Partial`, any finding above `Info` makes it `Reduced`, and anything
+else is `Exact`. The `KSI` codes it grades are declared in Core, in `LayoutImportDiagnosticCodes`,
+because import loss is a property of the domain model rather than of one platform's file format —
+which is also why their wording names no format. This is the one place the import diagnostics differ
+from the `KSL` build diagnostics, which belong to the backend that raises them.
 
 ### 13.5 Provenance and round-tripping
 

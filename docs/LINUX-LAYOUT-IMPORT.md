@@ -4,7 +4,9 @@
 
 This document specifies the Phase 13 layout-import subsystem. The design is adopted
 ([AD-019](DECISIONS.md) to [AD-023](DECISIONS.md)) and tracked as work items P13.1 and P13.3 to
-P13.12 in [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md). No code is implemented yet.
+P13.12 in [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md). The seed (P13.1) and the Core
+contract in section 2 (P13.3) are implemented; the Linux pipeline, dialog, and startup import are
+not.
 
 Two related problems are addressed:
 
@@ -143,6 +145,44 @@ public sealed record LayoutImportDiagnostic(
 
 Reusing the existing `ValidationSeverity` lets the import report render through the existing
 `DiagnosticsViewModel` path with a key-linked jump target.
+
+### 2.1 As built
+
+`LayoutImportOptions` carries the two choices a caller can make, both optional:
+
+```csharp
+public sealed record LayoutImportOptions(
+    string? TemplateId = null,        // override the inferred geometry (§3.9)
+    string? ProjectName = null)       // override the name derived from the layout
+{
+    public static LayoutImportOptions Default { get; } = new();
+}
+```
+
+`ImportableLayoutDescriptor.ToReference()` builds the reference that re-fetches an entry, so a
+descriptor and the reference that imports it cannot drift apart. A reference can still be
+constructed by hand, with `SourceLocation` and no catalog entry, which is what **File > Import from
+file…** needs.
+
+`LayoutImportResult.Succeeded` / `.Failed` are the two ways to build a result, so the nonsensical
+`Success = true, Project = null` state is not reachable by accident. A failed import stays an
+ordinary result rather than an exception: host layout data is not the application's to trust, and an
+unreadable layout is something to show in the dialog, not a fault to unwind the stack over.
+
+`LayoutImportReport.Classify(keysSkipped, diagnostics)` derives the fidelity level so that every
+source grades itself identically — any skipped key is `Partial`, any finding above `Info` is
+`Reduced`, anything else is `Exact`.
+
+`LayoutImportCatalog` skips a source whose `IsAvailable` is false without querying it, and lets a
+failure from an available source propagate. A host with no layout database is ordinary and the
+source says so up front; a source that claims to work and then does not is a real error, and
+silently returning a shorter list would leave the user hunting for an installed layout with no
+explanation on screen. Duplicate source IDs are rejected at registration, because those IDs are
+written into saved documents as provenance.
+
+The `KSI` codes live in Core rather than in the platform assembly that raises them — see
+[`DIAGNOSTICS.md`](DIAGNOSTICS.md#layout-import-diagnostics) for the range and
+[AD-019](DECISIONS.md) for why.
 
 ---
 

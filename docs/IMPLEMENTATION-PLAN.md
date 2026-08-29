@@ -1520,6 +1520,14 @@ Identifiers are opaque strings; Core gains no XKB vocabulary. `LayoutImportDiagn
 `ValidationSeverity` and adds `KeyId` and `ModifierLayer?`. Diagnostic codes use the `KSI` prefix,
 registered in `LayoutImportDiagnosticCodes` beside the existing `KSL` XKB codes.
 
+As built: the codes are declared in Core rather than in the assembly that raises them, unlike `KSL`,
+because import loss is a property of the domain model and a second source would report the same
+losses; their wording therefore names no file format. `LayoutImportReport.Classify` derives the
+fidelity level so every source grades itself the same way, and `LayoutImportResult.Succeeded`/
+`.Failed` make the `Success = true, Project = null` state unreachable. `LayoutImportCatalog` skips a
+source that reports itself unavailable, propagates a failure from one that does not, and rejects
+duplicate source IDs at registration since those IDs become document provenance.
+
 ### P13.4 XKB data roots and registry reader
 
 ```text

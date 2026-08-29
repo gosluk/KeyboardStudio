@@ -69,6 +69,31 @@ not Windows or the process architecture cannot load the requested target.
 tool path, arguments, version, output, exit code, duration, and retained log without installing or
 activating the generated layout.
 
+## Layout import diagnostics
+
+| Code | Severity | Meaning | Key linked |
+|---|---|---|---|
+| `KSI010` | Info | The source has no descriptive metadata for the layout, which is listed under its bare identifier. | No |
+| `KSI020` | Warning | The definition carried more than one alternative group of outputs per key; only the primary group was imported. | Yes |
+| `KSI021` | Warning | A construct the model cannot express — an action, redirection, or overlay — was read and ignored. | Yes |
+| `KSI022` | Info | An unrecognized statement was skipped so the import could continue. | No |
+| `KSI023` | Info | A composition rule was approximated by the nearest one the resolver implements. | No |
+| `KSI024` | Error | A definition nested deeper than the resolver's cap. Nothing was imported. | No |
+| `KSI030` | Warning | An output sat on a modifier level beyond the four the model has and was dropped. | Yes |
+| `KSI031` | Warning | A dead-key output was dropped; the layer was left unmapped rather than given a misleading character. | Yes |
+| `KSI032` | Warning | An output has no equivalent in the model, so the layer was left unmapped. | Yes |
+| `KSI033` | Info | The definition described a key the chosen template does not have, so the key was skipped. | Yes |
+
+`KSI` codes are declared in `KeyboardStudio.Core`, unlike `KSL` codes, which belong to
+`KeyboardStudio.Linux`. Import loss is a property of the domain model rather than of any one
+platform's file format: a future Windows source would drop dead keys and fifth levels for exactly the
+same reason, and one shared range keeps two sources from assigning one number two meanings. The
+wording is correspondingly source-neutral.
+
+Import findings never block anything, because import produces a starting point rather than an
+artifact. A `KSI024` error means the import itself produced no project; it does not mark a project
+invalid.
+
 ## Compatibility policy
 
 - Existing code meanings are not reassigned.
