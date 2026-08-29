@@ -331,4 +331,18 @@ public sealed class XkbSymbolsParserTests
             ["<AD01>", "<AD02>"],
             file.Sections[0].Statements.OfType<XkbKeyStatement>().Select(key => key.KeyName));
     }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Parse_ForAMergeKeywordUsedInPlaceOfInclude_ReadsItAsAnIncludeWithThatRule()
+    {
+        // `augment "us(basic)"` has no `include` keyword at all: the merge rule is the keyword.
+        var section = ParseSingleSection("""
+            augment "us(basic)"
+            """);
+
+        var include = Assert.IsType<XkbIncludeStatement>(Assert.Single(section.Statements));
+        Assert.Equal(XkbMergeMode.Augment, include.Merge);
+        Assert.Equal("us(basic)", include.Specification);
+    }
 }

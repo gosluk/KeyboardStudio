@@ -51,6 +51,15 @@ public static class LayoutImportDiagnosticCodes
     public const string CompositionDepthExceeded = "KSI024";
 
     /// <summary>
+    /// Warning. A definition a layout composes from could not be contributed: either no source
+    /// holds it, or it repeats one already being read and would compose forever.
+    ///
+    /// The rest of the layout is still imported. A missing piece leaves gaps the user can see and
+    /// fill, whereas refusing the whole import leaves them nothing to work from.
+    /// </summary>
+    public const string CompositionTargetUnavailable = "KSI025";
+
+    /// <summary>
     /// Warning. The definition assigned an output to a modifier level beyond the four the model
     /// has. The output was dropped; the key's other levels were kept.
     /// </summary>

@@ -825,8 +825,8 @@ key IDs to native physical identities.
 ## 13. Layout import
 
 *Adopted design, implemented by Phase 13. Sections 13.1, 13.2, and 13.4 are built, as is the front
-of the 13.3 pipeline — data-root discovery, registry reading, and the symbols lexer and parser; the
-rest of 13.3 and the UI and startup paths in 13.5 and 13.6 are not.*
+of the 13.3 pipeline — data-root discovery, registry reading, the symbols lexer and parser, and
+include resolution; the rest of 13.3 and the UI and startup paths in 13.5 and 13.6 are not.*
 
 A new document must never open as bare geometry with zero mappings. Import supplies a starting point,
 either from an embedded seed or from a layout already installed on the host. Full design detail lives
@@ -940,6 +940,26 @@ acceptable noise.
 Parsing never throws. A truncated file, an unterminated string, a key missing its terminator — each
 costs its own statement and nothing after it, because a layout that is 95% readable is a better
 starting point than a refusal.
+
+`XkbIncludeResolver` and `XkbSymbolsResolver` flatten the include graph. Real layouts are composed
+rather than written out — `pl(basic)` is `latin` plus its own changes, and `latin` is itself built
+from `kpdl` and `level3` — so flattening the chain is what turns a few dozen overrides into the
+layout a user actually types on. Include strings are read as merge expressions rather than as file
+names: `+` composes with `override` and `|` with `augment`, a merge keyword can stand in for
+`include` entirely, and a `:2` suffix targets a second group the model does not hold, so it is
+skipped with `KSI020` rather than flattened into group 1 and silently overwriting the layout the
+user asked for.
+
+Cycle detection keys on `(resolved path, section name)` rather than on the file. A file including
+another of its own sections is ordinary — `pl(lefty)` includes `pl(basic)` — so a file-granular
+visited set would break those layouts while still missing cycles that run through two files. Depth
+is capped at 16 and a genuine cycle stops that branch, both reported and both leaving the rest of
+the layout intact. Resolution retains the ordered include chain and records, per key, which
+`file(section)` won, because composition otherwise makes a surprising output very hard to trace.
+
+Over the same 199-file corpus every one of the 1,673 sections resolves and every include they name
+is found: `KSI025` and `KSI024` are absent, and a corpus test holds them at zero, so either
+appearing means the resolver lost its way rather than that the distribution shipped a broken layout.
 
 XKB key names are resolved through the same tables `XkbKeyNameMapper` already uses for generation.
 `IXkbKeyNameMapper` gains a table accessor so both directions derive from one source and cannot

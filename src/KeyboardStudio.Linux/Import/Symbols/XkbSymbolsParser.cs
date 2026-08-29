@@ -172,6 +172,15 @@ public sealed class XkbSymbolsParser
         if (merge != XkbMergeMode.Default)
         {
             Advance();
+
+            // A merge keyword can stand in for `include` entirely: `augment "us(basic)"` is an
+            // include statement whose keyword happens to be the merge rule. Requiring the word
+            // `include` here would drop those silently, which is the worst of the options.
+            if (Current.Kind == XkbSymbolsTokenKind.QuotedString)
+            {
+                return ParseIncludeSpecification(merge);
+            }
+
             if (Current.Kind != XkbSymbolsTokenKind.Identifier)
             {
                 return null;
@@ -196,16 +205,13 @@ public sealed class XkbSymbolsParser
         if (string.Equals(keyword, "include", StringComparison.Ordinal))
         {
             Advance();
-            var specification = Current.Kind == XkbSymbolsTokenKind.QuotedString ? Current.Text : null;
-            if (specification is null)
+            if (Current.Kind != XkbSymbolsTokenKind.QuotedString)
             {
                 SkipToStatementEnd();
                 return null;
             }
 
-            Advance();
-            SkipIf(XkbSymbolsTokenKind.Semicolon);
-            return new XkbIncludeStatement(merge, specification);
+            return ParseIncludeSpecification(merge);
         }
 
         if (string.Equals(keyword, "name", StringComparison.Ordinal))
@@ -225,6 +231,17 @@ public sealed class XkbSymbolsParser
             $"Skipped the '{keyword}' statement at line {Current.Line}.");
         SkipToStatementEnd();
         return null;
+    }
+
+    /// <summary>
+    /// Reads the quoted specification of an include, with the current token positioned on it.
+    /// </summary>
+    private XkbIncludeStatement ParseIncludeSpecification(XkbMergeMode merge)
+    {
+        var specification = Current.Text;
+        Advance();
+        SkipIf(XkbSymbolsTokenKind.Semicolon);
+        return new XkbIncludeStatement(merge, specification);
     }
 
     private XkbNameStatement? ParseName()

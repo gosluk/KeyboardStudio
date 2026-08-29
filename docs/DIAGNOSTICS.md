@@ -79,6 +79,7 @@ activating the generated layout.
 | `KSI022` | Info | An unrecognized statement was skipped so the import could continue. | No |
 | `KSI023` | Info | A composition rule was approximated by the nearest one the resolver implements. | No |
 | `KSI024` | Error | A definition nested deeper than the resolver's cap. Nothing was imported. | No |
+| `KSI025` | Warning | A composed definition could not be contributed — no source holds it, or it repeats one already being read. The rest was imported. | No |
 | `KSI030` | Warning | An output sat on a modifier level beyond the four the model has and was dropped. | Yes |
 | `KSI031` | Warning | A dead-key output was dropped; the layer was left unmapped rather than given a misleading character. | Yes |
 | `KSI032` | Warning | An output has no equivalent in the model, so the layer was left unmapped. | Yes |

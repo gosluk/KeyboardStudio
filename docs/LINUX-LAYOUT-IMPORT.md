@@ -400,6 +400,43 @@ a `KSI024` error guards pathological data.
 
 The resolved include chain is retained in the report so an import can be explained and reproduced.
 
+### 3.5.1 As built
+
+Include strings are read as merge expressions, not as file names. `XkbIncludeResolver.Parse` splits
+on `+` and `|` and treats each as an operator: `+` gives the next piece `override`, `|` gives it
+`augment`, and only the first piece keeps the rule the statement itself declared. A `:2` suffix is
+read as the group the include targets; anything above group 1 is skipped with `KSI020`, because
+loading it into group 1 would overwrite the layout the user asked for with a secondary one.
+
+Two grammar details came out of the corpus rather than the specification. A merge keyword can stand
+in for `include` entirely — `augment "us(basic)"` has no `include` keyword at all — which the
+parser originally dropped without a diagnostic. And an include whose closing parenthesis is missing
+is read to the end of the piece rather than discarded, since these files are hand-written and the
+intent is unambiguous.
+
+Merge is applied per key. `augment` returns early when the key already exists. The visible
+difference between `override` and `replace` is a statement that carries no keysyms — an
+`override key <AD01> { type[Group1] = "ALPHABETIC" };` sets a property the model does not hold and
+must leave the existing outputs alone, while `replace` discards the definition outright. Keys are
+returned in first-definition order, tracked explicitly, because a dictionary's enumeration order is
+not part of its contract and the importer's output must not depend on it.
+
+Each resolution caches parsed files by resolved path, including the failures, so a layout composing
+three sections of one file reads it once and an unreadable file is not retried per include. The
+parser's own findings travel with the file, deduplicated per file per resolution. Every resolved key
+records the `file(section)` whose definition won.
+
+Over the host's 199-file corpus all 1,673 sections resolve to 73,511 keys with no `KSI025` and no
+`KSI024`: every include the distribution writes is found, and nothing in it is circular. A corpus
+test holds both at zero. `pl(basic)` resolves through `pl -> latin -> kpdl -> level3` to 50 keys
+named `Polish`, with `<AE01>` coming from `latin` and `<AD01>` won by `pl`.
+
+One thing the corpus shows that matters for 3.9: `<LSGT>` is defined in 103 of the 199 files, but
+not in `latin` and so not in `pl(basic)`. Layout files describe alphanumeric keys, while `<LSGT>`
+usually arrives from the `pc` component, which import does not compose. Template selection cannot
+rely on `<LSGT>` presence alone and will need the registry country hint to carry more weight than
+3.9 currently assumes.
+
 ### 3.6 Level to layer mapping
 
 The inverse of the export table in `LINUX-XKB.md`:

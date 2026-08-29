@@ -1605,6 +1605,28 @@ file-granular visited set both breaks those layouts and hides real cycles. Depth
 
 The resolved include chain is retained for the report.
 
+**As built.** `XkbIncludeSpec` carries a merge mode and a target group, because an include string is
+a merge expression: `+` composes with `override`, `|` with `augment`, and `:2` names a group. Group
+2 and above is skipped with `KSI020` rather than flattened into group 1. A merge keyword can also
+replace `include` outright — `augment "us(basic)"` — which the P13.5 parser dropped silently; that
+is fixed here and pinned by a parser test.
+
+An include that resolves to nothing needed a code, so `KSI025` (`CompositionTargetUnavailable`,
+warning) was added to Core and `docs/DIAGNOSTICS.md`. It covers both a target no root holds and one
+already being read, and the rest of the layout is still imported in either case.
+
+`override` and `replace` differ only for a statement carrying no keysyms: `override` leaves existing
+outputs alone, `replace` discards the definition. Keys come back in first-definition order, tracked
+explicitly rather than relying on dictionary order. Parsed files are cached per resolution, failures
+included. Every key records the `file(section)` that won.
+
+Corpus check: all 1,673 sections of the host's 199 files resolve to 73,511 keys with zero `KSI025`
+and zero `KSI024`, held there by an `XkbIntegration` test.
+
+**Carried into P13.9.** `<LSGT>` is absent from `latin` and therefore from `pl(basic)` — it comes
+from the `pc` component, which import does not compose. `XkbTemplateSelector` cannot key on `<LSGT>`
+presence alone; the registry country hint needs to carry more weight than P13.9 assumes.
+
 ### P13.7 Keysym table and decoder
 
 `scripts/generate-keysym-table` reads X.org `keysymdef.h` and libxkbcommon's legacy
