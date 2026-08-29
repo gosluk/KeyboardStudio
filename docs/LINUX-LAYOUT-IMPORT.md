@@ -191,7 +191,12 @@ The `KSI` codes live in Core rather than in the platform assembly that raises th
 ## 3. Linux implementation
 
 All XKB knowledge stays in `KeyboardStudio.Linux`, alongside the existing `Translation/`,
-`Generation/`, and `Verification/` folders.
+`Generation/`, and `Verification/` folders. `IXkbKeysymDecoder`, `XkbKeysymDecoder`, the generated
+`XkbKeysymTable.g.cs`, `IXkbKeyNameResolver` and `XkbKeyNameResolver` landed in the existing
+top-level `Translation/` rather than under `Import/`, beside the `XkbKeysymMapper` and
+`XkbKeyNameMapper` they invert: a table and its inverse drifting apart is the failure they exist to
+prevent, and separating them invites it. `XkbTemplateSelector` has no interface — it is a pure
+function of a resolved section and a registry entry, with nothing to substitute.
 
 ```text
 src/KeyboardStudio.Linux/Import/
@@ -223,12 +228,6 @@ src/KeyboardStudio.Linux/Import/
     ResolvedXkbSymbols.cs
     ResolvedXkbKey.cs
   Translation/
-    IXkbKeysymDecoder.cs
-    XkbKeysymDecoder.cs
-    XkbKeysymTable.g.cs             (generated; see §6)
-    IXkbKeyNameResolver.cs
-    XkbKeyNameResolver.cs
-    IXkbTemplateSelector.cs
     XkbTemplateSelector.cs
     XkbLayoutImporter.cs
   XkbLayoutImportSource.cs          (implements ILayoutImportSource)

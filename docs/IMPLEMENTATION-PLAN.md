@@ -1736,6 +1736,44 @@ single ASCII letter or digit; else the template key ID's conventional logical ke
 `LogicalKey.None`. Rule three is what stops a Dvorak import from labelling every key by its produced
 character instead of its physical identity.
 
+**As built.** `Import/Translation/` holds `XkbLayoutImporter` and `XkbTemplateSelector`, and
+`XkbLayoutImportSource` sits at `Import/`. The importer takes a flattened section and a registry hint and knows
+nothing of where either came from, so the same code imports the host's database, a file the user
+picked, and a fixture.
+
+The importer puts the loaded template on the project rather than a bare reference to it. A project
+whose mappings address keys its keyboard does not contain renders as an empty board, and a corpus
+test now asserts that no imported mapping names a key its own geometry lacks.
+
+A null variant resolves to the symbols file's `default` section rather than to a section named after
+the word: `default` is a flag on a section called something else, usually `basic`, so passing the
+word through as a name fails every bare layout — which is most of the catalog.
+
+`XkbKeyNameResolver.AliasSetForLayout` is applied per import, so the resolver is composed once the
+layout is known rather than injected ahead of it. Without it a phonetic layout written for a German
+keyboard comes back with Y and Z transposed, which is the reason P13.8 built the alias sets.
+
+The conventional logical-key table covers both templates completely and agrees with the `us-basic`
+seed, the same convention written down as data. An earlier partial table omitted the twelve
+punctuation keys, which is exactly where rule three does its work.
+
+`KeysSkipped` counts a key whose every output was lost, not one the file deliberately left blank:
+`NoSymbol` is a file saying "nothing here", and counting it as a loss would grade almost every
+layout `Partial`. Levels that decode to nothing leave their layer unmapped rather than holding a
+`NoOutput` the editor would render as blank anyway.
+
+The catalog is the union of the registry and `symbols/`, keyed on the root that actually holds the
+file so `Origin` follows the layout rather than being assumed. A registry entry no root implements
+is not listed — `custom` is one the distribution ships for the user to write themselves — because
+offering an entry that cannot be imported is a dead end. `KSI010` is raised at import rather than at
+listing, `ListAsync` having no channel for findings.
+
+`KSI034` (`TemplateNotAvailable`, error) was added to Core and `docs/DIAGNOSTICS.md` for a template
+that cannot be loaded.
+
+Corpus check: all 778 entries the host's catalog offers import, 37,300 keys in all, with no mapping
+naming a key outside its own geometry.
+
 ### P13.10 Import dialog and provenance
 
 ```text

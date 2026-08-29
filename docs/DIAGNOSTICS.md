@@ -84,6 +84,7 @@ activating the generated layout.
 | `KSI031` | Warning | A dead-key output was dropped; the layer was left unmapped rather than given a misleading character. | Yes |
 | `KSI032` | Warning | An output has no equivalent in the model, so the layer was left unmapped. The message distinguishes an output the model cannot hold, such as a media key, from text that names no output at all. | Yes |
 | `KSI033` | Info | The definition described a key the chosen template does not have, so the key was skipped. | Yes |
+| `KSI034` | Error | The chosen physical keyboard template could not be loaded, so there was nothing to lay the layout onto. Nothing was imported. | No |
 
 `KSI` codes are declared in `KeyboardStudio.Core`, unlike `KSL` codes, which belong to
 `KeyboardStudio.Linux`. Import loss is a property of the domain model rather than of any one
@@ -92,8 +93,8 @@ same reason, and one shared range keeps two sources from assigning one number tw
 wording is correspondingly source-neutral.
 
 Import findings never block anything, because import produces a starting point rather than an
-artifact. A `KSI024` error means the import itself produced no project; it does not mark a project
-invalid.
+artifact. A `KSI024` or `KSI034` error means the import itself produced no project; it does not mark
+a project invalid.
 
 ## Compatibility policy
 
