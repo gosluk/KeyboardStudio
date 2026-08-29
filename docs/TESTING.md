@@ -91,9 +91,19 @@ explicitly:
 | `XkbIntegration` | Generated XKB compilation with `xkbcli` | Ubuntu with XKB packages |
 | `WindowsIntegration` | Generated DLL compilation and verification with MSVC | Windows with Visual Studio and Windows SDK |
 | `ErrorPath` | Cross-project release failure-path facet; also retains its primary category | Any runner required by the primary category |
+| `LinuxHost` | Facet for tests whose subject is a Linux host's own filesystem; also retains its primary category | Excluded from the Windows job |
 
 The platform-neutral gate is `Category=Unit|Category=Golden`. Native categories are invoked in
 dedicated steps so missing tools cannot turn into an accidental fast-test pass.
+
+The Windows job runs `(Category=Unit|Category=Golden)&Category!=LinuxHost`. The excluded facet is
+for tests whose subject is a Linux host's own filesystem — where an XKB database is installed, and
+what the XDG base directories resolve to. Generating an XKB layout travels to any host and is
+asserted there; importing one does not, because it reads a database the host has installed and a
+Windows host has none, so both import sources correctly report themselves unavailable. Marking
+those tests is what keeps the rest of the suite meaningful on Windows: the alternative is
+contorting production code into path forms no XKB tool would write, purely so an assertion holds
+on a platform the feature never runs on.
 
 Run the MVP error-path matrix directly with:
 

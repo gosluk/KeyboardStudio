@@ -73,8 +73,8 @@ public sealed class XkbIncludeResolver : IXkbIncludeResolver
         foreach (var root in _roots)
         {
             // The include names a path relative to symbols/, using forward slashes regardless of
-            // host convention, and the root it is joined to is a POSIX path for the same reason.
-            var candidate = $"{root.SymbolsDirectory}/{file}";
+            // host convention, so it is split rather than concatenated.
+            var candidate = Path.Combine([root.SymbolsDirectory, .. file.Split('/')]);
             if (_fileSystem.FileExists(candidate))
             {
                 return candidate;

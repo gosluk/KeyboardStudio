@@ -210,12 +210,15 @@ jobs:
       - name: Build
         run: dotnet build ${{ env.SOLUTION }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
 
-      # The same filter the self-hosted job runs, and deliberately not a duplicate of it: it is the
-      # only check that the platform-neutral suites are actually platform-neutral. The shipped
-      # product offers the Linux XKB target on every host it runs on, so the XKB backend passing
-      # here is a statement about what a Windows user gets, not a formality.
+      # Nearly the filter the self-hosted job runs, and deliberately not a duplicate of it: it is
+      # the only check that the platform-neutral suites are actually platform-neutral. That matters
+      # for the XKB backend in particular, because the shipped product offers the Linux target on
+      # every host it runs on, so a Windows user really does generate XKB layouts.
+      #
+      # LinuxHost is excluded because importing is the half that does not travel: it reads a
+      # database the host has installed, and a Windows host has none.
       - name: Test managed suites
-        run: dotnet test ${{ env.SOLUTION }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --verbosity normal --filter "Category=Unit|Category=Golden"
+        run: dotnet test ${{ env.SOLUTION }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --verbosity normal --filter "(Category=Unit|Category=Golden)&Category!=LinuxHost"
 
       - name: Compile and verify generated keyboard DLL
         run: dotnet test tests/KeyboardStudio.Windows.Tests/KeyboardStudio.Windows.Tests.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --verbosity normal --filter "Category=WindowsIntegration"

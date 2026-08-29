@@ -4,6 +4,17 @@ using Xunit;
 
 namespace KeyboardStudio.Linux.Tests;
 
+/// <summary>
+/// Where an XKB database lives on a host: the XDG base directories, libxkbcommon's search order,
+/// and the origin each root is tagged with.
+///
+/// Carries the <c>LinuxHost</c> facet because the question is a Linux one. The paths these tests
+/// name are POSIX because the specification that defines them is, and on Windows there is no
+/// behaviour to assert — <see cref="XkbDataRootLocator.Locate"/> finds none of those directories
+/// and the import sources report themselves unavailable, which is the correct outcome and is
+/// covered by <c>Locate_OnAHostWithNoXkbDatabase_ReturnsNothingRatherThanFailing</c>.
+/// </summary>
+[Trait("Category", "LinuxHost")]
 public sealed class XkbDataRootLocatorTests
 {
     [Fact]
@@ -138,10 +149,7 @@ public sealed class XkbDataRootLocatorTests
     {
         var root = new XkbDataRoot("/usr/share/X11/xkb", LayoutSourceOrigin.System);
 
-        // Written out rather than composed with Path.Combine: an XKB database is a POSIX path space
-        // whatever host is reading it, and composing the expectation the same way the code does
-        // would assert only that the two agree, including when both are wrong.
-        Assert.Equal("/usr/share/X11/xkb/rules", root.RulesDirectory);
-        Assert.Equal("/usr/share/X11/xkb/symbols", root.SymbolsDirectory);
+        Assert.Equal(Path.Combine("/usr/share/X11/xkb", "rules"), root.RulesDirectory);
+        Assert.Equal(Path.Combine("/usr/share/X11/xkb", "symbols"), root.SymbolsDirectory);
     }
 }

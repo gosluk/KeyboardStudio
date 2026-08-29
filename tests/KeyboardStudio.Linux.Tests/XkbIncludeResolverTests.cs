@@ -109,10 +109,10 @@ public sealed class XkbIncludeResolverTests
     [Trait("Category", "Unit")]
     public void ResolveFilePath_WhenARootHoldsTheFile_ReturnsItsPath()
     {
-        var fileSystem = new FakeXkbFileSystem().AddFile($"{SystemRoot}/symbols/us", string.Empty);
+        var fileSystem = new FakeXkbFileSystem().AddFile(Path.Combine(SystemRoot, "symbols", "us"), string.Empty);
 
         Assert.Equal(
-            $"{SystemRoot}/symbols/us",
+            Path.Combine(SystemRoot, "symbols", "us"),
             Resolver(fileSystem).ResolveFilePath("us"));
     }
 
@@ -121,10 +121,10 @@ public sealed class XkbIncludeResolverTests
     public void ResolveFilePath_ForASubdirectoryForm_LooksUnderThatSubdirectory()
     {
         var fileSystem = new FakeXkbFileSystem()
-            .AddFile($"{SystemRoot}/symbols/sun_vndr/us", string.Empty);
+            .AddFile(Path.Combine(SystemRoot, "symbols", "sun_vndr", "us"), string.Empty);
 
         Assert.Equal(
-            $"{SystemRoot}/symbols/sun_vndr/us",
+            Path.Combine(SystemRoot, "symbols", "sun_vndr", "us"),
             Resolver(fileSystem).ResolveFilePath("sun_vndr/us"));
     }
 
@@ -135,13 +135,13 @@ public sealed class XkbIncludeResolverTests
         const string UserRoot = "/home/someone/.config/xkb";
         var fileSystem = new FakeXkbFileSystem()
             .AddFile($"{UserRoot}/symbols/us", string.Empty)
-            .AddFile($"{SystemRoot}/symbols/us", string.Empty);
+            .AddFile(Path.Combine(SystemRoot, "symbols", "us"), string.Empty);
 
         var resolver = new XkbIncludeResolver(
             fileSystem,
             [new XkbDataRoot(UserRoot, LayoutSourceOrigin.User), new XkbDataRoot(SystemRoot, LayoutSourceOrigin.System)]);
 
-        Assert.Equal($"{UserRoot}/symbols/us", resolver.ResolveFilePath("us"));
+        Assert.Equal(Path.Combine(UserRoot, "symbols", "us"), resolver.ResolveFilePath("us"));
     }
 
     [Fact]
