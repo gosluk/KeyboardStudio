@@ -49,6 +49,12 @@ physical key, change its logical key or any of the four layer values, then use *
 the `.kbdproj`, then build from the Build panel. Target profile edits are stored in the same project
 document and restored when it is reopened. Builds only generate artifacts; they never install or activate a keyboard layout.
 
+The next planned Linux workflow starts from an imported system layout, emits only the user's
+supported changes as a derived variant, and installs it explicitly beneath the user's XDG XKB
+directory. Its architecture, host requirements, update safety, and implementation plan are in
+[docs/LINUX-USER-XKB-VARIANTS.md](docs/LINUX-USER-XKB-VARIANTS.md). It is planned work, not a current
+application capability.
+
 See [Windows build prerequisites](docs/WINDOWS-BUILD.md#prerequisites) and
 [Linux verification and safe manual installation](docs/LINUX-XKB.md#safe-manual-testing-and-installation).
 
@@ -140,6 +146,8 @@ docs/
   ARCHITECTURE.md
   DIAGNOSTICS.md
   IMPLEMENTATION-PLAN.md
+  LINUX-LAYOUT-IMPORT.md
+  LINUX-USER-XKB-VARIANTS.md
   LINUX-XKB.md
   MVP-RELEASE-CHECKLIST.md
   PACKAGING.md
@@ -179,7 +187,8 @@ Explicitly out of MVP scope:
 - runtime keyboard hooks;
 - PowerToys-style remapping;
 - importing arbitrary existing keyboard DLLs;
-- automatic installation or activation of generated XKB layouts.
+- automatic installation or activation of generated XKB layouts. Explicit transactional per-user
+  variant installation is planned for Phase 14; activation remains excluded.
 
 Additional release limitations:
 

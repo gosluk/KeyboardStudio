@@ -2,10 +2,10 @@
 
 This file tracks execution of [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
 
-- Current work branch: `import`
+- Current work branch: `install-layout`
 - Last updated: 2026-08-29
-- Current phase: Phase 13 — Linux focus and layout import
-- Next work item: **none — Phase 13 complete**
+- Current phase: Phase 14 — Import-derived per-user XKB variants
+- Next work item: **P14.1 — Persist project identity and an immutable derivation baseline**
 
 Legend: `[x]` complete, `[ ]` not yet complete.
 
@@ -173,10 +173,23 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 
 **Phase status:** 12/12 work items complete. Phase complete.
 
+## Phase 14 — Import-derived per-user XKB variants
+
+- [ ] **P14.1** Persist project identity and an immutable derivation baseline
+- [ ] **P14.2** Add neutral diffing and derived-variant translation
+- [ ] **P14.3** Generate the staged user XKB bundle
+- [ ] **P14.4** Probe capabilities and verify the proposed bundle
+- [ ] **P14.5** Implement ownership-aware merging and host-local state
+- [ ] **P14.6** Add transactional install, update, verify, recovery, and uninstall
+- [ ] **P14.7** Add the explicit user-variant UI workflow
+- [ ] **P14.8** Close compatibility, integration, and recovery coverage
+
+**Phase status:** 0/8 work items complete. Phase planned.
+
 ## Progress summary
 
 - Completed work items: **94**
-- Total planned work items: **94**
-- Overall checklist progress: **94/94**
+- Total planned work items: **102**
+- Overall checklist progress: **94/102**
 
 The checklist records work-item completion only. Phase-level acceptance criteria and test gates in `IMPLEMENTATION-PLAN.md` still apply before a phase is considered complete.

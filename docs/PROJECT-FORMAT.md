@@ -172,12 +172,47 @@ Provenance lives in the envelope rather than in `project.metadata` because it is
 rather than layout semantics. A `KeyboardProject` typed out by hand has no meaningful value for it,
 and `KeyboardStudio.Core` would otherwise carry a concept only the application uses.
 
+### Planned version 3 derivation baseline
+
+Phase 14 adds an optional `layoutDerivation` sibling to `importProvenance`. This is planned and is
+not part of the current version-2 wire format.
+
+The provenance record answers "where did this document begin?". A derivation additionally answers
+"what representable mappings were imported?" so KeyboardStudio can emit only later user changes
+while inheriting the current system definition. Its conceptual fields are:
+
+```json
+{
+  "layoutDerivation": {
+    "sourceId": "linux-xkb",
+    "sourceOrigin": "system",
+    "baseLayoutId": "pl",
+    "baseVariantId": "qwertz",
+    "resolvedBaseSectionId": "qwertz",
+    "importedAtUtc": "2026-08-29T09:15:00+00:00",
+    "importFidelity": "exact",
+    "baselineMappings": [],
+    "sourceFingerprint": null
+  }
+}
+```
+
+`baselineMappings` uses a dedicated persistence DTO representation of the supported mapping state;
+it is not a second mutable `KeyboardLayout` in Core. The snapshot is immutable for the lifetime of
+the derivation and is replaced only by an explicit re-import. Documents without it remain valid and
+standalone-exportable but cannot be installed as a derived system variant.
+
+The exact version-3 JSON DTO is finalized by P14.1 together with migration fixtures. Host
+installation paths, hashes, backups, and installed status are intentionally absent: they belong to
+host-local state, not a portable `.kbdproj`.
+
 ## Envelope versions
 
 | Version | Introduced |
 | ---: | --- |
 | `1` | The original envelope: project plus target profiles. |
 | `2` | Added `importProvenance`. |
+| `3` (planned) | Adds immutable `layoutDerivation` for import-derived user variants. |
 
 `JsonKeyboardProjectDocumentStore` accepts every version from `FirstDocumentSchemaVersion` to
 `CurrentDocumentSchemaVersion` and rejects anything outside that range, a newer version included: a
