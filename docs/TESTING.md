@@ -62,6 +62,21 @@ complete solution. It then runs the platform-neutral suites and the categorized 
 compiles generated source, verifies the DLL structure and export, and performs a load-level smoke
 test. A missing Windows toolchain is a CI failure, never a silent native-test skip.
 
+`windows-latest` is the one hosted (non-pool, quota-limited) runner this workflow still uses, so a
+`detect-changes` job gates it: it diffs the push or PR against its base commit and only runs
+`windows` when the change touches `src/KeyboardStudio.Windows/`,
+`tests/KeyboardStudio.Windows.Tests/`, `docs/WINDOWS-BUILD.md`, `docs/WINDOWS-KBDTABLES-REFERENCE.md`,
+or the workflow file itself. `mvp-release-gate` treats a `skipped` result for `windows` the same as
+`success`; only `failure`/`cancelled` blocks the gate. `detect-changes` defaults to running the job
+(`windows=true`) whenever it cannot resolve a base commit to diff against — a new branch's first
+push, or a force-push — rather than risk silently skipping it.
+
+This is a narrower gate than "anything that could affect the win-x64 build": the job also re-runs
+the platform-neutral suites and packages the whole app for win-x64 (see below), so a change confined
+to `src/KeyboardStudio.Core` or `src/KeyboardStudio.App` that happens to break Windows packaging, or
+turns out not to be as platform-neutral as its category claims, will not be caught until a
+Windows-path change next triggers this job — not on the commit that introduced the break.
+
 The platform-neutral suites run on both the self-hosted pool and the Windows job, which is not
 duplication: it is the only check that they are platform-neutral at all. It matters most for the
 XKB backend, because the shipped product offers the Linux target on every host it runs on, so a
