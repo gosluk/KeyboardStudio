@@ -12,6 +12,13 @@ on:
 permissions:
   contents: read
 
+# The self-hosted pool is three machines, so a branch pushed twice in a minute should not hold
+# two full runs. The newer push supersedes the older one everywhere except on main, where each
+# commit's result is a record worth keeping.
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 env:
   DOTNET_SDK_VERSION: '10.0.302'
   SOLUTION: KeyboardStudio.slnx
@@ -34,6 +41,13 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
 
+      # The keysym table is generated from the pinned sources in third_party/keysyms and
+      # committed. Regenerating and diffing is what stops the committed file and its sources
+      # drifting apart, which nothing else would notice: a stale table imports layouts that
+      # look plausible and are quietly wrong.
+      - name: Verify the generated keysym table
+        run: python3 scripts/generate-keysym-table.py --check
+
       - name: Restore
         run: dotnet restore ${{ env.SOLUTION }}
 
@@ -45,6 +59,9 @@ jobs:
 
   xkb-integration:
     name: XKB integration (Ubuntu)
+      # The runners are unprivileged podman containers -- uid 10001, no sudo -- so they can install
+      # nothing at runtime. This job runs hosted until the runner image carries the packages it
+      # needs; see docs/TESTING.md for the list and the one-line change that moves it back.
     runs-on: ubuntu-latest
 
     steps:
@@ -60,10 +77,17 @@ jobs:
         run: ./scripts/install-xkbcli.sh
 
       - name: Restore
-        run: dotnet restore tests/KeyboardStudio.Linux.Tests/KeyboardStudio.Linux.Tests.csproj
+        run: |
+          dotnet restore tests/KeyboardStudio.Linux.Tests/KeyboardStudio.Linux.Tests.csproj
+          dotnet restore tests/KeyboardStudio.App.Tests/KeyboardStudio.App.Tests.csproj
 
       - name: Test generated XKB layouts
         run: dotnet test tests/KeyboardStudio.Linux.Tests/KeyboardStudio.Linux.Tests.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore --verbosity normal --filter "Category=XkbIntegration"
+
+      # The import composition root lives in the application, so the only test that proves the real
+      # sources are wired together has to run from there.
+      - name: Test layout import against the installed database
+        run: dotnet test tests/KeyboardStudio.App.Tests/KeyboardStudio.App.Tests.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore --verbosity normal --filter "Category=XkbIntegration"
 
       - name: Retain failed XKB artifacts
         if: failure()
@@ -73,8 +97,77 @@ jobs:
           path: '**/TestResults/xkb-integration/**'
           if-no-files-found: ignore
 
-  windows-integration:
-    name: Windows native integration
+  package-linux:
+    name: Package desktop app (Linux x64)
+      # The runners are unprivileged podman containers -- uid 10001, no sudo -- so they can install
+      # nothing at runtime. This job runs hosted until the runner image carries the packages it
+      # needs; see docs/TESTING.md for the list and the one-line change that moves it back.
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
+
+      - name: Install virtual display
+        run: ./scripts/install-xvfb.sh
+
+      - name: Restore Linux runtime
+        run: dotnet restore src/KeyboardStudio.App/KeyboardStudio.App.csproj --runtime linux-x64
+
+      - name: Read application version
+        id: version
+        run: echo "value=$(dotnet msbuild src/KeyboardStudio.App/KeyboardStudio.App.csproj -getProperty:Version)" >> "$GITHUB_OUTPUT"
+
+      - name: Publish self-contained app
+        run: >-
+          dotnet publish src/KeyboardStudio.App/KeyboardStudio.App.csproj
+          --configuration ${{ env.BUILD_CONFIGURATION }}
+          --runtime linux-x64
+          --self-contained true
+          --no-restore
+          --output artifacts/KeyboardStudio-${{ steps.version.outputs.value }}-linux-x64
+
+      - name: Smoke-test packaged app
+        run: artifacts/KeyboardStudio-${{ steps.version.outputs.value }}-linux-x64/KeyboardStudio --version
+
+      - name: Smoke-test desktop startup
+        run: |
+          set +e
+          xvfb-run --auto-servernum timeout 5s \
+            artifacts/KeyboardStudio-${{ steps.version.outputs.value }}-linux-x64/KeyboardStudio
+          exit_code=$?
+          set -e
+          # 124 is timeout reporting a process it had to kill, the only outcome meaning the window
+          # opened and stayed open.
+          if [ "$exit_code" -ne 124 ]; then
+            echo "Packaged application exited unexpectedly with code $exit_code." >&2
+            exit 1
+          fi
+
+      - name: Archive package
+        run: >-
+          tar -C artifacts
+          -czf artifacts/KeyboardStudio-${{ steps.version.outputs.value }}-linux-x64.tar.gz
+          KeyboardStudio-${{ steps.version.outputs.value }}-linux-x64
+
+      - name: Upload Linux package
+        uses: actions/upload-artifact@v7
+        with:
+          name: KeyboardStudio-${{ steps.version.outputs.value }}-linux-x64
+          path: artifacts/KeyboardStudio-${{ steps.version.outputs.value }}-linux-x64.tar.gz
+          if-no-files-found: error
+
+  windows:
+    name: Windows integration and package
+    # The only job that cannot move to the self-hosted pool: it needs MSVC, the Windows SDK, and a
+    # Windows loader, and the pool is Linux. Integration and packaging share one runner because
+    # they otherwise repeat the same checkout, SDK setup and restore on two, and because an
+    # artifact is worth producing only from a tree whose tests have passed.
     runs-on: windows-latest
 
     steps:
@@ -117,8 +210,15 @@ jobs:
       - name: Build
         run: dotnet build ${{ env.SOLUTION }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
 
+      # Nearly the filter the self-hosted job runs, and deliberately not a duplicate of it: it is
+      # the only check that the platform-neutral suites are actually platform-neutral. That matters
+      # for the XKB backend in particular, because the shipped product offers the Linux target on
+      # every host it runs on, so a Windows user really does generate XKB layouts.
+      #
+      # LinuxHost is excluded because importing is the half that does not travel: it reads a
+      # database the host has installed, and a Windows host has none.
       - name: Test managed suites
-        run: dotnet test ${{ env.SOLUTION }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --verbosity normal --filter "Category=Unit|Category=Golden"
+        run: dotnet test ${{ env.SOLUTION }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --verbosity normal --filter "(Category=Unit|Category=Golden)&Category!=LinuxHost"
 
       - name: Compile and verify generated keyboard DLL
         run: dotnet test tests/KeyboardStudio.Windows.Tests/KeyboardStudio.Windows.Tests.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --verbosity normal --filter "Category=WindowsIntegration"
@@ -131,81 +231,6 @@ jobs:
           path: '**/TestResults/windows-integration/**'
           if-no-files-found: ignore
           retention-days: 7
-
-  package-linux:
-    name: Package desktop app (Linux x64)
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v6
-        with:
-          dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
-
-      - name: Install virtual display
-        run: |
-          sudo apt-get update
-          sudo apt-get install --yes xvfb
-
-      - name: Restore Linux runtime
-        run: dotnet restore src/KeyboardStudio.App/KeyboardStudio.App.csproj --runtime linux-x64
-
-      - name: Read application version
-        id: version
-        run: echo "value=$(dotnet msbuild src/KeyboardStudio.App/KeyboardStudio.App.csproj -getProperty:Version)" >> "$GITHUB_OUTPUT"
-
-      - name: Publish self-contained app
-        run: >-
-          dotnet publish src/KeyboardStudio.App/KeyboardStudio.App.csproj
-          --configuration ${{ env.BUILD_CONFIGURATION }}
-          --runtime linux-x64
-          --self-contained true
-          --no-restore
-          --output artifacts/KeyboardStudio-${{ steps.version.outputs.value }}-linux-x64
-
-      - name: Smoke-test packaged app
-        run: artifacts/KeyboardStudio-${{ steps.version.outputs.value }}-linux-x64/KeyboardStudio --version
-
-      - name: Smoke-test desktop startup
-        run: |
-          set +e
-          xvfb-run --auto-servernum timeout 5s \
-            artifacts/KeyboardStudio-${{ steps.version.outputs.value }}-linux-x64/KeyboardStudio
-          exit_code=$?
-          set -e
-          if [ "$exit_code" -ne 124 ]; then
-            echo "Packaged application exited unexpectedly with code $exit_code." >&2
-            exit 1
-          fi
-
-      - name: Archive package
-        run: >-
-          tar -C artifacts
-          -czf artifacts/KeyboardStudio-${{ steps.version.outputs.value }}-linux-x64.tar.gz
-          KeyboardStudio-${{ steps.version.outputs.value }}-linux-x64
-
-      - name: Upload Linux package
-        uses: actions/upload-artifact@v7
-        with:
-          name: KeyboardStudio-${{ steps.version.outputs.value }}-linux-x64
-          path: artifacts/KeyboardStudio-${{ steps.version.outputs.value }}-linux-x64.tar.gz
-          if-no-files-found: error
-
-  package-windows:
-    name: Package desktop app (Windows x64)
-    runs-on: windows-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v6
-        with:
-          dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
 
       - name: Restore Windows runtime
         run: dotnet restore src/KeyboardStudio.App/KeyboardStudio.App.csproj --runtime win-x64
@@ -267,26 +292,23 @@ jobs:
     needs:
       - managed-build
       - xkb-integration
-      - windows-integration
       - package-linux
-      - package-windows
-    runs-on: ubuntu-latest
+      - windows
+    runs-on: [self-hosted, Linux, X64]
 
     steps:
       - name: Require all MVP jobs
         env:
           MANAGED_RESULT: ${{ needs.managed-build.result }}
           XKB_RESULT: ${{ needs.xkb-integration.result }}
-          WINDOWS_RESULT: ${{ needs.windows-integration.result }}
           LINUX_PACKAGE_RESULT: ${{ needs.package-linux.result }}
-          WINDOWS_PACKAGE_RESULT: ${{ needs.package-windows.result }}
+          WINDOWS_RESULT: ${{ needs.windows.result }}
         run: |
           for result in \
             "$MANAGED_RESULT" \
             "$XKB_RESULT" \
-            "$WINDOWS_RESULT" \
             "$LINUX_PACKAGE_RESULT" \
-            "$WINDOWS_PACKAGE_RESULT"; do
+            "$WINDOWS_RESULT"; do
             if [ "$result" != "success" ]; then
               echo "An MVP prerequisite job finished with result: $result" >&2
               exit 1

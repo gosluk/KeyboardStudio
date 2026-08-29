@@ -1,5 +1,6 @@
 using KeyboardStudio.Build;
 using KeyboardStudio.Core;
+using KeyboardStudio.Testing;
 using Xunit;
 
 namespace KeyboardStudio.Windows.Tests;
@@ -20,7 +21,7 @@ public sealed class BuildOrchestratorValidationTests
             manifestWriter);
 
         var result = await orchestrator.BuildAsync(
-            DemoProjectFactory.Create(),
+            TestProjectFactory.Create(),
             new BuildOptions(BuildTarget.WindowsX64, "out"));
 
         Assert.False(result.Success);
@@ -43,7 +44,7 @@ public sealed class BuildOrchestratorValidationTests
         var orchestrator = CreateOrchestrator(severity, generator, compiler, manifestWriter);
 
         var result = await orchestrator.BuildAsync(
-            DemoProjectFactory.Create(),
+            TestProjectFactory.Create(),
             new BuildOptions(BuildTarget.WindowsX64, "out"));
 
         Assert.True(result.Success);

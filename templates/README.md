@@ -17,4 +17,18 @@ Stable IDs use familiar physical-key names (`KeyA`, `Digit1`, `Numpad1`, and so 
 
 Runtime semantic validation, including duplicate IDs, duplicate scan identities, finite geometry, and built-in key counts, is implemented by `KeyboardTemplateProvider`.
 
+## Seeds
+
+`seeds/` holds seed projects: complete `.kbdproj` documents that supply the content of a new document, so the editor never opens on an empty keyboard. Unlike a template, a seed carries logical mappings and character outputs as well as geometry.
+
+- `seeds/us-basic.kbdproj` — US layout on ISO 105-key hardware, all 105 keys mapped.
+
+A seed's `keyboard` block is a copy of a geometry template, so the two can disagree. Regenerate rather than hand-edit:
+
+```bash
+python3 scripts/generate-us-basic-seed.py
+```
+
+The mapping table lives in that script. `SeedProjectTests` asserts the seed's geometry still matches `iso-105.json` key-for-key.
+
 See [`docs/KEYBOARD-TEMPLATE-FORMAT.md`](../docs/KEYBOARD-TEMPLATE-FORMAT.md) for the field-level contract and versioning rules.

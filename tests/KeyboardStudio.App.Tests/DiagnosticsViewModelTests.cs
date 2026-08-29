@@ -67,7 +67,7 @@ public sealed class DiagnosticsViewModelTests
     [Trait("Category", "Unit")]
     public void MappingMutation_WhenOutputHasNoLogicalKey_ContinuouslyRefreshesDiagnostics()
     {
-        var viewModel = new MainWindowViewModel();
+        var viewModel = TestMainWindow.WithEmptyProject();
         Assert.True(viewModel.Editor.SelectKey("KeyA"));
 
         viewModel.Editor.LayerMappings[0].Output = "a";
@@ -91,8 +91,7 @@ public sealed class DiagnosticsViewModelTests
     public void MappingMutation_WhenEditIsRejected_DoesNotRunProjectValidation()
     {
         var validator = new CountingProjectValidator();
-        var viewModel = new MainWindowViewModel(
-            new KeyboardTemplateProvider(),
+        var viewModel = TestMainWindow.WithEmptyProject(
             new TestProjectInteractionService(),
             validator);
         Assert.True(viewModel.Editor.SelectKey("KeyA"));
@@ -127,6 +126,11 @@ public sealed class DiagnosticsViewModelTests
 
         public Task<string?> SelectSavePathAsync(string suggestedFileName) =>
             Task.FromResult<string?>(null);
+
+        public Task<bool> ShowLayoutImportAsync(LayoutImportViewModel viewModel) =>
+            Task.FromResult(false);
+
+        public Task<string?> SelectSymbolsFilePathAsync() => Task.FromResult<string?>(null);
 
         public Task ShowErrorAsync(string title, string message) => Task.CompletedTask;
     }

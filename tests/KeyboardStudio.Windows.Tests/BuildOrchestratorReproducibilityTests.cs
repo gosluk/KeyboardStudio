@@ -1,5 +1,6 @@
 using KeyboardStudio.Build;
 using KeyboardStudio.Core;
+using KeyboardStudio.Testing;
 using Xunit;
 
 namespace KeyboardStudio.Windows.Tests;
@@ -28,7 +29,7 @@ public sealed class BuildOrchestratorReproducibilityTests
             ]));
 
         var result = await orchestrator.BuildAsync(
-            DemoProjectFactory.Create(),
+            TestProjectFactory.Create(),
             new BuildOptions(
                 BuildTarget.WindowsX64,
                 "out",

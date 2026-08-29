@@ -1,5 +1,6 @@
 using KeyboardStudio.Build;
 using KeyboardStudio.Core;
+using KeyboardStudio.Testing;
 using KeyboardStudio.Windows;
 using Xunit;
 
@@ -11,7 +12,7 @@ public sealed class WindowsGeneratorTests
     [Trait("Category", "Unit")]
     public async Task Generate_WhenInputIsIdentical_ProducesIdenticalUnicodeMappingSource()
     {
-        var project = DemoProjectFactory.Create();
+        var project = TestProjectFactory.Create();
         new KeyboardEditor(project).MapCharacter("KeyA", ModifierLayer.AltGr, "ą");
         var metadata = new WindowsLayoutMetadata("kbd-demo", "Demo layout");
         var generator = new WindowsArtifactGenerator(metadata);
@@ -40,7 +41,7 @@ public sealed class WindowsGeneratorTests
     [Trait("Category", "Unit")]
     public async Task Generate_WhenLayoutHasNormalAndExtendedKeys_EmitsNativeScanCodeTables()
     {
-        var project = DemoProjectFactory.Create();
+        var project = TestProjectFactory.Create();
         project.Keyboard.Keys.Add(new PhysicalKey
         {
             Id = "ArrowLeft",
@@ -72,7 +73,7 @@ public sealed class WindowsGeneratorTests
     [Trait("Category", "Unit")]
     public async Task Generate_WhenPrimaryTableContainsSpecialKeys_EmitsRequiredKbdFlags()
     {
-        var project = DemoProjectFactory.Create();
+        var project = TestProjectFactory.Create();
         project.Keyboard.Keys.AddRange(
         [
             new PhysicalKey { Id = "RightShift", ScanCode = 0x36 },
@@ -103,7 +104,7 @@ public sealed class WindowsGeneratorTests
         var artifact = await new WindowsArtifactGenerator(
                 new WindowsLayoutMetadata("kbd-demo", "Demo layout"))
             .GenerateAsync(
-                DemoProjectFactory.Create(),
+                TestProjectFactory.Create(),
                 new BuildOptions(BuildTarget.WindowsX64, "out"));
         var source = artifact.Source.Files["keyboard.c"];
 
@@ -120,7 +121,7 @@ public sealed class WindowsGeneratorTests
     [Trait("Category", "Unit")]
     public async Task Generate_WhenAltGrIsUsed_EmitsFourColumnNativeCharacterTable()
     {
-        var project = DemoProjectFactory.Create();
+        var project = TestProjectFactory.Create();
         new KeyboardEditor(project).MapCharacter("KeyA", ModifierLayer.AltGr, "ą");
 
         var artifact = await new WindowsArtifactGenerator(
@@ -142,7 +143,7 @@ public sealed class WindowsGeneratorTests
         var artifact = await new WindowsArtifactGenerator(
                 new WindowsLayoutMetadata("kbd-demo", "Demo layout"))
             .GenerateAsync(
-                DemoProjectFactory.Create(),
+                TestProjectFactory.Create(),
                 new BuildOptions(BuildTarget.WindowsX64, "out"));
         var source = artifact.Source.Files["keyboard.c"];
 
@@ -161,7 +162,7 @@ public sealed class WindowsGeneratorTests
         var artifact = await new WindowsArtifactGenerator(
                 new WindowsLayoutMetadata("kbd-demo", "Demo layout"))
             .GenerateAsync(
-                DemoProjectFactory.Create(),
+                TestProjectFactory.Create(),
                 new BuildOptions(BuildTarget.WindowsX64, "out"));
 
         Assert.Contains("PKBDTABLES KbdLayerDescriptor(VOID)", artifact.Source.Files["keyboard.h"]);
@@ -176,7 +177,7 @@ public sealed class WindowsGeneratorTests
         var artifact = await new WindowsArtifactGenerator(
                 new WindowsLayoutMetadata("kbd-demo", "Demo \"Unicode\" layout", "2.3.4.5", "Example Co"))
             .GenerateAsync(
-                DemoProjectFactory.Create(),
+                TestProjectFactory.Create(),
                 new BuildOptions(BuildTarget.WindowsX64, "out"));
 
         Assert.Equal(

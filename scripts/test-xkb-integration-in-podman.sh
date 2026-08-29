@@ -22,9 +22,19 @@ podman run --rm --pull=missing \
     "${dotnet_image}" \
     sh -eu -c '
         ./scripts/install-xkbcli.sh
-        dotnet restore tests/KeyboardStudio.Linux.Tests/KeyboardStudio.Linux.Tests.csproj
-        dotnet test tests/KeyboardStudio.Linux.Tests/KeyboardStudio.Linux.Tests.csproj \
-            --configuration Release \
-            --verbosity normal \
-            --filter "Category=XkbIntegration"
+
+        # Both halves of the categorised suite. The Linux project covers generation and the
+        # external verifier; the application project is where the import composition root lives,
+        # so it is the only place the real sources and the real host probe can be shown to be
+        # wired together at all. Running one without the other leaves that unproven.
+        for project in \
+            tests/KeyboardStudio.Linux.Tests/KeyboardStudio.Linux.Tests.csproj \
+            tests/KeyboardStudio.App.Tests/KeyboardStudio.App.Tests.csproj; do
+            dotnet restore "${project}"
+            dotnet test "${project}" \
+                --configuration Release \
+                --no-restore \
+                --verbosity normal \
+                --filter "Category=XkbIntegration"
+        done
     '

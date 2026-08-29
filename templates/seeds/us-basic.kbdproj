@@ -1,0 +1,2205 @@
+{
+  "schemaVersion": 1,
+  "metadata": {
+    "name": "US basic",
+    "description": "US layout on ISO 105-key hardware. Starting point for a new project; edit any key or import a system layout to replace it.",
+    "version": "0.1.0",
+    "language": "en-US"
+  },
+  "keyboard": {
+    "id": "iso-105",
+    "keys": [
+      {
+        "id": "Escape",
+        "scanCode": 1,
+        "extended": false,
+        "x": 0,
+        "y": 0,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "F1",
+        "scanCode": 59,
+        "extended": false,
+        "x": 2,
+        "y": 0,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "F2",
+        "scanCode": 60,
+        "extended": false,
+        "x": 3,
+        "y": 0,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "F3",
+        "scanCode": 61,
+        "extended": false,
+        "x": 4,
+        "y": 0,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "F4",
+        "scanCode": 62,
+        "extended": false,
+        "x": 5,
+        "y": 0,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "F5",
+        "scanCode": 63,
+        "extended": false,
+        "x": 6.5,
+        "y": 0,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "F6",
+        "scanCode": 64,
+        "extended": false,
+        "x": 7.5,
+        "y": 0,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "F7",
+        "scanCode": 65,
+        "extended": false,
+        "x": 8.5,
+        "y": 0,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "F8",
+        "scanCode": 66,
+        "extended": false,
+        "x": 9.5,
+        "y": 0,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "F9",
+        "scanCode": 67,
+        "extended": false,
+        "x": 11,
+        "y": 0,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "F10",
+        "scanCode": 68,
+        "extended": false,
+        "x": 12,
+        "y": 0,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "F11",
+        "scanCode": 87,
+        "extended": false,
+        "x": 13,
+        "y": 0,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "F12",
+        "scanCode": 88,
+        "extended": false,
+        "x": 14,
+        "y": 0,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "PrintScreen",
+        "scanCode": 55,
+        "extended": true,
+        "x": 15.5,
+        "y": 0,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "ScrollLock",
+        "scanCode": 70,
+        "extended": false,
+        "x": 16.5,
+        "y": 0,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Pause",
+        "scanCode": 69,
+        "extended": true,
+        "x": 17.5,
+        "y": 0,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Backquote",
+        "scanCode": 41,
+        "extended": false,
+        "x": 0,
+        "y": 1.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Digit1",
+        "scanCode": 2,
+        "extended": false,
+        "x": 1,
+        "y": 1.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Digit2",
+        "scanCode": 3,
+        "extended": false,
+        "x": 2,
+        "y": 1.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Digit3",
+        "scanCode": 4,
+        "extended": false,
+        "x": 3,
+        "y": 1.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Digit4",
+        "scanCode": 5,
+        "extended": false,
+        "x": 4,
+        "y": 1.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Digit5",
+        "scanCode": 6,
+        "extended": false,
+        "x": 5,
+        "y": 1.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Digit6",
+        "scanCode": 7,
+        "extended": false,
+        "x": 6,
+        "y": 1.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Digit7",
+        "scanCode": 8,
+        "extended": false,
+        "x": 7,
+        "y": 1.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Digit8",
+        "scanCode": 9,
+        "extended": false,
+        "x": 8,
+        "y": 1.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Digit9",
+        "scanCode": 10,
+        "extended": false,
+        "x": 9,
+        "y": 1.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Digit0",
+        "scanCode": 11,
+        "extended": false,
+        "x": 10,
+        "y": 1.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Minus",
+        "scanCode": 12,
+        "extended": false,
+        "x": 11,
+        "y": 1.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Equal",
+        "scanCode": 13,
+        "extended": false,
+        "x": 12,
+        "y": 1.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Backspace",
+        "scanCode": 14,
+        "extended": false,
+        "x": 13,
+        "y": 1.5,
+        "width": 2,
+        "height": 1
+      },
+      {
+        "id": "Insert",
+        "scanCode": 82,
+        "extended": true,
+        "x": 15.5,
+        "y": 1.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Home",
+        "scanCode": 71,
+        "extended": true,
+        "x": 16.5,
+        "y": 1.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "PageUp",
+        "scanCode": 73,
+        "extended": true,
+        "x": 17.5,
+        "y": 1.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "NumLock",
+        "scanCode": 69,
+        "extended": false,
+        "x": 19,
+        "y": 1.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "NumpadDivide",
+        "scanCode": 53,
+        "extended": true,
+        "x": 20,
+        "y": 1.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "NumpadMultiply",
+        "scanCode": 55,
+        "extended": false,
+        "x": 21,
+        "y": 1.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "NumpadSubtract",
+        "scanCode": 74,
+        "extended": false,
+        "x": 22,
+        "y": 1.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Tab",
+        "scanCode": 15,
+        "extended": false,
+        "x": 0,
+        "y": 2.5,
+        "width": 1.5,
+        "height": 1
+      },
+      {
+        "id": "KeyQ",
+        "scanCode": 16,
+        "extended": false,
+        "x": 1.5,
+        "y": 2.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "KeyW",
+        "scanCode": 17,
+        "extended": false,
+        "x": 2.5,
+        "y": 2.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "KeyE",
+        "scanCode": 18,
+        "extended": false,
+        "x": 3.5,
+        "y": 2.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "KeyR",
+        "scanCode": 19,
+        "extended": false,
+        "x": 4.5,
+        "y": 2.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "KeyT",
+        "scanCode": 20,
+        "extended": false,
+        "x": 5.5,
+        "y": 2.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "KeyY",
+        "scanCode": 21,
+        "extended": false,
+        "x": 6.5,
+        "y": 2.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "KeyU",
+        "scanCode": 22,
+        "extended": false,
+        "x": 7.5,
+        "y": 2.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "KeyI",
+        "scanCode": 23,
+        "extended": false,
+        "x": 8.5,
+        "y": 2.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "KeyO",
+        "scanCode": 24,
+        "extended": false,
+        "x": 9.5,
+        "y": 2.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "KeyP",
+        "scanCode": 25,
+        "extended": false,
+        "x": 10.5,
+        "y": 2.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "BracketLeft",
+        "scanCode": 26,
+        "extended": false,
+        "x": 11.5,
+        "y": 2.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "BracketRight",
+        "scanCode": 27,
+        "extended": false,
+        "x": 12.5,
+        "y": 2.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Enter",
+        "scanCode": 28,
+        "extended": false,
+        "x": 13.75,
+        "y": 2.5,
+        "width": 1.25,
+        "height": 2
+      },
+      {
+        "id": "Delete",
+        "scanCode": 83,
+        "extended": true,
+        "x": 15.5,
+        "y": 2.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "End",
+        "scanCode": 79,
+        "extended": true,
+        "x": 16.5,
+        "y": 2.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "PageDown",
+        "scanCode": 81,
+        "extended": true,
+        "x": 17.5,
+        "y": 2.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Numpad7",
+        "scanCode": 71,
+        "extended": false,
+        "x": 19,
+        "y": 2.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Numpad8",
+        "scanCode": 72,
+        "extended": false,
+        "x": 20,
+        "y": 2.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Numpad9",
+        "scanCode": 73,
+        "extended": false,
+        "x": 21,
+        "y": 2.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "NumpadAdd",
+        "scanCode": 78,
+        "extended": false,
+        "x": 22,
+        "y": 2.5,
+        "width": 1,
+        "height": 2
+      },
+      {
+        "id": "CapsLock",
+        "scanCode": 58,
+        "extended": false,
+        "x": 0,
+        "y": 3.5,
+        "width": 1.75,
+        "height": 1
+      },
+      {
+        "id": "KeyA",
+        "scanCode": 30,
+        "extended": false,
+        "x": 1.75,
+        "y": 3.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "KeyS",
+        "scanCode": 31,
+        "extended": false,
+        "x": 2.75,
+        "y": 3.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "KeyD",
+        "scanCode": 32,
+        "extended": false,
+        "x": 3.75,
+        "y": 3.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "KeyF",
+        "scanCode": 33,
+        "extended": false,
+        "x": 4.75,
+        "y": 3.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "KeyG",
+        "scanCode": 34,
+        "extended": false,
+        "x": 5.75,
+        "y": 3.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "KeyH",
+        "scanCode": 35,
+        "extended": false,
+        "x": 6.75,
+        "y": 3.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "KeyJ",
+        "scanCode": 36,
+        "extended": false,
+        "x": 7.75,
+        "y": 3.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "KeyK",
+        "scanCode": 37,
+        "extended": false,
+        "x": 8.75,
+        "y": 3.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "KeyL",
+        "scanCode": 38,
+        "extended": false,
+        "x": 9.75,
+        "y": 3.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Semicolon",
+        "scanCode": 39,
+        "extended": false,
+        "x": 10.75,
+        "y": 3.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Quote",
+        "scanCode": 40,
+        "extended": false,
+        "x": 11.75,
+        "y": 3.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "IntlHash",
+        "scanCode": 43,
+        "extended": false,
+        "x": 12.75,
+        "y": 3.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Numpad4",
+        "scanCode": 75,
+        "extended": false,
+        "x": 19,
+        "y": 3.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Numpad5",
+        "scanCode": 76,
+        "extended": false,
+        "x": 20,
+        "y": 3.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Numpad6",
+        "scanCode": 77,
+        "extended": false,
+        "x": 21,
+        "y": 3.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "ShiftLeft",
+        "scanCode": 42,
+        "extended": false,
+        "x": 0,
+        "y": 4.5,
+        "width": 1.25,
+        "height": 1
+      },
+      {
+        "id": "IntlBackslash",
+        "scanCode": 86,
+        "extended": false,
+        "x": 1.25,
+        "y": 4.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "KeyZ",
+        "scanCode": 44,
+        "extended": false,
+        "x": 2.25,
+        "y": 4.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "KeyX",
+        "scanCode": 45,
+        "extended": false,
+        "x": 3.25,
+        "y": 4.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "KeyC",
+        "scanCode": 46,
+        "extended": false,
+        "x": 4.25,
+        "y": 4.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "KeyV",
+        "scanCode": 47,
+        "extended": false,
+        "x": 5.25,
+        "y": 4.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "KeyB",
+        "scanCode": 48,
+        "extended": false,
+        "x": 6.25,
+        "y": 4.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "KeyN",
+        "scanCode": 49,
+        "extended": false,
+        "x": 7.25,
+        "y": 4.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "KeyM",
+        "scanCode": 50,
+        "extended": false,
+        "x": 8.25,
+        "y": 4.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Comma",
+        "scanCode": 51,
+        "extended": false,
+        "x": 9.25,
+        "y": 4.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Period",
+        "scanCode": 52,
+        "extended": false,
+        "x": 10.25,
+        "y": 4.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Slash",
+        "scanCode": 53,
+        "extended": false,
+        "x": 11.25,
+        "y": 4.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "ShiftRight",
+        "scanCode": 54,
+        "extended": false,
+        "x": 12.25,
+        "y": 4.5,
+        "width": 2.75,
+        "height": 1
+      },
+      {
+        "id": "ArrowUp",
+        "scanCode": 72,
+        "extended": true,
+        "x": 16.5,
+        "y": 4.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Numpad1",
+        "scanCode": 79,
+        "extended": false,
+        "x": 19,
+        "y": 4.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Numpad2",
+        "scanCode": 80,
+        "extended": false,
+        "x": 20,
+        "y": 4.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Numpad3",
+        "scanCode": 81,
+        "extended": false,
+        "x": 21,
+        "y": 4.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "NumpadEnter",
+        "scanCode": 28,
+        "extended": true,
+        "x": 22,
+        "y": 4.5,
+        "width": 1,
+        "height": 2
+      },
+      {
+        "id": "ControlLeft",
+        "scanCode": 29,
+        "extended": false,
+        "x": 0,
+        "y": 5.5,
+        "width": 1.25,
+        "height": 1
+      },
+      {
+        "id": "MetaLeft",
+        "scanCode": 91,
+        "extended": true,
+        "x": 1.25,
+        "y": 5.5,
+        "width": 1.25,
+        "height": 1
+      },
+      {
+        "id": "AltLeft",
+        "scanCode": 56,
+        "extended": false,
+        "x": 2.5,
+        "y": 5.5,
+        "width": 1.25,
+        "height": 1
+      },
+      {
+        "id": "Space",
+        "scanCode": 57,
+        "extended": false,
+        "x": 3.75,
+        "y": 5.5,
+        "width": 6.25,
+        "height": 1
+      },
+      {
+        "id": "AltRight",
+        "scanCode": 56,
+        "extended": true,
+        "x": 10,
+        "y": 5.5,
+        "width": 1.25,
+        "height": 1
+      },
+      {
+        "id": "MetaRight",
+        "scanCode": 92,
+        "extended": true,
+        "x": 11.25,
+        "y": 5.5,
+        "width": 1.25,
+        "height": 1
+      },
+      {
+        "id": "ContextMenu",
+        "scanCode": 93,
+        "extended": true,
+        "x": 12.5,
+        "y": 5.5,
+        "width": 1.25,
+        "height": 1
+      },
+      {
+        "id": "ControlRight",
+        "scanCode": 29,
+        "extended": true,
+        "x": 13.75,
+        "y": 5.5,
+        "width": 1.25,
+        "height": 1
+      },
+      {
+        "id": "ArrowLeft",
+        "scanCode": 75,
+        "extended": true,
+        "x": 15.5,
+        "y": 5.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "ArrowDown",
+        "scanCode": 80,
+        "extended": true,
+        "x": 16.5,
+        "y": 5.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "ArrowRight",
+        "scanCode": 77,
+        "extended": true,
+        "x": 17.5,
+        "y": 5.5,
+        "width": 1,
+        "height": 1
+      },
+      {
+        "id": "Numpad0",
+        "scanCode": 82,
+        "extended": false,
+        "x": 19,
+        "y": 5.5,
+        "width": 2,
+        "height": 1
+      },
+      {
+        "id": "NumpadDecimal",
+        "scanCode": 83,
+        "extended": false,
+        "x": 21,
+        "y": 5.5,
+        "width": 1,
+        "height": 1
+      }
+    ]
+  },
+  "layout": {
+    "mappings": [
+      {
+        "keyId": "Escape",
+        "logicalKey": "escape",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "escape"
+          }
+        }
+      },
+      {
+        "keyId": "F1",
+        "logicalKey": "f1",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "f1"
+          }
+        }
+      },
+      {
+        "keyId": "F2",
+        "logicalKey": "f2",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "f2"
+          }
+        }
+      },
+      {
+        "keyId": "F3",
+        "logicalKey": "f3",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "f3"
+          }
+        }
+      },
+      {
+        "keyId": "F4",
+        "logicalKey": "f4",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "f4"
+          }
+        }
+      },
+      {
+        "keyId": "F5",
+        "logicalKey": "f5",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "f5"
+          }
+        }
+      },
+      {
+        "keyId": "F6",
+        "logicalKey": "f6",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "f6"
+          }
+        }
+      },
+      {
+        "keyId": "F7",
+        "logicalKey": "f7",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "f7"
+          }
+        }
+      },
+      {
+        "keyId": "F8",
+        "logicalKey": "f8",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "f8"
+          }
+        }
+      },
+      {
+        "keyId": "F9",
+        "logicalKey": "f9",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "f9"
+          }
+        }
+      },
+      {
+        "keyId": "F10",
+        "logicalKey": "f10",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "f10"
+          }
+        }
+      },
+      {
+        "keyId": "F11",
+        "logicalKey": "f11",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "f11"
+          }
+        }
+      },
+      {
+        "keyId": "F12",
+        "logicalKey": "f12",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "f12"
+          }
+        }
+      },
+      {
+        "keyId": "PrintScreen",
+        "logicalKey": "printScreen",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "printScreen"
+          }
+        }
+      },
+      {
+        "keyId": "ScrollLock",
+        "logicalKey": "scrollLock",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "scrollLock"
+          }
+        }
+      },
+      {
+        "keyId": "Pause",
+        "logicalKey": "pause",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "pause"
+          }
+        }
+      },
+      {
+        "keyId": "Backquote",
+        "logicalKey": "backquote",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "`"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "~"
+          }
+        }
+      },
+      {
+        "keyId": "Digit1",
+        "logicalKey": "digit1",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "1"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "!"
+          }
+        }
+      },
+      {
+        "keyId": "Digit2",
+        "logicalKey": "digit2",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "2"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "@"
+          }
+        }
+      },
+      {
+        "keyId": "Digit3",
+        "logicalKey": "digit3",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "3"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "#"
+          }
+        }
+      },
+      {
+        "keyId": "Digit4",
+        "logicalKey": "digit4",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "4"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "$"
+          }
+        }
+      },
+      {
+        "keyId": "Digit5",
+        "logicalKey": "digit5",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "5"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "%"
+          }
+        }
+      },
+      {
+        "keyId": "Digit6",
+        "logicalKey": "digit6",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "6"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "^"
+          }
+        }
+      },
+      {
+        "keyId": "Digit7",
+        "logicalKey": "digit7",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "7"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "&"
+          }
+        }
+      },
+      {
+        "keyId": "Digit8",
+        "logicalKey": "digit8",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "8"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "*"
+          }
+        }
+      },
+      {
+        "keyId": "Digit9",
+        "logicalKey": "digit9",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "9"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "("
+          }
+        }
+      },
+      {
+        "keyId": "Digit0",
+        "logicalKey": "digit0",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "0"
+          },
+          "shift": {
+            "kind": "character",
+            "value": ")"
+          }
+        }
+      },
+      {
+        "keyId": "Minus",
+        "logicalKey": "minus",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "-"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "_"
+          }
+        }
+      },
+      {
+        "keyId": "Equal",
+        "logicalKey": "equal",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "="
+          },
+          "shift": {
+            "kind": "character",
+            "value": "+"
+          }
+        }
+      },
+      {
+        "keyId": "Backspace",
+        "logicalKey": "backspace",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "backspace"
+          }
+        }
+      },
+      {
+        "keyId": "Insert",
+        "logicalKey": "insert",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "insert"
+          }
+        }
+      },
+      {
+        "keyId": "Home",
+        "logicalKey": "home",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "home"
+          }
+        }
+      },
+      {
+        "keyId": "PageUp",
+        "logicalKey": "pageUp",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "pageUp"
+          }
+        }
+      },
+      {
+        "keyId": "NumLock",
+        "logicalKey": "numLock",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "numLock"
+          }
+        }
+      },
+      {
+        "keyId": "NumpadDivide",
+        "logicalKey": "numpadDivide",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "numpadDivide"
+          }
+        }
+      },
+      {
+        "keyId": "NumpadMultiply",
+        "logicalKey": "numpadMultiply",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "numpadMultiply"
+          }
+        }
+      },
+      {
+        "keyId": "NumpadSubtract",
+        "logicalKey": "numpadSubtract",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "numpadSubtract"
+          }
+        }
+      },
+      {
+        "keyId": "Tab",
+        "logicalKey": "tab",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "tab"
+          }
+        }
+      },
+      {
+        "keyId": "KeyQ",
+        "logicalKey": "q",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "q"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "Q"
+          }
+        }
+      },
+      {
+        "keyId": "KeyW",
+        "logicalKey": "w",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "w"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "W"
+          }
+        }
+      },
+      {
+        "keyId": "KeyE",
+        "logicalKey": "e",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "e"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "E"
+          }
+        }
+      },
+      {
+        "keyId": "KeyR",
+        "logicalKey": "r",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "r"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "R"
+          }
+        }
+      },
+      {
+        "keyId": "KeyT",
+        "logicalKey": "t",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "t"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "T"
+          }
+        }
+      },
+      {
+        "keyId": "KeyY",
+        "logicalKey": "y",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "y"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "Y"
+          }
+        }
+      },
+      {
+        "keyId": "KeyU",
+        "logicalKey": "u",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "u"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "U"
+          }
+        }
+      },
+      {
+        "keyId": "KeyI",
+        "logicalKey": "i",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "i"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "I"
+          }
+        }
+      },
+      {
+        "keyId": "KeyO",
+        "logicalKey": "o",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "o"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "O"
+          }
+        }
+      },
+      {
+        "keyId": "KeyP",
+        "logicalKey": "p",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "p"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "P"
+          }
+        }
+      },
+      {
+        "keyId": "BracketLeft",
+        "logicalKey": "leftBracket",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "["
+          },
+          "shift": {
+            "kind": "character",
+            "value": "{"
+          }
+        }
+      },
+      {
+        "keyId": "BracketRight",
+        "logicalKey": "rightBracket",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "]"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "}"
+          }
+        }
+      },
+      {
+        "keyId": "Enter",
+        "logicalKey": "enter",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "enter"
+          }
+        }
+      },
+      {
+        "keyId": "Delete",
+        "logicalKey": "delete",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "delete"
+          }
+        }
+      },
+      {
+        "keyId": "End",
+        "logicalKey": "end",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "end"
+          }
+        }
+      },
+      {
+        "keyId": "PageDown",
+        "logicalKey": "pageDown",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "pageDown"
+          }
+        }
+      },
+      {
+        "keyId": "Numpad7",
+        "logicalKey": "numpad7",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "numpad7"
+          }
+        }
+      },
+      {
+        "keyId": "Numpad8",
+        "logicalKey": "numpad8",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "numpad8"
+          }
+        }
+      },
+      {
+        "keyId": "Numpad9",
+        "logicalKey": "numpad9",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "numpad9"
+          }
+        }
+      },
+      {
+        "keyId": "NumpadAdd",
+        "logicalKey": "numpadAdd",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "numpadAdd"
+          }
+        }
+      },
+      {
+        "keyId": "CapsLock",
+        "logicalKey": "capsLock",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "capsLock"
+          }
+        }
+      },
+      {
+        "keyId": "KeyA",
+        "logicalKey": "a",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "a"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "A"
+          }
+        }
+      },
+      {
+        "keyId": "KeyS",
+        "logicalKey": "s",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "s"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "S"
+          }
+        }
+      },
+      {
+        "keyId": "KeyD",
+        "logicalKey": "d",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "d"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "D"
+          }
+        }
+      },
+      {
+        "keyId": "KeyF",
+        "logicalKey": "f",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "f"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "F"
+          }
+        }
+      },
+      {
+        "keyId": "KeyG",
+        "logicalKey": "g",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "g"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "G"
+          }
+        }
+      },
+      {
+        "keyId": "KeyH",
+        "logicalKey": "h",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "h"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "H"
+          }
+        }
+      },
+      {
+        "keyId": "KeyJ",
+        "logicalKey": "j",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "j"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "J"
+          }
+        }
+      },
+      {
+        "keyId": "KeyK",
+        "logicalKey": "k",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "k"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "K"
+          }
+        }
+      },
+      {
+        "keyId": "KeyL",
+        "logicalKey": "l",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "l"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "L"
+          }
+        }
+      },
+      {
+        "keyId": "Semicolon",
+        "logicalKey": "semicolon",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": ";"
+          },
+          "shift": {
+            "kind": "character",
+            "value": ":"
+          }
+        }
+      },
+      {
+        "keyId": "Quote",
+        "logicalKey": "quote",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "'"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "\""
+          }
+        }
+      },
+      {
+        "keyId": "IntlHash",
+        "logicalKey": "internationalHash",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "\\"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "|"
+          }
+        }
+      },
+      {
+        "keyId": "Numpad4",
+        "logicalKey": "numpad4",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "numpad4"
+          }
+        }
+      },
+      {
+        "keyId": "Numpad5",
+        "logicalKey": "numpad5",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "numpad5"
+          }
+        }
+      },
+      {
+        "keyId": "Numpad6",
+        "logicalKey": "numpad6",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "numpad6"
+          }
+        }
+      },
+      {
+        "keyId": "ShiftLeft",
+        "logicalKey": "leftShift",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "leftShift"
+          }
+        }
+      },
+      {
+        "keyId": "IntlBackslash",
+        "logicalKey": "internationalBackslash",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "<"
+          },
+          "shift": {
+            "kind": "character",
+            "value": ">"
+          }
+        }
+      },
+      {
+        "keyId": "KeyZ",
+        "logicalKey": "z",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "z"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "Z"
+          }
+        }
+      },
+      {
+        "keyId": "KeyX",
+        "logicalKey": "x",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "x"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "X"
+          }
+        }
+      },
+      {
+        "keyId": "KeyC",
+        "logicalKey": "c",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "c"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "C"
+          }
+        }
+      },
+      {
+        "keyId": "KeyV",
+        "logicalKey": "v",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "v"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "V"
+          }
+        }
+      },
+      {
+        "keyId": "KeyB",
+        "logicalKey": "b",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "b"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "B"
+          }
+        }
+      },
+      {
+        "keyId": "KeyN",
+        "logicalKey": "n",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "n"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "N"
+          }
+        }
+      },
+      {
+        "keyId": "KeyM",
+        "logicalKey": "m",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "m"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "M"
+          }
+        }
+      },
+      {
+        "keyId": "Comma",
+        "logicalKey": "comma",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": ","
+          },
+          "shift": {
+            "kind": "character",
+            "value": "<"
+          }
+        }
+      },
+      {
+        "keyId": "Period",
+        "logicalKey": "period",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "."
+          },
+          "shift": {
+            "kind": "character",
+            "value": ">"
+          }
+        }
+      },
+      {
+        "keyId": "Slash",
+        "logicalKey": "slash",
+        "outputs": {
+          "default": {
+            "kind": "character",
+            "value": "/"
+          },
+          "shift": {
+            "kind": "character",
+            "value": "?"
+          }
+        }
+      },
+      {
+        "keyId": "ShiftRight",
+        "logicalKey": "rightShift",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "rightShift"
+          }
+        }
+      },
+      {
+        "keyId": "ArrowUp",
+        "logicalKey": "arrowUp",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "arrowUp"
+          }
+        }
+      },
+      {
+        "keyId": "Numpad1",
+        "logicalKey": "numpad1",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "numpad1"
+          }
+        }
+      },
+      {
+        "keyId": "Numpad2",
+        "logicalKey": "numpad2",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "numpad2"
+          }
+        }
+      },
+      {
+        "keyId": "Numpad3",
+        "logicalKey": "numpad3",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "numpad3"
+          }
+        }
+      },
+      {
+        "keyId": "NumpadEnter",
+        "logicalKey": "numpadEnter",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "numpadEnter"
+          }
+        }
+      },
+      {
+        "keyId": "ControlLeft",
+        "logicalKey": "leftControl",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "leftControl"
+          }
+        }
+      },
+      {
+        "keyId": "MetaLeft",
+        "logicalKey": "leftMeta",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "leftMeta"
+          }
+        }
+      },
+      {
+        "keyId": "AltLeft",
+        "logicalKey": "leftAlt",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "leftAlt"
+          }
+        }
+      },
+      {
+        "keyId": "Space",
+        "logicalKey": "space",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "space"
+          }
+        }
+      },
+      {
+        "keyId": "AltRight",
+        "logicalKey": "rightAlt",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "rightAlt"
+          }
+        }
+      },
+      {
+        "keyId": "MetaRight",
+        "logicalKey": "rightMeta",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "rightMeta"
+          }
+        }
+      },
+      {
+        "keyId": "ContextMenu",
+        "logicalKey": "contextMenu",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "contextMenu"
+          }
+        }
+      },
+      {
+        "keyId": "ControlRight",
+        "logicalKey": "rightControl",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "rightControl"
+          }
+        }
+      },
+      {
+        "keyId": "ArrowLeft",
+        "logicalKey": "arrowLeft",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "arrowLeft"
+          }
+        }
+      },
+      {
+        "keyId": "ArrowDown",
+        "logicalKey": "arrowDown",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "arrowDown"
+          }
+        }
+      },
+      {
+        "keyId": "ArrowRight",
+        "logicalKey": "arrowRight",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "arrowRight"
+          }
+        }
+      },
+      {
+        "keyId": "Numpad0",
+        "logicalKey": "numpad0",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "numpad0"
+          }
+        }
+      },
+      {
+        "keyId": "NumpadDecimal",
+        "logicalKey": "numpadDecimal",
+        "outputs": {
+          "default": {
+            "kind": "specialKey",
+            "key": "numpadDecimal"
+          }
+        }
+      }
+    ]
+  }
+}

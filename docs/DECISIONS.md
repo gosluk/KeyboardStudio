@@ -127,3 +127,194 @@ ISO-105/ANSI-104 tables to map stable key IDs to XKB symbolic names such as `<AC
 
 XKB names must not be inferred from Windows scan codes or stored in Core. Unknown template/key pairs
 fail with structured, key-linked target diagnostics.
+
+## AD-019 - Layout import is a target-neutral Core contract with platform sources
+
+`KeyboardStudio.Core` defines `ILayoutImportSource` and `ILayoutImportCatalog` over opaque
+source/layout/variant identifiers. Every XKB parser, resolver, and table lives in
+`KeyboardStudio.Linux/Import/`, and ViewModels see only the catalog.
+
+Import produces a `KeyboardProject`, so the contract belongs in Core; naming layouts by opaque strings
+keeps Core free of XKB vocabulary under AD-002 and architecture 2.1. A future Windows `.klc` or
+installed-DLL source implements the same interface without reshaping the editor.
+
+The `KSI` diagnostic codes are declared in Core too, unlike the `KSL` codes that belong to
+`KeyboardStudio.Linux`. What import loses is a property of the domain model rather than of a file
+format, so a second source would report the same losses, and one shared range stops two sources from
+giving one number two meanings. `LayoutImportCatalog` skips a source that reports itself unavailable
+but lets a failure from an available one propagate: returning a silently shorter list would leave the
+user hunting for an installed layout with nothing on screen to explain its absence.
+
+## AD-020 - XKB import uses a managed parser, not `xkbcli`
+
+Import lexes, parses, and resolves `xkb_symbols` includes in managed code. `xkbcli` stays an optional
+CI conformance oracle whose resolved key/level tables are diffed against the managed resolver.
+
+`xkbcli compile-keymap` would return a flat resolved keymap and remove the need for an include
+resolver, but libxkbcommon-tools is absent from most desktop installs, and AD-017 already fixes
+`xkbcli` as an optional verifier that never produces a result. Depending on it at runtime would
+invert that and make import non-deterministic across hosts. The corpus makes a managed resolver
+affordable: of 1933 include statements in xkeyboard-config 2.47, all but six use the default merge
+mode, and `Group2` appears in two statements.
+
+## AD-021 - Import is lossy by design and reports every loss
+
+Dead keys, groups beyond the first, levels beyond four, XKB actions, and unmappable keysyms are
+dropped with key- and layer-linked diagnostics. They never fail the import.
+
+The purpose of import is a usable starting point for editing. Refusing every layout that uses a
+`dead_*` keysym would reject most European layouts, including the ones the feature exists to serve.
+`LayoutImportReport` carries the fidelity level, counts, resolved include chain, and diagnostics, and
+the import dialog shows it before the project is replaced.
+
+The fidelity level is derived by `LayoutImportReport.Classify` rather than by each source: any
+skipped key makes an import `Partial`, any finding above `Info` makes it `Reduced`, and everything
+else is `Exact`. Left to the sources, `Reduced` would come to mean something different per platform
+and the badge in the import dialog would stop carrying information.
+
+## AD-022 - XKB key-name tables are bidirectional and single-sourced
+
+`XkbKeyNameMapper` owns one `(templateId, keyId) -> XKB name` table and exposes it. Generation reads
+it forward and import reads it inverted.
+
+Two independently maintained tables would drift, and the first disagreement would be silent: an
+exported layout that no longer re-imports to the same model. XKB names stay out of Core and are still
+never inferred from `PhysicalKey.ScanCode`, preserving AD-018.
+
+## AD-023 - A new document is never empty
+
+An embedded `us-basic` seed project is the content of every new document. On Linux the host's
+configured layout is imported over it asynchronously while the document is still pristine.
+
+Bare geometry with zero mappings is not a usable starting point. The seed is host-independent so the
+guarantee holds on every platform, including hosts with no XKB data. Host detection reads
+`XKB_DEFAULT_LAYOUT`, `/etc/X11/xorg.conf.d/00-keyboard.conf`, then `/etc/vconsole.conf`, and spawns
+no process; `localectl` and `gsettings` write those same files and would add a process dependency to
+the startup path. A failed host import degrades to the seed rather than blocking the editor.
+
+The seed is stored in the project file format, so `EmbeddedSeedProjectSource` lives in
+`KeyboardStudio.Persistence` and reuses that assembly's DTOs and mapper; only the contract lives in
+Core. A seed parser inside Core would be a second implementation of the same format, free to drift
+from the one that reads user files. The seed's geometry is generated from the `iso-105` template and
+tested against it for the same reason.
+
+`DemoProjectFactory` is removed from `KeyboardStudio.Core`. It shipped a fixture in the production
+assembly; the tests that used it now compile `tests/Shared/TestProjectFactory.cs`, which is
+deliberately not the seed — a fixture that tracked the seed would make seed edits break unrelated
+tests.
+
+## AD-024 - Target visibility is presentation-only and reversible
+
+The shipping UI exposes `LinuxXkb` and hides `WindowsX64`. Hiding is enforced solely by
+`IBuildTargetVisibilityPolicy` in the application layer.
+
+`KeyboardStudio.Windows` stays referenced, registered, and tested; `BuildTarget.WindowsX64` stays in
+the enum; and `windowsX64` stays a persisted profile discriminator so existing documents round-trip
+their Windows profile unedited. `BuildOrchestrator` and `IBuildBackendResolver` are unchanged, so
+AD-016 single-target dispatch still resolves whichever target it is given — the UI simply never asks
+for the hidden one. `KEYBOARDSTUDIO_TARGETS=all` restores the full selector for development and for
+tests. Visibility is never expressed by deleting profiles, mutating `BuildOptions`, or skipping
+validation, so the Windows path cannot rot while it is hidden.
+
+The policy filters the target list only. Profiles are still constructed for every target, so
+`ExportTargetProfiles` keeps returning both entries whatever is on screen, and a policy that hid
+everything falls back to the full list rather than producing a Build card with nothing to build.
+
+## AD-025 - Import previews by importing, and commits in two ways
+
+Selecting a layout in the import dialog runs the real import. The result is the preview, the
+fidelity report, and — if accepted — the committed project.
+
+Import is lossy by design, so a report the user cannot see until after they commit is a report they
+cannot act on. Importing once and reusing the result also removes the class of bug where the preview
+and the commit disagree, which a second import to commit would reintroduce. The preview keycaps are
+the editor's own `KeyViewModel` with no select command attached, for the same reason: a second
+rendering can disagree with the first, and the empty-keyboard defect fixed in P13.9 was invisible
+until a project was drawn.
+
+An accepted import commits one of two ways. **A new project** replaces the document outright and
+carries default build settings with the XKB profile pre-filled; it has no path and is not dirty,
+exactly like a new document. **Replacement mappings** keep the open document's geometry, build
+settings and file, changing only what the keys produce, and mark it dirty. The dialog pins the
+geometry to the open document in that mode, because that document's keyboard is what the mappings
+must land on. Both paths run the existing unsaved-changes prompt, after the dialog rather than
+before it: both discard work in progress, and neither is worth prompting about until the user has
+said which one they want.
+
+`LayoutImportViewModel` depends on `ILayoutImportCatalog` and on geometry descriptors, never on a
+source. The commit decision lives in `MainWindowViewModel`, where the document lives; the dialog
+imports and reports, and decides nothing.
+
+## AD-026 - A file the user names is a second source, not a mode of the first
+
+`XkbSymbolsFileImportSource` (`linux-xkb-file`) imports one symbols file by path.
+`XkbLayoutImportSource` (`linux-xkb`) imports what the host advertises. They are separate sources.
+
+The two answer different questions — "what can I import?" against "import this" — and provenance has
+to record which of them a document came from: a catalogued layout can be found again by name, a
+loose file only by path. The file source therefore lists nothing, and a file outside the roots is
+never offered for browsing, because that would mean guessing where the user keeps their layouts.
+
+The picked file answers to its own name through `XkbPinnedFileIncludeResolver`, so a section it
+includes from itself reaches that file rather than an installed layout that happens to share the
+name — the same shadowing an XKB root of one's own performs. Its other includes still resolve out of
+the installed database, which is the only place `latin` and `us` exist. That is also why the source
+reports itself unavailable without a database: symbols files are written as differences, so importing
+one without the database yields the dozen keys it overrides and a report full of missing includes.
+
+## AD-027 - The host's layout is detected from files, and only replaces a document nobody has touched
+
+Startup detection reads `XKB_DEFAULT_LAYOUT`, then `/etc/X11/xorg.conf.d/00-keyboard.conf`, then
+`/etc/vconsole.conf`, then `/etc/default/keyboard`, then falls back to `us`. No process is spawned.
+
+`localectl` and `gsettings` would both answer the question, but each adds a process dependency to
+the startup path, each depends on which desktop happens to be installed, and both write the files
+above anyway. Files are readable whether or not anything is running, which matters on a machine
+where the editor may be among the first things started.
+
+The chain has two wrinkles worth stating. `KEYMAP` in `vconsole.conf` names a console keymap rather
+than an XKB layout — a host set to `KEYMAP=pl2` has no XKB layout called `pl2` — so `XKBLAYOUT` in
+the same file outranks it, while `KEYMAP` stays as the only statement of intent a console-only host
+makes. And `/etc/default/keyboard` is in the chain because it is where the Debian family keeps
+`XKBLAYOUT`; without it the whole feature falls through to `us` on the distributions most likely to
+have a layout worth detecting.
+
+Detection is total rather than nullable: it ends at `us`, so the caller never has to decide what
+nothing means, and whether that layout exists is the import's question to answer. Detection speaks
+XKB's vocabulary because that is what it reads; Core sees `IHostLayoutProbe` returning an
+`ImportableLayoutReference`, and `XkbHostLayoutProbe` is the one line between them.
+
+The import replaces the open document only while it is still the untouched one the editor started
+with — same instance, not dirty, no path. Nobody asked for this import, so a user who has typed,
+opened a file, or made a new document has already said what they want to work on, and having it
+swapped out a moment later would be worse than never importing at all. For the same reason failure
+is quiet: a host with no source reports nothing, and a layout that could not be read leaves a
+`KSI011` `Info` entry rather than a dialog about a layout the user never mentioned.
+
+## AD-028 - Pinned fixtures say what an import produces, the host says whether it copes
+
+Two kinds of test read XKB data, and they need different inputs. The corpus soak imports everything
+the host advertises, which is the only way to meet the variety real layouts have; it cannot assert
+what any particular import produces, because the answer changes whenever the distribution updates
+xkeyboard-config. The goldens assert exactly that, so they read a copy of `us`, `pl`, `de` and `fr`
+vendored into the test fixtures and pinned to a recorded version.
+
+The vendored files are whole upstream files, not excerpts. A trimmed symbols file is no longer the
+thing upstream ships, which is the one property that makes vendoring it worth doing at all — and
+hand-trimming risks a fixture that quietly disagrees with the real one. The cost is 436 KB of test
+input and a script, `scripts/vendor-xkb-fixtures.py`, that copies the include closure and the
+registry entries again when the pin moves.
+
+`xkbcli` is used as a conformance oracle rather than only as a compiler. Every other test grades the
+importer against something this project wrote; only libxkbcommon can say whether flattening
+`pl(basic)` — `latin`, then four overrides — leaves the layout the system would produce. The
+comparison is by physical key rather than by key name, because `keycodes/evdev` gives most keys two
+names and a phonetic layout writes both, and by decoded output rather than by keysym name, because
+`U0105` and `aogonek` are one answer written two ways. It reads the host's database rather than the
+pinned fixtures so that both sides see the same bytes, which keeps a version difference from
+presenting as a defect.
+
+Goldens are rewritable by design: `KEYBOARDSTUDIO_UPDATE_GOLDEN=1` rewrites every snapshot in the
+repository. A golden nobody can regenerate gets asserted around instead of updated, and a diff of
+what an import now produces is exactly the artifact a change to the importer should be reviewed
+through.

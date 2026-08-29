@@ -1,6 +1,7 @@
 using KeyboardStudio.App;
 using KeyboardStudio.Core;
 using KeyboardStudio.Persistence;
+using KeyboardStudio.Testing;
 using Xunit;
 
 namespace KeyboardStudio.App.Tests;
@@ -96,7 +97,7 @@ public sealed class KeyPresentationViewModelTests
     [Trait("Category", "Unit")]
     public void SelectedOutput_WhenMappingChanges_UpdatesPresentationStateForActiveLayer()
     {
-        var editor = new MainWindowViewModel().Editor;
+        var editor = TestMainWindow.WithEmptyProject().Editor;
         var selectedKey = Assert.IsType<KeyViewModel>(editor.SelectedKey);
 
         Assert.Equal(selectedKey.KeyId, selectedKey.Hint);
@@ -137,7 +138,7 @@ public sealed class KeyPresentationViewModelTests
     [Trait("Category", "Unit")]
     public void SelectedKey_WhenChanged_RefreshesMappingPanelDetails()
     {
-        var editor = new MainWindowViewModel().Editor;
+        var editor = TestMainWindow.WithEmptyProject().Editor;
         Assert.True(editor.SelectKey("KeyA"));
         editor.LayerMappings[0].Output = "a";
 
@@ -220,7 +221,7 @@ public sealed class KeyPresentationViewModelTests
         var document = new ProjectDocumentService(
             new JsonKeyboardProjectDocumentStore(),
             () => new KeyboardProjectDocument(
-                DemoProjectFactory.Create(),
+                TestProjectFactory.Create(),
                 BuildViewModel.CreateDefaultTargetProfiles()));
         var project = document.CreateNew();
         var template = new KeyboardTemplateProvider().Templates.Single(item => item.Id == "iso-105");
@@ -247,7 +248,7 @@ public sealed class KeyPresentationViewModelTests
     public void InvalidMappingMutation_WhenRejected_DoesNotMarkDocumentDirty()
     {
         var changes = 0;
-        var project = DemoProjectFactory.Create();
+        var project = TestProjectFactory.Create();
         var template = new KeyboardTemplateProvider().Templates.Single(item => item.Id == "iso-105");
         var editor = new KeyboardEditorViewModel(
             new KeyboardEditor(project),
@@ -264,7 +265,7 @@ public sealed class KeyPresentationViewModelTests
     [Trait("Category", "Unit")]
     public void LayerSummary_WhenActiveLayerChanges_ReportsMappedKeyCountForThatLayer()
     {
-        var editor = new MainWindowViewModel().Editor;
+        var editor = TestMainWindow.WithEmptyProject().Editor;
         Assert.True(editor.SelectKey("KeyA"));
         editor.LayerMappings.Single(mapping => mapping.Layer == ModifierLayer.Default).Output = "a";
         editor.LayerMappings.Single(mapping => mapping.Layer == ModifierLayer.Shift).Output = "A";
@@ -298,7 +299,7 @@ public sealed class KeyPresentationViewModelTests
     [Trait("Category", "Unit")]
     public void Keys_WhenUnmapped_UseKeycapLegendsRatherThanIdentifiers()
     {
-        var editor = new MainWindowViewModel().Editor;
+        var editor = TestMainWindow.WithEmptyProject().Editor;
 
         Assert.Equal("Esc", editor.Keys.Single(key => key.KeyId == "Escape").Label);
         Assert.Equal("Caps Lock", editor.Keys.Single(key => key.KeyId == "CapsLock").Label);
@@ -314,7 +315,7 @@ public sealed class KeyPresentationViewModelTests
     [Trait("Category", "Unit")]
     public void HasHint_WhenLogicalKeyIsAssigned_TurnsTheSecondKeycapLineOn()
     {
-        var editor = new MainWindowViewModel().Editor;
+        var editor = TestMainWindow.WithEmptyProject().Editor;
         Assert.True(editor.SelectKey("Enter"));
         var enter = Assert.IsType<KeyViewModel>(editor.SelectedKey);
 

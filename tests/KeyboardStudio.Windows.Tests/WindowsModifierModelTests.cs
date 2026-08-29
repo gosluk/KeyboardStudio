@@ -1,4 +1,5 @@
 using KeyboardStudio.Core;
+using KeyboardStudio.Testing;
 using KeyboardStudio.Windows;
 using Xunit;
 
@@ -54,7 +55,7 @@ public sealed class WindowsModifierModelTests
     [Trait("Category", "Unit")]
     public void Translate_WhenProjectIsValid_AttachesV1ModifierTable()
     {
-        var layout = WindowsLayoutTranslator.Translate(DemoProjectFactory.Create());
+        var layout = WindowsLayoutTranslator.Translate(TestProjectFactory.Create());
 
         Assert.Equal(8, layout.Modifiers.States.Count);
     }

@@ -1,0 +1,945 @@
+# Linux Layout Import
+
+## Status and scope
+
+This document specifies the Phase 13 layout-import subsystem. The design is adopted
+([AD-019](DECISIONS.md) to [AD-023](DECISIONS.md)) and tracked as work items P13.1 and P13.3 to
+P13.12 in [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md). **All of it is implemented**: the seed
+(P13.1), the Core contract in section 2 (P13.3), data-root discovery and registry reading in
+sections 3.2 and 3.3 (P13.4), the symbols lexer and parser in section 3.4 (P13.5), include
+resolution in section 3.5 (P13.6), keysym decoding in sections 3.7 and 6 (P13.7), physical key
+resolution in section 3.8 (P13.8), the importer that assembles them in sections 3.9 and 3.10
+(P13.9), the dialog and provenance in sections 4 and 7 (P13.10), startup import in section 5
+(P13.11), and the test coverage in section 8 (P13.12).
+
+Where the built subsystem departed from what was proposed, the departure is recorded in an **As
+built** subsection beside the original text rather than by rewriting it, so the design that was
+adopted and the thing that exists can be read against each other.
+
+Two related problems are addressed:
+
+1. a new project currently opens as a template with **zero mappings**, which is not a usable
+   starting point for editing;
+2. there is no way to start from an existing layout, so every layout must be typed key by key.
+
+The proposal covers the Linux/XKB source only. The abstractions are target-neutral so a Windows
+source (`kbdutool` disassembly, `KLC` files, registry-installed DLLs) can be added later without
+reshaping the editor.
+
+Import is a **read-only** operation against the host's XKB data. It never writes to, activates,
+registers, or removes anything from a system or session XKB root, matching the boundary already set
+by [`LINUX-XKB.md`](LINUX-XKB.md).
+
+---
+
+## 1. Why a managed resolver rather than `xkbcli`
+
+`xkbcli compile-keymap` would hand back a fully resolved, flat keymap and remove the need to
+implement include resolution. It is rejected as the runtime mechanism because:
+
+- it is **not installed** on the reference development host (xkeyboard-config 2.47 is present,
+  libxkbcommon-tools is not), and it is optional on most desktop installs;
+- [AD-017](DECISIONS.md) already establishes that KeyboardStudio treats `xkbcli` as an optional
+  external verifier, never as the producer of a result. Making import depend on it would invert that;
+- import must be deterministic and unit-testable on any host, exactly like generation
+  (delivery principle 3.2).
+
+`xkbcli` is instead used as a **CI conformance oracle**: where the tool is available, Linux
+integration tests compile the same layout and diff the resolved key/level table against the managed
+resolver's output. That gets the correctness benefit of libxkbcommon without a runtime dependency.
+
+The corpus survey that makes a managed resolver tractable:
+
+| Property | Measured on xkeyboard-config 2.47 |
+|---|---:|
+| `symbols` files | 144 |
+| `xkb_symbols` sections | ~1340 |
+| `include` statements | 1933 |
+| non-default merge modes (`augment`/`replace`/`alternate`) | 6 |
+| statements referencing `Group2` | 2 |
+| `modifier_map` / `virtual_modifiers` statements | 143 / 2 |
+| `actions[]`, `redirect`, `overlay` statements | 37 |
+| distinct named keysyms in key statements | 2443 |
+| distinct `dead_*` keysyms | 42 |
+
+The grammar surface that actually matters for a four-level character layout is small. The bulk of the
+work is the keysym vocabulary, which is table data rather than logic.
+
+---
+
+## 2. Target-neutral abstraction
+
+Import produces a `KeyboardProject`, which is a Core concept, so the contract lives in Core. Core
+gains no XKB knowledge: a layout is identified by opaque source/layout/variant strings.
+
+```text
+src/KeyboardStudio.Core/Layouts/Import/
+  ILayoutImportSource.cs
+  ILayoutImportCatalog.cs
+  LayoutImportCatalog.cs
+  ImportableLayoutDescriptor.cs
+  ImportableLayoutReference.cs
+  LayoutImportOptions.cs
+  LayoutImportResult.cs
+  LayoutImportReport.cs
+  LayoutImportDiagnostic.cs
+  LayoutImportDiagnosticCodes.cs
+  LayoutImportFidelity.cs
+  LayoutSourceOrigin.cs
+```
+
+```csharp
+public interface ILayoutImportSource
+{
+    string Id { get; }                 // "linux-xkb"
+    string DisplayName { get; }
+    bool IsAvailable { get; }
+
+    Task<IReadOnlyList<ImportableLayoutDescriptor>> ListAsync(
+        CancellationToken cancellationToken = default);
+
+    Task<LayoutImportResult> ImportAsync(
+        ImportableLayoutReference reference,
+        LayoutImportOptions options,
+        CancellationToken cancellationToken = default);
+}
+```
+
+```csharp
+public sealed record ImportableLayoutDescriptor(
+    string SourceId,
+    string LayoutId,                   // "pl"
+    string? VariantId,                 // "qwertz", or null for the default section
+    string DisplayName,                // "Polish (QWERTZ)"
+    string? ShortDescription,          // "pl"
+    IReadOnlyList<string> Languages,   // ISO 639
+    IReadOnlyList<string> Countries,   // ISO 3166
+    LayoutSourceOrigin Origin,         // User | System | File
+    string SourceLocation);            // absolute path, for provenance and disambiguation
+```
+
+`ILayoutImportCatalog` aggregates sources and is the only type the ViewModels see. It mirrors
+`IBuildBackendResolver`: the application composition root registers the concrete Linux source, and
+presentation code stays free of XKB types (architecture §6.1).
+
+`LayoutImportResult` carries the project **and** an honest fidelity report:
+
+```csharp
+public sealed record LayoutImportResult(
+    bool Success,
+    KeyboardProject? Project,
+    string? SuggestedTemplateId,
+    LayoutImportReport Report);
+
+public sealed record LayoutImportReport(
+    LayoutImportFidelity Fidelity,          // Exact | Reduced | Partial
+    int KeysImported,
+    int KeysSkipped,
+    IReadOnlyList<string> ResolvedIncludeChain,
+    IReadOnlyList<LayoutImportDiagnostic> Diagnostics);
+```
+
+`LayoutImportDiagnostic` follows the shape already used by `XkbDiagnostic` and `ValidationIssue`,
+plus the layer the problem occurred on:
+
+```csharp
+public sealed record LayoutImportDiagnostic(
+    ValidationSeverity Severity,
+    string Code,                        // KSI###
+    string Message,
+    string? KeyId,
+    ModifierLayer? Layer);
+```
+
+Reusing the existing `ValidationSeverity` lets the import report render through the existing
+`DiagnosticsViewModel` path with a key-linked jump target.
+
+### 2.1 As built
+
+`LayoutImportOptions` carries the two choices a caller can make, both optional:
+
+```csharp
+public sealed record LayoutImportOptions(
+    string? TemplateId = null,        // override the inferred geometry (§3.9)
+    string? ProjectName = null)       // override the name derived from the layout
+{
+    public static LayoutImportOptions Default { get; } = new();
+}
+```
+
+`ImportableLayoutDescriptor.ToReference()` builds the reference that re-fetches an entry, so a
+descriptor and the reference that imports it cannot drift apart. A reference can still be
+constructed by hand, with `SourceLocation` and no catalog entry, which is what **File > Import from
+file…** needs.
+
+`LayoutImportResult.Succeeded` / `.Failed` are the two ways to build a result, so the nonsensical
+`Success = true, Project = null` state is not reachable by accident. A failed import stays an
+ordinary result rather than an exception: host layout data is not the application's to trust, and an
+unreadable layout is something to show in the dialog, not a fault to unwind the stack over.
+
+`LayoutImportReport.Classify(keysSkipped, diagnostics)` derives the fidelity level so that every
+source grades itself identically — any skipped key is `Partial`, any finding above `Info` is
+`Reduced`, anything else is `Exact`.
+
+`LayoutImportCatalog` skips a source whose `IsAvailable` is false without querying it, and lets a
+failure from an available source propagate. A host with no layout database is ordinary and the
+source says so up front; a source that claims to work and then does not is a real error, and
+silently returning a shorter list would leave the user hunting for an installed layout with no
+explanation on screen. Duplicate source IDs are rejected at registration, because those IDs are
+written into saved documents as provenance.
+
+The `KSI` codes live in Core rather than in the platform assembly that raises them — see
+[`DIAGNOSTICS.md`](DIAGNOSTICS.md#layout-import-diagnostics) for the range and
+[AD-019](DECISIONS.md) for why.
+
+---
+
+## 3. Linux implementation
+
+All XKB knowledge stays in `KeyboardStudio.Linux`, alongside the existing `Translation/`,
+`Generation/`, and `Verification/` folders. `IXkbKeysymDecoder`, `XkbKeysymDecoder`, the generated
+`XkbKeysymTable.g.cs`, `IXkbKeyNameResolver` and `XkbKeyNameResolver` landed in the existing
+top-level `Translation/` rather than under `Import/`, beside the `XkbKeysymMapper` and
+`XkbKeyNameMapper` they invert: a table and its inverse drifting apart is the failure they exist to
+prevent, and separating them invites it. `XkbTemplateSelector` has no interface — it is a pure
+function of a resolved section and a registry entry, with nothing to substitute.
+
+```text
+src/KeyboardStudio.Linux/Import/
+  Discovery/
+    IXkbDataRootLocator.cs
+    XkbDataRootLocator.cs
+    XkbDataRoot.cs
+    IXkbActiveLayoutProbe.cs
+    XkbActiveLayoutProbe.cs
+    XkbActiveLayout.cs
+  Registry/
+    IXkbLayoutRegistryReader.cs
+    XkbRulesRegistryReader.cs
+    XkbRegistryEntry.cs
+  Symbols/
+    XkbSymbolsLexer.cs
+    XkbSymbolsToken.cs
+    XkbSymbolsTokenKind.cs
+    XkbSymbolsParser.cs
+    XkbSymbolsFile.cs
+    XkbSymbolsSection.cs
+    XkbSymbolsStatement.cs          (abstract; one file per derived statement type)
+    XkbIncludeSpec.cs
+    XkbMergeMode.cs
+    IXkbIncludeResolver.cs
+    XkbIncludeResolver.cs
+    IXkbSymbolsResolver.cs
+    XkbSymbolsResolver.cs
+    ResolvedXkbSymbols.cs
+    ResolvedXkbKey.cs
+  Translation/
+    XkbTemplateSelector.cs
+    XkbLayoutImporter.cs
+  XkbLayoutImportSource.cs          (implements ILayoutImportSource)
+```
+
+Per `AGENTS.md`, every top-level type gets its own file; the tree above is written that way.
+
+### 3.1 Pipeline
+
+```text
+XKB data roots (ordered)
+        |
+        v
+rules/evdev.xml  -->  catalog of layout + variant descriptors
+        |
+   user selects one
+        |
+        v
+symbols/<layout>  -->  lex  -->  parse  -->  section "<variant>"
+        |
+        v
+include graph resolution (merge modes, cycle detection, depth cap)
+        |
+        v
+ResolvedXkbSymbols: key name -> ordered Group1 levels
+        |
+        +--> XkbKeyNameResolver   : <AC01>  -> (template, "KeyA")
+        +--> XkbKeysymDecoder     : aogonek -> CharacterOutput("ą")
+        +--> level index          : 1..4    -> ModifierLayer
+        |
+        v
+KeyboardProject + LayoutImportReport
+```
+
+### 3.2 Data-root discovery
+
+Roots are searched in libxkbcommon's precedence order; the first root defining a symbols file wins,
+and the catalog unions the layout lists so user layouts appear alongside system ones:
+
+1. `$XKB_CONFIG_ROOT`, when set;
+2. `${XDG_CONFIG_HOME:-$HOME/.config}/xkb` — user layouts, tagged `LayoutSourceOrigin.User`;
+3. `/etc/xkb`;
+4. `/usr/share/X11/xkb` and `/usr/local/share/X11/xkb` — tagged `System`.
+
+`XkbDataRootLocator` takes the environment and a filesystem abstraction as constructor arguments so
+the ordering is unit-testable without touching the host.
+
+### 3.3 Registry reading
+
+`rules/evdev.xml` (plus `evdev.extras.xml`) supplies display names, short descriptions, languages,
+and countries. The file begins with `<!DOCTYPE xkbConfigRegistry SYSTEM "xkb.dtd">`, so the reader
+**must** use `XmlReaderSettings { DtdProcessing = DtdProcessing.Ignore, XmlResolver = null }`. This
+is not optional hardening: the alternative resolves an external entity from a path the application
+does not own.
+
+A layout with no `<variantList>` yields one descriptor with `VariantId = null`, which resolves to the
+file's `default` section. Layouts present in `symbols/` but absent from the registry are still
+listed, with the file name as the display name and a `KSI010` informational diagnostic.
+
+### 3.3.1 As built
+
+`XkbDataRootLocator` and `XkbRulesRegistryReader` live under `Import/Discovery/` and
+`Import/Registry/`, over two small host abstractions in `Import/Hosting/`: `IXkbEnvironment`, a
+single `GetVariable`, and `IXkbFileSystem`, which exposes existence checks, a directory listing, and
+`OpenRead`. `IXkbFileSystem` deliberately has no way to create or modify anything, so import's
+read-only boundary is enforced by the interface rather than by convention.
+
+Four resolution rules were settled while implementing section 3.2:
+
+- `$XKB_CONFIG_ROOT` outranks the user's own directory. Whoever set the variable meant to redirect
+  the whole search, and it names a database rather than the layouts this user wrote, so it is tagged
+  `System`.
+- A relative `XDG_CONFIG_HOME` is ignored rather than resolved. The base-directory specification
+  calls it invalid, and resolving it would point the search at wherever the application happened to
+  be launched from.
+- Roots that resolve to the same path appear once, first occurrence winning. `XKB_CONFIG_ROOT` set
+  to `/usr/share/X11/xkb` is common, and without this every layout in it would be listed twice.
+- A host with no root at all yields an empty list, not an error. That is the ordinary state on
+  Windows and in containers without X11 data.
+
+For section 3.3, the reader emits the bare layout as an entry with `VariantId = null` alongside one
+entry per variant, since the layout itself is importable and resolves to the symbols file's
+`default` section. `evdev.xml` is read before `evdev.extras.xml` and the first description of a name
+wins. A variant that lists no languages or countries inherits its layout's, because most variants
+list none and without inheritance a search for "English" would find `us` but not `us(dvorak)`. An
+entry with no `<name>` is skipped: the identifier is what addresses the symbols, so there is nothing
+to import without it.
+
+The `KSI010` diagnostic for layouts present in `symbols/` but absent from the registry is raised by
+`XkbLayoutImportSource` (P13.9), which is where the two listings are unioned; the registry reader
+reports only what the registry says.
+
+### 3.4 Symbols parsing
+
+The parser accepts the full statement vocabulary but only **consumes** what the Core model can
+represent:
+
+| Statement | Handling |
+|---|---|
+| `include "file(section)"` / `"file"` | resolved recursively |
+| `xkb_symbols "name" { ... }` with `default` / `partial` / `hidden` flags | section selection |
+| `name[Group1] = "..."` | project name and `XkbLayoutMetadata.Description` |
+| `key <NAME> { [ a, A, x, X ] }` | imported |
+| `key <NAME> { symbols[Group1] = [ ... ] }` | imported |
+| `key <NAME> { type[Group1] = "..." , [ ... ] }` | symbols imported, type recorded and ignored |
+| `key.type = "..."` | recorded and ignored |
+| `key <NAME> { [ ... ], [ ... ] }` (Group2+) | Group1 imported, `KSI020` warning |
+| `modifier_map`, `virtual_modifiers` | parsed, ignored, no diagnostic (never affects levels) |
+| `actions[]`, `redirect`, `overlay` | parsed, ignored, `KSI021` warning |
+| `replace`/`override`/`augment`/`alternate` prefixes | applied per §3.5 |
+
+Comments are `//` to end of line. Unknown statements are skipped to the next `;` with a `KSI022`
+informational diagnostic rather than aborting the import — the goal is a usable starting point, not a
+conformant compiler.
+
+### 3.4.1 As built
+
+`XkbSymbolsLexer` is a static tokenizer that never fails: an unterminated string or key name ends at
+the line break rather than swallowing the rest of the file, and an unknown character becomes an
+`Unknown` token. Every judgement about well-formedness belongs to the parser, which recovers by
+skipping one statement instead of refusing the file. Keywords stay plain identifiers because XKB has
+no reserved words — `type` is a statement in one position and a keysym name in another.
+
+`XkbSymbolsParser.Parse(path, text)` returns an `XkbSymbolsFile` carrying the sections and the
+findings together, since parsing never throws and the diagnostics are the only record of the
+difference between the file and what came back. `XkbSymbolsFile.DefaultSection` resolves a bare
+`include "file"` the way libxkbcommon does: the section flagged `default`, or the first one when
+none is.
+
+`XkbKeyStatement` carries only the first group's keysyms. The model has one group, so keeping the
+rest would mean inventing somewhere to put them; the parser drops them with `KSI020` instead.
+`XkbIgnoredStatement` is kept rather than dropped so "understood and irrelevant" stays
+distinguishable from "not understood" — conflating the two would either bury real gaps in noise or
+hide them entirely. Key property names are matched without regard to case, because the corpus writes
+the same property as both `virtualmods` and `virtualMods`.
+
+`XkbMergeMode` was implemented here rather than with the resolver in P13.6: the prefix sits on `key`
+and `include` statements alike, so the parser cannot represent `replace key <AD01>` without it.
+`XkbIncludeSpec` stays in P13.6, and `XkbIncludeStatement.Specification` holds the include string
+exactly as written — one string can name several sections joined by `+` or `|`, and splitting it
+needs to know what the roots contain.
+
+Two statement-skipping rules were settled against the real corpus. Skipping to a statement's end
+counts braces, because `modifier_map Shift { Shift_L, Shift_R };` carries a block of its own and
+halting at its closing brace would end the enclosing section early. A key statement, by contrast,
+claims only a terminator sitting directly after its closing brace: scanning ahead for one would
+swallow the next key whenever a file omits it.
+
+Measured over the 199 files of the installed `xkeyboard-config`: 1,673 sections, 21,795 key
+statements, 1,948 includes, 104 `KSI020` findings, 28 `KSI021` findings, and no `KSI022` at all. A
+corpus test in `XkbSymbolsCorpusTests` holds that last number at zero, so an unrecognized statement
+is treated as a gap in the grammar rather than as acceptable noise.
+
+### 3.5 Include resolution and merge semantics
+
+`XkbIncludeResolver` resolves an include spec against the ordered roots, supporting subdirectory
+references such as `sun_vndr/us(sun_type6)` that appear in the real corpus. Rules:
+
+- default and `override`: the including section's own statements win over the included ones, and a
+  later include overrides an earlier one for the same key;
+- `augment`: existing definitions win; only previously undefined keys are added;
+- `replace`: the key definition is discarded and rebuilt;
+- `alternate`: treated as `override` with a `KSI023` informational diagnostic (6 occurrences in the
+  whole corpus; a faithful implementation is not worth the complexity yet).
+
+Cycle detection keys on `(resolved absolute path, section name)` — **not** on the file alone. A file
+legitimately includes other sections of itself (`pl(lefty)` includes `pl(basic)`), and a
+file-granular visited set both breaks those layouts and hides genuine cycles. A depth cap of 16 with
+a `KSI024` error guards pathological data.
+
+The resolved include chain is retained in the report so an import can be explained and reproduced.
+
+### 3.5.1 As built
+
+Include strings are read as merge expressions, not as file names. `XkbIncludeResolver.Parse` splits
+on `+` and `|` and treats each as an operator: `+` gives the next piece `override`, `|` gives it
+`augment`, and only the first piece keeps the rule the statement itself declared. A `:2` suffix is
+read as the group the include targets; anything above group 1 is skipped with `KSI020`, because
+loading it into group 1 would overwrite the layout the user asked for with a secondary one.
+
+Two grammar details came out of the corpus rather than the specification. A merge keyword can stand
+in for `include` entirely — `augment "us(basic)"` has no `include` keyword at all — which the
+parser originally dropped without a diagnostic. And an include whose closing parenthesis is missing
+is read to the end of the piece rather than discarded, since these files are hand-written and the
+intent is unambiguous.
+
+Merge is applied per key. `augment` returns early when the key already exists. The visible
+difference between `override` and `replace` is a statement that carries no keysyms — an
+`override key <AD01> { type[Group1] = "ALPHABETIC" };` sets a property the model does not hold and
+must leave the existing outputs alone, while `replace` discards the definition outright. Keys are
+returned in first-definition order, tracked explicitly, because a dictionary's enumeration order is
+not part of its contract and the importer's output must not depend on it.
+
+Each resolution caches parsed files by resolved path, including the failures, so a layout composing
+three sections of one file reads it once and an unreadable file is not retried per include. The
+parser's own findings travel with the file, deduplicated per file per resolution. Every resolved key
+records the `file(section)` whose definition won.
+
+Over the host's 199-file corpus all 1,673 sections resolve to 73,511 keys with no `KSI025` and no
+`KSI024`: every include the distribution writes is found, and nothing in it is circular. A corpus
+test holds both at zero. `pl(basic)` resolves through `pl -> latin -> kpdl -> level3` to 50 keys
+named `Polish`, with `<AE01>` coming from `latin` and `<AD01>` won by `pl`.
+
+One thing the corpus shows that matters for 3.9: `<LSGT>` is defined in 103 of the 199 files, but
+not in `latin` and so not in `pl(basic)`. Layout files describe alphanumeric keys, while `<LSGT>`
+usually arrives from the `pc` component, which import does not compose. Template selection cannot
+rely on `<LSGT>` presence alone and will need the registry country hint to carry more weight than
+3.9 currently assumes.
+
+### 3.6 Level to layer mapping
+
+The inverse of the export table in `LINUX-XKB.md`:
+
+| XKB level | Core layer |
+|---:|---|
+| 1 | `Default` |
+| 2 | `Shift` |
+| 3 | `AltGr` |
+| 4 | `ShiftAltGr` |
+| 5+ | dropped, `KSI030` warning per key |
+
+### 3.7 Keysym decoding
+
+`XkbKeysymDecoder` is the inverse of the existing `XkbKeysymMapper`:
+
+- `NoSymbol`, `VoidSymbol` -> `NoOutput`;
+- `U0105`, `U1F600` and numeric `0x01000105` -> `CharacterOutput`;
+- keysyms in the Unicode/Latin-1 direct ranges -> `CharacterOutput`;
+- named keysyms with a Unicode equivalent (`aogonek`, `EuroSign`, `rightarrow`) -> `CharacterOutput`
+  via the generated table;
+- non-character function keys (`Return`, `Tab`, `Left`, `F1`) -> `SpecialKeyOutput(LogicalKey)`;
+- `dead_*` -> `NoOutput` with a `KSI031` warning naming the key and layer. Dead keys are outside the
+  MVP model (architecture §14) and this is the honest representation until they are modeled;
+- anything unrecognized -> `NoOutput` with `KSI032`.
+
+**Symmetry is enforced by test, not by convention.** For every `LogicalKey` and every character the
+existing `XkbKeysymMapper` can emit, the decoder must return the original value. Both directions are
+derived from the same table data so they cannot drift.
+
+### 3.7.1 As built
+
+The shape above survived; what the corpus added was a set of rules that had to be taken from
+libxkbcommon rather than invented.
+
+**Order decides correctness.** `Return` is annotated `U+000D` upstream, `Tab` is `U+0009` and
+`KP_Multiply` is `U+002A`, so reading the character table before the function keys would import the
+Enter key as an invisible control character and the keypad's multiply key as a stray asterisk.
+Function keys are therefore matched first. Letters and digits are deliberately *not* in the function
+table even though `XkbKeysymMapper` writes `a` for `LogicalKey.A` as well as for the character: an
+over-eager inverse would turn every Dvorak key back into its physical position and lose the layout
+entirely. Dead keys are checked before the table rather than after, because a dead key is a known
+loss with its own code, not merely something the table lacks.
+
+**Matching libxkbcommon, not a tidier rule.** Four behaviours came from reading its parser, and each
+one is exercised by the corpus:
+
+- `U` takes **one to eight** hex digits, not four to six. `symbols/macintosh_vndr/is` writes `U192`
+  and `U3A9`. `U+0105` is *not* accepted, because libxkbcommon's parser does not accept it either;
+  reading a form the user's machine rejects would be worse than refusing it.
+- `any`, `none`, `nosymbol` and `voidsymbol` are resolved by the keymap parser before any lookup, and
+  **case-insensitively**. `symbols/ge` writes `noSymbol`, `symbols/th` writes
+  `Voidsymbol` and `symbols/ancient` writes `none`; all are empty levels on a real machine, and
+  reporting them as losses would invent diagnostics for keys that were deliberately left blank.
+  Every other keysym name stays case-sensitive — `aogonek` and `Aogonek` are different letters.
+- `XF86_ClearGrab` is the keysym `XF86ClearGrab`: XKeysymDB spelt these with a separating underscore
+  the headers never had, and libxkbcommon still strips it. Only the lookup is rewritten; diagnostics
+  quote what the file wrote.
+- Keysyms from `0x01000100` up are the character's own code plus `0x01000000`. Seven of keysymdef.h's
+  own names are deprecated aliases carrying no Unicode annotation, so the table applies the rule to
+  derive their characters rather than reporting them unrepresentable.
+
+**Three outcomes share `KSI032`, so the result names which.** `XkbKeysymDecodeResult` carries an
+`XkbKeysymDecodeOutcome` alongside the output and the diagnostic. A keysym the model has no place for
+(`XF86AudioPlay`) is a limit of this application; text that names no keysym is a fault in the file;
+a keysym producing a control character is neither. The codes stay as specified, but a fidelity report
+that ran the three together would leave a user unable to tell which they were looking at.
+
+**Corpus result.** Every keysym the host's corpus writes is recognised — 173,528 characters, 14,177
+keys and 7,259 dead keys decoded, with no unrecognised name left over. The 505 distinct keysyms the
+model cannot hold are media, IME, `F25`-and-above and vendor keys, all reported rather than dropped.
+`XkbKeysymDecoderCorpusTests` holds the unrecognised set empty, which is the assertion the generated
+table exists to satisfy.
+
+### 3.8 Physical key resolution
+
+`XkbKeyNameResolver` inverts the `(templateId, keyId) -> <XKB name>` tables that
+`XkbKeyNameMapper` already owns. Those tables are currently `private static`. The refactor is to
+expose them once —
+
+```csharp
+public interface IXkbKeyNameMapper
+{
+    XkbKeyNameMappingResult Map(string templateId, string keyId);
+    IReadOnlyDictionary<string, string> GetMappings(string templateId);   // keyId -> XKB name
+}
+```
+
+— and build both directions from that single source, so import and export can never disagree about
+`<LSGT>`. This preserves [AD-018](DECISIONS.md): XKB names are still absent from Core and are still
+never derived from `PhysicalKey.ScanCode`.
+
+XKB keys with no template counterpart (`<I120>`, media keys, `<FK13>`+) are skipped with a `KSI033`
+informational diagnostic and counted in `KeysSkipped`.
+
+### 3.8.1 As built
+
+The table accessor and the resolver are as specified. What the specification did not anticipate is
+that inverting the table is not enough on its own: a key has as many names as the host's keycodes
+file gives it, and the table holds only the one generation writes.
+
+`keycodes/evdev` declares forty-seven aliases, all of them transcribed into the resolver. An alias
+states that two names share a keycode rather than that one redirects to the other, so they are
+folded into the inverse table in both directions and repeatedly until nothing new appears —
+`<I135>` reaches `<MENU>` only by way of `<COMP>`. Ten of them land on keys these templates have,
+and `<AC12>`, which fifteen files write for the backslash key, is the one that would have been most
+visibly missed. Only evdev is transcribed: it is the keycodes file every current distribution loads,
+and the Sun and Macintosh files alias keys neither template has.
+
+The phonetic `<LatA>`–`<LatZ>` aliases needed more than transcription, because they are ambiguous by
+construction. `keycodes/aliases` defines them three times over — `qwerty`, `azerty`, `qwertz` — and
+`rules/evdev` selects the section from the layout being loaded: `azerty` for `be` and `fr`, `qwertz`
+for `al ch cz de hr hu ro si sk`, `qwerty` for everything else. `<LatZ>` is therefore `<AB01>` for a
+US layout and `<AD06>` for a German one. Eight files write these names, and `symbols/de` writes them
+for phonetic Russian variants meant for a German keyboard, so reading everything as `qwerty` would
+return those layouts with Y and Z transposed. `XkbKeyAliasSet` names the three sets and
+`XkbKeyNameResolver.AliasSetForLayout` makes the same choice from the layout name that the host makes
+from its rules. The two lists are held in the resolver rather than parsed from `rules/evdev`, which
+is a format nothing else in the importer reads, and a corpus test diffs them against the host's file
+so that a distribution moving a country between the sets is caught rather than silently followed.
+
+`XkbKeyNameResolveResult` carries no outcome enum, unlike the keysym decoder's result: a name either
+reaches a key of this template or it does not, and the single way it can fail is the single code it
+is reported under. The diagnostic carries no key id either — the finding is precisely that there is
+no key here to jump to — so the name goes in the message instead.
+
+Corpus check: the host's 199 files resolve 66,151 keys onto `iso-105` and skip 7,360. Every skipped
+name is a key no PC keyboard has — media and vendor keys, `<FK13>` and above, `<SYRQ>` and `<BRK>`
+from the XFree86, Sun and HP keycodes, and the extra keys of Japanese (`<AE13>`, `<AB11>`), Brazilian
+(`<AB00>`) and Sun (`<AA*>`) keyboards. The test asserts that nothing on the alphanumeric rows is
+skipped apart from that documented handful, since a name reaching that point would be a key the user
+does have, dropped. Two further tests check the alias tables against `keycodes/evdev` and
+`keycodes/aliases` directly: for every alias the host declares, both names must reach the same key or
+neither may reach one at all.
+
+### 3.9 Template selection
+
+`XkbTemplateSelector` picks the geometry:
+
+- resolved keys include `<LSGT>` -> `iso-105`;
+- else every country the registry lists for the layout is an ANSI country -> `ansi-104`;
+- otherwise -> `iso-105`.
+
+ISO is the default rather than ANSI because `<LSGT>` is only a partial signal: the key is normally
+contributed by the `pc` component, which import does not compose, so most ISO layouts never write it
+and would fall through to the wrong board. Suggesting ISO costs an ANSI layout one key it does not
+have; suggesting ANSI costs an ISO layout the key beside its left shift. The country hint is what
+actually earns a layout the ANSI board, and every country it serves has to prefer ANSI before it is
+offered — a layout shared between the US and Europe gets the board that can represent both.
+
+The result is a *suggestion*. The import dialog shows it and lets the user override, because the
+registry does not record physical geometry and the heuristic will occasionally be wrong.
+
+### 3.10 Logical key inference
+
+`KeyMapping.LogicalKey` is derived deterministically:
+
+1. if the level-1 output is a `SpecialKeyOutput`, use its `LogicalKey`;
+2. else if the level-1 character is a single ASCII letter or digit, use the matching `LogicalKey`;
+3. else fall back to the template key ID's conventional logical key (`Comma` -> `LogicalKey.Comma`);
+4. else `LogicalKey.None`.
+
+Rule 3 is what keeps a Dvorak or AZERTY import from labelling every key by its produced character
+instead of its physical identity.
+
+---
+
+## 4. Provenance and round-tripping
+
+An imported project records where it came from, in the **document envelope** rather than in
+`ProjectMetadata` — provenance is editor bookkeeping, not layout semantics, and Core must not acquire
+an XKB-shaped field:
+
+```text
+KeyboardProjectDocument
+ |- documentSchemaVersion        (2; version 1 migrates forward)
+ |- project
+ |- targets
+ `- importProvenance
+     |- sourceId                 "linux-xkb"
+     |- layoutId                 "pl"
+     |- variantId                "qwertz"
+     |- sourceLocation           "/usr/share/X11/xkb/symbols/pl"
+     |- sourceDescription        "Polish (QWERTZ)"
+     `- importedAtUtc
+```
+
+Import also pre-fills the `XkbLayoutMetadata` target profile so the project can immediately be built
+back out: the layout ID becomes `pl-custom`, the variant becomes the section ID, and the registry's
+description becomes the description. The generated layout ID is **suffixed**, never reused verbatim:
+an artifact named `symbols/pl` would shadow the distribution's own file if a user copied it into an
+XKB root, which is precisely the failure mode `LINUX-XKB.md` warns about.
+
+A second source, `XkbSymbolsFileImportSource` (`linux-xkb-file`), imports one file the user points
+at, for a layout no catalog lists. It lists nothing — a file outside the roots is not something to
+browse for, it is something the user names — and resolves that file under its own name while its
+includes still come from the installed database, which is the only place `latin` and `us` exist. It
+is a separate source rather than a mode of the first because provenance should record which of the
+two a document came from: a catalogued layout can be found again by name, a loose file only by path.
+Both are registered in `HostLayoutImportCatalog`, the application's composition root for import.
+
+---
+
+## 5. Non-empty startup
+
+Fixing the empty-keyboard problem does not need the parser, and should ship before it.
+
+**Guaranteed baseline.** A `us-basic` seed project is embedded in `KeyboardStudio.Core` next to the
+existing geometry templates and becomes the content of a new document. This works on every host,
+including Windows, macOS, and Linux boxes with no XKB data, and removes the empty-keyboard state
+unconditionally.
+
+**Host-aware improvement (Linux).** On startup the application resolves the host's configured layout
+and imports it, replacing the seed if the document is still pristine. Detection is file- and
+environment-based only, in order:
+
+1. `XKB_DEFAULT_LAYOUT` / `XKB_DEFAULT_VARIANT`;
+2. `Option "XkbLayout"` / `"XkbVariant"` in `/etc/X11/xorg.conf.d/00-keyboard.conf`;
+3. `KEYMAP=` in `/etc/vconsole.conf`;
+4. `us`.
+
+No process is spawned. `localectl` and `gsettings` would each work but add a process dependency to
+the startup path and are harder to test; both write the files above anyway. On the reference host all
+three sources agree on `pl`, so a fresh session opens on the user's real layout.
+
+The import runs asynchronously behind the seeded project so a slow or pathological symbols file
+cannot delay the first frame, and any failure is silent apart from a diagnostics entry — a broken
+host XKB database must never prevent the editor from opening.
+
+### 5.1 As built
+
+`XkbActiveLayoutProbe` reads the chain above, taking the environment and the filesystem as
+constructor arguments so the ordering can be exercised without a host that has actually been
+configured that way. Each step reads a file and either supplies an answer or declines; an unreadable
+file is not distinguished from a missing one, because either way that step has nothing to contribute
+and the next one down is a better answer than an error nobody asked a question to get.
+
+**Two refinements to the chain.** In `/etc/vconsole.conf` the probe prefers `XKBLAYOUT`/`XKBVARIANT`
+over `KEYMAP`, and the chain gained a fourth file, `/etc/default/keyboard`, ahead of the `us`
+fallback.
+
+The first is a vocabulary problem. Recent systemd records the X keyboard configuration in
+`vconsole.conf` alongside the console keymap, and the two are not the same names: `XKBLAYOUT` is an
+XKB layout, while `KEYMAP` names a console keymap that only sometimes coincides with one — a host set
+to `KEYMAP=pl2` has no XKB layout called `pl2`. The console keymap is still read, because on a host
+only ever configured for the console it is the only statement of intent there is; it is simply the
+weaker of the two.
+
+The second is coverage. `/etc/default/keyboard` is where the Debian family keeps `XKBLAYOUT`, and
+without it the whole feature falls through to `us` on Debian and Ubuntu — the machines most likely to
+have a layout worth detecting. It parses identically to `vconsole.conf` and sits below it, since a
+host with both has had the systemd file written more recently.
+
+**One layout, not the list.** A host configured with `us,pl` switches between two layouts where a
+project has exactly one, and the variants are positional against the layouts (`us,pl` with
+`,dvorak` means an unmodified `us` and then `pl(dvorak)`). The probe takes the first pair, which is
+what the session starts in, and treats an empty variant in that position as the layout's default
+rather than as a variant named by the empty string.
+
+**Detection ends at a layout, not at nothing.** `XkbActiveLayout.Fallback` is `us`, so the probe is
+total and the caller never has to decide what to do with a null. Whether `us` exists on this host is
+the import's question to answer, not the probe's.
+
+`XkbHostLayoutProbe` translates the result into an `ImportableLayoutReference` naming the
+`linux-xkb` source, and is the only place the two vocabularies meet. Core sees `IHostLayoutProbe`,
+which returns a reference or nothing, so the detection rules stay testable against files with no
+catalog in sight and a second platform can answer the same question its own way.
+
+**What startup does with it.** `MainWindowViewModel.ImportHostLayoutAsync` is started by `App` after
+the window exists and is deliberately not awaited: the editor already has a working document to draw
+from, and a source composes a layout from files as it is asked for it and hands back a task that is
+already finished, so awaiting it on the UI thread would hold the window for the whole of the work
+rather than none of it. The import therefore goes onto the thread pool in one hop.
+
+It replaces the document only if that document is still the untouched one the constructor made —
+same instance, not dirty, no path. A user who has typed, opened a file, or made a new document has
+said what they want to work on, and having it swapped out a moment later would be worse than never
+importing at all. What lands is a fresh document exactly like an accepted import: no path, not
+dirty, XKB profile pre-filled with the suffixed layout ID.
+
+Failures are quiet. A host with no source at all reports nothing, because that is an ordinary
+situation rather than a failure. A layout that was named but could not be read leaves a `KSI011`
+`Info` entry in the diagnostics list, folded in at every refresh rather than appended once, since
+the list is rebuilt from validation on every edit and anything merely added to it would vanish at
+the next keystroke.
+
+---
+
+## 6. Keysym table generation
+
+The named keysyms in the corpus are table data, and no keysym header is guaranteed to be installed
+(none is present on the reference host). The table is therefore **generated at development time and
+committed**:
+
+- `scripts/generate-keysym-table.py` reads pinned copies under `third_party/keysyms` and emits
+  `src/KeyboardStudio.Linux/Translation/XkbKeysymTable.g.cs`;
+- the generated file header records every upstream source and its pinned commit;
+- CI runs the script with `--check`, so the table cannot silently drift from its sources.
+
+All upstreams are permissively licensed (MIT / X11 / HPND / public domain); attribution goes in the
+generated header and in [`third_party/keysyms/README.md`](../third_party/keysyms/README.md).
+
+### 6.1 As built
+
+**Five sources, not two.** `keysymdef.h` names the standard keysyms; `XF86keysym.h`, `Sunkeysym.h`,
+`HPkeysym.h` and `ap_keysym.h` name the media and vendor keys it does not mention. Each vendor header
+was added because the corpus test found keysyms without it — `XF86*` in eleven files including `pc`,
+`Sun*` in `sun_vndr/`, `hp*` in `hp_vndr/`, `apLineDel` in `digital_vndr/vt` — and none was added
+speculatively. `DECkeysym.h` is deliberately absent for the same reason: no file names a DEC keysym,
+and a source nothing exercises is a source nothing would catch going wrong.
+
+**libxkbcommon settles disagreements.** `keysym-utf.c` is the table the user's machine actually
+consults, so where it and a header differ it decides. Two do differ: `leftanglebracket` and
+`rightanglebracket` are `U+2329`/`U+232A` in `keysymdef.h` and `U+27E8`/`U+27E9` in libxkbcommon,
+Unicode having since deprecated the first pair. Both disagreements are listed in the generated
+header, so a source bump that changes what an imported layout produces shows up in review rather
+than in a user's keyboard.
+
+**First definition wins on a name collision.** `HPkeysym.h` redefines `XK_Ydiaeresis` to a value that
+is not Y-with-diaeresis at all, so headers are read standard-first and a later definition is ignored
+and listed rather than allowed to corrupt a standard keysym.
+
+**A character belongs to a value, not to a name.** `keysymdef.h` annotates only the endorsed name of
+each value: `guillemetleft` carries `U+00AB` and its deprecated alias `guillemotleft` carries a note
+saying which name replaced it. Reading annotations per name therefore left nine aliases — the
+guillemets, `masculine`, `quoteright`, `quoteleft`, `Eth`, `Ooblique`, `Thorn` and `ooblique` —
+naming no character at all, and xkeyboard-config still writes the older spellings, so those
+characters were dropped from every layout that does. Annotations are now pooled by keysym value
+before any name is given a character, and two names of one value claiming different characters is a
+generation failure rather than a silent choice. The `xkbcli` conformance oracle is what found this.
+
+**Vendoring rather than fetching.** The sources are committed under `third_party/keysyms` so that
+generation is reproducible and offline, and so CI can regenerate and diff without a network
+dependency. The result is 2,652 keysyms, 1,749 of which name a character.
+
+---
+
+## 7. User interface
+
+The host catalog is large — 99 layouts and 496 variants on xkeyboard-config 2.47, 595 selectable
+entries in total — so it needs search, grouping, and a preview. That rules out a dropdown beside the
+existing `New from [template] [Create]` control, and a permanent sidebar would cost roughly 260px of
+main-window width for a control used once per project. It is therefore a modal
+`ImportLayoutDialog`, reached from **File > Import layout…**, from an **Import…** button beside the
+existing `New from` control, and from **File > Import from file…** for an arbitrary `symbols/` file.
+
+Previewing before committing is a correctness requirement rather than a nicety: import is lossy (§3.7),
+and the user needs to see which keys were dropped before an import replaces their project.
+
+```text
++----------------------------------------------------------+
+| Import layout                                            |
+| Search [pol________]        [x] System   [x] User        |
+| +--------------------+ +-------------------------------+ |
+| | Polish          pl | | Preview      Geometry [iso-105 v] |
+| |   > basic          | |  +---------------------------+ | |
+| |     legacy         | |  | q w e r t y u i o p       | | |
+| |     qwertz         | |  | a s d f g h j k l         | | |
+| |     dvorak         | |  | z x c v b n m             | | |
+| | Portuguese      pt | |  +---------------------------+ | |
+| | Romanian        ro | |                               | |
+| | ...                | | 104 keys imported             | |
+| | (595 entries)      | | 6 dead keys dropped           | |
+| |                    | | 2 keys skipped                | |
+| +--------------------+ +-------------------------------+ |
+|        [Import as new project] [Replace mappings] [Cancel] |
++----------------------------------------------------------+
+```
+
+"Replace mappings in current project" keeps the existing geometry, target profiles, and file path,
+mutating only `KeyboardLayout` — the common case of "start from Polish and change three keys".
+
+ViewModels — `LayoutImportViewModel`, `ImportableLayoutViewModel`, `LayoutImportReportViewModel` —
+depend on `ILayoutImportCatalog` only. Both entry points route through the existing
+`ConfirmDocumentReplacementAsync` dirty-document flow, and mutations go through `KeyboardEditor` so
+the future undo/redo boundary stays intact (architecture §2.4).
+
+---
+
+## 8. Testing
+
+`KeyboardStudio.Linux.Tests` gains:
+
+- **Lexer/parser**: every statement kind, comments, malformed input, unterminated sections.
+- **Include resolver**: default vs `augment` vs `replace`, cross-file, subdirectory, self-referencing
+  sections, genuine cycles, depth cap.
+- **Registry reader**: DTD is not resolved, malformed XML, missing variant lists, user/system merge.
+- **Decoder symmetry**: exhaustive round-trip against `XkbKeysymMapper`.
+- **Golden imports**: a small pinned copy of real `us`, `pl`, `de`, and `fr` symbols files is vendored
+  as a test fixture (with attribution) so results do not depend on the host's installed
+  xkeyboard-config version. Imported projects are snapshot-compared as JSON.
+- **Full round trip**: import `us(basic)` -> `XkbSymbolsGenerator` -> re-import -> assert the Core
+  models are equal. This is the strongest single correctness gate and covers key names, keysyms, and
+  levels in one assertion.
+- **Host soak test** (`XkbIntegration` trait, Linux CI): enumerate the real registry and import every
+  layout and variant, asserting no exception and recording a fidelity histogram. ~1340 sections.
+- **`xkbcli` conformance oracle** (`XkbIntegration`, skipped when the tool is absent): compile the
+  same layout with `xkbcli compile-keymap` and diff the resolved key/level table against the managed
+  resolver.
+
+`KeyboardStudio.App.Tests` covers catalog listing and filtering, template override, import command
+enablement, dirty-document confirmation, replace-mappings-in-place, and the startup seed/host-import
+fallback chain against a fake catalog.
+
+### 8.1 As built
+
+The vendored fixtures are not small. `symbols/us`, `pl`, `de` and `fr` are copied whole, along with
+`latin`, `level3`, `keypad`, `kpdl` and `nbsp`, which are the files their sections reach; a trimmed
+symbols file would no longer be the thing upstream ships, which is the only reason to vendor one.
+`scripts/vendor-xkb-fixtures.py` computes the include closure and lifts the four registry entries out
+of `rules/evdev.xml` unchanged, and writes a `PROVENANCE.md` recording the version they came from.
+
+Eight imports are pinned rather than four: each layout's default section plus one variant that
+composes differently — `us(intl)` for dead keys on the base layer, `pl(qwertz)` for a second
+arrangement of the same alphabet, `de(nodeadkeys)` for the resolved-dead-key form of one file, and
+`fr(oss)` for the keypad and no-break-space definitions. Each snapshot holds everything the import
+decided: geometry, name, the four layers of every key, and every diagnostic, with the fixture path
+anonymised. `KEYBOARDSTUDIO_UPDATE_GOLDEN=1` rewrites them.
+
+The oracle compares by physical key, not by key name. `keycodes/evdev` declares most keys under two
+names and a phonetic layout writes both — `am(phonetic)` writes `<LatQ>` as well as `<AD01>` — so a
+name-keyed comparison would credit the importer with a key `xkbcli` never mentions and grade the
+other against a statement the host discarded. Keysyms are compared as decoded outputs, which lets
+`U0105` and `aogonek` count as one answer. It reads the host's database rather than the fixtures so
+that both sides see the same bytes.
+
+Four defects surfaced from these tests and were fixed with them: generation collapsing
+`LogicalKey.NumpadEnter` into `Return` rather than `KP_Enter`; nine deprecated keysym names carrying
+no character, because `keysymdef.h` annotates only the endorsed name of each value and the generator
+read annotations per name rather than per value; `am(phonetic)` and its relatives importing two
+mappings for one physical key, where the later statement should win as it does on the host; and the
+parser not knowing `vmods`, the abbreviation of `virtualMods` that `symbols/level5` writes in the
+xkeyboard-config Ubuntu ships.
+
+---
+
+## 9. Proposed phasing
+
+Work items are defined in [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md). P13.2 belongs to the
+same phase but covers target visibility rather than import.
+
+| Item | Work | Ships independently |
+|---|---|---|
+| P13.1 | Embedded `us-basic` seed project; new documents are never empty | yes |
+| P13.3 | Core import contract and `LayoutImportCatalog` | — |
+| P13.4 | XKB data-root discovery and `rules/evdev.xml` registry reader | yes (catalog listing) |
+| P13.5 | Symbols lexer and parser | — |
+| P13.6 | Include resolver and merge semantics | — |
+| P13.7 | Generated keysym table and `XkbKeysymDecoder` | — |
+| P13.8 | `IXkbKeyNameMapper` bidirectional refactor and `XkbKeyNameResolver` | — |
+| P13.9 | `XkbLayoutImporter`, template selection, fidelity report | yes |
+| P13.10 | Import dialog, preview, replace-in-place, provenance persistence | yes |
+| P13.11 | Host active-layout detection and startup import | yes |
+| P13.12 | Golden, round-trip, soak, and `xkbcli` oracle tests | — |
+
+P13.1 alone resolves the empty-keyboard problem and depends on nothing else, so it lands first.
+
+---
+
+## 10. Architecture decisions
+
+Recorded in [`DECISIONS.md`](DECISIONS.md).
+
+- **AD-019** — Layout import is a target-neutral Core contract with platform sources. Core defines
+  `ILayoutImportSource`/`ILayoutImportCatalog` over opaque identifiers; XKB knowledge stays in
+  `KeyboardStudio.Linux`; ViewModels never see XKB types.
+- **AD-020** — XKB import uses a managed parser and include resolver, not `xkbcli`. `xkbcli` remains
+  an optional CI conformance oracle, consistent with AD-017.
+- **AD-021** — Import is lossy by design and reports its losses. Dead keys, groups beyond Group1,
+  levels beyond 4, actions, and unmappable keysyms are dropped with key- and layer-linked
+  diagnostics rather than failing the import.
+- **AD-022** — XKB key-name tables are bidirectional and single-sourced. `XkbKeyNameMapper` owns one
+  table used for both export and import; XKB names remain out of Core.
+- **AD-023** — A new document is never empty. An embedded `us-basic` seed is the guaranteed baseline;
+  the host's configured layout is imported over it on Linux when it can be resolved from the
+  environment or `/etc` configuration files, without spawning a process.
+
+[AD-024](DECISIONS.md) — hiding the Windows target in the UI — belongs to the same phase but is not
+an import decision; see architecture section 2.6.
+
+---
+
+## 11. Explicitly out of scope
+
+- writing, installing, activating, or removing any layout (unchanged from `LINUX-XKB.md`);
+- dead keys, compose sequences, ligatures, and multi-symbol outputs — they are dropped on import and
+  remain outside the domain model;
+- groups 2-4, key types, `modifier_map`, virtual modifiers, and XKB actions;
+- geometry import: physical layout still comes from `iso-105` / `ansi-104` templates;
+- importing Windows KLC files or installed layout DLLs; the Core abstraction admits them later.
+
+---
+
+## 12. References
+
+- [libxkbcommon: XKB keymap text format v1 and v2](https://xkbcommon.org/doc/current/keymap-text-format-v1-v2.html)
+- [libxkbcommon: custom configuration](https://xkbcommon.org/doc/current/custom-configuration.html)
+- [libxkbcommon: include resolution and search paths](https://xkbcommon.org/doc/current/group__include-path.html)
+- [xkeyboard-config documentation](https://xkeyboard-config.freedesktop.org/doc/)
+- [`LINUX-XKB.md`](LINUX-XKB.md) — the generation counterpart of this pipeline

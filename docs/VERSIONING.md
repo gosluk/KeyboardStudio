@@ -2,11 +2,15 @@
 
 KeyboardStudio has three independent version tracks:
 
-| Track | Owner | MVP value | Change rule |
+| Track | Owner | Current value | Change rule |
 | --- | --- | ---: | --- |
 | Application | `KeyboardStudio.App.csproj` `Version` | `0.1.0` | User-visible desktop release |
-| Project document | `JsonKeyboardProjectDocumentStore.CurrentDocumentSchemaVersion` | `1` | Outer envelope/profile contract changes |
+| Project document | `JsonKeyboardProjectDocumentStore.CurrentDocumentSchemaVersion` | `2` | Outer envelope/profile contract changes |
 | Core project | `KeyboardProjectSchema.CurrentVersion` | `1` | Platform-neutral project JSON changes |
+
+The document schema moved to `2` when the envelope gained `importProvenance`, while the release and
+the Core project schema stayed where they were. That the three numbers disagree is the point of
+having three of them.
 
 An application release does not imply a schema change. Increment a schema only when persisted JSON
 requires a new contract, and provide the corresponding compatibility or migration path. The

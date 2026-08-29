@@ -29,17 +29,53 @@ public sealed class ProjectDocumentService : IProjectDocumentService
 
     public bool IsDirty { get; private set; }
 
+    /// <summary>
+    /// Where the open document was imported from, or null for one that was authored. It is carried
+    /// here rather than on the project because it belongs to the saved document, and so has to
+    /// survive every save without the editor having to remember to pass it along.
+    /// </summary>
+    public LayoutImportProvenance? CurrentProvenance { get; private set; }
+
     public ProjectDocumentError? LastError { get; private set; }
 
-    public KeyboardProject CreateNew()
+    public KeyboardProject CreateNew() => Adopt(_documentFactory());
+
+    /// <summary>
+    /// Takes a document that was produced rather than opened — a new one, or one just imported —
+    /// as the current document.
+    /// </summary>
+    /// <remarks>
+    /// It has no path and is not dirty, exactly like a new document: nothing has been written yet,
+    /// and nothing has been changed since it was made. An import the user then abandons is no more
+    /// a loss than a new document they abandon.
+    /// </remarks>
+    public KeyboardProject Adopt(KeyboardProjectDocument document)
     {
-        var document = _documentFactory();
+        ArgumentNullException.ThrowIfNull(document);
+
         CurrentProject = document.Project;
         CurrentTargetProfiles = CopyProfiles(document.TargetProfiles);
+        CurrentProvenance = document.ImportProvenance;
         CurrentFilePath = null;
         IsDirty = false;
         LastError = null;
         return document.Project;
+    }
+
+    /// <summary>
+    /// Records where the open document's mappings came from, keeping its path and its build
+    /// settings. This is the other half of <see cref="Adopt"/>: an import laid onto a document the
+    /// user is already working in changes where the layout came from without making a new document.
+    /// </summary>
+    public void RecordProvenance(LayoutImportProvenance? provenance)
+    {
+        if (CurrentProject is null)
+        {
+            return;
+        }
+
+        CurrentProvenance = provenance;
+        MarkDirty();
     }
 
     public void MarkDirty()
@@ -73,6 +109,7 @@ public sealed class ProjectDocumentService : IProjectDocumentService
 
             CurrentProject = document.Project;
             CurrentTargetProfiles = CopyProfiles(document.TargetProfiles);
+            CurrentProvenance = document.ImportProvenance;
             CurrentFilePath = fullPath;
             IsDirty = false;
             LastError = null;
@@ -142,7 +179,10 @@ public sealed class ProjectDocumentService : IProjectDocumentService
         try
         {
             await using var stream = File.Create(path);
-            var document = new KeyboardProjectDocument(CurrentProject!, CurrentTargetProfiles);
+            var document = new KeyboardProjectDocument(
+                CurrentProject!,
+                CurrentTargetProfiles,
+                CurrentProvenance);
             await _store.SaveAsync(document, stream, cancellationToken);
 
             if (updateCurrentPath)

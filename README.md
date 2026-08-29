@@ -17,6 +17,11 @@ Linux artifact backends. The implementation is focused on this core workflow:
 5. Select an artifact target.
 6. Generate a native Windows keyboard-layout DLL or a Linux XKB symbols file.
 
+The current build is Linux-focused: the editor offers the Linux XKB target only. The Windows backend
+is complete, referenced, and covered by CI, but its target is hidden from the Build panel. Start the
+application with `KEYBOARDSTUDIO_TARGETS=all` to select it again. Hiding is presentation-only — a
+document authored with a Windows profile keeps it through save and reload either way.
+
 ## Quick start
 
 KeyboardStudio requires a compatible .NET 10 SDK as configured in [`global.json`](global.json).
@@ -38,10 +43,11 @@ generation need no native development toolchain. A Windows DLL build additionall
 MSVC toolchain and Windows 10/11 SDK. Installing `xkbcli` is optional for local Linux generation and
 adds external compilation verification; Linux CI always performs that verification.
 
-Start with the ISO-105 template, select a physical key, choose its logical key, and fill any of the
-four layer values. Use **File > Save As** for the `.kbdproj`, then select Windows x64 or Linux XKB in
-the Build panel. Target profile edits are stored in the same project document and restored when it
-is reopened. Builds only generate artifacts; they never install or activate a keyboard layout.
+A new document opens on the `us-basic` seed — a US layout on ISO-105 hardware with all 105 keys
+already mapped — rather than an empty keyboard, so there is always something to modify. Select a
+physical key, change its logical key or any of the four layer values, then use **File > Save As** for
+the `.kbdproj`, then build from the Build panel. Target profile edits are stored in the same project
+document and restored when it is reopened. Builds only generate artifacts; they never install or activate a keyboard layout.
 
 See [Windows build prerequisites](docs/WINDOWS-BUILD.md#prerequisites) and
 [Linux verification and safe manual installation](docs/LINUX-XKB.md#safe-manual-testing-and-installation).
@@ -55,7 +61,7 @@ modifier layers to typed keysyms, and write a deterministic `symbols/<layout-id>
 hashed manifest. Managed structural verification always runs; `xkbcli` compilation runs when the
 tool is installed and is required by Linux CI. Builds never install or activate a layout.
 
-The Build panel selects Windows x64 or Linux XKB; retains an editable profile for
+The Build panel offers the Linux XKB target; retains an editable profile for
 each target; checks common/target validation and required tools; reports only backend-owned stages;
 and supports cancellation. Completed results expose generated C/XKB text, the output directory,
 combined diagnostic/raw logs, and the canonical artifact path. Failures are grouped by project,
@@ -128,6 +134,7 @@ tests/
   KeyboardStudio.App.Tests/
 
 templates/
+  seeds/
 
 docs/
   ARCHITECTURE.md
@@ -147,6 +154,7 @@ docs/
 The MVP supports:
 
 - visual ISO/ANSI keyboard representation;
+- a fully mapped seed layout in every new document;
 - physical-key selection;
 - physical key to logical-key mapping;
 - `Default`, `Shift`, `AltGr`, and `Shift+AltGr` output layers;

@@ -55,7 +55,7 @@ public sealed class BuildViewModelTests
                     ? [new ValidationIssue(ValidationSeverity.Error, "KSW001", "Unsupported mapping.")]
                     : [])
         };
-        var viewModel = CreateViewModel(service);
+        var viewModel = CreateViewModel(service, visibilityPolicy: AllTargetsVisible);
 
         Assert.False(viewModel.BuildCommand.CanExecute(null));
         Assert.Contains(viewModel.Problems, problem =>
@@ -298,10 +298,95 @@ public sealed class BuildViewModelTests
         Assert.Equal("Build completed without external XKB verification.", viewModel.Status);
     }
 
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Targets_UnderTheShippedPolicy_OfferLinuxAloneAndReplaceTheSelectorWithABadge()
+    {
+        var viewModel = CreateViewModel(new RecordingBuildService());
+
+        Assert.Equal([BuildTarget.LinuxXkb], viewModel.Targets.Select(option => option.Target));
+        Assert.Equal(BuildTarget.LinuxXkb, viewModel.SelectedTarget.Target);
+        Assert.False(viewModel.IsTargetSelectorVisible);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Targets_WithTheDeveloperOverride_OfferBothTargetsAndTheSelector()
+    {
+        var viewModel = CreateViewModel(
+            new RecordingBuildService(),
+            visibilityPolicy: AllTargetsVisible);
+
+        Assert.Equal(
+            [BuildTarget.WindowsX64, BuildTarget.LinuxXkb],
+            viewModel.Targets.Select(option => option.Target));
+        Assert.True(viewModel.IsTargetSelectorVisible);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    [Trait("Category", "ErrorPath")]
+    public void Targets_WhenThePolicyHidesEverything_FallBackToTheFullListRatherThanADeadCard()
+    {
+        var viewModel = CreateViewModel(
+            new RecordingBuildService(),
+            visibilityPolicy: new HiddenBuildTargetVisibilityPolicy());
+
+        Assert.Equal(
+            [BuildTarget.WindowsX64, BuildTarget.LinuxXkb],
+            viewModel.Targets.Select(option => option.Target));
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TargetProfiles_WhenWindowsIsHidden_RoundTripUnedited()
+    {
+        // A document authored on a Windows-enabled build must survive a save on a Linux-only build:
+        // hiding a target from the selector must not drop its profile.
+        var authored = new Dictionary<string, ProjectTargetProfile>(StringComparer.Ordinal)
+        {
+            [BuildProfileTargetIds.WindowsX64] = new(
+                BuildProfileTargetIds.WindowsX64,
+                new Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    [BuildProfileKeys.LayoutId] = "authored-on-windows",
+                    [BuildProfileKeys.LayoutName] = "Authored layout",
+                    [BuildProfileKeys.FileVersion] = "2.0.0.0",
+                    [BuildProfileKeys.CompanyName] = "Contoso"
+                }),
+            [BuildProfileTargetIds.LinuxXkb] = new(
+                BuildProfileTargetIds.LinuxXkb,
+                new Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    [BuildProfileKeys.LayoutId] = "authored-on-linux",
+                    [BuildProfileKeys.SectionId] = "basic",
+                    [BuildProfileKeys.Description] = "Authored layout"
+                })
+        };
+        var viewModel = new BuildViewModel(
+            CreateProject,
+            new RecordingBuildService(),
+            targetProfiles: authored);
+
+        Assert.False(viewModel.IsTargetSelectorVisible);
+        var exported = viewModel.ExportTargetProfiles();
+        Assert.Equal(
+            authored[BuildProfileTargetIds.WindowsX64].Settings,
+            exported[BuildProfileTargetIds.WindowsX64].Settings);
+        Assert.Equal(
+            authored[BuildProfileTargetIds.LinuxXkb].Settings,
+            exported[BuildProfileTargetIds.LinuxXkb].Settings);
+    }
+
+    private static IBuildTargetVisibilityPolicy AllTargetsVisible { get; } =
+        new EnvironmentBuildTargetVisibilityPolicy(
+            EnvironmentBuildTargetVisibilityPolicy.AllTargetsValue);
+
     private static BuildViewModel CreateViewModel(
         ITargetBuildService service,
-        IBuildInteractionService? interactionService = null) =>
-        new(CreateProject, service, interactionService);
+        IBuildInteractionService? interactionService = null,
+        IBuildTargetVisibilityPolicy? visibilityPolicy = null) =>
+        new(CreateProject, service, interactionService, visibilityPolicy: visibilityPolicy);
 
     private static KeyboardProject CreateProject() => new()
     {
@@ -315,6 +400,11 @@ public sealed class BuildViewModelTests
         Keyboard = new PhysicalKeyboard { Id = "test", Keys = [] },
         Layout = new KeyboardLayout()
     };
+
+    private sealed class HiddenBuildTargetVisibilityPolicy : IBuildTargetVisibilityPolicy
+    {
+        public bool IsVisible(BuildTarget target) => false;
+    }
 
     private sealed class RecordingBuildService : ITargetBuildService
     {

@@ -12,6 +12,15 @@ Run the same restore, Release build, and fast platform-neutral test sequence in 
 
 The script uses the .NET `10.0.302` SDK image pinned by `global.json` and pulls it when missing. Set `KEYBOARDSTUDIO_DOTNET_IMAGE` to override the image for compatibility testing. Build outputs are written to the normal ignored `bin/` and `obj/` directories in the checkout.
 
+Two more scripts run the jobs whose tooling a developer machine is not expected to supply, without
+installing anything on it. CI runs these jobs directly rather than through these scripts, because
+its runners are already containers:
+
+```bash
+./scripts/test-xkb-integration-in-podman.sh   # xkbcli and xkeyboard-config
+./scripts/package-linux-in-podman.sh          # Xvfb and the libraries Avalonia binds
+```
+
 ## Continuous integration runner preference
 
 The main managed GitHub Actions build targets runners labeled `self-hosted`, `Linux`, and `X64`.
@@ -20,15 +29,45 @@ the workflow independent of a machine-specific label such as `cherry-home-runner
 
 GitHub Actions does not provide an ordered `runs-on` fallback from self-hosted to hosted runners.
 If no matching self-hosted runner is online, the job intentionally remains queued instead of
-silently consuming a GitHub-hosted runner. XKB integration is intentionally a separate
-`ubuntu-latest` job because the external verifier needs packages that the unprivileged self-hosted
-runner cannot install; this is verification coverage, not a fallback for the managed build.
+silently consuming a GitHub-hosted runner.
 
-Windows native integration runs independently on `windows-latest`. The job proves that Visual Studio
-contains the MSVC x64 tools and that a Windows 10/11 SDK is registered before it restores and builds
-the complete solution. It then runs the platform-neutral suites and the categorized native test,
-which compiles generated source, verifies the DLL structure and export, and performs a load-level
-smoke test. A missing Windows toolchain is a CI failure, never a silent native-test skip.
+The managed build and the release gate run on that pool. Two Linux jobs need software beyond the
+SDK and do not: XKB integration needs `xkbcli` and `xkeyboard-config`, and packaging needs a display
+server and the libraries Avalonia binds. The runners are unprivileged podman containers — uid 10001,
+no `sudo`, `apt-get` present but unusable — so they can install nothing at runtime, and the two jobs
+run on `ubuntu-latest` instead.
+
+Running them in a container on the pool was considered and rejected: that nests a container inside
+the runner, which is already one, needing privileged mode and nested user namespaces to buy an
+isolation boundary that already exists.
+
+**Moving them onto the pool** takes one change to the runner image and one line per job. Add to the
+image (the base is Debian/Ubuntu):
+
+```
+libxkbcommon-tools xkb-data                                    # XKB integration
+xvfb libx11-6 libxrandr2 libxi6 libxcursor1 libxext6     libxrender1 libice6 libsm6 libfontconfig1 libgl1 libegl1   # packaging
+```
+
+Then change each job's `runs-on: ubuntu-latest` to `runs-on: [self-hosted, Linux, X64]` and drop
+its package-installation step. The `scripts/install-xkbcli.sh` and `scripts/install-xvfb.sh` helpers
+stay useful for a developer machine, where sudo does exist.
+
+Windows integration and packaging share one `windows-latest` job, the only one that cannot move to
+the pool: it needs MSVC, the Windows SDK, and a Windows loader. Running them together stops the two
+repeating the same checkout, SDK setup and restore on separate runners, and means an artifact is
+only ever produced from a tree whose tests have passed. The job proves that Visual Studio contains
+the MSVC x64 tools and that a Windows 10/11 SDK is registered before it restores and builds the
+complete solution. It then runs the platform-neutral suites and the categorized native test, which
+compiles generated source, verifies the DLL structure and export, and performs a load-level smoke
+test. A missing Windows toolchain is a CI failure, never a silent native-test skip.
+
+The platform-neutral suites run on both the self-hosted pool and the Windows job, which is not
+duplication: it is the only check that they are platform-neutral at all. It matters most for the
+XKB backend, because the shipped product offers the Linux target on every host it runs on, so a
+Windows user authoring an XKB layout is exercising it. Test doubles are held to the same standard —
+`FakeXkbFileSystem` models a POSIX filesystem on every host rather than deferring to `Path`, whose
+separator would otherwise make every import test Linux-only.
 Failed Windows native workspaces remain under `TestResults/windows-integration` and are uploaded for
 seven days. They contain generated C and headers, per-tool compiler/resource/linker logs, the
 combined build log, and `native-build-diagnostics.json`. Successful workspaces are deleted by the
@@ -52,9 +91,19 @@ explicitly:
 | `XkbIntegration` | Generated XKB compilation with `xkbcli` | Ubuntu with XKB packages |
 | `WindowsIntegration` | Generated DLL compilation and verification with MSVC | Windows with Visual Studio and Windows SDK |
 | `ErrorPath` | Cross-project release failure-path facet; also retains its primary category | Any runner required by the primary category |
+| `LinuxHost` | Facet for tests whose subject is a Linux host's own filesystem; also retains its primary category | Excluded from the Windows job |
 
 The platform-neutral gate is `Category=Unit|Category=Golden`. Native categories are invoked in
 dedicated steps so missing tools cannot turn into an accidental fast-test pass.
+
+The Windows job runs `(Category=Unit|Category=Golden)&Category!=LinuxHost`. The excluded facet is
+for tests whose subject is a Linux host's own filesystem — where an XKB database is installed, and
+what the XDG base directories resolve to. Generating an XKB layout travels to any host and is
+asserted there; importing one does not, because it reads a database the host has installed and a
+Windows host has none, so both import sources correctly report themselves unavailable. Marking
+those tests is what keeps the rest of the suite meaningful on Windows: the alternative is
+contorting production code into path forms no XKB tool would write, purely so an assertion holds
+on a platform the feature never runs on.
 
 Run the MVP error-path matrix directly with:
 
@@ -116,13 +165,46 @@ test is reported as not run unless the test process is Windows and matches the a
 Reproducibility unit tests compare source dictionaries and binary hashes without MSVC; the native
 integration path can enable `BuildOptions.VerifyReproducibility` on a configured Windows runner.
 
-Linux XKB integration tests use the `XkbIntegration` category. A dedicated GitHub-hosted Ubuntu job
-installs `xkbcli` and `xkeyboard-config`, then compiles an ISO AltGr/Unicode fixture and an ANSI
-two-level fixture in isolated roots. This keeps package installation off the unprivileged self-hosted
-runner. The tests never activate a layout. On failure, the generated symbols component and
+Linux XKB integration tests use the `XkbIntegration` category. A dedicated Ubuntu job installs
+`xkbcli` and `xkeyboard-config`, then compiles an ISO AltGr/Unicode fixture and an ANSI two-level
+fixture in isolated roots. The tests never activate a layout. On failure, the generated symbols component and
 `xkbcli.log` remain under `TestResults/xkb-integration` and are uploaded as a workflow artifact.
 Locally, categorized tests return without running when `xkbcli` is unavailable; install the tool or
 run `scripts/test-xkb-integration-in-podman.sh` to exercise the external verifier in isolation.
+
+The same category also covers layout import against the installed database, in both
+`KeyboardStudio.Linux.Tests` and `KeyboardStudio.App.Tests`. The application half is where the
+composition root lives, so it is the only place the real sources and the real host probe can be
+shown to be wired together at all — including that the probe and the catalog agree on their
+vocabulary well enough for this host's own configured layout to import. Those tests skip on a
+developer machine with no XKB database and fail loudly in Linux CI, where the package is installed
+deliberately.
+
+The layouts whose imports are asserted exactly come from a pinned copy of xkeyboard-config vendored
+into `tests/KeyboardStudio.Linux.Tests/Fixtures/Xkb`, written by `scripts/vendor-xkb-fixtures.py` and
+described by the `PROVENANCE.md` beside it. The host's own database answers whether the importer
+copes with real data and cannot answer what a particular import produces: it changes under the tests
+whenever the distribution updates. So the two questions are asked of two inputs — the corpus soak of
+whatever the host ships, the goldens of a copy that never moves.
+
+`XkbGoldenImportTests` snapshots each pinned import in full: the geometry chosen, the name taken, the
+four layers of every key, and every diagnostic raised. A failing golden is not automatically a
+defect; run the suite with `KEYBOARDSTUDIO_UPDATE_GOLDEN=1` to rewrite the snapshots in the
+repository, then read the diff, which is the change under review. That variable is refused when `CI`
+is `true`: rewriting is a developer's gesture whose whole effect is to make the suite pass, so
+obeying it on a build machine would report success for exactly the changes the goldens exist to
+catch. `XkbImportRoundTripTests` composes
+the importer with the generator and asserts the pair is lossless over what the model holds:
+whatever the first import produced is what importing the generated file returns.
+
+`XkbConformanceOracleTests` is the only test that can grade the composition rules, because it is the
+only one that compares against something the project did not write. It flattens a layout with the
+resolver, compiles the same layout with `xkbcli compile-keymap`, and requires the two to agree about
+every key both name — addressed by physical key rather than by key name, since `keycodes/evdev` gives
+most keys two names and a phonetic layout writes both. Keysyms are compared as decoded outputs, so
+`U0105` and `aogonek` count as the same answer. It reads the host's database rather than the pinned
+fixtures so that both sides are looking at the same bytes and a version difference cannot be mistaken
+for a defect.
 
 ## Test project boundaries
 

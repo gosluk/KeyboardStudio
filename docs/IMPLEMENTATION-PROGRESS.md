@@ -2,10 +2,10 @@
 
 This file tracks execution of [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
 
-- Current work branch: `agent/phase-10-target-aware-build-ux`
-- Last updated: 2026-08-15
-- Current phase: Phase 11 — Windows integration CI
-- Next work item: **P11.1 — Add Windows runner**
+- Current work branch: `import`
+- Last updated: 2026-08-29
+- Current phase: Phase 13 — Linux focus and layout import
+- Next work item: **none — Phase 13 complete**
 
 Legend: `[x]` complete, `[ ]` not yet complete.
 
@@ -156,10 +156,27 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 
 **Phase status:** 6/6 work items complete. Phase complete.
 
+## Phase 13 — Linux focus and layout import
+
+- [x] **P13.1** Embedded `us-basic` seed project
+- [x] **P13.2** Target visibility policy
+- [x] **P13.3** Core import contract
+- [x] **P13.4** XKB data roots and registry reader
+- [x] **P13.5** Symbols lexer and parser
+- [x] **P13.6** Include resolution
+- [x] **P13.7** Keysym table and decoder
+- [x] **P13.8** Bidirectional key-name tables
+- [x] **P13.9** Importer, template selection, fidelity report
+- [x] **P13.10** Import dialog and provenance
+- [x] **P13.11** Host layout detection and startup import
+- [x] **P13.12** Import test coverage
+
+**Phase status:** 12/12 work items complete. Phase complete.
+
 ## Progress summary
 
-- Completed work items: **82**
-- Total planned work items: **82**
-- Overall checklist progress: **82/82**
+- Completed work items: **94**
+- Total planned work items: **94**
+- Overall checklist progress: **94/94**
 
 The checklist records work-item completion only. Phase-level acceptance criteria and test gates in `IMPLEMENTATION-PLAN.md` still apply before a phase is considered complete.

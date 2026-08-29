@@ -1,0 +1,395 @@
+{
+  "sourceId": "linux-xkb",
+  "layoutId": "us",
+  "variantId": null,
+  "suggestedTemplateId": "ansi-104",
+  "keyboardId": "ansi-104",
+  "projectName": "English (US)",
+  "projectDescription": "Imported from us(basic).",
+  "language": "und",
+  "fidelity": "Exact",
+  "keysImported": 47,
+  "keysSkipped": 0,
+  "includeChain": [
+    "us(basic)"
+  ],
+  "diagnostics": [],
+  "mappings": [
+    {
+      "keyId": "Backquote",
+      "logicalKey": "Backquote",
+      "default": "`",
+      "shift": "~",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Backslash",
+      "logicalKey": "Backslash",
+      "default": "\\",
+      "shift": "|",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "BracketLeft",
+      "logicalKey": "LeftBracket",
+      "default": "[",
+      "shift": "{",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "BracketRight",
+      "logicalKey": "RightBracket",
+      "default": "]",
+      "shift": "}",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Comma",
+      "logicalKey": "Comma",
+      "default": ",",
+      "shift": "<",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Digit0",
+      "logicalKey": "Digit0",
+      "default": "0",
+      "shift": ")",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Digit1",
+      "logicalKey": "Digit1",
+      "default": "1",
+      "shift": "!",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Digit2",
+      "logicalKey": "Digit2",
+      "default": "2",
+      "shift": "@",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Digit3",
+      "logicalKey": "Digit3",
+      "default": "3",
+      "shift": "#",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Digit4",
+      "logicalKey": "Digit4",
+      "default": "4",
+      "shift": "$",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Digit5",
+      "logicalKey": "Digit5",
+      "default": "5",
+      "shift": "%",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Digit6",
+      "logicalKey": "Digit6",
+      "default": "6",
+      "shift": "^",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Digit7",
+      "logicalKey": "Digit7",
+      "default": "7",
+      "shift": "&",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Digit8",
+      "logicalKey": "Digit8",
+      "default": "8",
+      "shift": "*",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Digit9",
+      "logicalKey": "Digit9",
+      "default": "9",
+      "shift": "(",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Equal",
+      "logicalKey": "Equal",
+      "default": "=",
+      "shift": "+",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "KeyA",
+      "logicalKey": "A",
+      "default": "a",
+      "shift": "A",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "KeyB",
+      "logicalKey": "B",
+      "default": "b",
+      "shift": "B",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "KeyC",
+      "logicalKey": "C",
+      "default": "c",
+      "shift": "C",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "KeyD",
+      "logicalKey": "D",
+      "default": "d",
+      "shift": "D",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "KeyE",
+      "logicalKey": "E",
+      "default": "e",
+      "shift": "E",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "KeyF",
+      "logicalKey": "F",
+      "default": "f",
+      "shift": "F",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "KeyG",
+      "logicalKey": "G",
+      "default": "g",
+      "shift": "G",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "KeyH",
+      "logicalKey": "H",
+      "default": "h",
+      "shift": "H",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "KeyI",
+      "logicalKey": "I",
+      "default": "i",
+      "shift": "I",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "KeyJ",
+      "logicalKey": "J",
+      "default": "j",
+      "shift": "J",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "KeyK",
+      "logicalKey": "K",
+      "default": "k",
+      "shift": "K",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "KeyL",
+      "logicalKey": "L",
+      "default": "l",
+      "shift": "L",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "KeyM",
+      "logicalKey": "M",
+      "default": "m",
+      "shift": "M",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "KeyN",
+      "logicalKey": "N",
+      "default": "n",
+      "shift": "N",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "KeyO",
+      "logicalKey": "O",
+      "default": "o",
+      "shift": "O",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "KeyP",
+      "logicalKey": "P",
+      "default": "p",
+      "shift": "P",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "KeyQ",
+      "logicalKey": "Q",
+      "default": "q",
+      "shift": "Q",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "KeyR",
+      "logicalKey": "R",
+      "default": "r",
+      "shift": "R",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "KeyS",
+      "logicalKey": "S",
+      "default": "s",
+      "shift": "S",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "KeyT",
+      "logicalKey": "T",
+      "default": "t",
+      "shift": "T",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "KeyU",
+      "logicalKey": "U",
+      "default": "u",
+      "shift": "U",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "KeyV",
+      "logicalKey": "V",
+      "default": "v",
+      "shift": "V",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "KeyW",
+      "logicalKey": "W",
+      "default": "w",
+      "shift": "W",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "KeyX",
+      "logicalKey": "X",
+      "default": "x",
+      "shift": "X",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "KeyY",
+      "logicalKey": "Y",
+      "default": "y",
+      "shift": "Y",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "KeyZ",
+      "logicalKey": "Z",
+      "default": "z",
+      "shift": "Z",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Minus",
+      "logicalKey": "Minus",
+      "default": "-",
+      "shift": "_",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Period",
+      "logicalKey": "Period",
+      "default": ".",
+      "shift": ">",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Quote",
+      "logicalKey": "Quote",
+      "default": "'",
+      "shift": "\"",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Semicolon",
+      "logicalKey": "Semicolon",
+      "default": ";",
+      "shift": ":",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Slash",
+      "logicalKey": "Slash",
+      "default": "/",
+      "shift": "?",
+      "altGr": null,
+      "shiftAltGr": null
+    }
+  ]
+}

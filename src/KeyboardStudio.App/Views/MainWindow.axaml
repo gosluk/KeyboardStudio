@@ -20,6 +20,9 @@
         <MenuItem Header="_New" Command="{Binding NewCommand}" />
         <MenuItem Header="_Open…" Command="{Binding OpenCommand}" />
         <Separator />
+        <MenuItem Header="_Import layout…" Command="{Binding ImportLayoutCommand}" />
+        <MenuItem Header="Import _from file…" Command="{Binding ImportFromFileCommand}" />
+        <Separator />
         <MenuItem Header="_Save" Command="{Binding SaveCommand}" />
         <MenuItem Header="Save _As…" Command="{Binding SaveAsCommand}" />
       </MenuItem>
@@ -38,6 +41,12 @@
                      FontSize="11"
                      Foreground="{DynamicResource WarningForegroundBrush}" />
         </Border>
+        <TextBlock Classes="muted"
+                   Text="{Binding ImportStatus}"
+                   VerticalAlignment="Center"
+                   TextTrimming="CharacterEllipsis"
+                   FontSize="12"
+                   IsVisible="{Binding HasImportStatus}" />
       </StackPanel>
 
       <Grid Grid.Row="1" Grid.Column="0" RowDefinitions="Auto,*" RowSpacing="8">
@@ -87,6 +96,9 @@
                   <Button Content="Create"
                           Command="{Binding NewCommand}"
                           ToolTip.Tip="Replace the current project with a new one built from the selected template" />
+                  <Button Content="Import…"
+                          Command="{Binding ImportLayoutCommand}"
+                          ToolTip.Tip="Start from a layout this host already has installed" />
                 </StackPanel>
               </WrapPanel>
             </Grid>
@@ -225,8 +237,23 @@
 
           <Border Classes="card">
             <StackPanel Spacing="6">
-              <TextBlock Classes="section-title" Text="Build" />
-              <Grid ColumnDefinitions="96,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="6" RowSpacing="5">
+              <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <TextBlock Classes="section-title" Text="Build" />
+                <!-- With a single visible target there is nothing to choose, so the target name
+                     shows as a badge and the selector below is collapsed. -->
+                <Border VerticalAlignment="Center"
+                        Padding="7,1"
+                        CornerRadius="9"
+                        Background="{DynamicResource BadgeBackgroundBrush}"
+                        IsVisible="{Binding !Build.IsTargetSelectorVisible}">
+                  <TextBlock Text="{Binding Build.SelectedTarget.DisplayName}"
+                             FontSize="11"
+                             Foreground="{DynamicResource MutedForegroundBrush}" />
+                </Border>
+              </StackPanel>
+              <Grid ColumnDefinitions="96,*"
+                    ColumnSpacing="6"
+                    IsVisible="{Binding Build.IsTargetSelectorVisible}">
                 <TextBlock Classes="field-label" Text="Target" />
                 <ComboBox Grid.Column="1"
                           HorizontalAlignment="Stretch"
@@ -238,22 +265,23 @@
                     </DataTemplate>
                   </ComboBox.ItemTemplate>
                 </ComboBox>
-                <TextBlock Grid.Row="1" Classes="field-label" Text="Tools" VerticalAlignment="Top" />
-                <TextBlock Grid.Row="1"
-                           Grid.Column="1"
+              </Grid>
+              <Grid ColumnDefinitions="96,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="6" RowSpacing="5">
+                <TextBlock Classes="field-label" Text="Tools" VerticalAlignment="Top" />
+                <TextBlock Grid.Column="1"
                            Text="{Binding Build.EnvironmentStatus}"
                            TextWrapping="Wrap"
                            FontSize="12" />
-                <TextBlock Grid.Row="2" Classes="field-label" Text="Validation" VerticalAlignment="Top" />
-                <TextBlock Grid.Row="2"
+                <TextBlock Grid.Row="1" Classes="field-label" Text="Validation" VerticalAlignment="Top" />
+                <TextBlock Grid.Row="1"
                            Grid.Column="1"
                            Text="{Binding Build.ValidationStatus}"
                            TextWrapping="Wrap"
                            FontSize="12" />
-                <TextBlock Grid.Row="3" Classes="field-label" Text="Output" />
-                <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Build.OutputDirectory, Mode=TwoWay}" />
-                <TextBlock Grid.Row="4" Classes="field-label" Text="Profile" VerticalAlignment="Top" Margin="0,3,0,0" />
-                <ItemsControl Grid.Row="4" Grid.Column="1" ItemsSource="{Binding Build.ProfileSettings}">
+                <TextBlock Grid.Row="2" Classes="field-label" Text="Output" />
+                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Build.OutputDirectory, Mode=TwoWay}" />
+                <TextBlock Grid.Row="3" Classes="field-label" Text="Profile" VerticalAlignment="Top" Margin="0,3,0,0" />
+                <ItemsControl Grid.Row="3" Grid.Column="1" ItemsSource="{Binding Build.ProfileSettings}">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate>
                       <Grid ColumnDefinitions="88,*" ColumnSpacing="6" Margin="0,1">
