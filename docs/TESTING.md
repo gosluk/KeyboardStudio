@@ -132,6 +132,29 @@ vocabulary well enough for this host's own configured layout to import. Those te
 developer machine with no XKB database and fail loudly in Linux CI, where the package is installed
 deliberately.
 
+The layouts whose imports are asserted exactly come from a pinned copy of xkeyboard-config vendored
+into `tests/KeyboardStudio.Linux.Tests/Fixtures/Xkb`, written by `scripts/vendor-xkb-fixtures.py` and
+described by the `PROVENANCE.md` beside it. The host's own database answers whether the importer
+copes with real data and cannot answer what a particular import produces: it changes under the tests
+whenever the distribution updates. So the two questions are asked of two inputs — the corpus soak of
+whatever the host ships, the goldens of a copy that never moves.
+
+`XkbGoldenImportTests` snapshots each pinned import in full: the geometry chosen, the name taken, the
+four layers of every key, and every diagnostic raised. A failing golden is not automatically a
+defect; run the suite with `KEYBOARDSTUDIO_UPDATE_GOLDEN=1` to rewrite the snapshots in the
+repository, then read the diff, which is the change under review. `XkbImportRoundTripTests` composes
+the importer with the generator and asserts the pair is lossless over what the model holds:
+whatever the first import produced is what importing the generated file returns.
+
+`XkbConformanceOracleTests` is the only test that can grade the composition rules, because it is the
+only one that compares against something the project did not write. It flattens a layout with the
+resolver, compiles the same layout with `xkbcli compile-keymap`, and requires the two to agree about
+every key both name — addressed by physical key rather than by key name, since `keycodes/evdev` gives
+most keys two names and a phonetic layout writes both. Keysyms are compared as decoded outputs, so
+`U0105` and `aogonek` count as the same answer. It reads the host's database rather than the pinned
+fixtures so that both sides are looking at the same bytes and a version difference cannot be mistaken
+for a defect.
+
 ## Test project boundaries
 
 - `KeyboardStudio.Core.Tests` covers platform-neutral domain, editing, validation, and persistence-facing behavior.

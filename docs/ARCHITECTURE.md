@@ -837,10 +837,10 @@ key IDs to native physical identities.
 
 ## 13. Layout import
 
-*Adopted design, built by Phase 13. Sections 13.1 through 13.6 are implemented: the neutral
-contract, the seed, the whole XKB pipeline, the fidelity report, provenance, and the startup import.
-What remains of the phase is test coverage — golden fixtures, a round trip, a soak, and an `xkbcli`
-oracle — rather than behaviour.*
+*Adopted design, built by Phase 13, which is complete: the neutral contract, the seed, the whole XKB
+pipeline, the fidelity report, provenance, the startup import, and the coverage that grades them —
+goldens over a pinned copy of xkeyboard-config, an import-generate-import round trip, a soak over
+everything the host advertises, and `xkbcli` as a conformance oracle.*
 
 A new document must never open as bare geometry with zero mappings. Import supplies a starting point,
 either from an embedded seed or from a layout already installed on the host. Full design detail lives
@@ -1019,6 +1019,13 @@ Over the same corpus the resolver lands 66,151 keys and skips 7,360, and every s
 no PC keyboard has: media and vendor keys, `<FK13>` and above, and the extra keys of Japanese,
 Brazilian and Sun keyboards. Corpus tests check the alias tables against the host's own `keycodes`
 and `rules` files rather than against our reading of them.
+
+Because two names can reach one key, the importer keys its mappings by physical key rather than by
+the name a statement was written under, and a second statement for the same key replaces the first.
+A phonetic layout is where this shows: `am(phonetic)` writes both `<LatQ>` and `<AD01>`, which
+`keycodes/evdev` declares to be one key, and the host reads the later statement as the one that
+takes effect. Adding both instead produces a document with two mappings for one key, which the
+editor's own validation refuses.
 
 ### 13.4 Import is lossy and reports its losses
 

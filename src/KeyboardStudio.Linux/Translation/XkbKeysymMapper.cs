@@ -80,7 +80,12 @@ public sealed class XkbKeysymMapper : IXkbKeysymMapper
             LogicalKey.Escape => "Escape",
             LogicalKey.Backspace => "BackSpace",
             LogicalKey.Tab => "Tab",
-            LogicalKey.Enter or LogicalKey.NumpadEnter => "Return",
+            LogicalKey.Enter => "Return",
+
+            // The numpad's own Return. Every real layout binds <KPEN> to KP_Enter, and
+            // applications that tell the two apart — a terminal, a spreadsheet — would see the
+            // wrong one if this collapsed into Return.
+            LogicalKey.NumpadEnter => "KP_Enter",
             LogicalKey.CapsLock => "Caps_Lock",
             LogicalKey.Space => "space",
             LogicalKey.PrintScreen => "Print",

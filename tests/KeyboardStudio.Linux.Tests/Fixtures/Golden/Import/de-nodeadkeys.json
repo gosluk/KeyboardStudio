@@ -1,0 +1,439 @@
+{
+  "sourceId": "linux-xkb",
+  "layoutId": "de",
+  "variantId": "nodeadkeys",
+  "suggestedTemplateId": "iso-105",
+  "keyboardId": "iso-105",
+  "projectName": "German (no dead keys)",
+  "projectDescription": "Imported from de(nodeadkeys).",
+  "language": "und",
+  "fidelity": "Reduced",
+  "keysImported": 50,
+  "keysSkipped": 0,
+  "includeChain": [
+    "de(nodeadkeys)",
+    "de(basic)",
+    "latin(type4)",
+    "latin(basic)",
+    "kpdl(comma)",
+    "level3(ralt_switch)"
+  ],
+  "diagnostics": [
+    {
+      "severity": "Warning",
+      "code": "KSI021",
+      "message": "Key <CAPS> at line 95 used 'actions', which has no equivalent in the model; it was ignored.",
+      "keyId": null,
+      "layer": null
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI030",
+      "message": "Level 5 of '<AE11>' was dropped; the model holds four levels.",
+      "keyId": "Minus",
+      "layer": null
+    }
+  ],
+  "mappings": [
+    {
+      "keyId": "AltRight",
+      "logicalKey": "RightAlt",
+      "default": "[RightAlt]",
+      "shift": null,
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Backquote",
+      "logicalKey": "Backquote",
+      "default": "^",
+      "shift": "°",
+      "altGr": "¬",
+      "shiftAltGr": "¬"
+    },
+    {
+      "keyId": "BracketLeft",
+      "logicalKey": "LeftBracket",
+      "default": "ü",
+      "shift": "Ü",
+      "altGr": "¨",
+      "shiftAltGr": "¨"
+    },
+    {
+      "keyId": "BracketRight",
+      "logicalKey": "RightBracket",
+      "default": "+",
+      "shift": "*",
+      "altGr": "~",
+      "shiftAltGr": "¯"
+    },
+    {
+      "keyId": "Comma",
+      "logicalKey": "Comma",
+      "default": ",",
+      "shift": ";",
+      "altGr": "·",
+      "shiftAltGr": "×"
+    },
+    {
+      "keyId": "Digit0",
+      "logicalKey": "Digit0",
+      "default": "0",
+      "shift": "=",
+      "altGr": "}",
+      "shiftAltGr": "°"
+    },
+    {
+      "keyId": "Digit1",
+      "logicalKey": "Digit1",
+      "default": "1",
+      "shift": "!",
+      "altGr": "¹",
+      "shiftAltGr": "¡"
+    },
+    {
+      "keyId": "Digit2",
+      "logicalKey": "Digit2",
+      "default": "2",
+      "shift": "\"",
+      "altGr": "²",
+      "shiftAltGr": "⅛"
+    },
+    {
+      "keyId": "Digit3",
+      "logicalKey": "Digit3",
+      "default": "3",
+      "shift": "§",
+      "altGr": "³",
+      "shiftAltGr": "£"
+    },
+    {
+      "keyId": "Digit4",
+      "logicalKey": "Digit4",
+      "default": "4",
+      "shift": "$",
+      "altGr": "¼",
+      "shiftAltGr": "¤"
+    },
+    {
+      "keyId": "Digit5",
+      "logicalKey": "Digit5",
+      "default": "5",
+      "shift": "%",
+      "altGr": "½",
+      "shiftAltGr": "⅜"
+    },
+    {
+      "keyId": "Digit6",
+      "logicalKey": "Digit6",
+      "default": "6",
+      "shift": "&",
+      "altGr": "¬",
+      "shiftAltGr": "⅝"
+    },
+    {
+      "keyId": "Digit7",
+      "logicalKey": "Digit7",
+      "default": "7",
+      "shift": "/",
+      "altGr": "{",
+      "shiftAltGr": "⅞"
+    },
+    {
+      "keyId": "Digit8",
+      "logicalKey": "Digit8",
+      "default": "8",
+      "shift": "(",
+      "altGr": "[",
+      "shiftAltGr": "™"
+    },
+    {
+      "keyId": "Digit9",
+      "logicalKey": "Digit9",
+      "default": "9",
+      "shift": ")",
+      "altGr": "]",
+      "shiftAltGr": "±"
+    },
+    {
+      "keyId": "Equal",
+      "logicalKey": "Equal",
+      "default": "´",
+      "shift": "`",
+      "altGr": "¸",
+      "shiftAltGr": "¸"
+    },
+    {
+      "keyId": "IntlBackslash",
+      "logicalKey": "InternationalBackslash",
+      "default": "<",
+      "shift": ">",
+      "altGr": "|",
+      "shiftAltGr": "†"
+    },
+    {
+      "keyId": "IntlHash",
+      "logicalKey": "InternationalHash",
+      "default": "#",
+      "shift": "'",
+      "altGr": "’",
+      "shiftAltGr": "`"
+    },
+    {
+      "keyId": "KeyA",
+      "logicalKey": "A",
+      "default": "a",
+      "shift": "A",
+      "altGr": "æ",
+      "shiftAltGr": "Æ"
+    },
+    {
+      "keyId": "KeyB",
+      "logicalKey": "B",
+      "default": "b",
+      "shift": "B",
+      "altGr": "“",
+      "shiftAltGr": "‘"
+    },
+    {
+      "keyId": "KeyC",
+      "logicalKey": "C",
+      "default": "c",
+      "shift": "C",
+      "altGr": "¢",
+      "shiftAltGr": "©"
+    },
+    {
+      "keyId": "KeyD",
+      "logicalKey": "D",
+      "default": "d",
+      "shift": "D",
+      "altGr": "ð",
+      "shiftAltGr": "Ð"
+    },
+    {
+      "keyId": "KeyE",
+      "logicalKey": "E",
+      "default": "e",
+      "shift": "E",
+      "altGr": "€",
+      "shiftAltGr": "€"
+    },
+    {
+      "keyId": "KeyF",
+      "logicalKey": "F",
+      "default": "f",
+      "shift": "F",
+      "altGr": "đ",
+      "shiftAltGr": "ª"
+    },
+    {
+      "keyId": "KeyG",
+      "logicalKey": "G",
+      "default": "g",
+      "shift": "G",
+      "altGr": "ŋ",
+      "shiftAltGr": "Ŋ"
+    },
+    {
+      "keyId": "KeyH",
+      "logicalKey": "H",
+      "default": "h",
+      "shift": "H",
+      "altGr": "ħ",
+      "shiftAltGr": "Ħ"
+    },
+    {
+      "keyId": "KeyI",
+      "logicalKey": "I",
+      "default": "i",
+      "shift": "I",
+      "altGr": "→",
+      "shiftAltGr": "ı"
+    },
+    {
+      "keyId": "KeyJ",
+      "logicalKey": "J",
+      "default": "j",
+      "shift": "J",
+      "altGr": "ʒ",
+      "shiftAltGr": "Ʒ"
+    },
+    {
+      "keyId": "KeyK",
+      "logicalKey": "K",
+      "default": "k",
+      "shift": "K",
+      "altGr": "ĸ",
+      "shiftAltGr": "&"
+    },
+    {
+      "keyId": "KeyL",
+      "logicalKey": "L",
+      "default": "l",
+      "shift": "L",
+      "altGr": "ł",
+      "shiftAltGr": "Ł"
+    },
+    {
+      "keyId": "KeyM",
+      "logicalKey": "M",
+      "default": "m",
+      "shift": "M",
+      "altGr": "µ",
+      "shiftAltGr": "º"
+    },
+    {
+      "keyId": "KeyN",
+      "logicalKey": "N",
+      "default": "n",
+      "shift": "N",
+      "altGr": "”",
+      "shiftAltGr": "’"
+    },
+    {
+      "keyId": "KeyO",
+      "logicalKey": "O",
+      "default": "o",
+      "shift": "O",
+      "altGr": "ø",
+      "shiftAltGr": "Ø"
+    },
+    {
+      "keyId": "KeyP",
+      "logicalKey": "P",
+      "default": "p",
+      "shift": "P",
+      "altGr": "þ",
+      "shiftAltGr": "Þ"
+    },
+    {
+      "keyId": "KeyQ",
+      "logicalKey": "Q",
+      "default": "q",
+      "shift": "Q",
+      "altGr": "@",
+      "shiftAltGr": "Ω"
+    },
+    {
+      "keyId": "KeyR",
+      "logicalKey": "R",
+      "default": "r",
+      "shift": "R",
+      "altGr": "¶",
+      "shiftAltGr": "®"
+    },
+    {
+      "keyId": "KeyS",
+      "logicalKey": "S",
+      "default": "s",
+      "shift": "S",
+      "altGr": "ſ",
+      "shiftAltGr": "ẞ"
+    },
+    {
+      "keyId": "KeyT",
+      "logicalKey": "T",
+      "default": "t",
+      "shift": "T",
+      "altGr": "ŧ",
+      "shiftAltGr": "Ŧ"
+    },
+    {
+      "keyId": "KeyU",
+      "logicalKey": "U",
+      "default": "u",
+      "shift": "U",
+      "altGr": "↓",
+      "shiftAltGr": "↑"
+    },
+    {
+      "keyId": "KeyV",
+      "logicalKey": "V",
+      "default": "v",
+      "shift": "V",
+      "altGr": "„",
+      "shiftAltGr": "‚"
+    },
+    {
+      "keyId": "KeyW",
+      "logicalKey": "W",
+      "default": "w",
+      "shift": "W",
+      "altGr": "ſ",
+      "shiftAltGr": "§"
+    },
+    {
+      "keyId": "KeyX",
+      "logicalKey": "X",
+      "default": "x",
+      "shift": "X",
+      "altGr": "«",
+      "shiftAltGr": "‹"
+    },
+    {
+      "keyId": "KeyY",
+      "logicalKey": "Z",
+      "default": "z",
+      "shift": "Z",
+      "altGr": "←",
+      "shiftAltGr": "¥"
+    },
+    {
+      "keyId": "KeyZ",
+      "logicalKey": "Y",
+      "default": "y",
+      "shift": "Y",
+      "altGr": "»",
+      "shiftAltGr": "›"
+    },
+    {
+      "keyId": "Minus",
+      "logicalKey": "Minus",
+      "default": "ß",
+      "shift": "?",
+      "altGr": "\\",
+      "shiftAltGr": "¿"
+    },
+    {
+      "keyId": "NumpadDecimal",
+      "logicalKey": "NumpadDecimal",
+      "default": "[NumpadDecimal]",
+      "shift": ",",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Period",
+      "logicalKey": "Period",
+      "default": ".",
+      "shift": ":",
+      "altGr": "…",
+      "shiftAltGr": "÷"
+    },
+    {
+      "keyId": "Quote",
+      "logicalKey": "Quote",
+      "default": "ä",
+      "shift": "Ä",
+      "altGr": "^",
+      "shiftAltGr": "^"
+    },
+    {
+      "keyId": "Semicolon",
+      "logicalKey": "Semicolon",
+      "default": "ö",
+      "shift": "Ö",
+      "altGr": "˝",
+      "shiftAltGr": "˝"
+    },
+    {
+      "keyId": "Slash",
+      "logicalKey": "Slash",
+      "default": "-",
+      "shift": "_",
+      "altGr": "–",
+      "shiftAltGr": "—"
+    }
+  ]
+}

@@ -28,7 +28,7 @@
 //     libxkbcommon's keysym-utf.c is placed in the public domain by its author, Markus G.
 //     Kuhn. Attribution is also recorded in third_party/keysyms/README.md.
 //
-//     2652 keysyms, 1740 of which name a character.
+//     2652 keysyms, 1749 of which name a character.
 //
 //     Where the two sources disagree on a keysym's character, libxkbcommon wins: it is
 //     the table the user's own machine consults, so it decides what they will actually
@@ -425,7 +425,7 @@ public static class XkbKeysymTable
         ("percent", 0x00000025, 0x0025),
         ("ampersand", 0x00000026, 0x0026),
         ("apostrophe", 0x00000027, 0x0027),
-        ("quoteright", 0x00000027, NoCodepoint),
+        ("quoteright", 0x00000027, 0x0027),
         ("parenleft", 0x00000028, 0x0028),
         ("parenright", 0x00000029, 0x0029),
         ("asterisk", 0x0000002A, 0x002A),
@@ -483,7 +483,7 @@ public static class XkbKeysymTable
         ("asciicircum", 0x0000005E, 0x005E),
         ("underscore", 0x0000005F, 0x005F),
         ("grave", 0x00000060, 0x0060),
-        ("quoteleft", 0x00000060, NoCodepoint),
+        ("quoteleft", 0x00000060, 0x0060),
         ("a", 0x00000061, 0x0061),
         ("b", 0x00000062, 0x0062),
         ("c", 0x00000063, 0x0063),
@@ -525,7 +525,7 @@ public static class XkbKeysymTable
         ("diaeresis", 0x000000A8, 0x00A8),
         ("copyright", 0x000000A9, 0x00A9),
         ("ordfeminine", 0x000000AA, 0x00AA),
-        ("guillemotleft", 0x000000AB, NoCodepoint),
+        ("guillemotleft", 0x000000AB, 0x00AB),
         ("guillemetleft", 0x000000AB, 0x00AB),
         ("notsign", 0x000000AC, 0x00AC),
         ("hyphen", 0x000000AD, 0x00AD),
@@ -541,9 +541,9 @@ public static class XkbKeysymTable
         ("periodcentered", 0x000000B7, 0x00B7),
         ("cedilla", 0x000000B8, 0x00B8),
         ("onesuperior", 0x000000B9, 0x00B9),
-        ("masculine", 0x000000BA, NoCodepoint),
+        ("masculine", 0x000000BA, 0x00BA),
         ("ordmasculine", 0x000000BA, 0x00BA),
-        ("guillemotright", 0x000000BB, NoCodepoint),
+        ("guillemotright", 0x000000BB, 0x00BB),
         ("guillemetright", 0x000000BB, 0x00BB),
         ("onequarter", 0x000000BC, 0x00BC),
         ("onehalf", 0x000000BD, 0x00BD),
@@ -566,7 +566,7 @@ public static class XkbKeysymTable
         ("Icircumflex", 0x000000CE, 0x00CE),
         ("Idiaeresis", 0x000000CF, 0x00CF),
         ("ETH", 0x000000D0, 0x00D0),
-        ("Eth", 0x000000D0, NoCodepoint),
+        ("Eth", 0x000000D0, 0x00D0),
         ("Ntilde", 0x000000D1, 0x00D1),
         ("Ograve", 0x000000D2, 0x00D2),
         ("Oacute", 0x000000D3, 0x00D3),
@@ -575,14 +575,14 @@ public static class XkbKeysymTable
         ("Odiaeresis", 0x000000D6, 0x00D6),
         ("multiply", 0x000000D7, 0x00D7),
         ("Oslash", 0x000000D8, 0x00D8),
-        ("Ooblique", 0x000000D8, NoCodepoint),
+        ("Ooblique", 0x000000D8, 0x00D8),
         ("Ugrave", 0x000000D9, 0x00D9),
         ("Uacute", 0x000000DA, 0x00DA),
         ("Ucircumflex", 0x000000DB, 0x00DB),
         ("Udiaeresis", 0x000000DC, 0x00DC),
         ("Yacute", 0x000000DD, 0x00DD),
         ("THORN", 0x000000DE, 0x00DE),
-        ("Thorn", 0x000000DE, NoCodepoint),
+        ("Thorn", 0x000000DE, 0x00DE),
         ("ssharp", 0x000000DF, 0x00DF),
         ("agrave", 0x000000E0, 0x00E0),
         ("aacute", 0x000000E1, 0x00E1),
@@ -609,7 +609,7 @@ public static class XkbKeysymTable
         ("odiaeresis", 0x000000F6, 0x00F6),
         ("division", 0x000000F7, 0x00F7),
         ("oslash", 0x000000F8, 0x00F8),
-        ("ooblique", 0x000000F8, NoCodepoint),
+        ("ooblique", 0x000000F8, 0x00F8),
         ("ugrave", 0x000000F9, 0x00F9),
         ("uacute", 0x000000FA, 0x00FA),
         ("ucircumflex", 0x000000FB, 0x00FB),

@@ -290,3 +290,31 @@ opened a file, or made a new document has already said what they want to work on
 swapped out a moment later would be worse than never importing at all. For the same reason failure
 is quiet: a host with no source reports nothing, and a layout that could not be read leaves a
 `KSI011` `Info` entry rather than a dialog about a layout the user never mentioned.
+
+## AD-028 - Pinned fixtures say what an import produces, the host says whether it copes
+
+Two kinds of test read XKB data, and they need different inputs. The corpus soak imports everything
+the host advertises, which is the only way to meet the variety real layouts have; it cannot assert
+what any particular import produces, because the answer changes whenever the distribution updates
+xkeyboard-config. The goldens assert exactly that, so they read a copy of `us`, `pl`, `de` and `fr`
+vendored into the test fixtures and pinned to a recorded version.
+
+The vendored files are whole upstream files, not excerpts. A trimmed symbols file is no longer the
+thing upstream ships, which is the one property that makes vendoring it worth doing at all — and
+hand-trimming risks a fixture that quietly disagrees with the real one. The cost is 436 KB of test
+input and a script, `scripts/vendor-xkb-fixtures.py`, that copies the include closure and the
+registry entries again when the pin moves.
+
+`xkbcli` is used as a conformance oracle rather than only as a compiler. Every other test grades the
+importer against something this project wrote; only libxkbcommon can say whether flattening
+`pl(basic)` — `latin`, then four overrides — leaves the layout the system would produce. The
+comparison is by physical key rather than by key name, because `keycodes/evdev` gives most keys two
+names and a phonetic layout writes both, and by decoded output rather than by keysym name, because
+`U0105` and `aogonek` are one answer written two ways. It reads the host's database rather than the
+pinned fixtures so that both sides see the same bytes, which keeps a version difference from
+presenting as a defect.
+
+Goldens are rewritable by design: `KEYBOARDSTUDIO_UPDATE_GOLDEN=1` rewrites every snapshot in the
+repository. A golden nobody can regenerate gets asserted around instead of updated, and a diff of
+what an import now produces is exactly the artifact a change to the importer should be reviewed
+through.

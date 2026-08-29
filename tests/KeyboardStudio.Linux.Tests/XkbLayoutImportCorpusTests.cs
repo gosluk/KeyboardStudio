@@ -25,8 +25,10 @@ public sealed class XkbLayoutImportCorpusTests(ITestOutputHelper output)
         }
 
         var descriptors = await source.ListAsync();
+        var validator = new KeyboardProjectValidator();
         var failed = new List<string>();
         var unmappable = new List<string>();
+        var invalid = new List<string>();
         var keysImported = 0;
 
         foreach (var descriptor in descriptors)
@@ -48,6 +50,14 @@ public sealed class XkbLayoutImportCorpusTests(ITestOutputHelper output)
             unmappable.AddRange(result.Project.Layout.Mappings
                 .Where(mapping => !keyIds.Contains(mapping.KeyId))
                 .Select(mapping => $"{name}: {mapping.KeyId}"));
+
+            // Whatever the catalog offers has to arrive as a document the editor will accept.
+            // An import that succeeds and then cannot be validated or built is a dead end the
+            // user reaches only after choosing it.
+            invalid.AddRange(validator.Validate(result.Project)
+                .Issues
+                .Where(issue => issue.Severity == ValidationSeverity.Error)
+                .Select(issue => $"{name}: {issue.Message}"));
         }
 
         output.WriteLine($"{descriptors.Count} entries, {keysImported} keys imported.");
@@ -56,6 +66,7 @@ public sealed class XkbLayoutImportCorpusTests(ITestOutputHelper output)
         // is a listing bug, not a layout the distribution shipped broken.
         Assert.Empty(failed);
         Assert.Empty(unmappable);
+        Assert.Empty(invalid);
         Assert.True(descriptors.Count > 500, $"Expected a full catalog; got {descriptors.Count} entries.");
     }
 

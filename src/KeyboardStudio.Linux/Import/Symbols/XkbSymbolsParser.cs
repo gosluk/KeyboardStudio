@@ -41,6 +41,11 @@ public sealed class XkbSymbolsParser
     {
         "type",
         "virtualmods",
+
+        // The abbreviation of the same property. XKB accepts both spellings and
+        // xkeyboard-config writes this one in symbols/level5, so a parser that knows only
+        // the long form reports a gap in its grammar on any host shipping that file.
+        "vmods",
         "repeat",
         "locks",
         "groupswrap",

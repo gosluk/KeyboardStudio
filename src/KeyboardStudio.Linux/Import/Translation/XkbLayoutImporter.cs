@@ -145,6 +145,13 @@ public sealed class XkbLayoutImporter
         var templateKeyIds = keyboard.Keys.Select(key => key.Id).ToFrozenSet(StringComparer.Ordinal);
 
         var layout = new KeyboardLayout();
+
+        // Where each physical key's mapping sits, so a second name for the same key replaces the
+        // first rather than adding a duplicate the editor would refuse to validate. A phonetic
+        // layout is the case that needs it: am(phonetic) writes both <AD01> and <LatQ>, which
+        // keycodes/evdev declares to be one key, and the host reads the later statement as the
+        // one that wins.
+        var mappingsByKeyId = new Dictionary<string, int>(StringComparer.Ordinal);
         var keysImported = 0;
         var keysSkipped = 0;
 
@@ -172,8 +179,16 @@ public sealed class XkbLayoutImporter
             var mapping = ProjectKey(key, keyId, diagnostics, out var everythingWasEmpty);
             if (mapping is not null)
             {
-                layout.Mappings.Add(mapping);
-                keysImported++;
+                if (mappingsByKeyId.TryGetValue(keyId, out var existing))
+                {
+                    layout.Mappings[existing] = mapping;
+                }
+                else
+                {
+                    mappingsByKeyId[keyId] = layout.Mappings.Count;
+                    layout.Mappings.Add(mapping);
+                    keysImported++;
+                }
             }
             else if (!everythingWasEmpty)
             {

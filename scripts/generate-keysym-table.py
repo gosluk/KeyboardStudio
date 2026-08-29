@@ -161,11 +161,28 @@ def read_keysym_utf(path):
 
 def build(entries, keysymtab):
     """Merge the sources, letting libxkbcommon settle any disagreement about a character."""
+    # A keysym's character belongs to its value, not to the name it happens to be written
+    # under. keysymdef.h annotates only the endorsed name of each value: `guillemetleft`
+    # carries U+00AB and its deprecated alias `guillemotleft` carries nothing but a note
+    # saying so. Both produce the same character on the user's machine, so the annotations
+    # are pooled by value before any name is given a codepoint. Reading them per name
+    # instead leaves every deprecated alias characterless, and layouts still write them.
+    by_value = {}
+    for name, value, codepoint in entries:
+        if codepoint is None:
+            continue
+        if value in by_value and by_value[value] != codepoint:
+            sys.exit(
+                f"Two names for keysym 0x{value:04x} claim different characters: "
+                f"U+{by_value[value]:04X} and U+{codepoint:04X} ({name}).")
+        by_value.setdefault(value, codepoint)
+
     rows = []
     conflicts = []
     shadowed = []
     seen = set()
-    for name, value, codepoint in entries:
+    disagreed = set()
+    for name, value, _ in entries:
         # Headers are read in the order listed in main(), and the first definition of a name
         # wins. HPkeysym.h redefines XK_Ydiaeresis to a value that is not Y-with-diaeresis at
         # all, so a later-wins rule would corrupt a standard keysym with a vendor header's
@@ -176,9 +193,14 @@ def build(entries, keysymtab):
             continue
         seen.add(name)
 
+        codepoint = by_value.get(value)
         libxkbcommon = keysymtab.get(value)
         if libxkbcommon is not None and codepoint is not None and libxkbcommon != codepoint:
-            conflicts.append((name, value, codepoint, libxkbcommon))
+            # Reported once per value rather than once per name: the disagreement is between
+            # the two sources about a keysym, and every alias of it inherits the same answer.
+            if value not in disagreed:
+                disagreed.add(value)
+                conflicts.append((name, value, codepoint, libxkbcommon))
         if libxkbcommon is not None:
             codepoint = libxkbcommon
         rows.append((name, value, codepoint))

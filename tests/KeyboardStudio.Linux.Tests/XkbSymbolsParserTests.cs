@@ -204,6 +204,24 @@ public sealed class XkbSymbolsParserTests
             file.Sections[0].Statements.OfType<XkbIgnoredStatement>().Select(statement => statement.Keyword));
     }
 
+    [Theory]
+    [Trait("Category", "Unit")]
+    [InlineData("virtualMods")]
+    [InlineData("vmods")]
+    public void Parse_ForAKeyBindingAVirtualModifier_ReadsItsSymbolsAndSaysNothing(string property)
+    {
+        // XKB accepts both spellings of the property and xkeyboard-config writes both — the
+        // abbreviation in symbols/level5. Neither changes what the key types, so neither is worth
+        // a diagnostic, but an unknown one would cost the key its symbols.
+        var section = ParseSingleSection($$"""
+              replace key <HYPR> { [ NoSymbol ], type[group1] = "ONE_LEVEL", {{property}} = NumLock };
+            """);
+
+        var key = Assert.Single(section.Statements.OfType<XkbKeyStatement>());
+        Assert.Equal("<HYPR>", key.KeyName);
+        Assert.Equal(["NoSymbol"], key.Keysyms);
+    }
+
     [Fact]
     [Trait("Category", "Unit")]
     [Trait("Category", "ErrorPath")]

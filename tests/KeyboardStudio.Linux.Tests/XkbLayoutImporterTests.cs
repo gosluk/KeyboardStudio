@@ -217,6 +217,25 @@ public sealed class XkbLayoutImporterTests
         }
     }
 
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Import_ForTwoNamesOfOneKey_KeepsTheLaterStatementAndOnlyOneMapping()
+    {
+        // <LatQ> and <AD01> are one key: keycodes/evdev declares the first an alias of the second,
+        // and a phonetic layout such as am(phonetic) writes both. The host reads the later
+        // statement as the one that wins, and a project holding two mappings for one physical key
+        // is one the editor refuses to validate.
+        var result = Import(Symbols(
+            Key("<AD01>", "Armenian_tche", "Armenian_TCHE"),
+            Key("<LatQ>", "Armenian_ke", "Armenian_KE")));
+
+        var mapping = Assert.Single(result.Project!.Layout.Mappings);
+        Assert.Equal("KeyQ", mapping.KeyId);
+        Assert.Equal(new CharacterOutput("ք"), mapping.Outputs[ModifierLayer.Default]);
+        Assert.Equal(1, result.Report.KeysImported);
+        Assert.Equal(0, result.Report.KeysSkipped);
+    }
+
     private static LayoutImportResult Import(ResolvedXkbSymbols symbols, LayoutImportOptions? options = null)
     {
         var importer = new XkbLayoutImporter(

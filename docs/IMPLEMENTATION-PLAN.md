@@ -1646,7 +1646,8 @@ anything unrecognized to `NoOutput` with `KSI032`.
 than invented.
 
 `scripts/generate-keysym-table.py` reads pinned copies under `third_party/keysyms` and emits
-`XkbKeysymTable.g.cs`: 2,652 keysyms, 1,740 with a character. `keysymdef.h` alone was not enough —
+`XkbKeysymTable.g.cs`: 2,652 keysyms, 1,749 with a character (1,740 until P13.12's oracle found the
+deprecated aliases carrying none). `keysymdef.h` alone was not enough —
 the corpus test found `XF86*` in eleven files including `pc`, `Sun*` in `sun_vndr/`, `hp*` in
 `hp_vndr/` and `apLineDel` in `digital_vndr/vt` — so `XF86keysym.h`, `Sunkeysym.h`, `HPkeysym.h` and
 `ap_keysym.h` were added, each on that evidence. `DECkeysym.h` was not: nothing names a DEC keysym.
@@ -1897,6 +1898,60 @@ something no longer on screen.
 Golden imports of vendored, pinned `us`/`pl`/`de`/`fr` fixtures; a full import to generation to
 re-import round trip; a Linux CI soak importing every layout and variant the host advertises; and an
 `xkbcli` conformance oracle skipped when the tool is absent.
+
+**As built.** The pinned fixtures are whole upstream files rather than excerpts: `symbols/us`, `pl`,
+`de`, `fr` and the five files their sections reach through includes, copied verbatim out of
+xkeyboard-config 2.47 by `scripts/vendor-xkb-fixtures.py` along with the registry entries for the
+four, and recorded in a `PROVENANCE.md` beside them. Trimming them would have produced something
+upstream does not ship, which is the one property that makes vendoring worth doing; 436 KB of test
+input is the cheaper half of that trade. Eight imports are pinned, not four — each layout's default
+section and one variant that composes differently: dead keys on the base layer, a second alphabet
+arrangement, a resolved-dead-key variant, and one that pulls in the keypad and no-break-space
+definitions.
+
+Each golden is a JSON snapshot of everything the import decided — geometry, name, the four layers of
+every key, every diagnostic — with the fixture path anonymised so the file is the same on every
+machine. `KEYBOARDSTUDIO_UPDATE_GOLDEN=1` rewrites them in the repository; the diff is then the
+change under review. Each import is also validated before it is snapshotted, since a snapshot will
+happily pin a document the editor would refuse.
+
+The round trip runs over four layouts rather than the one the acceptance criteria name, and the
+conformance oracle over six. The oracle compares by physical key rather than by key name:
+`keycodes/evdev` gives most keys two names, a phonetic layout writes both, and comparing names would
+credit us with a key xkbcli never mentions while grading the other against a statement the host
+discarded. Keysyms are compared as decoded outputs, so `U0105` and `aogonek` are the same answer
+written two ways. It reads the host's database rather than the pinned fixtures, so both sides see the
+same bytes and a version difference cannot be mistaken for a defect. Running it needed no new
+skipping machinery: `scripts/test-xkb-integration-in-podman.sh` already exercises the categorized
+suite against an installed `xkbcli`, which is how these tests were run during development on a host
+that has none.
+
+**Four defects the new tests found, all fixed here.**
+
+The round trip caught generation writing `Return` for the numpad's Enter key: `LogicalKey.Enter` and
+`LogicalKey.NumpadEnter` both mapped to one keysym, so a project exported to XKB and imported again
+was not the project that was exported. Every real layout binds `<KPEN>` to `KP_Enter`, and
+applications that tell the two apart — a terminal, a spreadsheet — would have seen the wrong one.
+
+The oracle caught nine deprecated keysym names importing as nothing. `keysymdef.h` annotates only the
+endorsed name of each value, so `guillemetleft` carried U+00AB while its alias `guillemotleft`
+carried a note saying it was deprecated and no character at all — and xkeyboard-config writes the
+older spelling. A keysym's character belongs to its value rather than to the name it is written
+under, so the generator now pools annotations by value. The nine — the guillemets, the ordinal
+indicators' masculine, the two quote aliases, Eth, Ooblique, Thorn and ooblique — stopped being
+dropped from every layout that spells them the old way, and every `KSI032` finding in the eight
+goldens went with them.
+
+Validating each import in the soak caught `am(phonetic)` and its relatives importing two mappings for
+one key — a document the editor refuses to validate. `<LatQ>` and `<AD01>` are one key that
+`keycodes/evdev` declares under two names, and the importer added both. It now keeps the later
+statement, which is what the host does with them.
+
+Running the categorized suite in a container caught the parser meeting `vmods` in
+`symbols/level5` — the abbreviation of `virtualMods`, which it already knew. It appears in
+xkeyboard-config 2.41, which is what Ubuntu 24.04 ships and therefore what Linux CI reads, so the
+corpus test asserting the parser meets no unknown construct was failing there while passing on a
+Fedora host.
 
 ## Tests
 

@@ -752,9 +752,18 @@ than in a user's keyboard.
 is not Y-with-diaeresis at all, so headers are read standard-first and a later definition is ignored
 and listed rather than allowed to corrupt a standard keysym.
 
+**A character belongs to a value, not to a name.** `keysymdef.h` annotates only the endorsed name of
+each value: `guillemetleft` carries `U+00AB` and its deprecated alias `guillemotleft` carries a note
+saying which name replaced it. Reading annotations per name therefore left nine aliases — the
+guillemets, `masculine`, `quoteright`, `quoteleft`, `Eth`, `Ooblique`, `Thorn` and `ooblique` —
+naming no character at all, and xkeyboard-config still writes the older spellings, so those
+characters were dropped from every layout that does. Annotations are now pooled by keysym value
+before any name is given a character, and two names of one value claiming different characters is a
+generation failure rather than a silent choice. The `xkbcli` conformance oracle is what found this.
+
 **Vendoring rather than fetching.** The sources are committed under `third_party/keysyms` so that
 generation is reproducible and offline, and so CI can regenerate and diff without a network
-dependency. The result is 2,652 keysyms, 1,740 of which name a character.
+dependency. The result is 2,652 keysyms, 1,749 of which name a character.
 
 ---
 
@@ -824,6 +833,36 @@ the future undo/redo boundary stays intact (architecture §2.4).
 `KeyboardStudio.App.Tests` covers catalog listing and filtering, template override, import command
 enablement, dirty-document confirmation, replace-mappings-in-place, and the startup seed/host-import
 fallback chain against a fake catalog.
+
+### 8.1 As built
+
+The vendored fixtures are not small. `symbols/us`, `pl`, `de` and `fr` are copied whole, along with
+`latin`, `level3`, `keypad`, `kpdl` and `nbsp`, which are the files their sections reach; a trimmed
+symbols file would no longer be the thing upstream ships, which is the only reason to vendor one.
+`scripts/vendor-xkb-fixtures.py` computes the include closure and lifts the four registry entries out
+of `rules/evdev.xml` unchanged, and writes a `PROVENANCE.md` recording the version they came from.
+
+Eight imports are pinned rather than four: each layout's default section plus one variant that
+composes differently — `us(intl)` for dead keys on the base layer, `pl(qwertz)` for a second
+arrangement of the same alphabet, `de(nodeadkeys)` for the resolved-dead-key form of one file, and
+`fr(oss)` for the keypad and no-break-space definitions. Each snapshot holds everything the import
+decided: geometry, name, the four layers of every key, and every diagnostic, with the fixture path
+anonymised. `KEYBOARDSTUDIO_UPDATE_GOLDEN=1` rewrites them.
+
+The oracle compares by physical key, not by key name. `keycodes/evdev` declares most keys under two
+names and a phonetic layout writes both — `am(phonetic)` writes `<LatQ>` as well as `<AD01>` — so a
+name-keyed comparison would credit the importer with a key `xkbcli` never mentions and grade the
+other against a statement the host discarded. Keysyms are compared as decoded outputs, which lets
+`U0105` and `aogonek` count as one answer. It reads the host's database rather than the fixtures so
+that both sides see the same bytes.
+
+Four defects surfaced from these tests and were fixed with them: generation collapsing
+`LogicalKey.NumpadEnter` into `Return` rather than `KP_Enter`; nine deprecated keysym names carrying
+no character, because `keysymdef.h` annotates only the endorsed name of each value and the generator
+read annotations per name rather than per value; `am(phonetic)` and its relatives importing two
+mappings for one physical key, where the later statement should win as it does on the host; and the
+parser not knowing `vmods`, the abbreviation of `virtualMods` that `symbols/level5` writes in the
+xkeyboard-config Ubuntu ships.
 
 ---
 

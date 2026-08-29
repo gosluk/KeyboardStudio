@@ -275,9 +275,9 @@ public sealed class XkbKeysymDecoderTests
 
             var output = decoder.Decode(keysym).Output;
 
-            // The mapper is many-to-one in three places — Enter and NumpadEnter both write
-            // Return, and Backslash, InternationalBackslash and InternationalHash all write
-            // backslash — so the round trip is asserted on the keysym, not on the key.
+            // The mapper is many-to-one in one place — Backslash, InternationalBackslash and
+            // InternationalHash all write backslash — so the round trip is asserted on the keysym,
+            // not on the key.
             if (!(output is SpecialKeyOutput special && mapper.TryMap(special.Key, out var again) && again == keysym)
                 && !(output is CharacterOutput character && mapper.TryMap(character, out var same) && same == keysym))
             {

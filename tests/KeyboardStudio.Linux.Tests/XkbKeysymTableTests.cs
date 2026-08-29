@@ -103,7 +103,34 @@ public sealed class XkbKeysymTableTests
         // XF86keysym.h writes its value through a macro, and one bad regex would drop all of it.
         Assert.Equal(2652, XkbKeysymTable.All.Count);
         Assert.Equal(
-            1740,
+            1749,
             XkbKeysymTable.All.Count(entry => entry.Value.Codepoint != XkbKeysymTable.NoCodepoint));
+    }
+
+    [Theory]
+    [Trait("Category", "Unit")]
+    // The deprecated spelling and the endorsed one, for each value keysymdef.h names twice.
+    [InlineData("quoteright", "apostrophe", 0x0027)]
+    [InlineData("quoteleft", "grave", 0x0060)]
+    [InlineData("guillemotleft", "guillemetleft", 0x00AB)]
+    [InlineData("masculine", "ordmasculine", 0x00BA)]
+    [InlineData("guillemotright", "guillemetright", 0x00BB)]
+    [InlineData("Eth", "ETH", 0x00D0)]
+    [InlineData("Ooblique", "Oslash", 0x00D8)]
+    [InlineData("Thorn", "THORN", 0x00DE)]
+    [InlineData("ooblique", "oslash", 0x00F8)]
+    public void All_ForADeprecatedAlias_CarriesTheSameCharacterAsTheNameItAliases(
+        string deprecated,
+        string endorsed,
+        int codepoint)
+    {
+        // keysymdef.h annotates only the endorsed name with its character and leaves the alias with
+        // a note saying which name replaced it. Both are the same keysym value and produce the same
+        // character on the user's machine, so reading the annotation per name rather than per value
+        // silently drops « » ' ` and the rest wherever a layout writes the older spelling — which
+        // xkeyboard-config still does.
+        Assert.Equal(XkbKeysymTable.All[deprecated].Value, XkbKeysymTable.All[endorsed].Value);
+        Assert.Equal(codepoint, XkbKeysymTable.All[deprecated].Codepoint);
+        Assert.Equal(codepoint, XkbKeysymTable.All[endorsed].Codepoint);
     }
 }

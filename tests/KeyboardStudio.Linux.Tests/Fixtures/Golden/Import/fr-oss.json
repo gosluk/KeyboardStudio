@@ -1,0 +1,828 @@
+{
+  "sourceId": "linux-xkb",
+  "layoutId": "fr",
+  "variantId": "oss",
+  "suggestedTemplateId": "iso-105",
+  "keyboardId": "iso-105",
+  "projectName": "French (alt.)",
+  "projectDescription": "Imported from fr(oss).",
+  "language": "und",
+  "fidelity": "Partial",
+  "keysImported": 66,
+  "keysSkipped": 2,
+  "includeChain": [
+    "fr(oss)",
+    "level3(ralt_switch)",
+    "nbsp(level3n)",
+    "keypad(oss)",
+    "keypad(core)",
+    "keypad(ossmath)",
+    "keypad(ossnumber)",
+    "kpdl(dotoss)"
+  ],
+  "diagnostics": [
+    {
+      "severity": "Warning",
+      "code": "KSI021",
+      "message": "Key <CAPS> at line 95 used 'actions', which has no equivalent in the model; it was ignored.",
+      "keyId": null,
+      "layer": null
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI021",
+      "message": "Key <KP7> at line 33 used 'overlay1', which has no equivalent in the model; it was ignored.",
+      "keyId": null,
+      "layer": null
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI021",
+      "message": "Key <KP8> at line 34 used 'overlay1', which has no equivalent in the model; it was ignored.",
+      "keyId": null,
+      "layer": null
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI021",
+      "message": "Key <KP9> at line 35 used 'overlay1', which has no equivalent in the model; it was ignored.",
+      "keyId": null,
+      "layer": null
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI021",
+      "message": "Key <KP4> at line 37 used 'overlay1', which has no equivalent in the model; it was ignored.",
+      "keyId": null,
+      "layer": null
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI021",
+      "message": "Key <KP5> at line 38 used 'overlay1', which has no equivalent in the model; it was ignored.",
+      "keyId": null,
+      "layer": null
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI021",
+      "message": "Key <KP6> at line 39 used 'overlay1', which has no equivalent in the model; it was ignored.",
+      "keyId": null,
+      "layer": null
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI021",
+      "message": "Key <KP1> at line 41 used 'overlay1', which has no equivalent in the model; it was ignored.",
+      "keyId": null,
+      "layer": null
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI021",
+      "message": "Key <KP2> at line 42 used 'overlay1', which has no equivalent in the model; it was ignored.",
+      "keyId": null,
+      "layer": null
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI021",
+      "message": "Key <KP3> at line 43 used 'overlay1', which has no equivalent in the model; it was ignored.",
+      "keyId": null,
+      "layer": null
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI021",
+      "message": "Key <KP0> at line 45 used 'overlay1', which has no equivalent in the model; it was ignored.",
+      "keyId": null,
+      "layer": null
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI021",
+      "message": "Key <KPDL> at line 46 used 'overlay1', which has no equivalent in the model; it was ignored.",
+      "keyId": null,
+      "layer": null
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI021",
+      "message": "Key <KP7> at line 67 used 'overlay2', which has no equivalent in the model; it was ignored.",
+      "keyId": null,
+      "layer": null
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI021",
+      "message": "Key <KP8> at line 68 used 'overlay2', which has no equivalent in the model; it was ignored.",
+      "keyId": null,
+      "layer": null
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI021",
+      "message": "Key <KP9> at line 69 used 'overlay2', which has no equivalent in the model; it was ignored.",
+      "keyId": null,
+      "layer": null
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI021",
+      "message": "Key <KP4> at line 71 used 'overlay2', which has no equivalent in the model; it was ignored.",
+      "keyId": null,
+      "layer": null
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI021",
+      "message": "Key <KP5> at line 72 used 'overlay2', which has no equivalent in the model; it was ignored.",
+      "keyId": null,
+      "layer": null
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI021",
+      "message": "Key <KP6> at line 73 used 'overlay2', which has no equivalent in the model; it was ignored.",
+      "keyId": null,
+      "layer": null
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI021",
+      "message": "Key <KP1> at line 75 used 'overlay2', which has no equivalent in the model; it was ignored.",
+      "keyId": null,
+      "layer": null
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI021",
+      "message": "Key <KP2> at line 76 used 'overlay2', which has no equivalent in the model; it was ignored.",
+      "keyId": null,
+      "layer": null
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI021",
+      "message": "Key <KP3> at line 77 used 'overlay2', which has no equivalent in the model; it was ignored.",
+      "keyId": null,
+      "layer": null
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI021",
+      "message": "Key <KP0> at line 79 used 'overlay2', which has no equivalent in the model; it was ignored.",
+      "keyId": null,
+      "layer": null
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI021",
+      "message": "Key <KPDL> at line 80 used 'overlay2', which has no equivalent in the model; it was ignored.",
+      "keyId": null,
+      "layer": null
+    },
+    {
+      "severity": "Info",
+      "code": "KSI033",
+      "message": "'<KPEQ>' is not a key of the 'iso-105' keyboard, so it was skipped.",
+      "keyId": null,
+      "layer": null
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI030",
+      "message": "Level 5 of '<KPDV>' was dropped; the model holds four levels.",
+      "keyId": "NumpadDivide",
+      "layer": null
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI030",
+      "message": "Level 5 of '<KPMU>' was dropped; the model holds four levels.",
+      "keyId": "NumpadMultiply",
+      "layer": null
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI030",
+      "message": "Level 5 of '<KPSU>' was dropped; the model holds four levels.",
+      "keyId": "NumpadSubtract",
+      "layer": null
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI030",
+      "message": "Level 5 of '<KPAD>' was dropped; the model holds four levels.",
+      "keyId": "NumpadAdd",
+      "layer": null
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI031",
+      "message": "'dead_cedilla' is a dead key, which this model does not represent. The layer was left unmapped rather than given the accent as a character.",
+      "keyId": "Backquote",
+      "layer": "ShiftAltGr"
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI031",
+      "message": "'dead_caron' is a dead key, which this model does not represent. The layer was left unmapped rather than given the accent as a character.",
+      "keyId": "Digit1",
+      "layer": "AltGr"
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI031",
+      "message": "'dead_ogonek' is a dead key, which this model does not represent. The layer was left unmapped rather than given the accent as a character.",
+      "keyId": "Digit1",
+      "layer": "ShiftAltGr"
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI031",
+      "message": "'dead_breve' is a dead key, which this model does not represent. The layer was left unmapped rather than given the accent as a character.",
+      "keyId": "Digit3",
+      "layer": "ShiftAltGr"
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI031",
+      "message": "'dead_circumflex' is a dead key, which this model does not represent. The layer was left unmapped rather than given the accent as a character.",
+      "keyId": "BracketLeft",
+      "layer": "Default"
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI031",
+      "message": "'dead_diaeresis' is a dead key, which this model does not represent. The layer was left unmapped rather than given the accent as a character.",
+      "keyId": "BracketLeft",
+      "layer": "Shift"
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI031",
+      "message": "'dead_tilde' is a dead key, which this model does not represent. The layer was left unmapped rather than given the accent as a character.",
+      "keyId": "BracketLeft",
+      "layer": "AltGr"
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI031",
+      "message": "'dead_abovering' is a dead key, which this model does not represent. The layer was left unmapped rather than given the accent as a character.",
+      "keyId": "BracketLeft",
+      "layer": "ShiftAltGr"
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI031",
+      "message": "'dead_acute' is a dead key, which this model does not represent. The layer was left unmapped rather than given the accent as a character.",
+      "keyId": "Quote",
+      "layer": "AltGr"
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI031",
+      "message": "'dead_grave' is a dead key, which this model does not represent. The layer was left unmapped rather than given the accent as a character.",
+      "keyId": "IntlHash",
+      "layer": "AltGr"
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI031",
+      "message": "'dead_macron' is a dead key, which this model does not represent. The layer was left unmapped rather than given the accent as a character.",
+      "keyId": "IntlHash",
+      "layer": "ShiftAltGr"
+    }
+  ],
+  "mappings": [
+    {
+      "keyId": "AltRight",
+      "logicalKey": "RightAlt",
+      "default": "[RightAlt]",
+      "shift": null,
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Backquote",
+      "logicalKey": "Backquote",
+      "default": "²",
+      "shift": "³",
+      "altGr": "¹",
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "BracketRight",
+      "logicalKey": "RightBracket",
+      "default": "$",
+      "shift": "£",
+      "altGr": "ø",
+      "shiftAltGr": "Ø"
+    },
+    {
+      "keyId": "Comma",
+      "logicalKey": "Comma",
+      "default": ";",
+      "shift": ".",
+      "altGr": "×",
+      "shiftAltGr": "⋅"
+    },
+    {
+      "keyId": "Digit0",
+      "logicalKey": "Digit0",
+      "default": "à",
+      "shift": "0",
+      "altGr": "@",
+      "shiftAltGr": "À"
+    },
+    {
+      "keyId": "Digit1",
+      "logicalKey": "Digit1",
+      "default": "&",
+      "shift": "1",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Digit2",
+      "logicalKey": "Digit2",
+      "default": "é",
+      "shift": "2",
+      "altGr": "~",
+      "shiftAltGr": "É"
+    },
+    {
+      "keyId": "Digit3",
+      "logicalKey": "Digit3",
+      "default": "\"",
+      "shift": "3",
+      "altGr": "#",
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Digit4",
+      "logicalKey": "Digit4",
+      "default": "'",
+      "shift": "4",
+      "altGr": "{",
+      "shiftAltGr": "—"
+    },
+    {
+      "keyId": "Digit5",
+      "logicalKey": "Digit5",
+      "default": "(",
+      "shift": "5",
+      "altGr": "[",
+      "shiftAltGr": "–"
+    },
+    {
+      "keyId": "Digit6",
+      "logicalKey": "Digit6",
+      "default": "-",
+      "shift": "6",
+      "altGr": "|",
+      "shiftAltGr": "‑"
+    },
+    {
+      "keyId": "Digit7",
+      "logicalKey": "Digit7",
+      "default": "è",
+      "shift": "7",
+      "altGr": "`",
+      "shiftAltGr": "È"
+    },
+    {
+      "keyId": "Digit8",
+      "logicalKey": "Digit8",
+      "default": "_",
+      "shift": "8",
+      "altGr": "\\",
+      "shiftAltGr": "™"
+    },
+    {
+      "keyId": "Digit9",
+      "logicalKey": "Digit9",
+      "default": "ç",
+      "shift": "9",
+      "altGr": "^",
+      "shiftAltGr": "Ç"
+    },
+    {
+      "keyId": "Equal",
+      "logicalKey": "Equal",
+      "default": "=",
+      "shift": "+",
+      "altGr": "}",
+      "shiftAltGr": "±"
+    },
+    {
+      "keyId": "IntlBackslash",
+      "logicalKey": "InternationalBackslash",
+      "default": "<",
+      "shift": ">",
+      "altGr": "≤",
+      "shiftAltGr": "≥"
+    },
+    {
+      "keyId": "IntlHash",
+      "logicalKey": "InternationalHash",
+      "default": "*",
+      "shift": "µ",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "KeyA",
+      "logicalKey": "Q",
+      "default": "q",
+      "shift": "Q",
+      "altGr": "ä",
+      "shiftAltGr": "Ä"
+    },
+    {
+      "keyId": "KeyB",
+      "logicalKey": "B",
+      "default": "b",
+      "shift": "B",
+      "altGr": "↓",
+      "shiftAltGr": "↑"
+    },
+    {
+      "keyId": "KeyC",
+      "logicalKey": "C",
+      "default": "c",
+      "shift": "C",
+      "altGr": "©",
+      "shiftAltGr": "®"
+    },
+    {
+      "keyId": "KeyD",
+      "logicalKey": "D",
+      "default": "d",
+      "shift": "D",
+      "altGr": "ë",
+      "shiftAltGr": "Ë"
+    },
+    {
+      "keyId": "KeyE",
+      "logicalKey": "E",
+      "default": "e",
+      "shift": "E",
+      "altGr": "€",
+      "shiftAltGr": "¢"
+    },
+    {
+      "keyId": "KeyF",
+      "logicalKey": "F",
+      "default": "f",
+      "shift": "F",
+      "altGr": "‘",
+      "shiftAltGr": "‚"
+    },
+    {
+      "keyId": "KeyG",
+      "logicalKey": "G",
+      "default": "g",
+      "shift": "G",
+      "altGr": "’",
+      "shiftAltGr": "¥"
+    },
+    {
+      "keyId": "KeyH",
+      "logicalKey": "H",
+      "default": "h",
+      "shift": "H",
+      "altGr": "ð",
+      "shiftAltGr": "Ð"
+    },
+    {
+      "keyId": "KeyI",
+      "logicalKey": "I",
+      "default": "i",
+      "shift": "I",
+      "altGr": "î",
+      "shiftAltGr": "Î"
+    },
+    {
+      "keyId": "KeyJ",
+      "logicalKey": "J",
+      "default": "j",
+      "shift": "J",
+      "altGr": "ü",
+      "shiftAltGr": "Ü"
+    },
+    {
+      "keyId": "KeyK",
+      "logicalKey": "K",
+      "default": "k",
+      "shift": "K",
+      "altGr": "ï",
+      "shiftAltGr": "Ï"
+    },
+    {
+      "keyId": "KeyL",
+      "logicalKey": "L",
+      "default": "l",
+      "shift": "L",
+      "altGr": "ŀ",
+      "shiftAltGr": "Ŀ"
+    },
+    {
+      "keyId": "KeyM",
+      "logicalKey": "M",
+      "default": ",",
+      "shift": "?",
+      "altGr": "¿",
+      "shiftAltGr": "…"
+    },
+    {
+      "keyId": "KeyN",
+      "logicalKey": "N",
+      "default": "n",
+      "shift": "N",
+      "altGr": "¬",
+      "shiftAltGr": "→"
+    },
+    {
+      "keyId": "KeyO",
+      "logicalKey": "O",
+      "default": "o",
+      "shift": "O",
+      "altGr": "œ",
+      "shiftAltGr": "Œ"
+    },
+    {
+      "keyId": "KeyP",
+      "logicalKey": "P",
+      "default": "p",
+      "shift": "P",
+      "altGr": "ô",
+      "shiftAltGr": "Ô"
+    },
+    {
+      "keyId": "KeyQ",
+      "logicalKey": "A",
+      "default": "a",
+      "shift": "A",
+      "altGr": "æ",
+      "shiftAltGr": "Æ"
+    },
+    {
+      "keyId": "KeyR",
+      "logicalKey": "R",
+      "default": "r",
+      "shift": "R",
+      "altGr": "ê",
+      "shiftAltGr": "Ê"
+    },
+    {
+      "keyId": "KeyS",
+      "logicalKey": "S",
+      "default": "s",
+      "shift": "S",
+      "altGr": "ß",
+      "shiftAltGr": "„"
+    },
+    {
+      "keyId": "KeyT",
+      "logicalKey": "T",
+      "default": "t",
+      "shift": "T",
+      "altGr": "þ",
+      "shiftAltGr": "Þ"
+    },
+    {
+      "keyId": "KeyU",
+      "logicalKey": "U",
+      "default": "u",
+      "shift": "U",
+      "altGr": "û",
+      "shiftAltGr": "Û"
+    },
+    {
+      "keyId": "KeyV",
+      "logicalKey": "V",
+      "default": "v",
+      "shift": "V",
+      "altGr": "\u202F",
+      "shiftAltGr": "←"
+    },
+    {
+      "keyId": "KeyW",
+      "logicalKey": "Z",
+      "default": "z",
+      "shift": "Z",
+      "altGr": "â",
+      "shiftAltGr": "Â"
+    },
+    {
+      "keyId": "KeyX",
+      "logicalKey": "X",
+      "default": "x",
+      "shift": "X",
+      "altGr": "»",
+      "shiftAltGr": "”"
+    },
+    {
+      "keyId": "KeyY",
+      "logicalKey": "Y",
+      "default": "y",
+      "shift": "Y",
+      "altGr": "ÿ",
+      "shiftAltGr": "Ÿ"
+    },
+    {
+      "keyId": "KeyZ",
+      "logicalKey": "W",
+      "default": "w",
+      "shift": "W",
+      "altGr": "«",
+      "shiftAltGr": "“"
+    },
+    {
+      "keyId": "Minus",
+      "logicalKey": "Minus",
+      "default": ")",
+      "shift": "°",
+      "altGr": "]",
+      "shiftAltGr": "≠"
+    },
+    {
+      "keyId": "NumLock",
+      "logicalKey": "NumLock",
+      "default": "[NumLock]",
+      "shift": null,
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Numpad0",
+      "logicalKey": "Numpad0",
+      "default": "[Numpad0]",
+      "shift": "[Numpad0]",
+      "altGr": "↕",
+      "shiftAltGr": "⇕"
+    },
+    {
+      "keyId": "Numpad1",
+      "logicalKey": "Numpad1",
+      "default": "[Numpad1]",
+      "shift": "[Numpad1]",
+      "altGr": "↙",
+      "shiftAltGr": "⇙"
+    },
+    {
+      "keyId": "Numpad2",
+      "logicalKey": "Numpad2",
+      "default": "[Numpad2]",
+      "shift": "[Numpad2]",
+      "altGr": "↓",
+      "shiftAltGr": "⇓"
+    },
+    {
+      "keyId": "Numpad3",
+      "logicalKey": "Numpad3",
+      "default": "[Numpad3]",
+      "shift": "[Numpad3]",
+      "altGr": "↘",
+      "shiftAltGr": "⇘"
+    },
+    {
+      "keyId": "Numpad4",
+      "logicalKey": "Numpad4",
+      "default": "[Numpad4]",
+      "shift": "[Numpad4]",
+      "altGr": "←",
+      "shiftAltGr": "⇐"
+    },
+    {
+      "keyId": "Numpad5",
+      "logicalKey": "Numpad5",
+      "default": "[Numpad5]",
+      "shift": "[Numpad5]",
+      "altGr": "↔",
+      "shiftAltGr": "⇔"
+    },
+    {
+      "keyId": "Numpad6",
+      "logicalKey": "Numpad6",
+      "default": "[Numpad6]",
+      "shift": "[Numpad6]",
+      "altGr": "→",
+      "shiftAltGr": "⇒"
+    },
+    {
+      "keyId": "Numpad7",
+      "logicalKey": "Numpad7",
+      "default": "[Numpad7]",
+      "shift": "[Numpad7]",
+      "altGr": "↖",
+      "shiftAltGr": "⇖"
+    },
+    {
+      "keyId": "Numpad8",
+      "logicalKey": "Numpad8",
+      "default": "[Numpad8]",
+      "shift": "[Numpad8]",
+      "altGr": "↑",
+      "shiftAltGr": "⇑"
+    },
+    {
+      "keyId": "Numpad9",
+      "logicalKey": "Numpad9",
+      "default": "[Numpad9]",
+      "shift": "[Numpad9]",
+      "altGr": "↗",
+      "shiftAltGr": "⇗"
+    },
+    {
+      "keyId": "NumpadAdd",
+      "logicalKey": "NumpadAdd",
+      "default": "[NumpadAdd]",
+      "shift": "+",
+      "altGr": "+",
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "NumpadDecimal",
+      "logicalKey": "NumpadDecimal",
+      "default": "[NumpadDecimal]",
+      "shift": ".",
+      "altGr": ",",
+      "shiftAltGr": "\u202F"
+    },
+    {
+      "keyId": "NumpadDivide",
+      "logicalKey": "NumpadDivide",
+      "default": "[NumpadDivide]",
+      "shift": "∕",
+      "altGr": "÷",
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "NumpadEnter",
+      "logicalKey": "NumpadEnter",
+      "default": "[NumpadEnter]",
+      "shift": null,
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "NumpadMultiply",
+      "logicalKey": "NumpadMultiply",
+      "default": "[NumpadMultiply]",
+      "shift": "⋅",
+      "altGr": "×",
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "NumpadSubtract",
+      "logicalKey": "NumpadSubtract",
+      "default": "[NumpadSubtract]",
+      "shift": "−",
+      "altGr": "−",
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Period",
+      "logicalKey": "Period",
+      "default": ":",
+      "shift": "/",
+      "altGr": "÷",
+      "shiftAltGr": "∕"
+    },
+    {
+      "keyId": "Quote",
+      "logicalKey": "Quote",
+      "default": "ù",
+      "shift": "%",
+      "altGr": null,
+      "shiftAltGr": "Ù"
+    },
+    {
+      "keyId": "Semicolon",
+      "logicalKey": "M",
+      "default": "m",
+      "shift": "M",
+      "altGr": "ö",
+      "shiftAltGr": "Ö"
+    },
+    {
+      "keyId": "Slash",
+      "logicalKey": "Slash",
+      "default": "!",
+      "shift": "§",
+      "altGr": "¡",
+      "shiftAltGr": "−"
+    },
+    {
+      "keyId": "Space",
+      "logicalKey": "Space",
+      "default": "[Space]",
+      "shift": "[Space]",
+      "altGr": "\u00A0",
+      "shiftAltGr": "\u202F"
+    }
+  ]
+}

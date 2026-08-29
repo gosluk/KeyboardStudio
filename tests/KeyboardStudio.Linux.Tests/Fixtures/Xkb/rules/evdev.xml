@@ -1,0 +1,599 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE xkbConfigRegistry SYSTEM "xkb.dtd">
+<xkbConfigRegistry version="1.1">
+  <layoutList>
+    <layout>
+      <configItem>
+        <name>us</name>
+        <!-- Keyboard indicator for English layouts -->
+        <shortDescription>en</shortDescription>
+        <description>English (US)</description>
+        <countryList>
+          <iso3166Id>US</iso3166Id>
+        </countryList>
+        <languageList>
+          <iso639Id>eng</iso639Id>
+        </languageList>
+      </configItem>
+      <variantList>
+        <variant>
+          <configItem>
+            <name>euro</name>
+            <description>English (US, euro on 5)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>intl</name>
+            <description>English (US, intl., with dead keys)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>alt-intl</name>
+            <description>English (US, alt. intl.)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>altgr-intl</name>
+            <description>English (intl., with AltGr dead keys)</description>
+            <languageList>
+              <iso639Id>eng</iso639Id>
+              <iso639Id>fra</iso639Id>
+              <iso639Id>deu</iso639Id>
+            </languageList>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>mac</name>
+            <description>English (Macintosh, ABC, ANSI)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>mac-iso</name>
+            <description>English (Macintosh, ABC, ISO)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>colemak</name>
+            <description>English (Colemak)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>colemak_dh</name>
+            <description>English (Colemak-DH)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>colemak_dh_wide</name>
+            <description>English (Colemak-DH Wide)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>colemak_dh_ortho</name>
+            <description>English (Colemak-DH Ortholinear)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>colemak_dh_iso</name>
+            <description>English (Colemak-DH ISO)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>colemak_dh_wide_iso</name>
+            <description>English (Colemak-DH Wide ISO)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>dvorak</name>
+            <description>English (Dvorak)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>dvorak-intl</name>
+            <description>English (Dvorak, intl., with dead keys)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>dvorak-alt-intl</name>
+            <description>English (Dvorak, alt. intl.)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>dvorak-l</name>
+            <description>English (Dvorak, one-handed, left)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>dvorak-r</name>
+            <description>English (Dvorak, one-handed, right)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>dvorak-classic</name>
+            <description>English (classic Dvorak)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>dvp</name>
+            <description>English (programmer Dvorak)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>dvorak-mac</name>
+            <description>English (Dvorak, Macintosh, ANSI)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>dvorak-mac-iso</name>
+            <description>English (Dvorak, Macintosh, ISO)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>norman</name>
+            <description>English (Norman)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>symbolic</name>
+            <description>English (US, Symbolic)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>workman</name>
+            <description>English (Workman)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>workman-intl</name>
+            <description>English (Workman, intl., with dead keys)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>olpc2</name>
+            <description>English (the divide/multiply toggle the layout)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>chr</name>
+            <!-- Keyboard indicator for Cherokee layouts -->
+            <shortDescription>chr</shortDescription>
+            <description>Cherokee</description>
+            <languageList>
+              <iso639Id>chr</iso639Id>
+            </languageList>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>haw</name>
+            <!-- Keyboard indicator for Hawaian layouts -->
+            <shortDescription>haw</shortDescription>
+            <description>Hawaiian</description>
+            <languageList>
+              <iso639Id>haw</iso639Id>
+            </languageList>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>rus</name>
+            <!-- Keyboard indicator for Russian layouts -->
+            <shortDescription>ru</shortDescription>
+            <description>Russian (US, phonetic)</description>
+            <languageList>
+              <iso639Id>rus</iso639Id>
+            </languageList>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>hbs</name>
+            <description>Serbo-Croatian (US)</description>
+            <languageList>
+              <iso639Id>eng</iso639Id>
+              <iso639Id>bos</iso639Id>
+              <iso639Id>hbs</iso639Id>
+              <iso639Id>hrv</iso639Id>
+              <iso639Id>srp</iso639Id>
+            </languageList>
+          </configItem>
+        </variant>
+      </variantList>
+    </layout>
+    <layout>
+      <configItem>
+        <name>fr</name>
+        <!-- Keyboard indicator for French layouts -->
+        <shortDescription>fr</shortDescription>
+        <description>French</description>
+        <countryList>
+          <iso3166Id>FR</iso3166Id>
+        </countryList>
+        <languageList>
+          <iso639Id>fra</iso639Id>
+        </languageList>
+      </configItem>
+      <variantList>
+        <variant>
+          <configItem>
+            <name>nodeadkeys</name>
+            <description>French (no dead keys)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>oss</name>
+            <description>French (alt.)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>oss_nodeadkeys</name>
+            <description>French (alt., no dead keys)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>oss_latin9</name>
+            <description>French (alt., Latin-9 only)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>latin9</name>
+            <description>French (legacy, alt.)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>latin9_nodeadkeys</name>
+            <description>French (legacy, alt., no dead keys)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>azerty</name>
+            <description>French (AZERTY)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>afnor</name>
+            <description>French (AZERTY, AFNOR)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>bepo</name>
+            <description>French (BEPO)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>bepo_latin9</name>
+            <description>French (BEPO, Latin-9 only)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>bepo_afnor</name>
+            <description>French (BEPO, AFNOR)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>dvorak</name>
+            <description>French (Dvorak)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>ergol</name>
+            <description>French (Ergo‑L)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>ergol_iso</name>
+            <description>French (Ergo‑L, ISO variant)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>mac</name>
+            <description>French (Macintosh)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>us</name>
+            <description>French (US)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>bre</name>
+            <description>Breton (France)</description>
+            <languageList>
+              <iso639Id>bre</iso639Id>
+            </languageList>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>oci</name>
+            <description>Occitan</description>
+            <languageList>
+              <iso639Id>oci</iso639Id>
+            </languageList>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>geo</name>
+            <description>Georgian (France, AZERTY Tskapo)</description>
+            <languageList>
+              <iso639Id>kat</iso639Id>
+            </languageList>
+          </configItem>
+        </variant>
+      </variantList>
+    </layout>
+    <layout>
+      <configItem>
+        <name>de</name>
+        <!-- Keyboard indicator for German layouts -->
+        <shortDescription>de</shortDescription>
+        <description>German</description>
+        <countryList>
+          <iso3166Id>DE</iso3166Id>
+        </countryList>
+        <languageList>
+          <iso639Id>deu</iso639Id>
+        </languageList>
+      </configItem>
+      <variantList>
+        <variant>
+          <configItem>
+            <name>deadacute</name>
+            <description>German (dead acute)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>deadgraveacute</name>
+            <description>German (dead grave acute)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>deadtilde</name>
+            <description>German (dead tilde)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>nodeadkeys</name>
+            <description>German (no dead keys)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>e1</name>
+            <description>German (E1)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>e2</name>
+            <description>German (E2)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>T3</name>
+            <description>German (T3)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>us</name>
+            <description>German (US)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>dvorak</name>
+            <description>German (Dvorak)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>mac</name>
+            <description>German (Macintosh)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>mac_nodeadkeys</name>
+            <description>German (Macintosh, no dead keys)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>neo</name>
+            <description>German (Neo 2)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>qwerty</name>
+            <description>German (QWERTY)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>dsb</name>
+            <description>Lower Sorbian</description>
+            <languageList>
+              <iso639Id>dsb</iso639Id>
+            </languageList>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>dsb_qwertz</name>
+            <description>Lower Sorbian (QWERTZ)</description>
+            <languageList>
+              <iso639Id>dsb</iso639Id>
+            </languageList>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>ro</name>
+            <description>Romanian (Germany)</description>
+            <languageList>
+              <iso639Id>ron</iso639Id>
+            </languageList>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>ro_nodeadkeys</name>
+            <description>Romanian (Germany, no dead keys)</description>
+            <languageList>
+              <iso639Id>ron</iso639Id>
+            </languageList>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>ru</name>
+            <!-- Keyboard indicator for Russian layouts -->
+            <shortDescription>ru</shortDescription>
+            <description>Russian (Germany, phonetic)</description>
+            <languageList>
+              <iso639Id>rus</iso639Id>
+            </languageList>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>tr</name>
+            <description>Turkish (Germany)</description>
+            <languageList>
+              <iso639Id>tur</iso639Id>
+            </languageList>
+          </configItem>
+        </variant>
+      </variantList>
+    </layout>
+    <layout>
+      <configItem>
+        <name>pl</name>
+        <!-- Keyboard indicator for Polish layouts -->
+        <shortDescription>pl</shortDescription>
+        <description>Polish</description>
+        <countryList>
+          <iso3166Id>PL</iso3166Id>
+        </countryList>
+        <languageList>
+          <iso639Id>pol</iso639Id>
+        </languageList>
+      </configItem>
+      <variantList>
+        <variant>
+          <configItem>
+            <name>legacy</name>
+            <description>Polish (legacy)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>qwertz</name>
+            <description>Polish (QWERTZ)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>dvorak</name>
+            <description>Polish (Dvorak)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>dvorak_quotes</name>
+            <description>Polish (Dvorak, with Polish quotes on quotemark key)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>dvorak_altquotes</name>
+            <description>Polish (Dvorak, with Polish quotes on key 1)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>dvp</name>
+            <description>Polish (programmer Dvorak)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>csb</name>
+            <description>Kashubian</description>
+            <languageList>
+              <iso639Id>csb</iso639Id>
+            </languageList>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>szl</name>
+            <description>Silesian</description>
+            <languageList>
+              <iso639Id>szl</iso639Id>
+            </languageList>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>ru_phonetic_dvorak</name>
+            <!-- Keyboard indicator for Russian layouts -->
+            <shortDescription>ru</shortDescription>
+            <description>Russian (Poland, phonetic Dvorak)</description>
+            <languageList>
+              <iso639Id>rus</iso639Id>
+            </languageList>
+          </configItem>
+        </variant>
+      </variantList>
+    </layout>
+  </layoutList>
+</xkbConfigRegistry>
