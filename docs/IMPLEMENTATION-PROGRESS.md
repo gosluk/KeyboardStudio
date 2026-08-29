@@ -5,7 +5,7 @@ This file tracks execution of [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md)
 - Current work branch: `main`
 - Last updated: 2026-08-29
 - Current phase: Phase 13 — Linux focus and layout import
-- Next work item: **P13.5 — Symbols lexer and parser**
+- Next work item: **P13.6 — Include resolution**
 
 Legend: `[x]` complete, `[ ]` not yet complete.
 
@@ -162,7 +162,7 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 - [x] **P13.2** Target visibility policy
 - [x] **P13.3** Core import contract
 - [x] **P13.4** XKB data roots and registry reader
-- [ ] **P13.5** Symbols lexer and parser
+- [x] **P13.5** Symbols lexer and parser
 - [ ] **P13.6** Include resolution
 - [ ] **P13.7** Keysym table and decoder
 - [ ] **P13.8** Bidirectional key-name tables
@@ -171,12 +171,12 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 - [ ] **P13.11** Host layout detection and startup import
 - [ ] **P13.12** Import test coverage
 
-**Phase status:** 4/12 work items complete. Phase in progress.
+**Phase status:** 5/12 work items complete. Phase in progress.
 
 ## Progress summary
 
-- Completed work items: **86**
+- Completed work items: **87**
 - Total planned work items: **94**
-- Overall checklist progress: **86/94**
+- Overall checklist progress: **87/94**
 
 The checklist records work-item completion only. Phase-level acceptance criteria and test gates in `IMPLEMENTATION-PLAN.md` still apply before a phase is considered complete.

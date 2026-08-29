@@ -824,9 +824,9 @@ key IDs to native physical identities.
 
 ## 13. Layout import
 
-*Adopted design, implemented by Phase 13. Sections 13.1, 13.2, and 13.4 are built, as is the
-front of the 13.3 pipeline — data-root discovery and registry reading; the rest of 13.3 and the UI
-and startup paths in 13.5 and 13.6 are not.*
+*Adopted design, implemented by Phase 13. Sections 13.1, 13.2, and 13.4 are built, as is the front
+of the 13.3 pipeline — data-root discovery, registry reading, and the symbols lexer and parser; the
+rest of 13.3 and the UI and startup paths in 13.5 and 13.6 are not.*
 
 A new document must never open as bare geometry with zero mappings. Import supplies a starting point,
 either from an embedded seed or from a layout already installed on the host. Full design detail lives
@@ -926,6 +926,20 @@ the interface rather than a rule implementers must remember. `XkbRulesRegistryRe
 not own. A root with no registry is empty rather than failing — roots legitimately carry symbols
 without rules — but a registry that will not parse throws, because listing nothing silently would
 leave the user hunting for a layout they can see is installed.
+
+`XkbSymbolsLexer` and `XkbSymbolsParser` read a symbols file into sections and statements. The
+parser accepts the whole XKB statement vocabulary but consumes only what the domain model can hold,
+and the split between the two ways it discards a statement is the design: a construct that cannot
+change which character a key produces — a key type, a modifier map, a virtual modifier — is
+recognized and dropped in silence, while one that can, such as an action or an overlay, is dropped
+with a finding. What it does not recognize at all is skipped to the next `;` with `KSI022` rather
+than aborting the file. Over the 199-file corpus of a current `xkeyboard-config` that last case does
+not occur, and a corpus test holds it there: `KSI022` marks a real gap in the grammar, not
+acceptable noise.
+
+Parsing never throws. A truncated file, an unterminated string, a key missing its terminator — each
+costs its own statement and nothing after it, because a layout that is 95% readable is a better
+starting point than a refusal.
 
 XKB key names are resolved through the same tables `XkbKeyNameMapper` already uses for generation.
 `IXkbKeyNameMapper` gains a table accessor so both directions derive from one source and cannot

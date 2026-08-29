@@ -1574,6 +1574,19 @@ section flags (`default`, `partial`, `hidden`), `name[Group1]`, `key <NAME> { ..
 ignored. Group2+, `actions[]`, `redirect`, and `overlay` produce `KSI020`/`KSI021` warnings. Unknown
 statements skip to the next `;` with `KSI022` rather than aborting.
 
+**As built.** The lexer never fails — unterminated strings and key names end at the line break, and
+unknown characters become `Unknown` tokens — leaving every well-formedness judgement to the parser.
+`Parse(path, text)` returns an `XkbSymbolsFile` carrying sections and findings together, with a
+`DefaultSection` that resolves a bare include the way libxkbcommon does. Derived statements are
+`XkbIncludeStatement`, `XkbNameStatement`, `XkbKeyStatement`, and `XkbIgnoredStatement`; the last
+exists so "recognized and irrelevant" stays distinguishable from "not recognized", which is what
+`KSI022` means. `XkbMergeMode` landed here rather than in P13.6 because the prefix sits on `key`
+statements too, so the parser cannot represent `replace key <AD01>` without it. Statement skipping
+counts braces so `modifier_map ... { ... };` cannot end its section early, while a key statement
+claims only a terminator directly after its closing brace so a file that omits one does not lose the
+next key. Over the installed 199-file corpus: 1,673 sections, 21,795 keys, 1,948 includes, 104
+`KSI020`, 28 `KSI021`, and zero `KSI022` — a corpus test holds that last figure at zero.
+
 ### P13.6 Include resolution
 
 ```text

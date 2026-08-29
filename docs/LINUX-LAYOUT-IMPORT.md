@@ -5,8 +5,9 @@
 This document specifies the Phase 13 layout-import subsystem. The design is adopted
 ([AD-019](DECISIONS.md) to [AD-023](DECISIONS.md)) and tracked as work items P13.1 and P13.3 to
 P13.12 in [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md). The seed (P13.1), the Core contract
-in section 2 (P13.3), and data-root discovery and registry reading in sections 3.2 and 3.3 (P13.4)
-are implemented; the rest of the Linux pipeline, the dialog, and startup import are not.
+in section 2 (P13.3), data-root discovery and registry reading in sections 3.2 and 3.3 (P13.4), and
+the symbols lexer and parser in section 3.4 (P13.5) are implemented; include resolution, the rest of
+the Linux pipeline, the dialog, and startup import are not.
 
 Two related problems are addressed:
 
@@ -341,6 +342,44 @@ represent:
 Comments are `//` to end of line. Unknown statements are skipped to the next `;` with a `KSI022`
 informational diagnostic rather than aborting the import — the goal is a usable starting point, not a
 conformant compiler.
+
+### 3.4.1 As built
+
+`XkbSymbolsLexer` is a static tokenizer that never fails: an unterminated string or key name ends at
+the line break rather than swallowing the rest of the file, and an unknown character becomes an
+`Unknown` token. Every judgement about well-formedness belongs to the parser, which recovers by
+skipping one statement instead of refusing the file. Keywords stay plain identifiers because XKB has
+no reserved words — `type` is a statement in one position and a keysym name in another.
+
+`XkbSymbolsParser.Parse(path, text)` returns an `XkbSymbolsFile` carrying the sections and the
+findings together, since parsing never throws and the diagnostics are the only record of the
+difference between the file and what came back. `XkbSymbolsFile.DefaultSection` resolves a bare
+`include "file"` the way libxkbcommon does: the section flagged `default`, or the first one when
+none is.
+
+`XkbKeyStatement` carries only the first group's keysyms. The model has one group, so keeping the
+rest would mean inventing somewhere to put them; the parser drops them with `KSI020` instead.
+`XkbIgnoredStatement` is kept rather than dropped so "understood and irrelevant" stays
+distinguishable from "not understood" — conflating the two would either bury real gaps in noise or
+hide them entirely. Key property names are matched without regard to case, because the corpus writes
+the same property as both `virtualmods` and `virtualMods`.
+
+`XkbMergeMode` was implemented here rather than with the resolver in P13.6: the prefix sits on `key`
+and `include` statements alike, so the parser cannot represent `replace key <AD01>` without it.
+`XkbIncludeSpec` stays in P13.6, and `XkbIncludeStatement.Specification` holds the include string
+exactly as written — one string can name several sections joined by `+` or `|`, and splitting it
+needs to know what the roots contain.
+
+Two statement-skipping rules were settled against the real corpus. Skipping to a statement's end
+counts braces, because `modifier_map Shift { Shift_L, Shift_R };` carries a block of its own and
+halting at its closing brace would end the enclosing section early. A key statement, by contrast,
+claims only a terminator sitting directly after its closing brace: scanning ahead for one would
+swallow the next key whenever a file omits it.
+
+Measured over the 199 files of the installed `xkeyboard-config`: 1,673 sections, 21,795 key
+statements, 1,948 includes, 104 `KSI020` findings, 28 `KSI021` findings, and no `KSI022` at all. A
+corpus test in `XkbSymbolsCorpusTests` holds that last number at zero, so an unrecognized statement
+is treated as a gap in the grammar rather than as acceptable noise.
 
 ### 3.5 Include resolution and merge semantics
 
