@@ -72,11 +72,33 @@ public sealed class FakeXkbFileSystem : IXkbFileSystem
             : throw new FileNotFoundException($"No fake file at '{normalized}'.", normalized);
     }
 
-    private static string Normalize(string path) => Path.TrimEndingDirectorySeparator(path);
+    /// <summary>
+    /// Reduces a path to the POSIX form this filesystem models.
+    ///
+    /// The separator is unified rather than left to <see cref="Path"/> because the production code
+    /// composes its paths with <see cref="Path.Combine(string, string)"/>, which yields a backslash
+    /// on Windows: an XKB root written "/usr/share/X11/xkb" becomes "/usr/share/X11/xkb\symbols"
+    /// there, and an ordinal lookup against the forward-slash form a test wrote would miss. The
+    /// separator a host happens to prefer is not the thing under test, and a fake that changes
+    /// shape with the host turns every import test into a Linux-only one.
+    /// </summary>
+    private static string Normalize(string path)
+    {
+        var unified = path.Replace('\\', '/');
+        return unified.Length > 1 ? unified.TrimEnd('/') : unified;
+    }
 
     private static string? Parent(string path)
     {
-        var parent = Path.GetDirectoryName(path);
-        return string.IsNullOrEmpty(parent) ? null : Normalize(parent);
+        var normalized = Normalize(path);
+        var separator = normalized.LastIndexOf('/');
+
+        return separator switch
+        {
+            < 0 => null,
+            // The root is its own last component and has no parent above it.
+            0 => normalized.Length == 1 ? null : "/",
+            _ => normalized[..separator]
+        };
     }
 }
