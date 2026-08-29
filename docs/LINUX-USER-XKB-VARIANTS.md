@@ -3,7 +3,8 @@
 ## Status and intent
 
 This document is the adopted architecture for Phase 14. P14.1 project identity and immutable
-derivation persistence are implemented; generation and live installation remain planned.
+derivation persistence and P14.2 neutral diffing/derived translation are implemented; bundle
+generation and live installation remain planned.
 
 The feature is deliberately narrower than a general XKB editor or installer. A user imports a
 layout already installed by the operating system, changes the mappings KeyboardStudio supports,
@@ -284,17 +285,19 @@ inference, and migrated version-2 documents do not gain a derivation. The baseli
 during editing or when the document is loaded. Re-importing deliberately creates a new baseline
 and installation ID.
 
-`KeyboardLayoutDiffer` compares the current Core mappings with the baseline without knowing XKB. The
-Linux translator then emits only keys whose supported mapping changed. If any supported layer of a
-key changes, the generator emits that key's complete current supported mapping, including an
-explicit empty output where the user cleared a level. This prevents a partial statement from
-accidentally retaining an old inherited level.
+The implemented `KeyboardLayoutDiffer` compares the current Core mappings with the baseline without
+knowing XKB. It reports additions, modifications, removals, logical-key changes, and the precise
+changed layers in stable physical-key order. The implemented `XkbUserVariantTranslator` then emits
+only changed keys. If any supported layer changes, translation carries that key's complete current
+supported mapping through the highest relevant level, including an explicit `NoSymbol` where the
+user cleared a level. This prevents a partial statement from accidentally retaining an old
+inherited level.
 
 The current importer intentionally drops dead keys, actions, groups above one, and levels above
 four. If a changed key had unsupported source behavior that the baseline could not represent, the
-first implementation must block variant generation for that key and explain why. It must not infer
-that an invisible source level should be erased. Later work can add explicit override intent or
-broader XKB constructs.
+translator blocks variant generation with a key-specific diagnostic. It does not infer that an
+invisible source level should be erased. Later work can add explicit override intent or broader XKB
+constructs.
 
 The result of translation is separate from the existing standalone model:
 
@@ -325,6 +328,9 @@ file. Every top-level C# type must follow the repository rule and live in its ow
 KeyboardStudio.Core/Layouts/Diffing/
   KeyboardLayoutDiffer.cs
   KeyboardLayoutDifference.cs
+  KeyboardKeyDifference.cs
+  KeyboardMappingChangeKind.cs
+  KeyMappingSnapshot.cs
 
 KeyboardStudio.Persistence/Documents/
   LayoutDerivation.cs
@@ -332,10 +338,12 @@ KeyboardStudio.Persistence/Documents/
 
 KeyboardStudio.Linux/Model/
   XkbUserVariantMetadata.cs
-  XkbGeneratedUserBundle.cs
+  XkbUserVariantLayout.cs
+  XkbUserVariantKeyMapping.cs
 
 KeyboardStudio.Linux/Translation/
   XkbUserVariantTranslator.cs
+  XkbUserVariantTranslationResult.cs
 
 KeyboardStudio.Linux/Generation/
   XkbUserVariantSymbolsGenerator.cs
