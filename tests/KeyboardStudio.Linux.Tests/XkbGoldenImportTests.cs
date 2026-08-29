@@ -85,7 +85,11 @@ public sealed class XkbGoldenImportTests
                     .Where(issue => issue.Severity == ValidationSeverity.Error)
                     .Select(issue => issue.Message)));
 
-        var actual = JsonSerializer.Serialize(Snapshot(descriptor, result), SnapshotOptions) + "\n";
+        // The indenting writer breaks lines with Environment.NewLine, so the same snapshot is CRLF
+        // on Windows and LF here. The goldens are stored LF and compared after the same
+        // normalisation, which keeps one file correct on both rather than one file per host.
+        var actual = JsonSerializer.Serialize(Snapshot(descriptor, result), SnapshotOptions)
+            .Replace("\r\n", "\n", StringComparison.Ordinal) + "\n";
         var name = $"{layoutId}{(variantId is null ? "" : $"-{variantId}")}.json";
 
         if (UpdateRequested())

@@ -12,8 +12,9 @@ Run the same restore, Release build, and fast platform-neutral test sequence in 
 
 The script uses the .NET `10.0.302` SDK image pinned by `global.json` and pulls it when missing. Set `KEYBOARDSTUDIO_DOTNET_IMAGE` to override the image for compatibility testing. Build outputs are written to the normal ignored `bin/` and `obj/` directories in the checkout.
 
-Two more scripts run the jobs whose tooling the host is not expected to supply, and CI invokes the
-same two rather than a workflow-only arrangement:
+Two more scripts run the jobs whose tooling a developer machine is not expected to supply, without
+installing anything on it. CI runs these jobs directly rather than through these scripts, because
+its runners are already containers:
 
 ```bash
 ./scripts/test-xkb-integration-in-podman.sh   # xkbcli and xkeyboard-config
@@ -30,13 +31,15 @@ GitHub Actions does not provide an ordered `runs-on` fallback from self-hosted t
 If no matching self-hosted runner is online, the job intentionally remains queued instead of
 silently consuming a GitHub-hosted runner.
 
-Every Linux job runs on that pool, including the two that need software the unprivileged runner
-cannot install: XKB integration needs `xkbcli` and `xkeyboard-config`, and packaging needs a display
-server and the libraries Avalonia binds. Both run inside a container instead, through the same
-`scripts/*-in-podman.sh` a developer runs locally, so CI and a local check are one command rather
-than two arrangements that drift apart. A runner without podman fails the job with that reason
-rather than skipping the coverage. The container also pins the `xkbcli` the oracle is graded
-against, which the host's own package updates out from under it.
+Every Linux job runs on that pool, including the two that need software beyond the SDK: XKB
+integration needs `xkbcli` and `xkeyboard-config`, and packaging needs a display server and the
+libraries Avalonia binds. Both install what they need through `scripts/install-xkbcli.sh` and
+`scripts/install-xvfb.sh`, which work as root and escalate with sudo when it is there. Running them
+inside a container instead was considered and rejected: the runners are themselves containers, so
+that would nest one container in another — privileged mode and nested user namespaces — to buy an
+isolation boundary the runner already is. Where the runner cannot install packages, the answer is
+to bake them into its image, and the jobs print what the runner actually is so that decision is
+made from facts rather than from a failed step.
 
 Windows integration and packaging share one `windows-latest` job, the only one that cannot move to
 the pool: it needs MSVC, the Windows SDK, and a Windows loader. Running them together stops the two
@@ -140,10 +143,9 @@ test is reported as not run unless the test process is Windows and matches the a
 Reproducibility unit tests compare source dictionaries and binary hashes without MSVC; the native
 integration path can enable `BuildOptions.VerifyReproducibility` on a configured Windows runner.
 
-Linux XKB integration tests use the `XkbIntegration` category. A self-hosted job runs them in a
-container that installs `xkbcli` and `xkeyboard-config`, then compiles an ISO AltGr/Unicode fixture
-and an ANSI two-level fixture in isolated roots. This keeps package installation off the
-unprivileged runner without giving up the coverage. The tests never activate a layout. On failure, the generated symbols component and
+Linux XKB integration tests use the `XkbIntegration` category. A self-hosted job installs `xkbcli`
+and `xkeyboard-config`, then compiles an ISO AltGr/Unicode fixture and an ANSI two-level fixture in
+isolated roots. The tests never activate a layout. On failure, the generated symbols component and
 `xkbcli.log` remain under `TestResults/xkb-integration` and are uploaded as a workflow artifact.
 Locally, categorized tests return without running when `xkbcli` is unavailable; install the tool or
 run `scripts/test-xkb-integration-in-podman.sh` to exercise the external verifier in isolation.

@@ -65,20 +65,39 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      # The external verifier needs libxkbcommon-tools and xkeyboard-config, which an unprivileged
-      # runner cannot install. A container supplies them without asking anything of the host, and
-      # is the same one `scripts/test-xkb-integration-in-podman.sh` gives a developer: CI and a
-      # local check now run the identical command rather than two arrangements that drift.
-      - name: Verify the container runtime
-        run: |
-          if ! command -v podman >/dev/null 2>&1; then
-            echo "::error::podman is not installed on this self-hosted runner. XKB integration runs in a container because the runner cannot install xkbcli itself." >&2
-            exit 1
-          fi
-          podman --version
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
 
-      - name: Test generated XKB layouts and layout import
-        run: ./scripts/test-xkb-integration-in-podman.sh
+      # The runners are containers, so nesting another one under them would need privileged mode
+      # and nested user namespaces to buy an isolation boundary the runner container already is.
+      # The tools are installed here instead, which works directly when the runner is root in its
+      # own namespace. If it is not, this prints what the runner actually is so the packages can be
+      # baked into its image rather than guessed at.
+      - name: Report the runner environment
+        run: |
+          echo "user=$(id -un) uid=$(id -u)"
+          echo "sudo=$(command -v sudo || echo none)"
+          echo "package manager=$(command -v apt-get || command -v dnf || echo none)"
+          echo "container=${container:-no}"
+          cat /etc/os-release 2>/dev/null | head -2 || true
+
+      - name: Install XKB verification tools
+        run: ./scripts/install-xkbcli.sh
+
+      - name: Restore
+        run: |
+          dotnet restore tests/KeyboardStudio.Linux.Tests/KeyboardStudio.Linux.Tests.csproj
+          dotnet restore tests/KeyboardStudio.App.Tests/KeyboardStudio.App.Tests.csproj
+
+      - name: Test generated XKB layouts
+        run: dotnet test tests/KeyboardStudio.Linux.Tests/KeyboardStudio.Linux.Tests.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore --verbosity normal --filter "Category=XkbIntegration"
+
+      # The import composition root lives in the application, so the only test that proves the real
+      # sources are wired together has to run from there.
+      - name: Test layout import against the installed database
+        run: dotnet test tests/KeyboardStudio.App.Tests/KeyboardStudio.App.Tests.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore --verbosity normal --filter "Category=XkbIntegration"
 
       - name: Retain failed XKB artifacts
         if: failure()
@@ -96,23 +115,65 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      # As above: the desktop smoke test needs a display server and the libraries Avalonia binds,
-      # and the runner can install neither.
-      - name: Verify the container runtime
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
+
+      # The runners are containers, so nesting another one under them would need privileged mode
+      # and nested user namespaces to buy an isolation boundary the runner container already is.
+      # The tools are installed here instead, which works directly when the runner is root in its
+      # own namespace. If it is not, this prints what the runner actually is so the packages can be
+      # baked into its image rather than guessed at.
+      - name: Report the runner environment
         run: |
-          if ! command -v podman >/dev/null 2>&1; then
-            echo "::error::podman is not installed on this self-hosted runner. Packaging runs in a container because the smoke test needs a display server the runner cannot install." >&2
-            exit 1
-          fi
-          podman --version
+          echo "user=$(id -un) uid=$(id -u)"
+          echo "sudo=$(command -v sudo || echo none)"
+          echo "package manager=$(command -v apt-get || command -v dnf || echo none)"
+          echo "container=${container:-no}"
+          cat /etc/os-release 2>/dev/null | head -2 || true
 
-      - name: Publish, smoke-test and archive the package
-        run: ./scripts/package-linux-in-podman.sh
+      - name: Install virtual display
+        run: ./scripts/install-xvfb.sh
 
-      # Written by the script, which is the only party that ran a dotnet able to read it.
+      - name: Restore Linux runtime
+        run: dotnet restore src/KeyboardStudio.App/KeyboardStudio.App.csproj --runtime linux-x64
+
       - name: Read application version
         id: version
-        run: echo "value=$(cat artifacts/version.txt)" >> "$GITHUB_OUTPUT"
+        run: echo "value=$(dotnet msbuild src/KeyboardStudio.App/KeyboardStudio.App.csproj -getProperty:Version)" >> "$GITHUB_OUTPUT"
+
+      - name: Publish self-contained app
+        run: >-
+          dotnet publish src/KeyboardStudio.App/KeyboardStudio.App.csproj
+          --configuration ${{ env.BUILD_CONFIGURATION }}
+          --runtime linux-x64
+          --self-contained true
+          --no-restore
+          --output artifacts/KeyboardStudio-${{ steps.version.outputs.value }}-linux-x64
+
+      - name: Smoke-test packaged app
+        run: artifacts/KeyboardStudio-${{ steps.version.outputs.value }}-linux-x64/KeyboardStudio --version
+
+      - name: Smoke-test desktop startup
+        run: |
+          set +e
+          xvfb-run --auto-servernum timeout 5s \
+            artifacts/KeyboardStudio-${{ steps.version.outputs.value }}-linux-x64/KeyboardStudio
+          exit_code=$?
+          set -e
+          # 124 is timeout reporting a process it had to kill, the only outcome meaning the window
+          # opened and stayed open.
+          if [ "$exit_code" -ne 124 ]; then
+            echo "Packaged application exited unexpectedly with code $exit_code." >&2
+            exit 1
+          fi
+
+      - name: Archive package
+        run: >-
+          tar -C artifacts
+          -czf artifacts/KeyboardStudio-${{ steps.version.outputs.value }}-linux-x64.tar.gz
+          KeyboardStudio-${{ steps.version.outputs.value }}-linux-x64
 
       - name: Upload Linux package
         uses: actions/upload-artifact@v7

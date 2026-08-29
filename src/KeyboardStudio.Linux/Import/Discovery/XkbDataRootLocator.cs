@@ -73,12 +73,12 @@ public sealed class XkbDataRootLocator : IXkbDataRootLocator
         var configHome = _environment.GetVariable("XDG_CONFIG_HOME");
         if (!string.IsNullOrWhiteSpace(configHome) && System.IO.Path.IsPathRooted(configHome.Trim()))
         {
-            return System.IO.Path.Combine(configHome.Trim(), "xkb");
+            return $"{configHome.Trim()}/xkb";
         }
 
         var home = _environment.GetVariable("HOME");
         return string.IsNullOrWhiteSpace(home)
             ? null
-            : System.IO.Path.Combine(home.Trim(), ".config", "xkb");
+            : $"{home.Trim()}/.config/xkb";
     }
 }

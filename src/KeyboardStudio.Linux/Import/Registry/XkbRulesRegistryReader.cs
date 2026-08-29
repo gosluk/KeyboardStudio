@@ -45,7 +45,7 @@ public sealed class XkbRulesRegistryReader : IXkbLayoutRegistryReader
 
         foreach (var fileName in RegistryFileNames)
         {
-            var path = Path.Combine(root.RulesDirectory, fileName);
+            var path = $"{root.RulesDirectory}/{fileName}";
             if (!_fileSystem.FileExists(path))
             {
                 continue;

@@ -16,13 +16,19 @@ public sealed class HostLayoutImportCatalogTests
     [Trait("Category", "Unit")]
     public void DescribeFile_NamesTheFileAndPointsTheFileSourceAtIt()
     {
-        var descriptor = HostLayoutImportCatalog.DescribeFile("/home/user/layouts/mine");
+        // Built from the host rather than written as a literal. This path is the one the user
+        // picked in a file dialog, so it belongs to whatever host is running, and resolving it is
+        // the method's job: a POSIX literal on Windows resolves against the current drive, which
+        // says nothing about the descriptor and everything about the test's input.
+        var path = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "layouts", "mine"));
+
+        var descriptor = HostLayoutImportCatalog.DescribeFile(path);
 
         Assert.Equal(XkbSymbolsFileImportSource.SourceId, descriptor.SourceId);
         Assert.Equal("mine", descriptor.LayoutId);
         Assert.Null(descriptor.VariantId);
         Assert.Equal(LayoutSourceOrigin.File, descriptor.Origin);
-        Assert.Equal("/home/user/layouts/mine", descriptor.SourceLocation);
+        Assert.Equal(path, descriptor.SourceLocation);
     }
 
     [Fact]
