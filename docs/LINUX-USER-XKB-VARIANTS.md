@@ -2,7 +2,8 @@
 
 ## Status and intent
 
-This document is the adopted architecture for Phase 14. It is **not implemented yet**.
+This document is the adopted architecture for Phase 14. P14.1 project identity and immutable
+derivation persistence are implemented; generation and live installation remain planned.
 
 The feature is deliberately narrower than a general XKB editor or installer. A user imports a
 layout already installed by the operating system, changes the mappings KeyboardStudio supports,
@@ -258,11 +259,12 @@ stay disabled until the distribution's libxkbcommon tools package is installed.
 Current import provenance says where a project came from but not what every supported mapping was at
 the moment of import. That is insufficient to distinguish inherited keys from user changes.
 
-Phase 14 introduces a document-envelope `LayoutDerivation` and schema version 3. It is application
+P14.1 introduced a document-envelope `LayoutDerivation` and schema version 3. It is application
 bookkeeping, not a Core keyboard-layout concept:
 
 ```text
 LayoutDerivation
+  projectInstallationId    stable 32-digit GUID representation
   sourceId                 linux-xkb
   sourceOrigin             system
   baseLayoutId             pl
@@ -271,12 +273,16 @@ LayoutDerivation
   importedAtUtc            ...
   baselineMappings         immutable representable mappings at import time
   importFidelity           exact/reduced/partial
-  sourceFingerprint        optional source/include-chain hashes
+  sourceFingerprint        optional source hash
+  includeChainFingerprint  optional include-chain hash
 ```
 
 Only an import-as-new-project from a system-origin catalog entry establishes an installable
-derivation in the first version. The baseline never changes during editing or when the document is
-loaded. Re-importing deliberately creates a new baseline.
+derivation in the first version. Each baseline mapping records whether source behavior lost during
+import makes that key unsafe to override. Loose-file imports, mapping replacement, startup
+inference, and migrated version-2 documents do not gain a derivation. The baseline never changes
+during editing or when the document is loaded. Re-importing deliberately creates a new baseline
+and installation ID.
 
 `KeyboardLayoutDiffer` compares the current Core mappings with the baseline without knowing XKB. The
 Linux translator then emits only keys whose supported mapping changed. If any supported layer of a

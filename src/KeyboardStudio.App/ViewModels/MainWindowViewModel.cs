@@ -430,13 +430,14 @@ public sealed class MainWindowViewModel : ObservableObject
             return;
         }
 
+        var importedAt = DateTimeOffset.UtcNow;
         var provenance = new LayoutImportProvenance(
             descriptor.SourceId,
             descriptor.LayoutId,
             descriptor.VariantId,
             descriptor.SourceLocation,
             descriptor.DisplayName,
-            DateTimeOffset.UtcNow);
+            importedAt);
 
         if (importViewModel.CommitMode == LayoutImportCommitMode.ReplaceMappings)
         {
@@ -450,7 +451,8 @@ public sealed class MainWindowViewModel : ObservableObject
                 descriptor.LayoutId,
                 descriptor.VariantId,
                 descriptor.DisplayName),
-            provenance));
+            provenance,
+            LayoutDerivationFactory.Create(descriptor, importViewModel.Result, importedAt)));
         var template = Templates.FirstOrDefault(candidate => candidate.Id == project.Keyboard.Id)
             ?? _selectedTemplate;
         ReplaceProject(project, template);

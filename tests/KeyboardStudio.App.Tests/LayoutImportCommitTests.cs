@@ -95,6 +95,68 @@ public sealed class LayoutImportCommitTests
 
     [Fact]
     [Trait("Category", "Unit")]
+    public async Task ImportLayoutCommand_WhenAccepted_CapturesAnImmutableSystemDerivation()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"kbdproj-{Guid.NewGuid():N}.kbdproj");
+        try
+        {
+            var interaction = new ImportingInteractionService { SavePath = path, VariantIndex = 1 };
+            var viewModel = TestMainWindow.WithImportCatalog(Catalog(), interaction);
+
+            await viewModel.ImportLayoutCommand.ExecuteAsync(null);
+            await viewModel.SaveAsCommand.ExecuteAsync(null);
+
+            await using var stream = File.OpenRead(path);
+            var document = await new JsonKeyboardProjectDocumentStore().LoadAsync(stream);
+            var derivation = Assert.IsType<LayoutDerivation>(document.LayoutDerivation);
+            Assert.Equal("fake", derivation.SourceId);
+            Assert.Equal(LayoutSourceOrigin.System, derivation.SourceOrigin);
+            Assert.Equal("pl", derivation.BaseLayoutId);
+            Assert.Equal("qwertz", derivation.BaseVariantId);
+            Assert.Equal("qwertz", derivation.ResolvedBaseSectionId);
+            Assert.Equal(LayoutImportFidelity.Exact, derivation.ImportFidelity);
+            Assert.True(Guid.TryParseExact(derivation.ProjectInstallationId, "N", out _));
+            var baseline = Assert.Single(derivation.BaselineMappings);
+            Assert.Equal("KeyA", baseline.KeyId);
+            Assert.Equal(new CharacterOutput("ä"), baseline.Outputs[ModifierLayer.Default]);
+            Assert.True(baseline.IsSafeToOverride);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task ImportFromFileCommand_WhenAccepted_DoesNotCreateAnInstallableDerivation()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"kbdproj-{Guid.NewGuid():N}.kbdproj");
+        try
+        {
+            var interaction = new ImportingInteractionService
+            {
+                SymbolsFilePath = Path.Combine(Path.GetTempPath(), "mine"),
+                SavePath = path
+            };
+            var viewModel = TestMainWindow.WithImportCatalog(Catalog(), interaction);
+
+            await viewModel.ImportFromFileCommand.ExecuteAsync(null);
+            await viewModel.SaveAsCommand.ExecuteAsync(null);
+
+            await using var stream = File.OpenRead(path);
+            var document = await new JsonKeyboardProjectDocumentStore().LoadAsync(stream);
+            Assert.NotNull(document.ImportProvenance);
+            Assert.Null(document.LayoutDerivation);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
     public async Task ImportLayoutCommand_WhenReplacingMappings_KeepsGeometryProfilesAndFilePath()
     {
         var path = Path.Combine(Path.GetTempPath(), $"kbdproj-{Guid.NewGuid():N}.kbdproj");

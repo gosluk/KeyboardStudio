@@ -217,7 +217,8 @@ public sealed class XkbLayoutImporter
                 keysImported,
                 keysSkipped,
                 symbols.IncludeChain,
-                diagnostics));
+                diagnostics),
+            symbols.Section);
     }
 
     /// <summary>

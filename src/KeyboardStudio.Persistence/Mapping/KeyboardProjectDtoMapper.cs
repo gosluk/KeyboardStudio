@@ -63,6 +63,16 @@ internal static class KeyboardProjectDtoMapper
         };
     }
 
+    internal static KeyMappingDto ToMappingDto(KeyMapping mapping) => ToDto(mapping);
+
+    internal static KeyMapping ToMappingDomain(KeyMappingDto dto) => ToDomain(dto);
+
+    internal static string FormatPersistedEnum<TEnum>(TEnum value)
+        where TEnum : struct, Enum => FormatEnum(value);
+
+    internal static TEnum ParsePersistedEnum<TEnum>(string? value, string fieldName)
+        where TEnum : struct, Enum => ParseEnum<TEnum>(value, fieldName);
+
     private static PhysicalKeyDto ToDto(PhysicalKey key) => new()
     {
         Id = key.Id,

@@ -36,6 +36,9 @@ public sealed class ProjectDocumentService : IProjectDocumentService
     /// </summary>
     public LayoutImportProvenance? CurrentProvenance { get; private set; }
 
+    /// <summary>The immutable system-import baseline, when this document has one.</summary>
+    public LayoutDerivation? CurrentLayoutDerivation { get; private set; }
+
     public ProjectDocumentError? LastError { get; private set; }
 
     public KeyboardProject CreateNew() => Adopt(_documentFactory());
@@ -56,6 +59,7 @@ public sealed class ProjectDocumentService : IProjectDocumentService
         CurrentProject = document.Project;
         CurrentTargetProfiles = CopyProfiles(document.TargetProfiles);
         CurrentProvenance = document.ImportProvenance;
+        CurrentLayoutDerivation = document.LayoutDerivation;
         CurrentFilePath = null;
         IsDirty = false;
         LastError = null;
@@ -75,6 +79,7 @@ public sealed class ProjectDocumentService : IProjectDocumentService
         }
 
         CurrentProvenance = provenance;
+        CurrentLayoutDerivation = null;
         MarkDirty();
     }
 
@@ -110,6 +115,7 @@ public sealed class ProjectDocumentService : IProjectDocumentService
             CurrentProject = document.Project;
             CurrentTargetProfiles = CopyProfiles(document.TargetProfiles);
             CurrentProvenance = document.ImportProvenance;
+            CurrentLayoutDerivation = document.LayoutDerivation;
             CurrentFilePath = fullPath;
             IsDirty = false;
             LastError = null;
@@ -182,7 +188,8 @@ public sealed class ProjectDocumentService : IProjectDocumentService
             var document = new KeyboardProjectDocument(
                 CurrentProject!,
                 CurrentTargetProfiles,
-                CurrentProvenance);
+                CurrentProvenance,
+                CurrentLayoutDerivation);
             await _store.SaveAsync(document, stream, cancellationToken);
 
             if (updateCurrentPath)
