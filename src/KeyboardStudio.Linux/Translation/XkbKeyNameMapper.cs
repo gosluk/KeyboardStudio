@@ -1,3 +1,5 @@
+using System.Collections.Frozen;
+
 namespace KeyboardStudio.Linux;
 
 public sealed class XkbKeyNameMapper : IXkbKeyNameMapper
@@ -50,21 +52,16 @@ public sealed class XkbKeyNameMapper : IXkbKeyNameMapper
         ["Numpad0"] = "<KP0>", ["NumpadDecimal"] = "<KPDL>"
     };
 
-    private static readonly Dictionary<string, string> Iso105KeyNames = CreateIso105KeyNames();
-    private static readonly Dictionary<string, string> Ansi104KeyNames = CreateAnsi104KeyNames();
+    private static readonly FrozenDictionary<string, string> Iso105KeyNames = CreateIso105KeyNames();
+    private static readonly FrozenDictionary<string, string> Ansi104KeyNames = CreateAnsi104KeyNames();
 
+    /// <inheritdoc />
     public XkbKeyNameMappingResult Map(string templateId, string keyId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(templateId);
         ArgumentException.ThrowIfNullOrWhiteSpace(keyId);
 
-        var map = templateId switch
-        {
-            "iso-105" => Iso105KeyNames,
-            "ansi-104" => Ansi104KeyNames,
-            _ => null
-        };
-        if (map is not null && map.TryGetValue(keyId, out var keyName))
+        if (SelectMap(templateId).TryGetValue(keyId, out var keyName))
         {
             return new XkbKeyNameMappingResult(true, keyName, []);
         }
@@ -78,22 +75,37 @@ public sealed class XkbKeyNameMapper : IXkbKeyNameMapper
                 keyId)]);
     }
 
-    private static Dictionary<string, string> CreateIso105KeyNames()
+    /// <inheritdoc />
+    public IReadOnlyDictionary<string, string> GetMappings(string templateId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(templateId);
+
+        return SelectMap(templateId);
+    }
+
+    private static FrozenDictionary<string, string> SelectMap(string templateId) => templateId switch
+    {
+        "iso-105" => Iso105KeyNames,
+        "ansi-104" => Ansi104KeyNames,
+        _ => FrozenDictionary<string, string>.Empty
+    };
+
+    private static FrozenDictionary<string, string> CreateIso105KeyNames()
     {
         var result = new Dictionary<string, string>(CommonKeyNames, StringComparer.Ordinal)
         {
             ["IntlHash"] = "<BKSL>",
             ["IntlBackslash"] = "<LSGT>"
         };
-        return result;
+        return result.ToFrozenDictionary(StringComparer.Ordinal);
     }
 
-    private static Dictionary<string, string> CreateAnsi104KeyNames()
+    private static FrozenDictionary<string, string> CreateAnsi104KeyNames()
     {
         var result = new Dictionary<string, string>(CommonKeyNames, StringComparer.Ordinal)
         {
             ["Backslash"] = "<BKSL>"
         };
-        return result;
+        return result.ToFrozenDictionary(StringComparer.Ordinal);
     }
 }

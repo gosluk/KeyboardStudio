@@ -825,8 +825,9 @@ key IDs to native physical identities.
 ## 13. Layout import
 
 *Adopted design, implemented by Phase 13. Sections 13.1, 13.2, and 13.4 are built, as is the front
-of the 13.3 pipeline — data-root discovery, registry reading, the symbols lexer and parser, and
-include resolution; the rest of 13.3 and the UI and startup paths in 13.5 and 13.6 are not.*
+of the 13.3 pipeline — data-root discovery, registry reading, the symbols lexer and parser, include
+resolution, and both translators; the importer that assembles them and the UI and startup paths in
+13.5 and 13.6 are not.*
 
 A new document must never open as bare geometry with zero mappings. Import supplies a starting point,
 either from an embedded seed or from a layout already installed on the host. Full design detail lives
@@ -983,10 +984,28 @@ Over the same corpus the decoder reads 173,528 characters, 14,177 keys and 7,259
 recognises every keysym the corpus names. The 505 it cannot represent are media, IME and vendor keys,
 each reported rather than dropped.
 
-XKB key names are resolved through the same tables `XkbKeyNameMapper` already uses for generation.
-`IXkbKeyNameMapper` gains a table accessor so both directions derive from one source and cannot
-disagree about keys such as `<LSGT>`. XKB names stay out of Core and are still never inferred from
-`PhysicalKey.ScanCode`, preserving [AD-018](DECISIONS.md).
+`XkbKeyNameResolver` resolves XKB key names through the same tables `XkbKeyNameMapper` already uses
+for generation: `IXkbKeyNameMapper` exposes a table accessor and both directions derive from that one
+source, so they cannot disagree about keys such as `<LSGT>`, which exists on `iso-105` and not on
+`ansi-104`. XKB names stay out of Core and are still never inferred from `PhysicalKey.ScanCode`,
+preserving [AD-018](DECISIONS.md).
+
+Inverting the table is not sufficient on its own, because a key has as many names as the host's
+keycodes file gives it and the table holds only the one generation writes. The aliases `keycodes/evdev`
+declares are therefore folded in, in both directions and to a fixed point — `<I135>` reaches `<MENU>`
+only by way of `<COMP>` — and the phonetic `<LatA>`–`<LatZ>` aliases with them. Those last are
+ambiguous by construction: `keycodes/aliases` defines them three times over and `rules/evdev` picks
+the set from the layout being loaded, so `<LatZ>` is the bottom-row key of a US keyboard and the
+top-row key of a German one. Import makes the same choice from the layout name, because reading
+`symbols/de`'s phonetic Russian variants with the wrong set returns them with Y and Z transposed.
+A name that reaches no key of the chosen template is skipped with `KSI033` and counted in
+`KeysSkipped`; that is informational rather than a warning, since a symbols file naming keys a
+keyboard does not have is the ordinary case.
+
+Over the same corpus the resolver lands 66,151 keys and skips 7,360, and every skipped name is a key
+no PC keyboard has: media and vendor keys, `<FK13>` and above, and the extra keys of Japanese,
+Brazilian and Sun keyboards. Corpus tests check the alias tables against the host's own `keycodes`
+and `rules` files rather than against our reading of them.
 
 ### 13.4 Import is lossy and reports its losses
 

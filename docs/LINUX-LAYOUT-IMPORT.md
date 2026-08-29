@@ -5,9 +5,10 @@
 This document specifies the Phase 13 layout-import subsystem. The design is adopted
 ([AD-019](DECISIONS.md) to [AD-023](DECISIONS.md)) and tracked as work items P13.1 and P13.3 to
 P13.12 in [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md). The seed (P13.1), the Core contract
-in section 2 (P13.3), data-root discovery and registry reading in sections 3.2 and 3.3 (P13.4), and
-the symbols lexer and parser in section 3.4 (P13.5) are implemented; include resolution, the rest of
-the Linux pipeline, the dialog, and startup import are not.
+in section 2 (P13.3), data-root discovery and registry reading in sections 3.2 and 3.3 (P13.4), the
+symbols lexer and parser in section 3.4 (P13.5), include resolution in section 3.5 (P13.6), keysym
+decoding in sections 3.7 and 6 (P13.7), and physical key resolution in section 3.8 (P13.8) are
+implemented; the importer that assembles them, the dialog, and startup import are not.
 
 Two related problems are addressed:
 
@@ -531,6 +532,46 @@ never derived from `PhysicalKey.ScanCode`.
 
 XKB keys with no template counterpart (`<I120>`, media keys, `<FK13>`+) are skipped with a `KSI033`
 informational diagnostic and counted in `KeysSkipped`.
+
+### 3.8.1 As built
+
+The table accessor and the resolver are as specified. What the specification did not anticipate is
+that inverting the table is not enough on its own: a key has as many names as the host's keycodes
+file gives it, and the table holds only the one generation writes.
+
+`keycodes/evdev` declares forty-seven aliases, all of them transcribed into the resolver. An alias
+states that two names share a keycode rather than that one redirects to the other, so they are
+folded into the inverse table in both directions and repeatedly until nothing new appears —
+`<I135>` reaches `<MENU>` only by way of `<COMP>`. Ten of them land on keys these templates have,
+and `<AC12>`, which fifteen files write for the backslash key, is the one that would have been most
+visibly missed. Only evdev is transcribed: it is the keycodes file every current distribution loads,
+and the Sun and Macintosh files alias keys neither template has.
+
+The phonetic `<LatA>`–`<LatZ>` aliases needed more than transcription, because they are ambiguous by
+construction. `keycodes/aliases` defines them three times over — `qwerty`, `azerty`, `qwertz` — and
+`rules/evdev` selects the section from the layout being loaded: `azerty` for `be` and `fr`, `qwertz`
+for `al ch cz de hr hu ro si sk`, `qwerty` for everything else. `<LatZ>` is therefore `<AB01>` for a
+US layout and `<AD06>` for a German one. Eight files write these names, and `symbols/de` writes them
+for phonetic Russian variants meant for a German keyboard, so reading everything as `qwerty` would
+return those layouts with Y and Z transposed. `XkbKeyAliasSet` names the three sets and
+`XkbKeyNameResolver.AliasSetForLayout` makes the same choice from the layout name that the host makes
+from its rules. The two lists are held in the resolver rather than parsed from `rules/evdev`, which
+is a format nothing else in the importer reads, and a corpus test diffs them against the host's file
+so that a distribution moving a country between the sets is caught rather than silently followed.
+
+`XkbKeyNameResolveResult` carries no outcome enum, unlike the keysym decoder's result: a name either
+reaches a key of this template or it does not, and the single way it can fail is the single code it
+is reported under. The diagnostic carries no key id either — the finding is precisely that there is
+no key here to jump to — so the name goes in the message instead.
+
+Corpus check: the host's 199 files resolve 66,151 keys onto `iso-105` and skip 7,360. Every skipped
+name is a key no PC keyboard has — media and vendor keys, `<FK13>` and above, `<SYRQ>` and `<BRK>`
+from the XFree86, Sun and HP keycodes, and the extra keys of Japanese (`<AE13>`, `<AB11>`), Brazilian
+(`<AB00>`) and Sun (`<AA*>`) keyboards. The test asserts that nothing on the alphanumeric rows is
+skipped apart from that documented handful, since a name reaching that point would be a key the user
+does have, dropped. Two further tests check the alias tables against `keycodes/evdev` and
+`keycodes/aliases` directly: for every alias the host declares, both names must reach the same key or
+neither may reach one at all.
 
 ### 3.9 Template selection
 

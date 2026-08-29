@@ -1692,6 +1692,34 @@ public interface IXkbKeyNameMapper
 XKB keys with no template counterpart (`<I120>`, media keys, `<FK13>`+) are skipped with `KSI033` and
 counted in `KeysSkipped`.
 
+**As built.** The accessor and the resolver are as specified; the aliases were not anticipated.
+
+Inverting the table is not enough on its own, because a key has as many names as the host's keycodes
+file gives it and the table holds only the one generation writes. All forty-seven aliases
+`keycodes/evdev` declares are transcribed into `XkbKeyNameResolver` and folded into the inverse table
+in both directions and to a fixed point, an alias being a statement that two names share a keycode
+rather than a redirection: `<I135>` reaches `<MENU>` only by way of `<COMP>`. Ten land on keys these
+templates have; `<AC12>`, which fifteen files write for the backslash key, is the one that would have
+been most visibly missed. Only evdev is transcribed — the Sun and Macintosh files alias keys neither
+template has.
+
+The phonetic `<LatA>`–`<LatZ>` aliases are ambiguous by construction. `keycodes/aliases` defines them
+three times over and `rules/evdev` picks the section from the layout being loaded, so `<LatZ>` is
+`<AB01>` for a US layout and `<AD06>` for a German one. Eight files write them, `symbols/de` among
+them for phonetic Russian variants, so a single alias set would return those layouts with Y and Z
+transposed. `XkbKeyAliasSet` names the three sets and `XkbKeyNameResolver.AliasSetForLayout` makes the
+host's own choice from the layout name; a corpus test diffs both lists against `rules/evdev` so a
+distribution moving a country between them is caught rather than followed silently.
+
+`XkbKeyNameResolveResult` carries no outcome enum, unlike the keysym decoder's result: there is one
+way to fail and one code to report it under. Its diagnostic carries no key id, the finding being that
+there is no key to jump to.
+
+Corpus check: 66,151 keys land on `iso-105` and 7,360 are skipped, every one of the latter a key no
+PC keyboard has. A test asserts that nothing on the alphanumeric rows is skipped apart from the
+Japanese, Brazilian and Sun extras, and two more check the alias tables against the host's own
+`keycodes` files rather than against our reading of them.
+
 ### P13.9 Importer, template selection, fidelity report
 
 `XkbLayoutImporter` and `XkbLayoutImportSource : ILayoutImportSource` assemble the project.

@@ -42,6 +42,49 @@ public sealed class XkbKeyNameMapperTests
         Assert.Empty(failures);
     }
 
+    [Theory]
+    [Trait("Category", "Unit")]
+    [InlineData("iso-105")]
+    [InlineData("ansi-104")]
+    public void GetMappings_ForATemplate_AgreesWithMapForEveryKeyOfIt(string templateId)
+    {
+        // The table and the single lookup have to be the same data, because import reads the table
+        // and generation reads the lookup. A table that had drifted would move keys on the way in
+        // and no test of either direction alone would notice.
+        var mapper = new XkbKeyNameMapper();
+        var keyboard = new KeyboardTemplateProvider().Load(templateId);
+        var mappings = mapper.GetMappings(templateId);
+
+        Assert.Equal(keyboard.Keys.Count, mappings.Count);
+
+        foreach (var key in keyboard.Keys)
+        {
+            Assert.Equal(mapper.Map(templateId, key.Id).KeyName, mappings[key.Id]);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void GetMappings_ForTheTwoTemplates_DiffersWhereTheKeyboardsDo()
+    {
+        var mapper = new XkbKeyNameMapper();
+
+        var iso = mapper.GetMappings("iso-105");
+        var ansi = mapper.GetMappings("ansi-104");
+
+        Assert.Equal("<LSGT>", iso["IntlBackslash"]);
+        Assert.DoesNotContain("IntlBackslash", ansi.Keys);
+        Assert.Equal("<BKSL>", iso["IntlHash"]);
+        Assert.Equal("<BKSL>", ansi["Backslash"]);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void GetMappings_ForATemplateWithNoTable_IsEmptyRatherThanThrowing()
+    {
+        Assert.Empty(new XkbKeyNameMapper().GetMappings("no-such-template"));
+    }
+
     [Fact]
     [Trait("Category", "Unit")]
     public void Map_UnknownPair_ReturnsStableKeyLinkedDiagnostic()
