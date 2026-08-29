@@ -4,11 +4,17 @@
 
 This document specifies the Phase 13 layout-import subsystem. The design is adopted
 ([AD-019](DECISIONS.md) to [AD-023](DECISIONS.md)) and tracked as work items P13.1 and P13.3 to
-P13.12 in [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md). The seed (P13.1), the Core contract
-in section 2 (P13.3), data-root discovery and registry reading in sections 3.2 and 3.3 (P13.4), the
-symbols lexer and parser in section 3.4 (P13.5), include resolution in section 3.5 (P13.6), keysym
-decoding in sections 3.7 and 6 (P13.7), and physical key resolution in section 3.8 (P13.8) are
-implemented; the importer that assembles them, the dialog, and startup import are not.
+P13.12 in [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md). **All of it is implemented**: the seed
+(P13.1), the Core contract in section 2 (P13.3), data-root discovery and registry reading in
+sections 3.2 and 3.3 (P13.4), the symbols lexer and parser in section 3.4 (P13.5), include
+resolution in section 3.5 (P13.6), keysym decoding in sections 3.7 and 6 (P13.7), physical key
+resolution in section 3.8 (P13.8), the importer that assembles them in sections 3.9 and 3.10
+(P13.9), the dialog and provenance in sections 4 and 7 (P13.10), startup import in section 5
+(P13.11), and the test coverage in section 8 (P13.12).
+
+Where the built subsystem departed from what was proposed, the departure is recorded in an **As
+built** subsection beside the original text rather than by rewriting it, so the design that was
+adopted and the thing that exists can be read against each other.
 
 Two related problems are addressed:
 
@@ -577,8 +583,15 @@ neither may reach one at all.
 `XkbTemplateSelector` picks the geometry:
 
 - resolved keys include `<LSGT>` -> `iso-105`;
-- otherwise -> `ansi-104`;
-- registry country hints break ties for layouts that define neither.
+- else every country the registry lists for the layout is an ANSI country -> `ansi-104`;
+- otherwise -> `iso-105`.
+
+ISO is the default rather than ANSI because `<LSGT>` is only a partial signal: the key is normally
+contributed by the `pc` component, which import does not compose, so most ISO layouts never write it
+and would fall through to the wrong board. Suggesting ISO costs an ANSI layout one key it does not
+have; suggesting ANSI costs an ISO layout the key beside its left shift. The country hint is what
+actually earns a layout the ANSI board, and every country it serves has to prefer ANSI before it is
+offered — a layout shared between the US and Europe gets the board that can represent both.
 
 The result is a *suggestion*. The import dialog shows it and lets the user override, because the
 registry does not record physical geometry and the heuristic will occasionally be wrong.

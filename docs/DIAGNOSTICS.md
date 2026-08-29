@@ -75,8 +75,8 @@ activating the generated layout.
 |---|---|---|---|
 | `KSI010` | Info | The source has no descriptive metadata for the layout, which is listed under its bare identifier. | No |
 | `KSI011` | Info | The layout this host is configured to use could not be imported at startup, so whatever the editor was going to start from was kept. | No |
-| `KSI020` | Warning | The definition carried more than one alternative group of outputs per key; only the primary group was imported. | Yes |
-| `KSI021` | Warning | A construct the model cannot express — an action, redirection, or overlay — was read and ignored. | Yes |
+| `KSI020` | Warning | The definition carried more than one alternative group of outputs per key; only the primary group was imported. | No |
+| `KSI021` | Warning | A construct the model cannot express — an action, redirection, or overlay — was read and ignored. | No |
 | `KSI022` | Info | An unrecognized statement was skipped so the import could continue. | No |
 | `KSI023` | Info | A composition rule was approximated by the nearest one the resolver implements. | No |
 | `KSI024` | Error | A definition nested deeper than the resolver's cap. Nothing was imported. | No |
@@ -84,8 +84,15 @@ activating the generated layout.
 | `KSI030` | Warning | An output sat on a modifier level beyond the four the model has and was dropped. | Yes |
 | `KSI031` | Warning | A dead-key output was dropped; the layer was left unmapped rather than given a misleading character. | Yes |
 | `KSI032` | Warning | An output has no equivalent in the model, so the layer was left unmapped. The message distinguishes an output the model cannot hold, such as a media key, from text that names no output at all. | Yes |
-| `KSI033` | Info | The definition described a key the chosen template does not have, so the key was skipped. | Yes |
+| `KSI033` | Info | The definition described a key the chosen template does not have, so the key was skipped. | Sometimes |
 | `KSI034` | Error | The chosen physical keyboard template could not be loaded, so there was nothing to lay the layout onto. Nothing was imported. | No |
+
+`KSI020` and `KSI021` name a key in their message but carry no key ID, because they are raised in the
+symbols parser, which works in XKB key names before any template has been chosen to resolve them
+against — there is no physical key to link to yet. `KSI033` carries one when the key resolved to a
+physical identity the template lacks, and none when the name resolved to no physical key at all: the
+key ID is what the editor jumps to, and the point of that second case is that there is nothing to
+jump to.
 
 `KSI` codes are declared in `KeyboardStudio.Core`, unlike `KSL` codes, which belong to
 `KeyboardStudio.Linux`. Import loss is a property of the domain model rather than of any one

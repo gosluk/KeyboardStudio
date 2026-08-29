@@ -142,7 +142,10 @@ whatever the host ships, the goldens of a copy that never moves.
 `XkbGoldenImportTests` snapshots each pinned import in full: the geometry chosen, the name taken, the
 four layers of every key, and every diagnostic raised. A failing golden is not automatically a
 defect; run the suite with `KEYBOARDSTUDIO_UPDATE_GOLDEN=1` to rewrite the snapshots in the
-repository, then read the diff, which is the change under review. `XkbImportRoundTripTests` composes
+repository, then read the diff, which is the change under review. That variable is refused when `CI`
+is `true`: rewriting is a developer's gesture whose whole effect is to make the suite pass, so
+obeying it on a build machine would report success for exactly the changes the goldens exist to
+catch. `XkbImportRoundTripTests` composes
 the importer with the generator and asserts the pair is lossless over what the model holds:
 whatever the first import produced is what importing the generated file returns.
 

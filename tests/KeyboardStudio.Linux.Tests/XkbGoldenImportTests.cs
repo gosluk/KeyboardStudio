@@ -88,11 +88,17 @@ public sealed class XkbGoldenImportTests
         var actual = JsonSerializer.Serialize(Snapshot(descriptor, result), SnapshotOptions) + "\n";
         var name = $"{layoutId}{(variantId is null ? "" : $"-{variantId}")}.json";
 
-        if (string.Equals(
-            Environment.GetEnvironmentVariable("KEYBOARDSTUDIO_UPDATE_GOLDEN"),
-            "1",
-            StringComparison.Ordinal))
+        if (UpdateRequested())
         {
+            // Rewriting is a developer's gesture and its whole effect is to make this test pass.
+            // On a build machine that is indistinguishable from having no goldens at all, so the
+            // variable is refused there rather than obeyed: a suite that rewrites what it was
+            // meant to check reports success for every change it was put in place to catch.
+            Assert.False(
+                IsContinuousIntegration(),
+                "KEYBOARDSTUDIO_UPDATE_GOLDEN is set in CI, where rewriting the goldens would make "
+                + "this suite pass for any change. Update them locally and commit the diff.");
+
             await File.WriteAllTextAsync(Path.Combine(SourceGoldenDirectory(), name), actual);
             return;
         }
@@ -193,6 +199,25 @@ public sealed class XkbGoldenImportTests
                 _ => $"[{output.GetType().Name}]"
             }
             : null;
+
+    /// <summary>
+    /// Whether the caller asked for the snapshots to be rewritten instead of compared.
+    /// </summary>
+    private static bool UpdateRequested() =>
+        string.Equals(
+            Environment.GetEnvironmentVariable("KEYBOARDSTUDIO_UPDATE_GOLDEN"),
+            "1",
+            StringComparison.Ordinal);
+
+    /// <summary>
+    /// Whether this is a build machine. The same <c>CI</c> variable the integration suites read to
+    /// decide that a missing tool is a broken image rather than a developer without it installed.
+    /// </summary>
+    private static bool IsContinuousIntegration() =>
+        string.Equals(
+            Environment.GetEnvironmentVariable("CI"),
+            "true",
+            StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// The goldens in the repository rather than the copies beside the built test assembly, so that

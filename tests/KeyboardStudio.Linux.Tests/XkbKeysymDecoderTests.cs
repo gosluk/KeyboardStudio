@@ -290,6 +290,41 @@ public sealed class XkbKeysymDecoderTests
 
     [Fact]
     [Trait("Category", "Unit")]
+    public void Decode_ForAKeyTheMapperNames_ReturnsThatKeyAndNotAnotherOne()
+    {
+        // Stronger than the round trip above, which asserts the keysym is stable and so cannot see
+        // two keys sharing one. NumpadEnter was written as Return: decoding gave Enter, mapping
+        // Enter gave Return again, and the trip closed on a key that was not the one it started
+        // from. Asserting the key rather than the keysym is what catches that.
+        var mapper = new XkbKeysymMapper();
+        var mismatches = new List<string>();
+
+        foreach (var logicalKey in Enum.GetValues<LogicalKey>())
+        {
+            if (logicalKey is LogicalKey.None || !mapper.TryMap(logicalKey, out var keysym))
+            {
+                continue;
+            }
+
+            // Only the keysyms that name a key are in scope. A punctuation key is written as the
+            // character it types — Comma as "comma" — and comes back as that character by design,
+            // so that a rearranged layout keeps what it types rather than where it sits.
+            if (decoder.Decode(keysym).Output is not SpecialKeyOutput special)
+            {
+                continue;
+            }
+
+            if (special.Key != logicalKey)
+            {
+                mismatches.Add($"{logicalKey} -> {keysym} -> {special.Key}");
+            }
+        }
+
+        Assert.Empty(mismatches);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
     public void Decode_ForEveryCharacterTheMapperCanWrite_ReturnsThatCharacter()
     {
         var mapper = new XkbKeysymMapper();
