@@ -12,8 +12,10 @@ tooling assembles it with the host's other XKB components when the layout is loa
 The initial backend generates and verifies files. It does not install, register, activate, or remove
 a layout from a desktop session.
 
-Phase 14 plans a separate, explicit workflow for publishing changes made to an imported system
-layout as a per-user variant. It does not change the contract of this standalone backend. See
+Phase 14 is implementing a separate, explicit workflow for publishing changes made to an imported
+system layout as a per-user variant. Its isolated bundle generator is implemented, while host
+verification and installation remain separate later work. It does not change the contract of this
+standalone backend. See
 [`LINUX-USER-XKB-VARIANTS.md`](LINUX-USER-XKB-VARIANTS.md).
 
 ## Why generate a symbols component

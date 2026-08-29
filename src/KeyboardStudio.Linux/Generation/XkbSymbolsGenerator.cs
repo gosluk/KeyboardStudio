@@ -27,7 +27,7 @@ public sealed class XkbSymbolsGenerator : IXkbSymbolsGenerator
                 .Append(mapping.KeyName)
                 .AppendLine(" {")
                 .Append("        type[Group1] = \"")
-                .Append(GetTypeName(mapping.Type))
+                .Append(XkbKeyTypeNames.Get(mapping.Type))
                 .AppendLine("\",")
                 .Append("        symbols[Group1] = [ ")
                 .AppendJoin(", ", mapping.Keysyms)
@@ -46,19 +46,6 @@ public sealed class XkbSymbolsGenerator : IXkbSymbolsGenerator
             Path.Combine("symbols", layout.Metadata.LayoutId),
             builder.ToString().Replace("\r\n", "\n", StringComparison.Ordinal));
     }
-
-    private static string GetTypeName(XkbKeyType type) => type switch
-    {
-        XkbKeyType.OneLevel => "ONE_LEVEL",
-        XkbKeyType.TwoLevel => "TWO_LEVEL",
-        XkbKeyType.Alphabetic => "ALPHABETIC",
-        XkbKeyType.Keypad => "KEYPAD",
-        XkbKeyType.FourLevel => "FOUR_LEVEL",
-        XkbKeyType.FourLevelAlphabetic => "FOUR_LEVEL_ALPHABETIC",
-        XkbKeyType.FourLevelSemialphabetic => "FOUR_LEVEL_SEMIALPHABETIC",
-        XkbKeyType.FourLevelMixedKeypad => "FOUR_LEVEL_MIXED_KEYPAD",
-        _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown XKB key type.")
-    };
 
     private static string EscapeQuoted(string value) =>
         value.Replace("\\", "\\\\", StringComparison.Ordinal)

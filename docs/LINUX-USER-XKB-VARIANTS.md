@@ -3,8 +3,8 @@
 ## Status and intent
 
 This document is the adopted architecture for Phase 14. P14.1 project identity and immutable
-derivation persistence and P14.2 neutral diffing/derived translation are implemented; bundle
-generation and live installation remain planned.
+derivation persistence, P14.2 neutral diffing/derived translation, and P14.3 isolated bundle
+generation are implemented. Host verification and live installation remain planned.
 
 The feature is deliberately narrower than a general XKB editor or installer. A user imports a
 layout already installed by the operating system, changes the mappings KeyboardStudio supports,
@@ -340,6 +340,8 @@ KeyboardStudio.Linux/Model/
   XkbUserVariantMetadata.cs
   XkbUserVariantLayout.cs
   XkbUserVariantKeyMapping.cs
+  XkbGeneratedUserBundle.cs
+  XkbUserBundleFile.cs
 
 KeyboardStudio.Linux/Translation/
   XkbUserVariantTranslator.cs
@@ -350,6 +352,7 @@ KeyboardStudio.Linux/Generation/
   XkbLanguageBridgeGenerator.cs
   XkbRegistryEntryGenerator.cs
   XkbUserBundleGenerator.cs
+  XkbUserBundleWriter.cs
 
 KeyboardStudio.Linux/Verification/
   XkbUserBundleVerifier.cs
@@ -379,13 +382,18 @@ Core owns a neutral diff. Persistence owns the versioned document representation
 generation, capability detection, verification, and installation. Avalonia ViewModels orchestrate
 these services but do not parse XML, generate XKB, or write configuration directly.
 
-Build and installation are distinct boundaries:
+Build and installation are distinct boundaries. P14.3 implements the first boundary as a pure,
+deterministic multi-project generator plus an output writer:
 
-- a normal Linux build may create a standalone symbols artifact or a derived user bundle in the
-  chosen output directory;
+- a normal Linux build may create a standalone symbols artifact or stage a derived user bundle at
+  `<chosen-output>/xkb-user-bundle`;
 - no build invocation writes to the XDG configuration root;
 - installation accepts an already generated and verified bundle plus an explicit user action;
 - activation remains outside both boundaries.
+
+The bundle manifest records schema/generator versions, stable variant identities, changed physical
+keys, and SHA-256 hashes of every installable file. Generation refuses internal-section and public
+layout/variant collisions before producing a bundle.
 
 ---
 
