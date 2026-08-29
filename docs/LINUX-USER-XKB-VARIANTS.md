@@ -3,8 +3,8 @@
 ## Status and intent
 
 This document is the adopted architecture for Phase 14. P14.1 project identity and immutable
-derivation persistence, P14.2 neutral diffing/derived translation, and P14.3 isolated bundle
-generation are implemented. Host verification and live installation remain planned.
+derivation persistence, P14.2 neutral diffing/derived translation, P14.3 isolated bundle generation,
+and P14.4 capability probing/verification are implemented. Live installation remains planned.
 
 The feature is deliberately narrower than a general XKB editor or installer. A user imports a
 layout already installed by the operating system, changes the mappings KeyboardStudio supports,
@@ -225,9 +225,11 @@ the explicit, non-recursive way to inherit the system section.
 | X11 session | Export only; the X server uses hard-coded XKB paths and does not treat the XDG directory as a general replacement root |
 | Headless or unknown session | Export and isolated verification only |
 
-The capability result is a first-class value shown in the UI with the detected session type,
-libxkbcommon version, verifier availability, XKB root, and discovery result. A distro label is never
-used as evidence that installation is safe.
+The implemented capability result is a first-class value containing the detected session type,
+effective configuration and state paths, parsed libxkbcommon version, `xkbcli` path/version output,
+canonical system root, and registry-query support. It reports managed-installation or export-only
+mode plus diagnostics; a distro label is never used as evidence that installation is safe. The UI
+will present this value in P14.7.
 
 ### Ten common distributions
 
@@ -358,6 +360,8 @@ KeyboardStudio.Linux/Verification/
   XkbUserBundleVerifier.cs
   XkbUserInstallCapabilityProbe.cs
   XkbUserInstallCapability.cs
+  XkbUserBundleVerificationResult.cs
+  XkbUserBundleVerificationCheck.cs
 
 KeyboardStudio.Linux/Installation/
   IXkbUserInstallService.cs
@@ -394,6 +398,14 @@ deterministic multi-project generator plus an output writer:
 The bundle manifest records schema/generator versions, stable variant identities, changed physical
 keys, and SHA-256 hashes of every installable file. Generation refuses internal-section and public
 layout/variant collisions before producing a bundle.
+
+P14.4 verification uses the official order-sensitive invocation shape
+`xkbcli compile-keymap --include <staged-root> --include-defaults --test`. For every proposed
+variant it compiles the public custom RMLVO pair, the imported base pair, and an unrelated variant
+from the same system layout. When `xkbcli list`/libxkbregistry is available, it also loads the staged
+root before the canonical system root and confirms the public pair appears in the merged registry.
+Every check retains its arguments, output, exit code, and diagnostic instead of collapsing failure
+to a boolean.
 
 ---
 
