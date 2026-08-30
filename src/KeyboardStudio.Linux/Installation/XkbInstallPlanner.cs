@@ -340,8 +340,7 @@ public static class XkbInstallPlanner
             diagnostics.Add(new XkbDiagnostic("KSP001", exception.Message));
         }
 
-        if (!IsSafeUserChild(paths.UserXkbRoot, paths.ConfigHome) ||
-            !IsSafeUserChild(paths.KeyboardStudioStateRoot, paths.StateHome))
+        if (!XdgDirectoryPathValidator.IsSafe(paths))
         {
             diagnostics.Add(new XkbDiagnostic("KSP003", "The resolved XDG paths are unsafe."));
         }
@@ -354,32 +353,6 @@ public static class XkbInstallPlanner
 
         return diagnostics;
     }
-
-    private static bool IsSafeUserChild(string path, string expectedParent)
-    {
-        if (!Path.IsPathFullyQualified(path) || !Path.IsPathFullyQualified(expectedParent))
-        {
-            return false;
-        }
-
-        var fullPath = Path.GetFullPath(path);
-        var fullParent = Path.GetFullPath(expectedParent);
-        if (IsSystemPath(fullPath) || IsSystemPath(fullParent))
-        {
-            return false;
-        }
-
-        var relative = Path.GetRelativePath(fullParent, fullPath);
-        return relative is not "." and not ".." &&
-               !relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal) &&
-               !Path.IsPathRooted(relative);
-    }
-
-    private static bool IsSystemPath(string path) =>
-        string.Equals(path, "/usr", StringComparison.Ordinal) ||
-        path.StartsWith("/usr/", StringComparison.Ordinal) ||
-        string.Equals(path, "/etc", StringComparison.Ordinal) ||
-        path.StartsWith("/etc/", StringComparison.Ordinal);
 
     private static XkbInstallFileSnapshot Snapshot(
         Dictionary<string, XkbInstallFileSnapshot> snapshots,

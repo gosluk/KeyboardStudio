@@ -4,8 +4,9 @@
 
 This document is the adopted architecture for Phase 14. P14.1 project identity and immutable
 derivation persistence, P14.2 neutral diffing/derived translation, P14.3 isolated bundle generation,
-P14.4 capability probing/verification, and P14.5 ownership-aware install planning are implemented.
-Live filesystem transactions remain planned.
+P14.4 capability probing/verification, P14.5 ownership-aware install planning, and P14.6
+transactional installation and recovery are implemented. The explicit application workflow remains
+planned.
 
 The feature is deliberately narrower than a general XKB editor or installer. A user imports a
 layout already installed by the operating system, changes the mappings KeyboardStudio supports,
@@ -416,7 +417,7 @@ to a boolean.
 
 KeyboardStudio shares the user XKB root with the user and other tools. Existing files are user data,
 not disposable build output. P14.5 implements this section as pure merge and planning components;
-P14.6 will execute the resulting typed operations transactionally.
+P14.6 executes the resulting typed operations transactionally.
 
 ### File ownership
 
@@ -484,9 +485,30 @@ Install and update use the same plan:
 Because several files are involved, the filesystem cannot make the whole operation atomic in one
 rename. The journal and backups provide crash recovery and rollback across the sequence.
 
+`IXkbUserInstallService` is the live-mutation boundary. `XkbUserInstallService` copies the complete
+current user XKB tree into an isolated transaction root, applies the P14.5 plan there, and invokes
+the P14.4 verifier without requiring a build-only bundle manifest. Only a successful proposed-root
+verification permits live writes. It rejects export-only capability results, changed XDG roots,
+group/other-writable managed directories, and symbolic links anywhere it would traverse.
+
+Before the first live change, the service copies every affected file and the previous manifest to a
+transaction-specific backup and atomically writes `journal.json`. Destination content is rehashed
+immediately before mutation. Creates and replacements use flushed same-directory temporary files
+and atomic renames; deletes use a same-directory tombstone rename. The live root is rehashed and
+verified before the new manifest is atomically installed. The journal is the commit boundary and is
+removed only after all of those checks pass.
+
+Cancellation or any ordinary I/O, validation, or verification failure after journaling restores all
+destinations and the previous manifest. A journal left by process interruption is replayed
+idempotently before the next install, update, verify-installed, or uninstall command. Backup hashes
+are checked before recovery, and a failed recovery retains the journal and backups instead of
+guessing.
+
 Uninstall removes only sections, managed blocks, and XML nodes owned by the selected installation
 ID. It deletes a shared file only when no non-KeyboardStudio content remains. After uninstall, it
-again compiles the base layout and leaves the backup available until the transaction completes.
+again compiles the base and an unrelated variant through the proposed and installed roots, and
+leaves the backup available until the transaction completes. Install, update, uninstall, and
+verify-installed never activate a layout or write desktop/session settings.
 
 ---
 

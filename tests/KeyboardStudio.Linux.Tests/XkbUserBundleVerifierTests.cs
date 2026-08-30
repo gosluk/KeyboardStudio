@@ -156,6 +156,39 @@ public sealed class XkbUserBundleVerifierTests
         }
     }
 
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task VerifyBaseAsync_AfterUninstall_CompilesBaseAndUnrelatedWithoutCustomRegistryCheck()
+    {
+        var (output, root, metadata) = await StageAsync();
+        try
+        {
+            File.Delete(Path.Combine(root, "symbols", "keyboardstudio"));
+            File.Delete(Path.Combine(root, "symbols", "pl"));
+            File.Delete(Path.Combine(root, "rules", "evdev.xml"));
+            var runner = new RecordingRunner(request => Result(request, "", "", 0));
+
+            var result = await new XkbUserBundleVerifier(runner, PolishRegistry())
+                .VerifyBaseAsync(root, metadata, Capability());
+
+            Assert.Equal(XkbUserBundleVerificationStatus.Verified, result.Status);
+            Assert.Equal(2, result.Checks.Count);
+            Assert.Contains(result.Checks, check =>
+                check.Kind == XkbUserBundleVerificationCheckKind.BaseVariant &&
+                check.VariantId == "qwertz");
+            Assert.Contains(result.Checks, check =>
+                check.Kind == XkbUserBundleVerificationCheckKind.UnrelatedVariant &&
+                check.VariantId == "dvorak");
+            Assert.DoesNotContain(result.Checks, check =>
+                check.Kind is XkbUserBundleVerificationCheckKind.CustomVariant or
+                    XkbUserBundleVerificationCheckKind.RegistryDiscovery);
+        }
+        finally
+        {
+            Directory.Delete(output, recursive: true);
+        }
+    }
+
     private static async Task<(string Output, string Root, XkbUserVariantMetadata Metadata)> StageAsync()
     {
         var output = Path.Combine(Path.GetTempPath(), $"keyboardstudio-verify-{Guid.NewGuid():N}");

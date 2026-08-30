@@ -30,7 +30,7 @@ public sealed class XdgDirectoryResolver
             state,
             Path.Combine(config, "xkb"),
             Path.Combine(state, "keyboardstudio", "xkb"));
-        if (!IsSafe(paths.UserXkbRoot) || !IsSafe(paths.KeyboardStudioStateRoot))
+        if (!XdgDirectoryPathValidator.IsSafe(paths))
         {
             diagnostics.Add(new XkbDiagnostic(
                 "KSC002",
@@ -71,10 +71,4 @@ public sealed class XdgDirectoryResolver
             $"Neither an absolute {variable} nor an absolute HOME is available."));
         return null;
     }
-
-    private static bool IsSafe(string path) =>
-        Path.IsPathFullyQualified(path) &&
-        !string.Equals(Path.GetPathRoot(path), path, StringComparison.Ordinal) &&
-        !path.StartsWith("/usr/", StringComparison.Ordinal) &&
-        !path.StartsWith("/etc/", StringComparison.Ordinal);
 }

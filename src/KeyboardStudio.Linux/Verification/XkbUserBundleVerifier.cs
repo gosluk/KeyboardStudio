@@ -4,7 +4,7 @@ using KeyboardStudio.Core;
 namespace KeyboardStudio.Linux;
 
 /// <summary>Compiles every behavior a proposed user root can affect before installation.</summary>
-public sealed class XkbUserBundleVerifier
+public sealed class XkbUserBundleVerifier : IXkbUserBundleVerifier
 {
     private readonly IProcessRunner _processRunner;
     private readonly IXkbLayoutRegistryReader _registryReader;
@@ -28,6 +28,7 @@ public sealed class XkbUserBundleVerifier
         string bundleRoot,
         IReadOnlyList<XkbUserVariantMetadata> variants,
         XkbUserInstallCapability capability,
+        bool requireBundleManifest = true,
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(bundleRoot);
@@ -35,7 +36,7 @@ public sealed class XkbUserBundleVerifier
         ArgumentNullException.ThrowIfNull(capability);
 
         var root = Path.GetFullPath(bundleRoot);
-        var diagnostics = ValidateManagedFiles(root, variants);
+        var diagnostics = ValidateManagedFiles(root, variants, requireBundleManifest);
         if (capability.XkbCliPath is null || capability.LibXkbCommonVersion is null)
         {
             diagnostics.Add(new XkbDiagnostic(
@@ -157,6 +158,101 @@ public sealed class XkbUserBundleVerifier
             diagnostics.AsReadOnly());
     }
 
+    public async Task<XkbUserBundleVerificationResult> VerifyBaseAsync(
+        string bundleRoot,
+        XkbUserVariantMetadata removedVariant,
+        XkbUserInstallCapability capability,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(bundleRoot);
+        ArgumentNullException.ThrowIfNull(removedVariant);
+        ArgumentNullException.ThrowIfNull(capability);
+
+        var root = Path.GetFullPath(bundleRoot);
+        var diagnostics = new List<XkbDiagnostic>();
+        if (capability.XkbCliPath is null || capability.LibXkbCommonVersion is null)
+        {
+            diagnostics.Add(new XkbDiagnostic(
+                "KSV002",
+                "A known xkbcli/libxkbcommon toolchain is required to verify the base layout."));
+        }
+
+        if (capability.CanonicalSystemRoot is null)
+        {
+            diagnostics.Add(new XkbDiagnostic(
+                "KSV003",
+                "The canonical system XKB root is unavailable."));
+        }
+
+        if (diagnostics.Count > 0)
+        {
+            return Failed(capability, [], diagnostics);
+        }
+
+        var systemRoot = new XkbDataRoot(
+            capability.CanonicalSystemRoot!,
+            LayoutSourceOrigin.System);
+        IReadOnlyList<XkbRegistryEntry> registryEntries;
+        try
+        {
+            registryEntries = _registryReader.Read(systemRoot);
+        }
+        catch (Exception exception) when (
+            exception is IOException or UnauthorizedAccessException or System.Xml.XmlException)
+        {
+            diagnostics.Add(new XkbDiagnostic(
+                "KSV004",
+                $"The system XKB registry could not be read: {exception.Message}"));
+            return Failed(capability, [], diagnostics);
+        }
+
+        var checks = new List<XkbUserBundleVerificationCheck>
+        {
+            await CompileAsync(
+                capability.XkbCliPath!,
+                root,
+                removedVariant.BaseLayoutId,
+                removedVariant.BaseVariantId,
+                XkbUserBundleVerificationCheckKind.BaseVariant,
+                cancellationToken)
+        };
+        var unrelated = SelectUnrelatedVariant(removedVariant, registryEntries);
+        if (unrelated is null)
+        {
+            diagnostics.Add(new XkbDiagnostic(
+                "KSV004",
+                $"No unrelated system variant of layout '{removedVariant.BaseLayoutId}' is available for shadowing verification."));
+        }
+        else
+        {
+            checks.Add(await CompileAsync(
+                capability.XkbCliPath!,
+                root,
+                removedVariant.BaseLayoutId,
+                unrelated,
+                XkbUserBundleVerificationCheckKind.UnrelatedVariant,
+                cancellationToken));
+        }
+
+        foreach (var check in checks.Where(check => !check.Success))
+        {
+            diagnostics.Add(new XkbDiagnostic(
+                "KSV005",
+                $"xkbcli rejected {Describe(check.LayoutId, check.VariantId)} during the {check.Kind} check."));
+        }
+
+        var failed = checks.Any(check => !check.Success) ||
+            diagnostics.Any(diagnostic => diagnostic.Code is "KSV004" or "KSV005");
+        return new XkbUserBundleVerificationResult(
+            failed
+                ? XkbUserBundleVerificationStatus.Failed
+                : XkbUserBundleVerificationStatus.Verified,
+            capability.XkbCliPath,
+            capability.XkbCliVersionOutput,
+            checks.AsReadOnly(),
+            diagnostics.AsReadOnly());
+    }
+
     private async Task<XkbUserBundleVerificationCheck> CompileAsync(
         string executable,
         string root,
@@ -269,15 +365,21 @@ public sealed class XkbUserBundleVerifier
 
     private static List<XkbDiagnostic> ValidateManagedFiles(
         string root,
-        IReadOnlyList<XkbUserVariantMetadata> variants)
+        IReadOnlyList<XkbUserVariantMetadata> variants,
+        bool requireBundleManifest)
     {
         var diagnostics = new List<XkbDiagnostic>();
-        var required = new HashSet<string>(StringComparer.Ordinal)
+        var required = new HashSet<string>(StringComparer.Ordinal);
+        if (variants.Count > 0)
         {
-            "symbols/keyboardstudio",
-            "rules/evdev.xml",
-            "keyboardstudio-bundle.json"
-        };
+            required.Add("symbols/keyboardstudio");
+            required.Add("rules/evdev.xml");
+        }
+
+        if (requireBundleManifest)
+        {
+            required.Add("keyboardstudio-bundle.json");
+        }
         foreach (var layoutId in variants.Select(variant => variant.BaseLayoutId))
         {
             required.Add($"symbols/{layoutId}");
