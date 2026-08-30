@@ -1,8 +1,7 @@
 namespace KeyboardStudio.App;
 
 /// <summary>
-/// Maps physical key identifiers to the legend printed on a real keycap, used whenever a key
-/// has no output on the active layer.
+/// Maps physical key identifiers to the muted physical-name footer shown on every keycap.
 /// </summary>
 public static class PhysicalKeyLegend
 {
@@ -46,7 +45,7 @@ public static class PhysicalKeyLegend
             ["AltLeft"] = "Alt",
             ["AltRight"] = "Alt Gr",
             ["ContextMenu"] = "Menu",
-            ["Space"] = "",
+            ["Space"] = "Space",
 
             ["Insert"] = "Insert",
             ["Delete"] = "Delete",

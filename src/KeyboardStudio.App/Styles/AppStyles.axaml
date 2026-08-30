@@ -19,8 +19,9 @@
           <SolidColorBrush x:Key="KeyFacePressedBrush" Color="#DFE5EE" />
           <SolidColorBrush x:Key="KeyBorderBrush" Color="#8A9099" />
           <SolidColorBrush x:Key="KeyLegendBrush" Color="#1F2328" />
-          <SolidColorBrush x:Key="KeyLegendMutedBrush" Color="#767E88" />
           <SolidColorBrush x:Key="KeyHintBrush" Color="#8A9099" />
+          <SolidColorBrush x:Key="KeyActiveLayerBrush" Color="#C5D9FA" />
+          <SolidColorBrush x:Key="KeyActiveLegendBrush" Color="#174EA6" />
           <SolidColorBrush x:Key="KeySelectedFaceBrush" Color="#DCE9FF" />
           <SolidColorBrush x:Key="KeySelectedBorderBrush" Color="#2F6FEB" />
           <SolidColorBrush x:Key="KeyErrorFaceBrush" Color="#FCE4E5" />
@@ -42,8 +43,9 @@
           <SolidColorBrush x:Key="KeyFacePressedBrush" Color="#2E3339" />
           <SolidColorBrush x:Key="KeyBorderBrush" Color="#5A626C" />
           <SolidColorBrush x:Key="KeyLegendBrush" Color="#EDEFF2" />
-          <SolidColorBrush x:Key="KeyLegendMutedBrush" Color="#8B939D" />
           <SolidColorBrush x:Key="KeyHintBrush" Color="#98A0AA" />
+          <SolidColorBrush x:Key="KeyActiveLayerBrush" Color="#29476E" />
+          <SolidColorBrush x:Key="KeyActiveLegendBrush" Color="#A8C7FA" />
           <SolidColorBrush x:Key="KeySelectedFaceBrush" Color="#1E3A63" />
           <SolidColorBrush x:Key="KeySelectedBorderBrush" Color="#5B9BFF" />
           <SolidColorBrush x:Key="KeyErrorFaceBrush" Color="#4A2224" />

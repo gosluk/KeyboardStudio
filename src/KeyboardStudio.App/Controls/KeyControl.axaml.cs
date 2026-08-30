@@ -9,14 +9,32 @@ public sealed partial class KeyControl : UserControl
     public static readonly StyledProperty<string> KeyIdProperty =
         AvaloniaProperty.Register<KeyControl, string>(nameof(KeyId), string.Empty);
 
-    public static readonly StyledProperty<string> LabelProperty =
-        AvaloniaProperty.Register<KeyControl, string>(nameof(Label), string.Empty);
+    public static readonly StyledProperty<string> KeyNameProperty =
+        AvaloniaProperty.Register<KeyControl, string>(nameof(KeyName), string.Empty);
 
-    public static readonly StyledProperty<string> HintProperty =
-        AvaloniaProperty.Register<KeyControl, string>(nameof(Hint), string.Empty);
+    public static readonly StyledProperty<string> DefaultAssignmentProperty =
+        AvaloniaProperty.Register<KeyControl, string>(nameof(DefaultAssignment), string.Empty);
 
-    public static readonly StyledProperty<bool> ShowHintProperty =
-        AvaloniaProperty.Register<KeyControl, bool>(nameof(ShowHint));
+    public static readonly StyledProperty<string> ShiftAssignmentProperty =
+        AvaloniaProperty.Register<KeyControl, string>(nameof(ShiftAssignment), string.Empty);
+
+    public static readonly StyledProperty<string> AltGrAssignmentProperty =
+        AvaloniaProperty.Register<KeyControl, string>(nameof(AltGrAssignment), string.Empty);
+
+    public static readonly StyledProperty<string> ShiftAltGrAssignmentProperty =
+        AvaloniaProperty.Register<KeyControl, string>(nameof(ShiftAltGrAssignment), string.Empty);
+
+    public static readonly StyledProperty<bool> IsDefaultActiveProperty =
+        AvaloniaProperty.Register<KeyControl, bool>(nameof(IsDefaultActive));
+
+    public static readonly StyledProperty<bool> IsShiftActiveProperty =
+        AvaloniaProperty.Register<KeyControl, bool>(nameof(IsShiftActive));
+
+    public static readonly StyledProperty<bool> IsAltGrActiveProperty =
+        AvaloniaProperty.Register<KeyControl, bool>(nameof(IsAltGrActive));
+
+    public static readonly StyledProperty<bool> IsShiftAltGrActiveProperty =
+        AvaloniaProperty.Register<KeyControl, bool>(nameof(IsShiftAltGrActive));
 
     public static readonly StyledProperty<bool> IsSelectedProperty =
         AvaloniaProperty.Register<KeyControl, bool>(nameof(IsSelected));
@@ -41,22 +59,58 @@ public sealed partial class KeyControl : UserControl
         set => SetValue(KeyIdProperty, value);
     }
 
-    public string Label
+    public string KeyName
     {
-        get => GetValue(LabelProperty);
-        set => SetValue(LabelProperty, value);
+        get => GetValue(KeyNameProperty);
+        set => SetValue(KeyNameProperty, value);
     }
 
-    public string Hint
+    public string DefaultAssignment
     {
-        get => GetValue(HintProperty);
-        set => SetValue(HintProperty, value);
+        get => GetValue(DefaultAssignmentProperty);
+        set => SetValue(DefaultAssignmentProperty, value);
     }
 
-    public bool ShowHint
+    public string ShiftAssignment
     {
-        get => GetValue(ShowHintProperty);
-        set => SetValue(ShowHintProperty, value);
+        get => GetValue(ShiftAssignmentProperty);
+        set => SetValue(ShiftAssignmentProperty, value);
+    }
+
+    public string AltGrAssignment
+    {
+        get => GetValue(AltGrAssignmentProperty);
+        set => SetValue(AltGrAssignmentProperty, value);
+    }
+
+    public string ShiftAltGrAssignment
+    {
+        get => GetValue(ShiftAltGrAssignmentProperty);
+        set => SetValue(ShiftAltGrAssignmentProperty, value);
+    }
+
+    public bool IsDefaultActive
+    {
+        get => GetValue(IsDefaultActiveProperty);
+        set => SetValue(IsDefaultActiveProperty, value);
+    }
+
+    public bool IsShiftActive
+    {
+        get => GetValue(IsShiftActiveProperty);
+        set => SetValue(IsShiftActiveProperty, value);
+    }
+
+    public bool IsAltGrActive
+    {
+        get => GetValue(IsAltGrActiveProperty);
+        set => SetValue(IsAltGrActiveProperty, value);
+    }
+
+    public bool IsShiftAltGrActive
+    {
+        get => GetValue(IsShiftAltGrActiveProperty);
+        set => SetValue(IsShiftAltGrActiveProperty, value);
     }
 
     public bool IsSelected

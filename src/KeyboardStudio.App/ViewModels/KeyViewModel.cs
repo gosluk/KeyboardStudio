@@ -6,12 +6,17 @@ namespace KeyboardStudio.App;
 
 public sealed class KeyViewModel : ObservableObject
 {
+    private string _altGrAssignment = string.Empty;
+    private string _defaultAssignment = string.Empty;
     private bool _hasError;
-    private string _hint;
-    private bool _hasHint;
+    private bool _isAltGrActive;
+    private bool _isDefaultActive;
     private bool _isSelected;
+    private bool _isShiftActive;
+    private bool _isShiftAltGrActive;
     private bool _isUnmapped;
-    private string _label;
+    private string _shiftAssignment = string.Empty;
+    private string _shiftAltGrAssignment = string.Empty;
 
     public KeyViewModel(
         PhysicalKey key,
@@ -22,9 +27,7 @@ public sealed class KeyViewModel : ObservableObject
     {
         Key = key;
         Mapping = mapping;
-        _label = GetPhysicalLabel(key.Id);
-        _hint = GetHint(key.Id, mapping);
-        _hasHint = HasLogicalKey(mapping);
+        KeyName = GetPhysicalLabel(key.Id);
         _isUnmapped = true;
         SelectCommand = new RelayCommand(() => select(this));
         Left = ToPosition(key.X, unitWidth, unitGap);
@@ -43,20 +46,54 @@ public sealed class KeyViewModel : ObservableObject
     public double Width { get; }
     public double Height { get; }
 
-    public string Hint
+    public string KeyName { get; }
+
+    public string DefaultAssignment
     {
-        get => _hint;
-        private set => SetProperty(ref _hint, value);
+        get => _defaultAssignment;
+        private set => SetProperty(ref _defaultAssignment, value);
     }
 
-    /// <summary>
-    /// True when the hint carries information the legend does not already show, so that keycaps
-    /// only gain a second line once a logical key has been assigned.
-    /// </summary>
-    public bool HasHint
+    public string ShiftAssignment
     {
-        get => _hasHint;
-        private set => SetProperty(ref _hasHint, value);
+        get => _shiftAssignment;
+        private set => SetProperty(ref _shiftAssignment, value);
+    }
+
+    public string AltGrAssignment
+    {
+        get => _altGrAssignment;
+        private set => SetProperty(ref _altGrAssignment, value);
+    }
+
+    public string ShiftAltGrAssignment
+    {
+        get => _shiftAltGrAssignment;
+        private set => SetProperty(ref _shiftAltGrAssignment, value);
+    }
+
+    public bool IsDefaultActive
+    {
+        get => _isDefaultActive;
+        private set => SetProperty(ref _isDefaultActive, value);
+    }
+
+    public bool IsShiftActive
+    {
+        get => _isShiftActive;
+        private set => SetProperty(ref _isShiftActive, value);
+    }
+
+    public bool IsAltGrActive
+    {
+        get => _isAltGrActive;
+        private set => SetProperty(ref _isAltGrActive, value);
+    }
+
+    public bool IsShiftAltGrActive
+    {
+        get => _isShiftAltGrActive;
+        private set => SetProperty(ref _isShiftAltGrActive, value);
     }
 
     public bool IsSelected
@@ -77,37 +114,37 @@ public sealed class KeyViewModel : ObservableObject
         internal set => SetProperty(ref _hasError, value);
     }
 
-    public string Label
-    {
-        get => _label;
-        private set => SetProperty(ref _label, value);
-    }
-
     public void Refresh(ModifierLayer layer)
     {
-        KeyOutput? output = null;
-        var hasOutput = Mapping?.Outputs.TryGetValue(layer, out output) == true && output is not NoOutput;
+        DefaultAssignment = GetAssignment(ModifierLayer.Default);
+        ShiftAssignment = GetAssignment(ModifierLayer.Shift);
+        AltGrAssignment = GetAssignment(ModifierLayer.AltGr);
+        ShiftAltGrAssignment = GetAssignment(ModifierLayer.ShiftAltGr);
 
-        Label = hasOutput
-            ? output switch
-            {
-                CharacterOutput character when !string.IsNullOrEmpty(character.Value) => character.Value,
-                SpecialKeyOutput specialKey => specialKey.Key.ToString(),
-                _ => GetPhysicalLabel(KeyId)
-            }
-            : GetPhysicalLabel(KeyId);
-        Hint = GetHint(KeyId, Mapping);
-        HasHint = HasLogicalKey(Mapping);
-        IsUnmapped = !hasOutput;
+        IsDefaultActive = layer == ModifierLayer.Default;
+        IsShiftActive = layer == ModifierLayer.Shift;
+        IsAltGrActive = layer == ModifierLayer.AltGr;
+        IsShiftAltGrActive = layer == ModifierLayer.ShiftAltGr;
+        IsUnmapped = !HasOutput(layer);
     }
 
-    private static bool HasLogicalKey(KeyMapping? mapping) =>
-        mapping?.LogicalKey is not (null or LogicalKey.None);
+    private string GetAssignment(ModifierLayer layer)
+    {
+        if (Mapping?.Outputs.TryGetValue(layer, out var output) != true)
+        {
+            return string.Empty;
+        }
 
-    private static string GetHint(string keyId, KeyMapping? mapping) =>
-        HasLogicalKey(mapping)
-            ? mapping!.LogicalKey.ToString()
-            : keyId;
+        return output switch
+        {
+            CharacterOutput character => character.Value,
+            SpecialKeyOutput specialKey => specialKey.Key.ToString(),
+            _ => string.Empty
+        };
+    }
+
+    private bool HasOutput(ModifierLayer layer) =>
+        Mapping?.Outputs.TryGetValue(layer, out var output) == true && output is not NoOutput;
 
     private static string GetPhysicalLabel(string keyId) =>
         PhysicalKeyLegend.For(keyId);

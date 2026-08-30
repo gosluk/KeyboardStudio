@@ -130,9 +130,15 @@
                   <ItemsControl.ItemTemplate>
                     <DataTemplate>
                       <controls:KeyControl KeyId="{Binding KeyId}"
-                                           Label="{Binding Label}"
-                                           Hint="{Binding Hint}"
-                                           ShowHint="{Binding HasHint}"
+                                           KeyName="{Binding KeyName}"
+                                           DefaultAssignment="{Binding DefaultAssignment}"
+                                           ShiftAssignment="{Binding ShiftAssignment}"
+                                           AltGrAssignment="{Binding AltGrAssignment}"
+                                           ShiftAltGrAssignment="{Binding ShiftAltGrAssignment}"
+                                           IsDefaultActive="{Binding IsDefaultActive}"
+                                           IsShiftActive="{Binding IsShiftActive}"
+                                           IsAltGrActive="{Binding IsAltGrActive}"
+                                           IsShiftAltGrActive="{Binding IsShiftAltGrActive}"
                                            IsSelected="{Binding IsSelected}"
                                            IsUnmapped="{Binding IsUnmapped}"
                                            HasError="{Binding HasError}"
