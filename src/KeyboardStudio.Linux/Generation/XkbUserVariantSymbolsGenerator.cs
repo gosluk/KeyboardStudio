@@ -18,7 +18,9 @@ public static class XkbUserVariantSymbolsGenerator
                      layout => layout.Metadata.InternalSectionId,
                      StringComparer.Ordinal))
         {
-            builder.AppendLine("partial alphanumeric_keys")
+            builder.Append("// BEGIN KeyboardStudio ")
+                .AppendLine(layout.Metadata.ProjectInstallationId)
+                .AppendLine("partial alphanumeric_keys")
                 .Append("xkb_symbols \"")
                 .Append(EscapeQuoted(layout.Metadata.InternalSectionId))
                 .AppendLine("\" {")
@@ -53,6 +55,8 @@ public static class XkbUserVariantSymbolsGenerator
             }
 
             builder.AppendLine("};")
+                .Append("// END KeyboardStudio ")
+                .AppendLine(layout.Metadata.ProjectInstallationId)
                 .AppendLine();
         }
 

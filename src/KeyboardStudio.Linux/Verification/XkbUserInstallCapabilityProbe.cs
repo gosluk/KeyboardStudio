@@ -15,6 +15,7 @@ public sealed partial class XkbUserInstallCapabilityProbe
     private readonly IXkbCliLocator _xkbCliLocator;
     private readonly IProcessRunner _processRunner;
     private readonly bool _isLinux;
+    private readonly XdgDirectoryResolver _directoryResolver;
 
     public XkbUserInstallCapabilityProbe(
         IXkbEnvironment environment,
@@ -28,6 +29,7 @@ public sealed partial class XkbUserInstallCapabilityProbe
         _xkbCliLocator = xkbCliLocator ?? throw new ArgumentNullException(nameof(xkbCliLocator));
         _processRunner = processRunner ?? throw new ArgumentNullException(nameof(processRunner));
         _isLinux = isLinux ?? OperatingSystem.IsLinux();
+        _directoryResolver = new XdgDirectoryResolver(environment);
     }
 
     public async Task<XkbUserInstallCapability> ProbeAsync(
@@ -35,7 +37,11 @@ public sealed partial class XkbUserInstallCapabilityProbe
     {
         var diagnostics = new List<XkbDiagnostic>();
         var session = DetectSession();
-        var (userXkbRoot, stateRoot, pathsAreSafe) = ResolvePaths(diagnostics);
+        var directoryResolution = _directoryResolver.Resolve();
+        diagnostics.AddRange(directoryResolution.Diagnostics);
+        var userXkbRoot = directoryResolution.Paths?.UserXkbRoot;
+        var stateRoot = directoryResolution.Paths?.KeyboardStudioStateRoot;
+        var pathsAreSafe = directoryResolution.Success;
         var canonicalRoot = _rootLocator.Locate()
             .FirstOrDefault(root => root.Origin == LayoutSourceOrigin.System)?.Path;
         if (canonicalRoot is null)
@@ -166,62 +172,6 @@ public sealed partial class XkbUserInstallCapabilityProbe
 
         return declared is null ? XkbSessionType.Headless : XkbSessionType.Unknown;
     }
-
-    private (string? UserXkbRoot, string? StateRoot, bool Safe) ResolvePaths(
-        List<XkbDiagnostic> diagnostics)
-    {
-        var home = _environment.GetVariable("HOME");
-        var config = ResolveXdgHome("XDG_CONFIG_HOME", home, ".config", diagnostics);
-        var state = ResolveXdgHome(
-            "XDG_STATE_HOME",
-            home,
-            Path.Combine(".local", "state"),
-            diagnostics);
-
-        var userXkbRoot = config is null ? null : Path.Combine(config, "xkb");
-        var stateRoot = state is null ? null : Path.Combine(state, "keyboardstudio", "xkb");
-        var safe = IsSafeUserPath(userXkbRoot) && IsSafeUserPath(stateRoot);
-        if (!safe)
-        {
-            diagnostics.Add(new XkbDiagnostic(
-                "KSC002",
-                "The effective XDG configuration or state path is missing, relative, or unsafe."));
-        }
-
-        return (userXkbRoot, stateRoot, safe);
-    }
-
-    private string? ResolveXdgHome(
-        string variable,
-        string? home,
-        string fallback,
-        List<XkbDiagnostic> diagnostics)
-    {
-        var configured = _environment.GetVariable(variable);
-        if (!string.IsNullOrWhiteSpace(configured))
-        {
-            if (Path.IsPathFullyQualified(configured))
-            {
-                return Path.GetFullPath(configured);
-            }
-
-            diagnostics.Add(new XkbDiagnostic(
-                "KSC002",
-                $"{variable} is relative and cannot be used safely."));
-            return null;
-        }
-
-        return !string.IsNullOrWhiteSpace(home) && Path.IsPathFullyQualified(home)
-            ? Path.GetFullPath(Path.Combine(home, fallback))
-            : null;
-    }
-
-    private static bool IsSafeUserPath(string? path) =>
-        path is not null &&
-        Path.IsPathFullyQualified(path) &&
-        !string.Equals(Path.GetPathRoot(path), path, StringComparison.Ordinal) &&
-        !path.StartsWith("/usr/", StringComparison.Ordinal) &&
-        !path.StartsWith("/etc/", StringComparison.Ordinal);
 
     private static Version? ParseVersion(string output)
     {
