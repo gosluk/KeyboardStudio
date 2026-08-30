@@ -14,21 +14,27 @@ namespace KeyboardStudio.Core;
 /// chosen even when the caller left <see cref="LayoutImportOptions.TemplateId"/> unset.
 /// </param>
 /// <param name="Report">What was imported, what was dropped, and why. Always present.</param>
+/// <param name="ResolvedSectionId">
+/// The concrete source section that was imported. It differs from a requested null/default
+/// variant and must be retained before a derived layout can inherit it safely.
+/// </param>
 public sealed record LayoutImportResult(
     bool Success,
     KeyboardProject? Project,
     string? SuggestedTemplateId,
-    LayoutImportReport Report)
+    LayoutImportReport Report,
+    string? ResolvedSectionId)
 {
     /// <summary>Creates the result of an import that produced a project.</summary>
     public static LayoutImportResult Succeeded(
         KeyboardProject project,
         string? suggestedTemplateId,
-        LayoutImportReport report)
+        LayoutImportReport report,
+        string? resolvedSectionId = null)
     {
         ArgumentNullException.ThrowIfNull(project);
         ArgumentNullException.ThrowIfNull(report);
-        return new LayoutImportResult(true, project, suggestedTemplateId, report);
+        return new LayoutImportResult(true, project, suggestedTemplateId, report, resolvedSectionId);
     }
 
     /// <summary>
@@ -38,6 +44,6 @@ public sealed record LayoutImportResult(
     public static LayoutImportResult Failed(LayoutImportReport report)
     {
         ArgumentNullException.ThrowIfNull(report);
-        return new LayoutImportResult(false, null, null, report);
+        return new LayoutImportResult(false, null, null, report, null);
     }
 }

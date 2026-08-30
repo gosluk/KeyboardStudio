@@ -111,6 +111,10 @@ internal sealed class FakeLayoutImportCatalog : ILayoutImportCatalog
             }
         };
 
-        return Task.FromResult(LayoutImportResult.Succeeded(project, templateId, report));
+        return Task.FromResult(LayoutImportResult.Succeeded(
+            project,
+            templateId,
+            report,
+            reference.VariantId ?? "basic"));
     }
 }

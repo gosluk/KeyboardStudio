@@ -5,6 +5,9 @@ public enum XkbKeyType
     OneLevel,
     TwoLevel,
     Alphabetic,
+    Keypad,
     FourLevel,
-    FourLevelAlphabetic
+    FourLevelAlphabetic,
+    FourLevelSemialphabetic,
+    FourLevelMixedKeypad
 }

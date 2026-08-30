@@ -176,9 +176,15 @@
                       <DataTemplate>
                         <!-- No SelectCommand: the preview shows the layout, it does not edit it. -->
                         <controls:KeyControl KeyId="{Binding KeyId}"
-                                             Label="{Binding Label}"
-                                             Hint="{Binding Hint}"
-                                             ShowHint="{Binding HasHint}"
+                                             KeyName="{Binding KeyName}"
+                                             DefaultAssignment="{Binding DefaultAssignment}"
+                                             ShiftAssignment="{Binding ShiftAssignment}"
+                                             AltGrAssignment="{Binding AltGrAssignment}"
+                                             ShiftAltGrAssignment="{Binding ShiftAltGrAssignment}"
+                                             IsDefaultActive="{Binding IsDefaultActive}"
+                                             IsShiftActive="{Binding IsShiftActive}"
+                                             IsAltGrActive="{Binding IsAltGrActive}"
+                                             IsShiftAltGrActive="{Binding IsShiftAltGrActive}"
                                              IsUnmapped="{Binding IsUnmapped}"
                                              Width="{Binding Width}"
                                              Height="{Binding Height}" />

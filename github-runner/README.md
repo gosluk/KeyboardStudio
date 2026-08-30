@@ -13,8 +13,9 @@ prompting for a target.
   an image or a compose file. Registration tokens expire after about an hour.
 - The runner user is unprivileged (uid/gid `10001`, no `sudo`) and cannot install packages or
   escalate at runtime — anything a workflow job needs must be baked into this image at build
-  time instead. See `docs/TESTING.md` for the current package list and why two CI jobs
-  previously ran on hosted runners until this image carried them.
+  time instead. The image builds checksum-pinned `libxkbcommon` 1.13.1 because Ubuntu 24.04's
+  1.6 package cannot verify KeyboardStudio's layered per-user XKB roots. See `docs/TESTING.md`
+  for the remaining package list.
 - This image does not expose a Docker/Podman socket to workflow jobs. `buildah`,
   `fuse-overlayfs`, `slirp4netns`, and a subordinate UID/GID range are baked in instead, so a
   job that genuinely needs to build or run a container can do so rootless, without nesting a
@@ -28,6 +29,10 @@ podman build \
   --build-arg RUNNER_SHA256=4ef2f25285f0ae4477f1fe1e346db76d2f3ebf03824e2ddd1973a2819bf6c8cf \
   -t localhost/keyboardstudio-runner:latest .
 ```
+
+The build checks the libxkbcommon source archive checksum and fails unless the installed
+`xkbcli --version` is exactly `1.13.1`. Change both XKB build arguments deliberately when
+upgrading it.
 
 ## Run locally
 
@@ -52,7 +57,7 @@ it is a deploy-time artifact, not something to commit) from these settings and r
 against `gosluk/KeyboardStudio`:
 
 ```bash
-./start-runners.sh [-p|--prefix NAME] [-n|--count N] [-r|--ram SIZE]
+./start-runners.sh [-p|--prefix NAME] [-n|--count N] [-r|--ram SIZE] [--skip-build]
 ```
 
 - `--prefix` — name prefix for runner services/containers, e.g. `myrunner` produces
@@ -62,6 +67,9 @@ against `gosluk/KeyboardStudio`:
   colliding.
 - `--count` — number of runners to start (default: `2`)
 - `--ram` — memory limit per runner, e.g. `4gb`, `4096m` (default: `8gb`)
+- `--skip-build` — explicitly reuse the existing local image. Without it, the script rebuilds
+  `localhost/keyboardstudio-runner:latest` before starting the stack so Dockerfile dependency
+  updates are not missed; unchanged layers remain cached.
 - CPU limit is not configurable — each runner is always given a limit equal to
   the host's full core count (`nproc`), so runners can use all available CPUs.
 

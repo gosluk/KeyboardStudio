@@ -34,14 +34,20 @@ silently consuming a GitHub-hosted runner.
 All four Linux jobs — managed build, XKB integration, Linux packaging, and the release gate — run
 on that pool. The runners are unprivileged podman containers (`github-runner/`) — uid 10001, no
 `sudo`, `apt-get` present but unusable — so they can install nothing at runtime. XKB integration
-needs `xkbcli` and `xkeyboard-config`; packaging needs a display server and the libraries Avalonia
-binds. Both sets of packages are baked into the runner image at build time instead
+needs a current `xkbcli` and `xkeyboard-config`; packaging needs a display server and the libraries
+Avalonia binds. Both sets of dependencies are baked into the runner image at build time instead
 (`github-runner/Dockerfile`, built as root before the image drops to the unprivileged runner user):
 
 ```
-libxkbcommon-tools xkb-data                                                                        # XKB integration
+xkb-data + checksum-pinned libxkbcommon 1.13.1 built under /usr/local                              # XKB integration
 xvfb libx11-6 libxrandr2 libxi6 libxcursor1 libxext6 libxrender1 libice6 libsm6 libfontconfig1 libgl1 libegl1   # packaging
 ```
+
+Ubuntu 24.04's `libxkbcommon-tools` package is version 1.6.0. That version cannot resolve the
+layered user and system roots used by generated layouts, and its registry command cannot inspect
+multiple roots. The runner therefore builds 1.13.1 from a checksum-pinned source archive while
+retaining Ubuntu's `xkb-data` package as the canonical system symbols/rules database. The image
+build verifies the resulting version and the presence of `xkbcli list` before it can be deployed.
 
 Each job still calls `scripts/install-xkbcli.sh` / `scripts/install-xvfb.sh` first; both check for
 the tool and exit immediately when it is already present, so on the pool they are a no-op and only
@@ -180,8 +186,8 @@ test is reported as not run unless the test process is Windows and matches the a
 Reproducibility unit tests compare source dictionaries and binary hashes without MSVC; the native
 integration path can enable `BuildOptions.VerifyReproducibility` on a configured Windows runner.
 
-Linux XKB integration tests use the `XkbIntegration` category. A dedicated Ubuntu job installs
-`xkbcli` and `xkeyboard-config`, then compiles an ISO AltGr/Unicode fixture and an ANSI two-level
+Linux XKB integration tests use the `XkbIntegration` category. A dedicated Ubuntu runner provides
+the pinned `xkbcli` and packaged `xkeyboard-config`, then compiles an ISO AltGr/Unicode fixture and an ANSI two-level
 fixture in isolated roots. The tests never activate a layout. On failure, the generated symbols component and
 `xkbcli.log` remain under `TestResults/xkb-integration` and are uploaded as a workflow artifact.
 Locally, categorized tests return without running when `xkbcli` is unavailable; install the tool or

@@ -9,4 +9,6 @@ internal sealed class KeyboardProjectDocumentDto
     public Dictionary<string, ProjectTargetProfileDto> Targets { get; init; } = [];
 
     public LayoutImportProvenanceDto? ImportProvenance { get; init; }
+
+    public LayoutDerivationDto? LayoutDerivation { get; init; }
 }

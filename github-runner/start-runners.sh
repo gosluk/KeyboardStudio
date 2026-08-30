@@ -13,6 +13,7 @@ Options:
   -p, --prefix NAME   Prefix for runner container/service names (default: keyboardstudio-runner)
   -n, --count N       Number of runners to start (default: 2)
   -r, --ram SIZE      Memory limit per runner, e.g. 8gb, 4096m (default: 8gb)
+  -s, --skip-build    Reuse the existing local runner image instead of rebuilding it
   -h, --help          Show this help and exit
 
 If --prefix / --count / --ram are not passed as flags, the script prompts for
@@ -27,6 +28,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 IMAGE_TAG="localhost/keyboardstudio-runner:latest"
 RUNNER_VERSION="${RUNNER_VERSION:-2.335.1}"
 RUNNER_SHA256="${RUNNER_SHA256:-4ef2f25285f0ae4477f1fe1e346db76d2f3ebf03824e2ddd1973a2819bf6c8cf}"
+XKB_COMMON_VERSION="${XKB_COMMON_VERSION:-1.13.1}"
+XKB_COMMON_SHA256="${XKB_COMMON_SHA256:-aeb951964c2f7ecc08174cb5517962d157595e9e3f38fc4a130b91dc2f9fec18}"
 
 RUNNER_PREFIX="${RUNNER_PREFIX:-keyboardstudio-runner}"
 RUNNER_COUNT="${RUNNER_COUNT:-2}"
@@ -34,6 +37,7 @@ RUNNER_RAM="${RUNNER_RAM:-8gb}"
 PREFIX_FROM_FLAG=false
 COUNT_FROM_FLAG=false
 RAM_FROM_FLAG=false
+SKIP_BUILD=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -51,6 +55,10 @@ while [[ $# -gt 0 ]]; do
             RUNNER_RAM="$2"
             RAM_FROM_FLAG=true
             shift 2
+            ;;
+        -s|--skip-build)
+            SKIP_BUILD=true
+            shift
             ;;
         -h|--help)
             usage
@@ -120,13 +128,18 @@ image_exists() {
     fi
 }
 
-if ! image_exists; then
-    echo "Image $IMAGE_TAG not found locally — building it (this can take a while)..."
+if ! $SKIP_BUILD; then
+    echo "Building $IMAGE_TAG (cached layers are reused when unchanged)..."
     "${ENGINE[@]}" build \
         --build-arg RUNNER_VERSION="$RUNNER_VERSION" \
         --build-arg RUNNER_SHA256="$RUNNER_SHA256" \
+        --build-arg XKB_COMMON_VERSION="$XKB_COMMON_VERSION" \
+        --build-arg XKB_COMMON_SHA256="$XKB_COMMON_SHA256" \
         -t "$IMAGE_TAG" \
         "$SCRIPT_DIR"
+elif ! image_exists; then
+    echo "Error: --skip-build was requested, but $IMAGE_TAG does not exist locally." >&2
+    exit 1
 fi
 
 generate_compose() {

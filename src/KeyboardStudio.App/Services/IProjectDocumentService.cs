@@ -10,6 +10,7 @@ public interface IProjectDocumentService
     string? CurrentFilePath { get; }
     bool IsDirty { get; }
     LayoutImportProvenance? CurrentProvenance { get; }
+    LayoutDerivation? CurrentLayoutDerivation { get; }
     ProjectDocumentError? LastError { get; }
 
     KeyboardProject CreateNew();

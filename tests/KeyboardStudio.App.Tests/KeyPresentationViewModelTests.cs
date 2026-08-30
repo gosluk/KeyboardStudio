@@ -69,6 +69,31 @@ public sealed class KeyPresentationViewModelTests
 
     [Fact]
     [Trait("Category", "Unit")]
+    public void ActiveLayer_WhenChanged_EmphasizesTheMatchingAssignmentOnEveryKey()
+    {
+        var editor = new MainWindowViewModel().Editor;
+
+        Assert.All(editor.Keys, key =>
+        {
+            Assert.True(key.IsDefaultActive);
+            Assert.False(key.IsShiftActive);
+            Assert.False(key.IsAltGrActive);
+            Assert.False(key.IsShiftAltGrActive);
+        });
+
+        editor.ActiveLayer = ModifierLayer.ShiftAltGr;
+
+        Assert.All(editor.Keys, key =>
+        {
+            Assert.False(key.IsDefaultActive);
+            Assert.False(key.IsShiftActive);
+            Assert.False(key.IsAltGrActive);
+            Assert.True(key.IsShiftAltGrActive);
+        });
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
     public void SelectKey_WhenKeyExists_SelectsItAndRefreshesDetails()
     {
         var editor = new MainWindowViewModel().Editor;
@@ -100,18 +125,39 @@ public sealed class KeyPresentationViewModelTests
         var editor = TestMainWindow.WithEmptyProject().Editor;
         var selectedKey = Assert.IsType<KeyViewModel>(editor.SelectedKey);
 
-        Assert.Equal(selectedKey.KeyId, selectedKey.Hint);
+        Assert.Empty(selectedKey.DefaultAssignment);
         Assert.True(selectedKey.IsUnmapped);
 
         editor.SelectedOutput = "x";
 
-        Assert.Equal("x", selectedKey.Label);
+        Assert.Equal("x", selectedKey.DefaultAssignment);
         Assert.False(selectedKey.IsUnmapped);
 
         editor.ActiveLayer = ModifierLayer.Shift;
 
         Assert.True(selectedKey.IsUnmapped);
-        Assert.NotEqual("x", selectedKey.Label);
+        Assert.Equal("x", selectedKey.DefaultAssignment);
+        Assert.Empty(selectedKey.ShiftAssignment);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void LayerMappings_WhenAnyAssignmentChanges_RefreshAllFourKeycapAssignments()
+    {
+        var editor = TestMainWindow.WithEmptyProject().Editor;
+        Assert.True(editor.SelectKey("KeyP"));
+        var key = Assert.IsType<KeyViewModel>(editor.SelectedKey);
+
+        editor.LayerMappings.Single(mapping => mapping.Layer == ModifierLayer.Default).Output = "p";
+        editor.LayerMappings.Single(mapping => mapping.Layer == ModifierLayer.Shift).Output = "P";
+        editor.LayerMappings.Single(mapping => mapping.Layer == ModifierLayer.AltGr).Output = "%";
+        editor.LayerMappings.Single(mapping => mapping.Layer == ModifierLayer.ShiftAltGr).Output = "&";
+
+        Assert.Equal("p", key.DefaultAssignment);
+        Assert.Equal("P", key.ShiftAssignment);
+        Assert.Equal("%", key.AltGrAssignment);
+        Assert.Equal("&", key.ShiftAltGrAssignment);
+        Assert.Equal("P", key.KeyName);
     }
 
     [Fact]
@@ -160,7 +206,7 @@ public sealed class KeyPresentationViewModelTests
         editor.SelectedLogicalKey = LogicalKey.Enter;
 
         Assert.Equal(LogicalKey.Enter, editor.SelectedKey?.Mapping?.LogicalKey);
-        Assert.Equal("Enter", editor.SelectedKey?.Hint);
+        Assert.Equal("Enter", editor.SelectedKey?.KeyName);
     }
 
     [Fact]
@@ -297,33 +343,32 @@ public sealed class KeyPresentationViewModelTests
 
     [Fact]
     [Trait("Category", "Unit")]
-    public void Keys_WhenUnmapped_UseKeycapLegendsRatherThanIdentifiers()
+    public void Keys_AlwaysExposeMutedFooterNamesRatherThanIdentifiers()
     {
         var editor = TestMainWindow.WithEmptyProject().Editor;
 
-        Assert.Equal("Esc", editor.Keys.Single(key => key.KeyId == "Escape").Label);
-        Assert.Equal("Caps Lock", editor.Keys.Single(key => key.KeyId == "CapsLock").Label);
-        Assert.Equal("Ctrl", editor.Keys.Single(key => key.KeyId == "ControlLeft").Label);
-        Assert.Equal("Alt Gr", editor.Keys.Single(key => key.KeyId == "AltRight").Label);
-        Assert.Equal("A", editor.Keys.Single(key => key.KeyId == "KeyA").Label);
-        Assert.Equal("1", editor.Keys.Single(key => key.KeyId == "Digit1").Label);
-        Assert.Equal("\u2191", editor.Keys.Single(key => key.KeyId == "ArrowUp").Label);
-        Assert.Equal(string.Empty, editor.Keys.Single(key => key.KeyId == "Space").Label);
+        Assert.Equal("Esc", editor.Keys.Single(key => key.KeyId == "Escape").KeyName);
+        Assert.Equal("Caps Lock", editor.Keys.Single(key => key.KeyId == "CapsLock").KeyName);
+        Assert.Equal("Ctrl", editor.Keys.Single(key => key.KeyId == "ControlLeft").KeyName);
+        Assert.Equal("Alt Gr", editor.Keys.Single(key => key.KeyId == "AltRight").KeyName);
+        Assert.Equal("A", editor.Keys.Single(key => key.KeyId == "KeyA").KeyName);
+        Assert.Equal("1", editor.Keys.Single(key => key.KeyId == "Digit1").KeyName);
+        Assert.Equal("\u2191", editor.Keys.Single(key => key.KeyId == "ArrowUp").KeyName);
+        Assert.Equal("Space", editor.Keys.Single(key => key.KeyId == "Space").KeyName);
     }
 
     [Fact]
     [Trait("Category", "Unit")]
-    public void HasHint_WhenLogicalKeyIsAssigned_TurnsTheSecondKeycapLineOn()
+    public void KeyName_WhenLogicalKeyIsAssigned_RemainsThePhysicalFooterName()
     {
         var editor = TestMainWindow.WithEmptyProject().Editor;
         Assert.True(editor.SelectKey("Enter"));
         var enter = Assert.IsType<KeyViewModel>(editor.SelectedKey);
 
-        Assert.False(enter.HasHint);
+        Assert.Equal("Enter", enter.KeyName);
 
         editor.SelectedLogicalKey = LogicalKey.Enter;
 
-        Assert.True(enter.HasHint);
-        Assert.Equal("Enter", enter.Hint);
+        Assert.Equal("Enter", enter.KeyName);
     }
 }

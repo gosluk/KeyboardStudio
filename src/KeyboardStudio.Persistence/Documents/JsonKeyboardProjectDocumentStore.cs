@@ -11,9 +11,10 @@ public sealed class JsonKeyboardProjectDocumentStore : IKeyboardProjectDocumentS
     public const int FirstDocumentSchemaVersion = 1;
 
     /// <summary>
-    /// The envelope version written today. Version 2 added <c>importProvenance</c>.
+    /// The envelope version written today. Version 2 added <c>importProvenance</c>; version 3 added
+    /// the immutable <c>layoutDerivation</c> baseline.
     /// </summary>
-    public const int CurrentDocumentSchemaVersion = 2;
+    public const int CurrentDocumentSchemaVersion = 3;
 
     /// <summary>
     /// One step up the envelope schema, keyed by the version it reads. Each step receives the raw
@@ -30,7 +31,10 @@ public sealed class JsonKeyboardProjectDocumentStore : IKeyboardProjectDocumentS
             // existed has no import to record, and its absence already reads as "not imported".
             // The step is registered rather than skipped so the chain has no gap for version 3 to
             // fall through.
-            [1] = static document => document
+            [1] = static document => document,
+            // 2 -> 3 added layoutDerivation. It must stay absent for old imports: manufacturing a
+            // baseline from their current edited mappings would make those edits look inherited.
+            [2] = static document => document
         }.ToFrozenDictionary();
 
     private static readonly JsonSerializerOptions SerializerOptions = new()
@@ -57,7 +61,10 @@ public sealed class JsonKeyboardProjectDocumentStore : IKeyboardProjectDocumentS
                 StringComparer.Ordinal),
             ImportProvenance = document.ImportProvenance is null
                 ? null
-                : ToDto(document.ImportProvenance)
+                : ToDto(document.ImportProvenance),
+            LayoutDerivation = document.LayoutDerivation is null
+                ? null
+                : ToDto(document.LayoutDerivation)
         };
 
         await JsonSerializer.SerializeAsync(destination, dto, SerializerOptions, cancellationToken);
@@ -85,7 +92,8 @@ public sealed class JsonKeyboardProjectDocumentStore : IKeyboardProjectDocumentS
         return new KeyboardProjectDocument(
             KeyboardProjectDtoMapper.ToDomain(dto.Project),
             profiles,
-            dto.ImportProvenance is null ? null : ToDomain(dto.ImportProvenance));
+            dto.ImportProvenance is null ? null : ToDomain(dto.ImportProvenance),
+            dto.LayoutDerivation is null ? null : ToDomain(dto.LayoutDerivation));
     }
 
     private static int ReadSchemaVersion(JsonElement versionElement)
@@ -190,11 +198,101 @@ public sealed class JsonKeyboardProjectDocumentStore : IKeyboardProjectDocumentS
             provenance.SourceDescription,
             provenance.ImportedAtUtc);
 
+    private static LayoutDerivationDto ToDto(LayoutDerivation derivation) => new()
+    {
+        ProjectInstallationId = RequireDerivationIdentifier(
+            derivation.ProjectInstallationId,
+            nameof(derivation.ProjectInstallationId)),
+        SourceId = RequireDerivationIdentifier(derivation.SourceId, nameof(derivation.SourceId)),
+        SourceOrigin = KeyboardProjectDtoMapper.FormatPersistedEnum(derivation.SourceOrigin),
+        BaseLayoutId = RequireDerivationIdentifier(
+            derivation.BaseLayoutId,
+            nameof(derivation.BaseLayoutId)),
+        BaseVariantId = derivation.BaseVariantId,
+        ResolvedBaseSectionId = RequireDerivationIdentifier(
+            derivation.ResolvedBaseSectionId,
+            nameof(derivation.ResolvedBaseSectionId)),
+        ImportedAtUtc = derivation.ImportedAtUtc,
+        ImportFidelity = KeyboardProjectDtoMapper.FormatPersistedEnum(derivation.ImportFidelity),
+        BaselineMappings = derivation.BaselineMappings.Select(ToDto).ToList(),
+        SourceFingerprint = derivation.SourceFingerprint,
+        IncludeChainFingerprint = derivation.IncludeChainFingerprint
+    };
+
+    private static LayoutDerivationMappingDto ToDto(KeyMappingSnapshot mapping) => new()
+    {
+        KeyId = RequireDerivationIdentifier(mapping.KeyId, nameof(mapping.KeyId)),
+        LogicalKey = KeyboardProjectDtoMapper.FormatPersistedEnum(mapping.LogicalKey),
+        Outputs = KeyboardProjectDtoMapper.ToMappingDto(new KeyMapping
+        {
+            KeyId = mapping.KeyId,
+            LogicalKey = mapping.LogicalKey,
+            Outputs = mapping.Outputs.ToDictionary(pair => pair.Key, pair => pair.Value)
+        }).Outputs,
+        IsSafeToOverride = mapping.IsSafeToOverride
+    };
+
+    private static LayoutDerivation ToDomain(LayoutDerivationDto derivation)
+    {
+        ArgumentNullException.ThrowIfNull(derivation.BaselineMappings);
+
+        var mappings = derivation.BaselineMappings.Select(ToDomain).ToArray();
+        if (mappings.Select(mapping => mapping.KeyId).Distinct(StringComparer.Ordinal).Count() != mappings.Length)
+        {
+            throw new InvalidDataException("Layout derivation baseline key IDs must be unique.");
+        }
+
+        return new LayoutDerivation(
+            RequireDerivationIdentifier(
+                derivation.ProjectInstallationId,
+                nameof(derivation.ProjectInstallationId)),
+            RequireDerivationIdentifier(derivation.SourceId, nameof(derivation.SourceId)),
+            KeyboardProjectDtoMapper.ParsePersistedEnum<LayoutSourceOrigin>(
+                derivation.SourceOrigin,
+                "layoutDerivation.sourceOrigin"),
+            RequireDerivationIdentifier(derivation.BaseLayoutId, nameof(derivation.BaseLayoutId)),
+            derivation.BaseVariantId,
+            RequireDerivationIdentifier(
+                derivation.ResolvedBaseSectionId,
+                nameof(derivation.ResolvedBaseSectionId)),
+            derivation.ImportedAtUtc,
+            KeyboardProjectDtoMapper.ParsePersistedEnum<LayoutImportFidelity>(
+                derivation.ImportFidelity,
+                "layoutDerivation.importFidelity"),
+            mappings,
+            derivation.SourceFingerprint,
+            derivation.IncludeChainFingerprint);
+    }
+
+    private static KeyMappingSnapshot ToDomain(LayoutDerivationMappingDto mapping)
+    {
+        ArgumentNullException.ThrowIfNull(mapping);
+        var persisted = KeyboardProjectDtoMapper.ToMappingDomain(new KeyMappingDto
+        {
+            KeyId = RequireDerivationIdentifier(mapping.KeyId, nameof(mapping.KeyId)),
+            LogicalKey = mapping.LogicalKey,
+            Outputs = mapping.Outputs ?? throw new InvalidDataException(
+                "Layout derivation baseline outputs must not be null.")
+        });
+
+        return KeyMappingSnapshot.From(persisted, mapping.IsSafeToOverride);
+    }
+
     private static string RequireProvenanceIdentifier(string? value, string name)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
             throw new InvalidDataException($"Import provenance '{name}' must not be empty.");
+        }
+
+        return value;
+    }
+
+    private static string RequireDerivationIdentifier(string? value, string name)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new InvalidDataException($"Layout derivation '{name}' must not be empty.");
         }
 
         return value;

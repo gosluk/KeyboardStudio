@@ -6,7 +6,8 @@ This document is the executable implementation plan for KeyboardStudio. The comp
 the solution, Avalonia editor, versioned project persistence, validation, Windows semantic translation,
 deterministic native source generation, the MSVC/WDK compile/link pipeline, structural artifact
 verification, a verified Linux XKB output backend, and the target-aware build user experience. The
-remaining work is Windows integration CI and release stabilization.
+MVP, integration CI, Linux-focused interface, and installed-layout import are complete. The next
+planned work is a safe import-derived per-user XKB variant workflow.
 
 The goal is to move from that bootstrap state to a usable first release that can:
 
@@ -24,7 +25,7 @@ The plan intentionally keeps installation/registry registration, dead keys, liga
 
 ## 2. Current baseline
 
-The current Phase 10-complete baseline provides:
+The current Phase 13-complete baseline provides:
 
 - `KeyboardStudio.slnx`, using the modern XML solution format and targeting .NET 10;
 - `KeyboardStudio.App` using Avalonia;
@@ -41,8 +42,12 @@ The current Phase 10-complete baseline provides:
 - an Avalonia editor with project lifecycle, mapping controls, and diagnostics;
 - a target-aware build panel with per-target profiles, preflight gating, backend-reported stages,
   cancellation, generated-source/output actions, and categorized result presentation.
+- a Linux layout catalog/importer with managed parsing, include resolution, fidelity diagnostics,
+  host-layout detection, and persisted import provenance;
+- an embedded fully mapped `us-basic` seed and a Linux-focused target visibility policy;
+- completed managed, Linux integration, Windows native integration, packaging, and MVP release gates.
 
-Phases 0-10 are complete. The Windows path generates real `KBDTABLES` source, compiles x64
+Phases 0-13 are complete. The Windows path generates real `KBDTABLES` source, compiles x64
 DLLs through a discovered MSVC/Windows SDK toolchain, and verifies the resulting artifact beyond the
 linker exit code. `BuildOrchestrator` now validates once and resolves one `IBuildBackend` for the
 selected target. The Linux path materializes an XKB symbols component directly, performs managed
@@ -141,11 +146,19 @@ Phase 12 MVP stabilization and release readiness
    |
    v
 Phase 13 Linux focus and layout import
+   |
+   v
+Phase 14 Import-derived per-user XKB variants
 ```
 
 Phase 13 narrows the shipping user interface to the Linux target and removes the empty-keyboard
 starting state. It deliberately hides rather than deletes the Windows path, so Phases 5-8 and 11 stay
 green and the target can be re-exposed by a policy change.
+
+Phase 14 builds on the completed importer and XKB backend. It preserves the standalone generator,
+adds an immutable import baseline and neutral diff, generates a user-root bundle that remains tied to
+the original layout, and introduces explicit transactional installation. Detailed operational design
+lives in [`LINUX-USER-XKB-VARIANTS.md`](LINUX-USER-XKB-VARIANTS.md); decisions in AD-029 to AD-032.
 
 The Linux phase follows Windows artifact verification so the completed Windows path remains intact,
 but precedes build UX so target selection is designed once for both outputs. Linux integration coverage
@@ -1999,6 +2012,179 @@ Fedora host.
 
 ---
 
+# Phase 14 — Import-derived per-user XKB variants
+
+**Implementation status:** complete (P14.1–P14.8).
+
+## Objective
+
+Let a user import an installed system layout, modify the subset KeyboardStudio supports, generate a
+proper derived variant under the original layout/language, and explicitly install it in the user's
+libxkbcommon XDG configuration root without editing distribution-owned files.
+
+This phase is not a general XKB database editor. The exact file contract, compatibility policy,
+transaction rules, and acceptance scenario are in
+[`LINUX-USER-XKB-VARIANTS.md`](LINUX-USER-XKB-VARIANTS.md); decisions in AD-029 to AD-032.
+
+## Work items
+
+### P14.1 Persist project identity and an immutable derivation baseline
+
+Advance the application document envelope to schema version 3 and add `LayoutDerivation` with:
+
+- system import source and origin;
+- base layout, requested variant, and resolved base section;
+- immutable representable mappings at import time;
+- import fidelity and optional source/include fingerprints;
+- a stable project installation ID independent of display name and project path.
+
+Only import-as-new from a system-origin catalog entry establishes an installable derivation in v1.
+Existing documents migrate without inventing a baseline: they remain editable and standalone-
+exportable, but the user-variant workflow explains that re-import is required. Keep derivation in the
+document envelope and installation state out of it.
+
+Tests cover version 2 to 3 migration, exact round-trip, baseline immutability, old imported
+documents, authored documents, file-source imports, and project copies.
+
+### P14.2 Add neutral diffing and derived-variant translation
+
+Add `KeyboardLayoutDiffer` in Core and a Linux-owned `XkbUserVariantTranslator`.
+
+- Compare current mappings with the stored baseline by stable physical key identity.
+- If any supported layer changes, include the complete current supported mapping for that key.
+- Preserve explicit clears as explicit empty XKB levels rather than treating them as no change.
+- Reject changed keys whose source behavior was lossy or ambiguous, including invisible dead-key,
+  action, group, or higher-level behavior that generation could erase.
+- Reuse existing physical-key and keysym mappings, but keep the derived metadata/model separate from
+  the existing standalone `XkbLayoutMetadata` and `XkbKeyboardLayout` where their invariants differ.
+
+Tests cover unchanged projects, one-level edits, clears, logical-key changes, removed mappings,
+alphabetic/semialphabetic/keypad type selection, AltGr, deterministic ordering, and ambiguous lossy
+keys.
+
+### P14.3 Generate the staged user XKB bundle
+
+Generate a complete proposed user root in build output:
+
+```text
+xkb-user-bundle/
+  symbols/keyboardstudio
+  symbols/<base-layout>
+  rules/evdev.xml
+  keyboardstudio-bundle.json
+```
+
+The central section includes `%S/<base-layout>(<base-section>)` and emits changed keys only. The
+language bridge exposes a readable public variant such as `keyboardstudio_programmer` while pointing
+to a stable installation-ID section. The minimal XML registry entry attaches the public variant to
+the existing system layout. Generation is deterministic, contains ownership markers, and never
+writes the live XDG root.
+
+Add golden tests for Polish, Albanian, multiple projects under one layout, multiple layouts, no-op
+diffs, Unicode output, explicit clears, and identifier collisions.
+
+### P14.4 Probe capabilities and verify the proposed bundle
+
+Add `XkbUserInstallCapabilityProbe` and `XkbUserBundleVerifier`.
+
+The probe reports, rather than hides, session type, effective XDG paths, libxkbcommon version,
+`xkbcli` availability, canonical system root, and registry-discovery support. Managed installation
+requires a Wayland/libxkbcommon user path, libxkbcommon 1.11.0 or newer, safe XDG paths, and
+`xkbcli`; 1.12.2 or newer is the recommended baseline. X11, old/unknown libraries, and missing
+external verification are export-only.
+
+Verification compiles the custom RMLVO pair with the staged root before system defaults. It also
+compiles the original base and at least one unrelated same-layout variant through the staged root,
+proving the bridge does not hide system sections. Where libxkbregistry tooling is present, verify
+that the variant is discoverable beneath the expected layout. Return structured diagnostics and no
+boolean-only failure.
+
+### P14.5 Implement ownership-aware merging and host-local state
+
+Add pure planning components before filesystem mutation:
+
+- `XkbManagedBlockEditor` for comment-delimited sections in shared `symbols/<base-layout>` files;
+- `XkbRegistryDocumentMerger` for minimal `evdev.xml` additions with DTD/external resolution
+  disabled;
+- `XdgDirectoryResolver` for configuration and state locations;
+- `XkbInstallationManifest` beneath
+  `${XDG_STATE_HOME:-$HOME/.local/state}/keyboardstudio/xkb`;
+- `XkbInstallPlan` and typed operations describing exact creates, replacements, and removals.
+
+Preserve unrelated bytes where the format permits. Refuse public variant collisions, unowned
+`symbols/keyboardstudio` files, unexpected changes to managed blocks, unsafe paths, and suspicious
+symlinks. Uninstall planning removes only content owned by the selected stable installation ID.
+
+Tests use existing hand-written bridge and XML files with comments, unknown nodes, several layouts,
+several KeyboardStudio projects, external edits, collisions, and no remaining managed content.
+
+### P14.6 Add transactional install, update, verify, recovery, and uninstall
+
+Implement `IXkbUserInstallService` / `XkbUserInstallService` as a separate operation from normal
+build orchestration.
+
+1. Build the exact merged result in a temporary root.
+2. Run P14.4 verification before touching live files.
+3. Create per-transaction backups and a journal.
+4. Use same-directory temporary files and atomic replacement for each destination.
+5. Verify the installed result and record hashes/tool versions in the manifest.
+6. Roll every affected file back on failure; recover an interrupted journal on the next operation.
+
+Install, update, and uninstall share the same ownership and transaction machinery. They never write
+`/usr/share`, `/etc/xkb`, desktop settings, or session state. Tests redirect both XDG roots to
+temporary directories and inject failures after every transaction step to prove rollback.
+
+### P14.7 Add the explicit user-variant UI workflow
+
+Add a Linux user-variant panel or dialog that exposes:
+
+- read-only system base layout/variant and import fidelity;
+- editable public variant ID and display name;
+- effective user XKB path and capability details;
+- status: unavailable, export-only, not installed, installed, update available, externally modified,
+  broken, or base unavailable;
+- Generate bundle, Install, Update, Verify installed, Uninstall, and Open output actions.
+
+The default display name is `<source description> - KeyboardStudio`; the user may make it more
+specific. Destructive or live-root operations show the exact paths and require an explicit command.
+Success explains that the desktop settings may need to be reopened or the session restarted.
+KeyboardStudio does not activate the layout.
+
+App tests cover readiness, validation, command enablement, re-import guidance, capability warnings,
+conflict presentation, cancellation, and status refresh after every operation.
+
+### P14.8 Close compatibility, integration, and recovery coverage
+
+Add Linux integration coverage using pinned XKB fixtures and temporary XDG roots. The primary
+acceptance fixture imports `pl(qwertz)`, changes one key, saves/reopens, generates one complete
+override, installs, verifies registry discovery, updates, and uninstalls. At every stage the custom,
+base, and unrelated Polish variants compile and unrelated user bytes remain unchanged.
+
+Add Albanian and multi-project fixtures, libxkbcommon-version capability cases, X11 export-only
+behavior, absent-root creation, read-only paths, stale manifests, external edits, missing base
+sections, interrupted transactions, and post-package-update verification. Run no integration test
+against the developer's real home or a system XKB root.
+
+Document the final implemented behavior, any departure from this proposal, distro-neutral
+troubleshooting, package names for `xkbcli` where release packaging owns them, and the remaining
+desktop-discovery limitations.
+
+## Acceptance criteria
+
+- a system-origin import persists enough baseline data to distinguish user edits from inherited
+  mappings after save/reopen;
+- a one-key edit produces one complete key override based on `%S/<layout>(<section>)`;
+- the generated variant is associated with the existing layout in the user registry, not presented
+  as a newly invented language;
+- managed installation is unavailable on X11 and unverifiable hosts, with bundle export retained;
+- normal build never writes the live XDG root;
+- install, update, verify, rollback, recovery, and uninstall preserve unrelated user files and XML;
+- the custom layout, original base, and an unrelated same-language variant compile through the
+  proposed and installed roots;
+- no operation writes a distribution-owned XKB path or changes the active desktop layout.
+
+---
+
 ## 5. Cross-cutting technical work
 
 ### 5.1 Logging
@@ -2173,6 +2359,17 @@ Result:
 - Windows CI;
 - stabilized Windows and Linux end-to-end application.
 
+### Milestone F — Safe per-user Linux augmentation
+
+Includes phases 13-14.
+
+Result:
+
+- import an installed layout as an editable baseline;
+- generate changed-key-only variants under the existing layout identity;
+- verify complete staged and installed XKB roots;
+- explicitly install, update, recover, and uninstall user-owned variants without system writes.
+
 ---
 
 ## 8. Recommended commit strategy
@@ -2199,6 +2396,9 @@ Map template keys to XKB key names
 Generate deterministic XKB symbols component
 Verify generated XKB with xkbcli
 Add Windows native build CI
+Persist an immutable import derivation baseline
+Generate a per-user XKB variant bundle
+Install a user XKB variant transactionally
 ```
 
 Avoid commits that mix UI redesign, persistence changes, and Windows ABI work unless they are inseparable.
@@ -2291,8 +2491,36 @@ compile/link, while Linux materializes XKB text and optionally invokes a verifie
 
 **Risk:** tests or builds overwrite system/user XKB files or activate an invalid layout.
 
-**Mitigation:** generate and verify only in isolated workspaces. Installation and activation require a
-separate, explicit post-MVP workflow and are never performed by normal tests.
+**Mitigation:** normal builds generate and verify only in isolated workspaces. Phase 14 installation
+is a separate explicit, capability-gated transaction with staging, backups, a journal, rollback, and
+temporary XDG roots in tests. Activation is never performed.
+
+### Risk R12 — A user bridge shadows the system layout file
+
+**Risk:** adding `symbols/pl` or another system-named file to the higher-priority user root prevents
+the base or unrelated variants from resolving, or a recursive include loads the bridge again.
+
+**Mitigation:** require libxkbcommon 1.11.0+ for `%S`, include the base explicitly from the system
+root, and compile the base plus an unrelated same-layout variant through the staged and installed
+roots before accepting the transaction.
+
+### Risk R13 — Installation destroys unrelated user XKB configuration
+
+**Risk:** a naïve rewrite of shared symbols or registry XML loses hand-written layouts, comments, or
+entries owned by another tool.
+
+**Mitigation:** distinguish app-owned from shared files; edit stable managed blocks and exact XML
+nodes only; preserve unknown content; detect hash/ownership conflicts; back up and journal every
+transaction; uninstall only by stable installation ID.
+
+### Risk R14 — Desktop discovery differs from keymap compilation
+
+**Risk:** the custom variant compiles through libxkbcommon but does not appear in a desktop chooser
+that parses registry XML itself instead of using libxkbregistry.
+
+**Mitigation:** report compilation and discovery as separate capabilities, verify registry merging
+when tooling permits, warn before installation when discovery cannot be demonstrated, and never use
+a distribution-name allowlist as proof of support.
 
 ---
 
@@ -2305,9 +2533,10 @@ The following should be planned only after the direct-mapping workflow is stable
 - ligatures/multi-character output;
 - compose sequences;
 - locale-specific advanced behavior;
-- installation/registry registration;
-- automatic XKB installation, desktop registration, or activation;
-- uninstall/upgrade of installed layouts;
+- Windows installation/registry registration;
+- system-wide or X11 XKB installation;
+- automatic activation or direct mutation of desktop/session keyboard settings;
+- distribution packaging of generated layouts;
 - importing existing `.klc` projects;
 - importing/decompiling layout DLLs;
 - custom physical keyboard template editor;
@@ -2322,19 +2551,22 @@ The architecture should not block these features, but MVP code should not pay th
 
 ## 12. Immediate next implementation order
 
-Phases 0-12 are complete. The recommended next work is:
+Phases 0-13 are complete. The recommended next work is:
 
-1. **Ship the `us-basic` seed so no document opens empty (P13.1).** No dependencies; fixes the
-   starting-state problem on its own.
-2. **Apply the target visibility policy and narrow the build panel to XKB (P13.2).** Independent of
-   the importer.
-3. **Build the catalog: Core contract, data-root discovery, registry reader (P13.3-P13.4).** Ends
-   with a browsable, previewless layout list.
-4. **Build the resolver: lexer, parser, include resolution (P13.5-P13.6).**
-5. **Build the translators: keysym table and decoder, bidirectional key names (P13.7-P13.8).**
-6. **Assemble the importer and the import dialog (P13.9-P13.10).**
-7. **Detect and import the host layout at startup (P13.11).**
-8. **Close with golden, round-trip, soak, and oracle coverage (P13.12).**
+1. **Persist the immutable derivation baseline and stable project identity (P14.1).** This is the
+   enabling data contract; migrate old documents without pretending they have a baseline.
+2. **Implement and test neutral diffing plus Linux derived translation (P14.2).** End with a typed,
+   changed-keys-only model and explicit rejection of lossy changed keys.
+3. **Generate the staged central symbols, language bridges, registry overlay, and bundle manifest
+   (P14.3).** Still no live user-directory writes.
+4. **Probe the host and compile the entire proposed behavior (P14.4).** Prove the custom, base, and
+   unrelated variants all survive the overlay.
+5. **Build pure ownership-aware merge plans and host-local state (P14.5).** Reviewable plans precede
+   mutation.
+6. **Add the transactional installer and recovery path (P14.6).** Land install/update/verify/uninstall
+   together so no write-only feature ships without cleanup.
+7. **Expose the explicit workflow and capability states in the UI (P14.7).**
+8. **Close with compatibility, transaction-failure, and end-to-end coverage (P14.8).**
 
-Each of items 1, 2, 3, 6, and 7 is independently shippable, so the empty-keyboard fix and the
-Linux-only UI land long before the parser is finished.
+P14.1-P14.4 are independently useful as safe bundle generation and verification. Live installation
+does not become available until P14.5 and P14.6 are both complete.

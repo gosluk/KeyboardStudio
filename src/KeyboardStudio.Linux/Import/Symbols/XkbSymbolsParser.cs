@@ -359,14 +359,16 @@ public sealed class XkbSymbolsParser
                     Report(
                         ValidationSeverity.Warning,
                         LayoutImportDiagnosticCodes.UnsupportedConstructIgnored,
-                        $"Key {keyName} at line {line} used '{property}', which has no equivalent in the model; it was ignored.");
+                        $"Key {keyName} at line {line} used '{property}', which has no equivalent in the model; it was ignored.",
+                        keyName);
                 }
                 else if (!IgnoredKeyProperties.Contains(property))
                 {
                     Report(
                         ValidationSeverity.Info,
                         LayoutImportDiagnosticCodes.UnrecognizedStatementSkipped,
-                        $"Skipped the unrecognized property '{property}' of key {keyName} at line {line}.");
+                        $"Skipped the unrecognized property '{property}' of key {keyName} at line {line}.",
+                        keyName);
                 }
 
                 SkipKeyPropertyValue();
@@ -384,7 +386,8 @@ public sealed class XkbSymbolsParser
             Report(
                 ValidationSeverity.Warning,
                 LayoutImportDiagnosticCodes.AlternateGroupsIgnored,
-                $"Key {keyName} at line {line} defined more than one group; only the first was imported.");
+                $"Key {keyName} at line {line} defined more than one group; only the first was imported.",
+                keyName);
         }
 
         return new XkbKeyStatement(merge, keyName, keysyms);
@@ -583,6 +586,13 @@ public sealed class XkbSymbolsParser
         }
     }
 
-    private void Report(ValidationSeverity severity, string code, string message) =>
-        _diagnostics.Add(new LayoutImportDiagnostic(severity, code, message));
+    private void Report(
+        ValidationSeverity severity,
+        string code,
+        string message,
+        string? sourceKeyName = null) =>
+        _diagnostics.Add(new LayoutImportDiagnostic(severity, code, message)
+        {
+            SourceKeyName = sourceKeyName
+        });
 }

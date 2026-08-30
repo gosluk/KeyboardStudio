@@ -1,0 +1,8 @@
+// KeyboardStudio user-variant bridges. Managed blocks only.
+
+// BEGIN KeyboardStudio 7c31d5f2a19e40a4b0ef64f01a295135
+partial alphanumeric_keys
+xkb_symbols "keyboardstudio_programmer" {
+    include "keyboardstudio(ks_7c31d5f2a19e)"
+};
+// END KeyboardStudio 7c31d5f2a19e40a4b0ef64f01a295135

@@ -4,7 +4,10 @@ using Avalonia.Platform.Storage;
 
 namespace KeyboardStudio.App;
 
-public sealed class AvaloniaProjectInteractionService : IProjectInteractionService, IBuildInteractionService
+public sealed class AvaloniaProjectInteractionService :
+    IProjectInteractionService,
+    IBuildInteractionService,
+    ILinuxUserVariantInteractionService
 {
     private static readonly FilePickerFileType ProjectFileType = new("KeyboardStudio project")
     {
@@ -75,6 +78,11 @@ public sealed class AvaloniaProjectInteractionService : IProjectInteractionServi
 
     public Task ShowErrorAsync(string title, string message) =>
         new ProjectErrorDialog(title, message).ShowDialog(_owner);
+
+    public Task<bool> ConfirmLiveXkbOperationAsync(
+        string action,
+        IReadOnlyList<string> paths) =>
+        new LiveXkbOperationDialog(action, paths).ShowDialog<bool>(_owner);
 
     public async Task OpenDirectoryAsync(string path)
     {

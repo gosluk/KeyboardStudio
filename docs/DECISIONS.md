@@ -318,3 +318,66 @@ Goldens are rewritable by design: `KEYBOARDSTUDIO_UPDATE_GOLDEN=1` rewrites ever
 repository. A golden nobody can regenerate gets asserted around instead of updated, and a diff of
 what an import now produces is exactly the artifact a change to the importer should be reviewed
 through.
+
+## AD-029 - Linux customization is a variant of an imported system layout
+
+The Phase 14 product workflow begins with a system-origin XKB import and publishes supported edits as
+a new variant beneath the original layout identity. It does not create a new language or copy the
+whole system definition.
+
+KeyboardStudio is a partial augmentation editor. Keeping `pl` or `al` as the RMLVO layout lets the
+desktop continue to associate the result with Polish or Albanian while a custom variant ID and
+description distinguish the user's work. The generated section includes the current system base and
+overrides changed keys only, so unmodified keys continue to receive distribution updates.
+
+Loose-file imports, authored projects, and version-2 imported projects without a baseline remain
+valid for standalone export but are not eligible for derived-variant installation in the first
+implementation.
+
+## AD-030 - Definitions are dedicated; language association uses thin bridges and registry overlays
+
+All substantial KeyboardStudio definitions live in the user file `symbols/keyboardstudio`. For each
+base layout, a small managed section in `symbols/<base-layout>` forwards the public variant to the
+dedicated internal section. A minimal user `rules/evdev.xml` entry advertises that public variant
+beneath the existing system layout.
+
+The normal rules catch-all resolves `(pl, keyboardstudio_example)` as
+`pl(keyboardstudio_example)`, which is why a same-name bridge is required. The bridge must not copy
+or replace the distribution's other sections. The dedicated definition includes its base as
+`%S/pl(qwertz)`, explicitly selecting the system root and avoiding recursion through the user file.
+
+Shared bridge and XML files are edited surgically. KeyboardStudio preserves unrelated user content,
+refuses ownership conflicts, and removes only nodes or managed blocks carrying its installation ID.
+
+## AD-031 - Per-user XKB installation is explicit, transactional, and capability-gated
+
+Normal builds never modify an XKB configuration root. Install, update, verify installed, and
+uninstall are separate explicit operations targeting
+`${XDG_CONFIG_HOME:-$HOME/.config}/xkb`; activation remains the desktop's responsibility.
+
+The managed install command is offered only when the host demonstrates the required libxkbcommon
+Wayland path, `%S` support, writable safe XDG locations, and `xkbcli` compilation verification. X11,
+old or unknown libxkbcommon, and unverifiable hosts receive export-only behavior. Registry discovery
+is reported separately because a desktop that parses XML directly may not merge the user registry
+the way libxkbregistry does.
+
+The installer first constructs and compiles the exact merged root in a staging directory. It also
+compiles the base and an unrelated same-layout variant, then writes with backups, same-directory
+temporary files, a journal, hashes, and rollback. It never writes `/usr/share`, `/etc/xkb`, or a
+desktop/session setting.
+
+## AD-032 - A derivation baseline is portable; installation state is host-local
+
+Document schema version 3 adds an immutable `LayoutDerivation` beside import provenance. It records
+the system base identity and the representable mappings at import time. A platform-neutral Core diff
+compares that snapshot with the current project; if one supported layer changes, Linux generation
+emits the complete current supported mapping for the key.
+
+Provenance alone cannot calculate this delta, and re-reading the current system layout would confuse
+distribution changes with user edits. If a changed key contained source behavior the importer could
+not represent, generation fails rather than silently erasing that behavior.
+
+Paths, installed variants, content hashes, backups, and transaction journals describe one machine,
+so they live under `${XDG_STATE_HOME:-$HOME/.local/state}/keyboardstudio/xkb`, not in `.kbdproj`.
+This keeps project files portable and makes ownership checks independent of project renames or file
+copies.

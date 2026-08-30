@@ -38,6 +38,10 @@ public sealed class XkbGoldenImportTests
     /// </summary>
     public static TheoryData<string, string?> Layouts => new()
     {
+        // Albanian is the second national-layout acceptance fixture. Its basic section builds on
+        // latin(type3), while Plisi demonstrates a national variant that composes US symbols.
+        { "al", null },
+        { "al", "plisi" },
         // ANSI, no composition to speak of: the baseline every other import is a departure from.
         { "us", null },
         // Dead keys on the base layer, which the model cannot hold and has to report.
@@ -123,12 +127,12 @@ public sealed class XkbGoldenImportTests
     {
         // The goldens each look up one entry, so between them they say nothing about the listing
         // itself. The vendored root is small enough to state exhaustively, and it happens to hold
-        // both kinds of entry: four layouts the registry describes, and the five files those
+        // both kinds of entry: five layouts the registry describes, and the five files those
         // layouts include, which are importable but nameless.
         var descriptors = await VendoredXkbFixture.CreateSource().ListAsync();
 
         Assert.Equal(
-            ["de", "fr", "keypad", "kpdl", "latin", "level3", "nbsp", "pl", "us"],
+            ["al", "de", "fr", "keypad", "kpdl", "latin", "level3", "nbsp", "pl", "us"],
             descriptors.Select(descriptor => descriptor.LayoutId).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal));
 
         // A layout the registry describes arrives with its description, its variants, and the

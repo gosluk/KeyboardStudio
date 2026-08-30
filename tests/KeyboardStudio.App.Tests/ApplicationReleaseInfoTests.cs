@@ -16,6 +16,6 @@ public sealed class ApplicationReleaseInfoTests
         // The envelope moved to 2 when it gained import provenance, while the release and the
         // Core project schema stayed where they were. That the three numbers disagree is the
         // point of having three of them.
-        Assert.Equal(2, ApplicationReleaseInfo.DocumentSchemaVersion);
+        Assert.Equal(3, ApplicationReleaseInfo.DocumentSchemaVersion);
     }
 }

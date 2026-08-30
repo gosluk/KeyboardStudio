@@ -703,6 +703,57 @@ combined with the system defaults. Versions 1.9 and newer add `--test`; older ve
 discard the emitted full keymap. The verifier is mandatory in Linux integration CI but optional for
 local generation, so XKB text can be produced on any supported host.
 
+### 10.4 Import-derived per-user variants
+
+The per-user variant path composes the implemented import and generation capabilities but is not a
+mode of the existing standalone build. It begins only with a system-origin import and keeps the
+original layout and variant as an immutable derivation base:
+
+```text
+KeyboardProjectDocument + LayoutDerivation + XkbUserVariantMetadata
+                              |
+                              v
+                    KeyboardLayoutDiffer
+                              |
+                              v
+                    XkbUserVariantTranslator
+                              |
+                              v
+                    XkbUserBundleGenerator
+                              |
+                              v
+            staged user XKB root -> verify -> explicit install
+```
+
+`LayoutDerivation` lives in the document envelope, not in the Core aggregate. It records the system
+base identity and an immutable snapshot of every representable mapping at import time. Core owns
+only the platform-neutral difference operation. The Linux backend translates changed keys into a
+section that includes the current system base with `%S`, then emits each changed key's complete
+supported mapping.
+
+The installed user root separates definition from language association:
+
+```text
+${XDG_CONFIG_HOME:-$HOME/.config}/xkb/
+  symbols/keyboardstudio   app-owned generated definitions
+  symbols/pl               shared, managed bridge sections
+  symbols/al               shared, managed bridge sections
+  rules/evdev.xml          minimal registry variants under system layouts
+```
+
+Normal builds write only to build output. `XkbUserInstallService` is a separate Linux boundary that
+requires an explicit user action, verifies a staged merged root with `xkbcli`, creates backups and a
+journal, performs conflict-aware writes, and rolls the transaction back on failure. Host-local
+ownership and hashes live under `${XDG_STATE_HOME:-$HOME/.local/state}/keyboardstudio/xkb`, never in
+the portable project document. Installation never writes a system XKB root and never activates a
+desktop layout.
+
+Managed installation is capability-gated: the first version targets Wayland/libxkbcommon user
+configuration, requires `%S` support and external compilation verification, and treats X11 or an
+old/unknown toolchain as export-only. Desktop discovery is a separate capability because only tools
+using libxkbregistry merge user `evdev.xml` entries reliably. The complete contract is in
+[`LINUX-USER-XKB-VARIANTS.md`](LINUX-USER-XKB-VARIANTS.md).
+
 ---
 
 ## 11. Build orchestration
@@ -1216,6 +1267,10 @@ unsaved-changes confirmation path, and the startup seed and host-import fallback
 - importing existing native artifacts;
 - importing geometry: physical layout still comes from the bundled templates;
 - editing, installing, or activating anything in a system or session XKB root.
+
+The list above is the completed MVP boundary. Phase 14 adds only explicit, transactional
+**per-user** XKB variant installation. System-wide installation, X11 installation, and activation
+remain excluded.
 
 Import is deliberately included in the boundary while dead keys are not, which is why import is
 specified as lossy: it drops what the model cannot hold and reports each loss (13.4).

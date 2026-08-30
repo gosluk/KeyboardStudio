@@ -25,161 +25,161 @@
       "severity": "Warning",
       "code": "KSI021",
       "message": "Key <CAPS> at line 95 used 'actions', which has no equivalent in the model; it was ignored.",
-      "keyId": null,
+      "keyId": "CapsLock",
       "layer": null
     },
     {
       "severity": "Warning",
       "code": "KSI021",
       "message": "Key <KP7> at line 33 used 'overlay1', which has no equivalent in the model; it was ignored.",
-      "keyId": null,
+      "keyId": "Numpad7",
       "layer": null
     },
     {
       "severity": "Warning",
       "code": "KSI021",
       "message": "Key <KP8> at line 34 used 'overlay1', which has no equivalent in the model; it was ignored.",
-      "keyId": null,
+      "keyId": "Numpad8",
       "layer": null
     },
     {
       "severity": "Warning",
       "code": "KSI021",
       "message": "Key <KP9> at line 35 used 'overlay1', which has no equivalent in the model; it was ignored.",
-      "keyId": null,
+      "keyId": "Numpad9",
       "layer": null
     },
     {
       "severity": "Warning",
       "code": "KSI021",
       "message": "Key <KP4> at line 37 used 'overlay1', which has no equivalent in the model; it was ignored.",
-      "keyId": null,
+      "keyId": "Numpad4",
       "layer": null
     },
     {
       "severity": "Warning",
       "code": "KSI021",
       "message": "Key <KP5> at line 38 used 'overlay1', which has no equivalent in the model; it was ignored.",
-      "keyId": null,
+      "keyId": "Numpad5",
       "layer": null
     },
     {
       "severity": "Warning",
       "code": "KSI021",
       "message": "Key <KP6> at line 39 used 'overlay1', which has no equivalent in the model; it was ignored.",
-      "keyId": null,
+      "keyId": "Numpad6",
       "layer": null
     },
     {
       "severity": "Warning",
       "code": "KSI021",
       "message": "Key <KP1> at line 41 used 'overlay1', which has no equivalent in the model; it was ignored.",
-      "keyId": null,
+      "keyId": "Numpad1",
       "layer": null
     },
     {
       "severity": "Warning",
       "code": "KSI021",
       "message": "Key <KP2> at line 42 used 'overlay1', which has no equivalent in the model; it was ignored.",
-      "keyId": null,
+      "keyId": "Numpad2",
       "layer": null
     },
     {
       "severity": "Warning",
       "code": "KSI021",
       "message": "Key <KP3> at line 43 used 'overlay1', which has no equivalent in the model; it was ignored.",
-      "keyId": null,
+      "keyId": "Numpad3",
       "layer": null
     },
     {
       "severity": "Warning",
       "code": "KSI021",
       "message": "Key <KP0> at line 45 used 'overlay1', which has no equivalent in the model; it was ignored.",
-      "keyId": null,
+      "keyId": "Numpad0",
       "layer": null
     },
     {
       "severity": "Warning",
       "code": "KSI021",
       "message": "Key <KPDL> at line 46 used 'overlay1', which has no equivalent in the model; it was ignored.",
-      "keyId": null,
+      "keyId": "NumpadDecimal",
       "layer": null
     },
     {
       "severity": "Warning",
       "code": "KSI021",
       "message": "Key <KP7> at line 67 used 'overlay2', which has no equivalent in the model; it was ignored.",
-      "keyId": null,
+      "keyId": "Numpad7",
       "layer": null
     },
     {
       "severity": "Warning",
       "code": "KSI021",
       "message": "Key <KP8> at line 68 used 'overlay2', which has no equivalent in the model; it was ignored.",
-      "keyId": null,
+      "keyId": "Numpad8",
       "layer": null
     },
     {
       "severity": "Warning",
       "code": "KSI021",
       "message": "Key <KP9> at line 69 used 'overlay2', which has no equivalent in the model; it was ignored.",
-      "keyId": null,
+      "keyId": "Numpad9",
       "layer": null
     },
     {
       "severity": "Warning",
       "code": "KSI021",
       "message": "Key <KP4> at line 71 used 'overlay2', which has no equivalent in the model; it was ignored.",
-      "keyId": null,
+      "keyId": "Numpad4",
       "layer": null
     },
     {
       "severity": "Warning",
       "code": "KSI021",
       "message": "Key <KP5> at line 72 used 'overlay2', which has no equivalent in the model; it was ignored.",
-      "keyId": null,
+      "keyId": "Numpad5",
       "layer": null
     },
     {
       "severity": "Warning",
       "code": "KSI021",
       "message": "Key <KP6> at line 73 used 'overlay2', which has no equivalent in the model; it was ignored.",
-      "keyId": null,
+      "keyId": "Numpad6",
       "layer": null
     },
     {
       "severity": "Warning",
       "code": "KSI021",
       "message": "Key <KP1> at line 75 used 'overlay2', which has no equivalent in the model; it was ignored.",
-      "keyId": null,
+      "keyId": "Numpad1",
       "layer": null
     },
     {
       "severity": "Warning",
       "code": "KSI021",
       "message": "Key <KP2> at line 76 used 'overlay2', which has no equivalent in the model; it was ignored.",
-      "keyId": null,
+      "keyId": "Numpad2",
       "layer": null
     },
     {
       "severity": "Warning",
       "code": "KSI021",
       "message": "Key <KP3> at line 77 used 'overlay2', which has no equivalent in the model; it was ignored.",
-      "keyId": null,
+      "keyId": "Numpad3",
       "layer": null
     },
     {
       "severity": "Warning",
       "code": "KSI021",
       "message": "Key <KP0> at line 79 used 'overlay2', which has no equivalent in the model; it was ignored.",
-      "keyId": null,
+      "keyId": "Numpad0",
       "layer": null
     },
     {
       "severity": "Warning",
       "code": "KSI021",
       "message": "Key <KPDL> at line 80 used 'overlay2', which has no equivalent in the model; it was ignored.",
-      "keyId": null,
+      "keyId": "NumpadDecimal",
       "layer": null
     },
     {

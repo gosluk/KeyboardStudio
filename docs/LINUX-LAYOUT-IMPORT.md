@@ -30,6 +30,12 @@ Import is a **read-only** operation against the host's XKB data. It never writes
 registers, or removes anything from a system or session XKB root, matching the boundary already set
 by [`LINUX-XKB.md`](LINUX-XKB.md).
 
+Phase 14 will use a system-origin import as the base for a user-scoped derived variant. That later
+workflow needs an immutable snapshot of the representable mappings at import time; the current
+version-2 provenance record alone is not enough to calculate a safe delta. The planned persistence,
+generation, and installation contract is in
+[`LINUX-USER-XKB-VARIANTS.md`](LINUX-USER-XKB-VARIANTS.md). Import itself remains read-only.
+
 ---
 
 ## 1. Why a managed resolver rather than `xkbcli`

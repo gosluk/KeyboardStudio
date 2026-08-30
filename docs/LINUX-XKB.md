@@ -12,6 +12,11 @@ tooling assembles it with the host's other XKB components when the layout is loa
 The initial backend generates and verifies files. It does not install, register, activate, or remove
 a layout from a desktop session.
 
+Phase 14 implements a separate, explicit workflow for publishing changes made to an imported system
+layout as a per-user variant, including capability-gated verification and transactional
+installation. It does not change the contract of this standalone backend. See
+[`LINUX-USER-XKB-VARIANTS.md`](LINUX-USER-XKB-VARIANTS.md).
+
 ## Why generate a symbols component
 
 XKB distinguishes a complete keymap from its keycodes, types, compatibility, symbols, and legacy
@@ -231,14 +236,17 @@ bad active keymap can make keyboard input unusable.
    generated `symbols/<layout-id>` to
    `${XDG_CONFIG_HOME:-$HOME/.config}/xkb/symbols/<layout-id>`. Desktop discovery may additionally
    require a user rules registry entry and a session restart; follow the desktop environment and
-   libxkbcommon custom-configuration instructions.
+   libxkbcommon custom-configuration instructions. This manual standalone-layout procedure is
+   different from the managed import-derived variant bundle.
 5. Do not edit `/usr/share/X11/xkb` or another distribution-owned XKB root. Package updates can
    overwrite those files. Remove the user-scoped symbols file to roll back.
 
 The user configuration path is a libxkbcommon feature and does not work as an alternative XKB search
 path for an Xorg server. X11 testing/activation uses different tooling and should follow the
 official libxkbcommon guidance. KeyboardStudio deliberately does not automate any copy, registry,
-desktop setting, or activation step.
+desktop setting, or activation step in this standalone backend. The separate managed variant
+workflow provides capability-gated user-file installation while retaining the no-activation
+boundary.
 
 ## Authoritative references
 

@@ -24,8 +24,8 @@ public sealed class SeedDocumentTests
     {
         var editor = new MainWindowViewModel().Editor;
 
-        Assert.Equal("a", editor.Keys.Single(key => key.KeyId == "KeyA").Label);
-        Assert.Equal("1", editor.Keys.Single(key => key.KeyId == "Digit1").Label);
+        Assert.Equal("a", editor.Keys.Single(key => key.KeyId == "KeyA").DefaultAssignment);
+        Assert.Equal("1", editor.Keys.Single(key => key.KeyId == "Digit1").DefaultAssignment);
         Assert.DoesNotContain(editor.Keys, key => key.IsUnmapped);
     }
 

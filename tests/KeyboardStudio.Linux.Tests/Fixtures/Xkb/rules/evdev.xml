@@ -4,6 +4,34 @@
   <layoutList>
     <layout>
       <configItem>
+        <name>al</name>
+        <!-- Keyboard indicator for Albanian layouts -->
+        <shortDescription>sq</shortDescription>
+        <description>Albanian</description>
+        <countryList>
+          <iso3166Id>AL</iso3166Id>
+        </countryList>
+        <languageList>
+          <iso639Id>sqi</iso639Id>
+        </languageList>
+      </configItem>
+      <variantList>
+        <variant>
+          <configItem>
+            <name>plisi</name>
+            <description>Albanian (Plisi)</description>
+          </configItem>
+        </variant>
+        <variant>
+          <configItem>
+            <name>veqilharxhi</name>
+            <description>Albanian (Veqilharxhi)</description>
+          </configItem>
+        </variant>
+      </variantList>
+    </layout>
+    <layout>
+      <configItem>
         <name>us</name>
         <!-- Keyboard indicator for English layouts -->
         <shortDescription>en</shortDescription>

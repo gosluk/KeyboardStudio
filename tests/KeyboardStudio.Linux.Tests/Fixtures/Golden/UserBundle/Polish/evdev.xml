@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xkbConfigRegistry version="1.1">
+  <layoutList>
+    <layout>
+      <configItem>
+        <name>pl</name>
+      </configItem>
+      <variantList>
+        <!-- BEGIN KeyboardStudio 7c31d5f2a19e40a4b0ef64f01a295135 -->
+        <variant>
+          <configItem>
+            <name>keyboardstudio_programmer</name>
+            <shortDescription>pl</shortDescription>
+            <description>Polish – KeyboardStudio</description>
+          </configItem>
+        </variant>
+        <!-- END KeyboardStudio 7c31d5f2a19e40a4b0ef64f01a295135 -->
+      </variantList>
+    </layout>
+  </layoutList>
+</xkbConfigRegistry>
