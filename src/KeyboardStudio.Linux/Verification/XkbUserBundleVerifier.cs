@@ -320,7 +320,7 @@ public sealed class XkbUserBundleVerifier : IXkbUserBundleVerifier
         var arguments = new List<string>
         {
             "list",
-            "--ruleset", "evdev",
+            "--ruleset=evdev",
             "--skip-default-paths",
             root,
             systemRoot

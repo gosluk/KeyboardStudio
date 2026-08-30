@@ -168,7 +168,7 @@ public sealed class XkbUserVariantAcceptanceTests
                 "xkbcli integration test",
                 new Version(1, 13, 0),
                 MeetsRecommendedVersion: true,
-                VendoredXkbFixture.Root,
+                SystemXkbRoot(),
                 XkbRegistryDiscoverySupport.Available,
                 []);
             var verifier = new XkbUserBundleVerifier(
@@ -180,11 +180,11 @@ public sealed class XkbUserVariantAcceptanceTests
                 [polish.Metadata, albanian.Metadata],
                 capability);
 
-            Assert.Equal(XkbUserBundleVerificationStatus.Verified, result.Status);
-            Assert.Equal(8, result.Checks.Count);
             Assert.All(result.Checks, check => Assert.True(
                 check.Success,
                 $"{check.Kind} {check.LayoutId}({check.VariantId}): {check.StandardError}"));
+            Assert.Equal(XkbUserBundleVerificationStatus.Verified, result.Status);
+            Assert.Equal(7, result.Checks.Count);
         }
         finally
         {
@@ -267,6 +267,12 @@ public sealed class XkbUserVariantAcceptanceTests
         VendoredXkbFixture.Root,
         XkbRegistryDiscoverySupport.Available,
         []);
+
+    private static string SystemXkbRoot() =>
+        new XkbDataRootLocator(new HostXkbEnvironment(), new HostXkbFileSystem())
+            .Locate()
+            .First(root => root.Origin == LayoutSourceOrigin.System)
+            .Path;
 
     private static void AssertRegistryPlacement(
         XdgDirectoryPaths paths,

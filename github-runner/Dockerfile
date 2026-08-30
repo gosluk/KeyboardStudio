@@ -2,6 +2,46 @@
 # This makes actions/setup-dotnet able to use/update the installation without root.
 FROM mcr.microsoft.com/dotnet/sdk:10.0-noble AS dotnet-sdk
 
+FROM ubuntu:24.04 AS xkbcommon-builder
+
+ARG XKB_COMMON_VERSION=1.13.1
+ARG XKB_COMMON_SHA256=aeb951964c2f7ecc08174cb5517962d157595e9e3f38fc4a130b91dc2f9fec18
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       bison \
+       build-essential \
+       ca-certificates \
+       curl \
+       flex \
+       libxml2-dev \
+       meson \
+       ninja-build \
+       pkg-config \
+       python3 \
+       xkb-data \
+    && curl --fail --show-error --location \
+       --output /tmp/libxkbcommon.tar.gz \
+       "https://github.com/xkbcommon/libxkbcommon/archive/refs/tags/xkbcommon-${XKB_COMMON_VERSION}.tar.gz" \
+    && echo "${XKB_COMMON_SHA256}  /tmp/libxkbcommon.tar.gz" | sha256sum --check - \
+    && mkdir -p /tmp/libxkbcommon \
+    && tar --extract --gzip --file /tmp/libxkbcommon.tar.gz \
+       --directory /tmp/libxkbcommon --strip-components=1 \
+    && meson setup /tmp/libxkbcommon/build /tmp/libxkbcommon \
+       --buildtype=release \
+       --prefix=/usr/local \
+       -Denable-bash-completion=false \
+       -Denable-docs=false \
+       -Denable-tools=true \
+       -Denable-wayland=false \
+       -Denable-x11=false \
+       -Denable-xkbregistry=true \
+       -Dxkb-config-root=/usr/share/X11/xkb \
+    && meson compile -C /tmp/libxkbcommon/build \
+    && DESTDIR=/xkbcommon-root meson install -C /tmp/libxkbcommon/build
+
 FROM ubuntu:24.04
 
 ARG RUNNER_VERSION=2.335.1
@@ -38,6 +78,7 @@ RUN apt-get update \
        libicu-dev \
        libssl3 \
        libssl-dev \
+       libxml2 \
        openssh-client \
        pkg-config \
        python3 \
@@ -48,7 +89,6 @@ RUN apt-get update \
        zip \
        zlib1g \
        zlib1g-dev \
-       libxkbcommon-tools \
        xkb-data \
        xvfb \
        libx11-6 \
@@ -82,6 +122,15 @@ RUN apt-get update \
        /home/runner/.cache \
        /home/runner/_tool \
     && chown -R runner:runner /home/runner
+
+# Ubuntu 24.04 packages xkbcli 1.6, which cannot resolve the layered user roots
+# KeyboardStudio emits. Keep the verified build separate from distro-owned XKB data.
+ARG XKB_COMMON_VERSION=1.13.1
+COPY --from=xkbcommon-builder /xkbcommon-root/usr/local/ /usr/local/
+
+RUN ldconfig \
+    && test "$(xkbcli --version)" = "${XKB_COMMON_VERSION}" \
+    && xkbcli list --help >/dev/null
 
 # Keep the SDK inside a runner-owned location. setup-dotnet defaults to a
 # root-owned system directory on Linux unless DOTNET_INSTALL_DIR is provided.

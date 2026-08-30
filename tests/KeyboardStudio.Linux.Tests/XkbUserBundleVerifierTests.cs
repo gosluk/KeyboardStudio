@@ -37,6 +37,10 @@ public sealed class XkbUserBundleVerifierTests
             Assert.Equal(
                 ["compile-keymap", "--include", root, "--include-defaults", "--test"],
                 compile.Arguments.Take(5));
+            var registry = runner.Requests.Single(request => request.Arguments[0] == "list");
+            Assert.Equal(
+                ["list", "--ruleset=evdev", "--skip-default-paths", root, "/usr/share/X11/xkb"],
+                registry.Arguments);
             Assert.Empty(result.Diagnostics);
         }
         finally
