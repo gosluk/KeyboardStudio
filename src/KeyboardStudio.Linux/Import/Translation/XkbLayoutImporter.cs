@@ -143,6 +143,20 @@ public sealed class XkbLayoutImporter
         // Membership is all the projection needs, and a set turns the per-key lookup from a scan of
         // a hundred keys into a hash probe.
         var templateKeyIds = keyboard.Keys.Select(key => key.Id).ToFrozenSet(StringComparer.Ordinal);
+        for (var index = 0; index < diagnostics.Count; index++)
+        {
+            var diagnostic = diagnostics[index];
+            if (diagnostic.SourceKeyName is null)
+            {
+                continue;
+            }
+
+            var resolution = _keyNameResolver.Resolve(templateId, diagnostic.SourceKeyName);
+            if (resolution.KeyId is { } diagnosticKeyId && templateKeyIds.Contains(diagnosticKeyId))
+            {
+                diagnostics[index] = diagnostic with { KeyId = diagnosticKeyId };
+            }
+        }
 
         var layout = new KeyboardLayout();
 

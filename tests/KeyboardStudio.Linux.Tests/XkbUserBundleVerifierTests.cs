@@ -79,6 +79,39 @@ public sealed class XkbUserBundleVerifierTests
 
     [Fact]
     [Trait("Category", "Unit")]
+    [Trait("Category", "ErrorPath")]
+    public async Task VerifyAsync_WhenBaseSectionDisappeared_ReturnsStructuredFailure()
+    {
+        var (output, root, metadata) = await StageAsync();
+        try
+        {
+            var runner = new RecordingRunner(request =>
+            {
+                var baseVariant = request.Arguments.Contains("qwertz") &&
+                    !request.Arguments.Contains("keyboardstudio_programmer");
+                return Result(request, "", baseVariant ? "base section missing" : "", baseVariant ? 1 : 0);
+            });
+            var verifier = new XkbUserBundleVerifier(runner, PolishRegistry());
+
+            var result = await verifier.VerifyAsync(
+                root,
+                [metadata],
+                Capability(registry: XkbRegistryDiscoverySupport.Unavailable));
+
+            Assert.Equal(XkbUserBundleVerificationStatus.Failed, result.Status);
+            var failed = Assert.Single(result.Checks, check => !check.Success);
+            Assert.Equal(XkbUserBundleVerificationCheckKind.BaseVariant, failed.Kind);
+            Assert.Equal("base section missing", failed.StandardError);
+            Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Code == "KSV005");
+        }
+        finally
+        {
+            Directory.Delete(output, recursive: true);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
     public async Task VerifyAsync_WithoutRegistryTooling_VerifiesCompilationWithWarning()
     {
         var (output, root, metadata) = await StageAsync();

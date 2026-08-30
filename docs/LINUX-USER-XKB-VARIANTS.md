@@ -2,11 +2,11 @@
 
 ## Status and intent
 
-This document is the adopted architecture for Phase 14. P14.1 project identity and immutable
-derivation persistence, P14.2 neutral diffing/derived translation, P14.3 isolated bundle generation,
-P14.4 capability probing/verification, P14.5 ownership-aware install planning, P14.6 transactional
-installation/recovery, and P14.7's explicit application workflow are implemented. Compatibility
-closure and the final end-to-end matrix remain for P14.8.
+This document is the implemented architecture and operating guide for Phase 14. Project identity,
+immutable derivation persistence, neutral diffing, derived translation, isolated bundle generation,
+capability probing, compilation and registry verification, ownership-aware planning, transactional
+installation/recovery, the explicit application workflow, and the final compatibility matrix are
+implemented.
 
 The feature is deliberately narrower than a general XKB editor or installer. A user imports a
 layout already installed by the operating system, changes the mappings KeyboardStudio supports,
@@ -233,7 +233,7 @@ The implemented capability result is a first-class value containing the detected
 effective configuration and state paths, parsed libxkbcommon version, `xkbcli` path/version output,
 canonical system root, and registry-query support. It reports managed-installation or export-only
 mode plus diagnostics; a distro label is never used as evidence that installation is safe. The UI
-will present this value in P14.7.
+presents these details and warnings in the Linux user-variant card.
 
 ### Ten common distributions
 
@@ -258,6 +258,47 @@ The reference Fedora host inspected while this plan was written runs Plasma Wayl
 libxkbcommon 1.13.1 and xkeyboard-config 2.47, so its library side qualifies. Its absent
 `~/.config/xkb` directory is normal. `xkbcli` is not installed there, so managed installation must
 stay disabled until the distribution's libxkbcommon tools package is installed.
+
+### Tool packages and troubleshooting
+
+First use the runtime facts, not the distribution name:
+
+```bash
+printf 'session=%s wayland=%s\n' "$XDG_SESSION_TYPE" "$WAYLAND_DISPLAY"
+printf 'config=%s state=%s\n' \
+  "${XDG_CONFIG_HOME:-$HOME/.config}" \
+  "${XDG_STATE_HOME:-$HOME/.local/state}"
+command -v xkbcli
+xkbcli --version
+```
+
+Current distribution package indexes place `xkbcli` in these packages:
+
+| Distribution family | Package | Typical install command |
+|---|---|---|
+| Fedora | [`libxkbcommon-utils`](https://packages.fedoraproject.org/pkgs/libxkbcommon/libxkbcommon-utils/) | `sudo dnf install libxkbcommon-utils` |
+| Debian, Ubuntu, Linux Mint, Pop!_OS, KDE neon | [`libxkbcommon-tools`](https://packages.debian.org/stable/libxkbcommon-tools) | `sudo apt install libxkbcommon-tools` |
+| Arch Linux, Manjaro | [`libxkbcommon`](https://archlinux.org/packages/extra/x86_64/libxkbcommon/) | `sudo pacman -S libxkbcommon` |
+| openSUSE | Query the active release repositories | `zypper search --provides xkbcli` |
+
+Package names and versions remain release-owned, so `command -v xkbcli` and the capability card are
+authoritative after installation. KeyboardStudio requires 1.11.0 for managed installation and
+recommends 1.12.2 or newer.
+
+If generation works but **Install** is unavailable, inspect the capability diagnostics for X11, an
+old or unknown version, an unsafe/relative XDG path, a missing canonical system root, or an
+unwritable configuration/state directory. An absent `~/.config/xkb` is not an error; the first
+approved installation creates it.
+
+If compilation succeeds but the desktop does not list the variant, reopen the keyboard settings
+panel and then sign out and back in. Desktop tools may cache the registry, and some do not merge the
+user `rules/evdev.xml` overlay at all. KeyboardStudio reports registry discovery separately from
+keymap compilation and does not work around a desktop limitation by changing its settings database.
+The generated bundle remains valid for export even when automatic chooser discovery is unavailable.
+
+After an xkeyboard-config or libxkbcommon update, use **Verify installed**. It recompiles the custom,
+base, and unrelated same-language variants and records the new verification time and tool version in
+the installation manifest without rewriting the XKB files.
 
 ---
 
@@ -325,10 +366,10 @@ KeyboardProjectDocument + LayoutDerivation + XkbUserVariantMetadata
 
 ---
 
-## 6. Proposed code architecture
+## 6. Implemented code architecture
 
-The names below are the intended responsibilities, not a requirement to put several types in one
-file. Every top-level C# type must follow the repository rule and live in its own `.cs` file.
+The directories below contain the implemented responsibilities. Every top-level C# type follows the
+repository rule and lives in its own `.cs` file.
 
 ```text
 KeyboardStudio.Core/Layouts/Diffing/
@@ -569,13 +610,14 @@ settings may need to be reopened or the session restarted; activation remains ou
 
 ### Linux integration tests
 
-- stage against pinned XKB fixtures and compile with `xkbcli`;
-- compile the custom variant, its base, and an unrelated same-layout variant;
+- stage against pinned xkeyboard-config 2.47 Polish and Albanian fixtures and compile with `xkbcli`;
+- compile each custom variant, its base, and an unrelated same-layout variant;
 - verify registry merging where libxkbregistry tooling is present;
-- exercise install/update/uninstall inside temporary XDG configuration and state roots;
+- exercise install/update/verify/uninstall, stale state, external edits, read-only paths, and every
+  transaction interruption milestone inside temporary XDG configuration and state roots;
 - assert that no test can address `/usr/share`, `/etc/xkb`, or the developer's real XDG directories.
 
-### End-to-end acceptance scenario
+### Implemented end-to-end acceptance scenario
 
 1. Import `pl(qwertz)` from the system catalog as a new project.
 2. Change one supported key and save/reopen the project.
@@ -589,6 +631,20 @@ settings may need to be reopened or the session restarted; activation remains ou
 8. Uninstall it.
 9. Every unrelated byte that existed before installation is unchanged, and no system XKB file was
    written.
+
+The test suite implements this scenario with a structural verifier on every machine and additionally
+runs the real `xkbcli` compiler/registry checks when the tool is installed; Linux CI requires it.
+It also installs multiple Polish projects alongside an Albanian project and removes them
+independently.
+
+### Departures from the proposal
+
+There are no scope departures from the adopted design. One compatibility correction was found by
+the final Polish fixture: an unsupported action on `<CAPS>` was initially classified as layout-wide
+loss and made every imported key unsafe. Import diagnostics now retain and resolve their source XKB
+key name, so the Caps Lock limitation is attached to `CapsLock` and unrelated, exactly represented
+keys remain eligible for a derived override. Genuine layout-wide import loss still blocks all
+changed keys.
 
 ---
 

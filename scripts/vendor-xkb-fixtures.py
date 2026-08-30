@@ -23,9 +23,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-# What the goldens import. The four layouts the plan names, plus the variants that exercise the
-# composition the basic sections do not: dead keys, a second alphabet arrangement, and a variant
-# that pulls in the keypad and no-break-space definitions.
+# What the goldens import. The layouts the plan names, plus the variants that exercise composition
+# the basic sections do not: dead keys, alternate alphabet arrangements, and a variant that pulls
+# in the keypad and no-break-space definitions.
 TARGETS: list[tuple[str, str | None]] = [
     ("us", None),
     ("us", "intl"),
@@ -35,6 +35,8 @@ TARGETS: list[tuple[str, str | None]] = [
     ("de", "nodeadkeys"),
     ("fr", None),
     ("fr", "oss"),
+    ("al", None),
+    ("al", "plisi"),
 ]
 
 INCLUDE = re.compile(r'\b(?:include|augment|replace|alternate)\s+"([^"]+)"')

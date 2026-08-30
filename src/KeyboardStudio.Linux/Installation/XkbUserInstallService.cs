@@ -141,10 +141,58 @@ public sealed class XkbUserInstallService : IXkbUserInstallService
             requireBundleManifest: false,
             cancellationToken);
         var success = verification.Status != XkbUserBundleVerificationStatus.Failed;
+        var manifest = state.Manifest;
+        if (success)
+        {
+            var refreshed = installed with
+            {
+                VerifiedAtUtc = _timeProvider.GetUtcNow(),
+                ToolVersion = verification.ToolVersion ?? capability.XkbCliVersionOutput
+            };
+            manifest = state.Manifest with
+            {
+                Installations = state.Manifest.Installations
+                    .Select(item => string.Equals(
+                        item.ProjectInstallationId,
+                        projectInstallationId,
+                        StringComparison.Ordinal)
+                            ? refreshed
+                            : item)
+                    .ToArray()
+            };
+
+            try
+            {
+                await AtomicWriteTextAsync(
+                    Path.Combine(paths.KeyboardStudioStateRoot, ManifestFileName),
+                    XkbInstallationManifestSerializer.Serialize(manifest),
+                    Guid.NewGuid().ToString("N"),
+                    cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception exception) when (IsFileSystemOrDataException(exception))
+            {
+                return new XkbUserInstallResult(
+                    false,
+                    XkbUserInstallCommand.VerifyInstalled,
+                    state.Manifest,
+                    null,
+                    verification,
+                    recovery.Recovered,
+                    RolledBack: false,
+                    [.. verification.Diagnostics, new XkbDiagnostic(
+                        "KSI008",
+                        $"Verification succeeded, but its manifest metadata could not be recorded: {exception.Message}")]);
+            }
+        }
+
         return new XkbUserInstallResult(
             success,
             XkbUserInstallCommand.VerifyInstalled,
-            state.Manifest,
+            manifest,
             null,
             verification,
             recovery.Recovered,

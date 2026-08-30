@@ -106,6 +106,7 @@ public sealed class XkbSymbolsParserTests
         Assert.Equal(LayoutImportDiagnosticCodes.AlternateGroupsIgnored, diagnostic.Code);
         Assert.Equal(ValidationSeverity.Warning, diagnostic.Severity);
         Assert.Contains("<TLDE>", diagnostic.Message, StringComparison.Ordinal);
+        Assert.Equal("<TLDE>", diagnostic.SourceKeyName);
     }
 
     [Fact]
@@ -137,6 +138,7 @@ public sealed class XkbSymbolsParserTests
         var diagnostic = Assert.Single(file.Diagnostics);
         Assert.Equal(LayoutImportDiagnosticCodes.UnsupportedConstructIgnored, diagnostic.Code);
         Assert.Equal(ValidationSeverity.Warning, diagnostic.Severity);
+        Assert.Equal("<SPCE>", diagnostic.SourceKeyName);
         Assert.Equal(["space"], Assert.IsType<XkbKeyStatement>(file.Sections[0].Statements[0]).Keysyms);
     }
 

@@ -72,6 +72,70 @@ public sealed class XkbUserInstallServiceTests
 
     [Fact]
     [Trait("Category", "Integration")]
+    public async Task MultipleProjects_AcrossPolishAndAlbanian_CoexistAndUninstallIndependently()
+    {
+        using var scope = new TemporaryXdgScope();
+        var service = new XkbUserInstallService(new RecordingVerifier());
+        var polish = Polish();
+        var polishGaming = new XkbUserVariantMetadata(
+            "9a22fd68a04a466a8f32e9cb0fe8834c",
+            "pl",
+            "qwertz",
+            "qwertz",
+            "keyboardstudio_gaming",
+            "Polish Gaming - KeyboardStudio");
+        var albanian = new XkbUserVariantMetadata(
+            "98a25f2bca8442bcb9c17a9e01eb7ef1",
+            "al",
+            null,
+            "basic",
+            "keyboardstudio_programmer",
+            "Albanian - KeyboardStudio");
+
+        Assert.True((await service.InstallOrUpdateAsync(
+            Bundle(polish, "x"), polish, scope.Paths, Capability(scope.Paths))).Success);
+        Assert.True((await service.InstallOrUpdateAsync(
+            Bundle(polishGaming, "g"), polishGaming, scope.Paths, Capability(scope.Paths))).Success);
+        var third = await service.InstallOrUpdateAsync(
+            Bundle(albanian, "a"), albanian, scope.Paths, Capability(scope.Paths));
+
+        Assert.True(third.Success);
+        Assert.Equal(3, third.Manifest!.Installations.Count);
+        Assert.True(File.Exists(Path.Combine(scope.Paths.UserXkbRoot, "symbols", "pl")));
+        Assert.True(File.Exists(Path.Combine(scope.Paths.UserXkbRoot, "symbols", "al")));
+        var central = await File.ReadAllTextAsync(
+            Path.Combine(scope.Paths.UserXkbRoot, "symbols", "keyboardstudio"));
+        Assert.Contains(polish.InternalSectionId, central, StringComparison.Ordinal);
+        Assert.Contains(polishGaming.InternalSectionId, central, StringComparison.Ordinal);
+        Assert.Contains(albanian.InternalSectionId, central, StringComparison.Ordinal);
+
+        var firstUninstall = await service.UninstallAsync(
+            polish.ProjectInstallationId,
+            scope.Paths,
+            Capability(scope.Paths));
+
+        Assert.True(firstUninstall.Success);
+        Assert.Equal(2, firstUninstall.Manifest!.Installations.Count);
+        central = await File.ReadAllTextAsync(
+            Path.Combine(scope.Paths.UserXkbRoot, "symbols", "keyboardstudio"));
+        Assert.DoesNotContain(polish.InternalSectionId, central, StringComparison.Ordinal);
+        Assert.Contains(polishGaming.InternalSectionId, central, StringComparison.Ordinal);
+        Assert.Contains(albanian.InternalSectionId, central, StringComparison.Ordinal);
+
+        Assert.True((await service.UninstallAsync(
+            polishGaming.ProjectInstallationId,
+            scope.Paths,
+            Capability(scope.Paths))).Success);
+        var last = await service.UninstallAsync(
+            albanian.ProjectInstallationId,
+            scope.Paths,
+            Capability(scope.Paths));
+        Assert.True(last.Success);
+        Assert.Empty(last.Manifest!.Installations);
+    }
+
+    [Fact]
+    [Trait("Category", "Integration")]
     [Trait("Category", "ErrorPath")]
     public async Task InstallOrUpdateAsync_WhenProposedVerificationFails_DoesNotTouchLiveRoot()
     {
@@ -170,6 +234,68 @@ public sealed class XkbUserInstallServiceTests
     [Fact]
     [Trait("Category", "Integration")]
     [Trait("Category", "ErrorPath")]
+    public async Task RecoverAsync_WhenJournalIsMalformed_ReportsFailureAndRetainsEvidence()
+    {
+        using var scope = new TemporaryXdgScope();
+        Directory.CreateDirectory(scope.Paths.KeyboardStudioStateRoot);
+        var journal = Path.Combine(scope.Paths.KeyboardStudioStateRoot, "journal.json");
+        await File.WriteAllTextAsync(journal, "{ not valid JSON");
+
+        var result = await new XkbUserInstallService(new RecordingVerifier())
+            .RecoverAsync(scope.Paths);
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Code == "KSI009");
+        Assert.True(File.Exists(journal));
+        Assert.Equal("{ not valid JSON", await File.ReadAllTextAsync(journal));
+    }
+
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Category", "ErrorPath")]
+    public async Task InstallOrUpdateAsync_WhenManifestIsMalformed_RefusesWithoutTouchingLiveRoot()
+    {
+        using var scope = new TemporaryXdgScope();
+        Directory.CreateDirectory(scope.Paths.KeyboardStudioStateRoot);
+        var manifest = Path.Combine(scope.Paths.KeyboardStudioStateRoot, "installations.json");
+        await File.WriteAllTextAsync(manifest, "{ stale");
+        var metadata = Polish();
+
+        var result = await new XkbUserInstallService(new RecordingVerifier()).InstallOrUpdateAsync(
+            Bundle(metadata, "x"), metadata, scope.Paths, Capability(scope.Paths));
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Code == "KSI004");
+        Assert.False(Directory.Exists(scope.Paths.UserXkbRoot));
+        Assert.Equal("{ stale", await File.ReadAllTextAsync(manifest));
+    }
+
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Category", "ErrorPath")]
+    public async Task InstallOrUpdateAsync_WhenManifestOwnedFileIsMissing_RefusesStaleState()
+    {
+        using var scope = new TemporaryXdgScope();
+        var service = new XkbUserInstallService(new RecordingVerifier());
+        var metadata = Polish();
+        Assert.True((await service.InstallOrUpdateAsync(
+            Bundle(metadata, "x"), metadata, scope.Paths, Capability(scope.Paths))).Success);
+        var bridge = Path.Combine(scope.Paths.UserXkbRoot, "symbols", "pl");
+        var bridgeBefore = await File.ReadAllTextAsync(bridge);
+        File.Delete(Path.Combine(scope.Paths.UserXkbRoot, "symbols", "keyboardstudio"));
+
+        var result = await service.InstallOrUpdateAsync(
+            Bundle(metadata, "y"), metadata, scope.Paths, Capability(scope.Paths));
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Code == "KSP004");
+        Assert.Equal(bridgeBefore, await File.ReadAllTextAsync(bridge));
+        Assert.False(File.Exists(Path.Combine(scope.Paths.KeyboardStudioStateRoot, "journal.json")));
+    }
+
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Category", "ErrorPath")]
     public async Task InstallOrUpdateAsync_CancellationAfterMutation_RollsBackBeforeRethrowing()
     {
         using var scope = new TemporaryXdgScope();
@@ -218,6 +344,57 @@ public sealed class XkbUserInstallServiceTests
 
     [Fact]
     [Trait("Category", "Integration")]
+    public async Task VerifyInstalledAsync_AfterToolUpgrade_RecordsTheNewVersionWithoutChangingXkbFiles()
+    {
+        using var scope = new TemporaryXdgScope();
+        var clock = new MutableTimeProvider
+        {
+            UtcNow = new DateTimeOffset(2026, 8, 30, 10, 0, 0, TimeSpan.Zero)
+        };
+        var service = new XkbUserInstallService(new RecordingVerifier(), clock);
+        var metadata = Polish();
+        Assert.True((await service.InstallOrUpdateAsync(
+            Bundle(metadata, "x"), metadata, scope.Paths, Capability(scope.Paths))).Success);
+        var before = Directory.EnumerateFiles(
+                scope.Paths.UserXkbRoot,
+                "*",
+                SearchOption.AllDirectories)
+            .ToDictionary(
+                path => Path.GetRelativePath(scope.Paths.UserXkbRoot, path),
+                File.ReadAllBytes,
+                StringComparer.Ordinal);
+        clock.UtcNow = new DateTimeOffset(2026, 9, 15, 8, 30, 0, TimeSpan.Zero);
+        var upgraded = Capability(scope.Paths) with
+        {
+            XkbCliVersionOutput = "xkbcli 1.14.0",
+            LibXkbCommonVersion = new Version(1, 14, 0)
+        };
+
+        var result = await service.VerifyInstalledAsync(
+            metadata.ProjectInstallationId,
+            scope.Paths,
+            upgraded);
+
+        Assert.True(result.Success);
+        var installed = Assert.Single(result.Manifest!.Installations);
+        Assert.Equal(clock.UtcNow, installed.VerifiedAtUtc);
+        Assert.Equal("xkbcli 1.14.0", installed.ToolVersion);
+        var persisted = XkbInstallationManifestSerializer.Deserialize(await File.ReadAllTextAsync(
+            Path.Combine(scope.Paths.KeyboardStudioStateRoot, "installations.json")));
+        Assert.Equal(installed, Assert.Single(persisted.Installations));
+        Assert.Equal(before.Keys.Order(StringComparer.Ordinal), Directory.EnumerateFiles(
+                scope.Paths.UserXkbRoot,
+                "*",
+                SearchOption.AllDirectories)
+            .Select(path => Path.GetRelativePath(scope.Paths.UserXkbRoot, path))
+            .Order(StringComparer.Ordinal));
+        Assert.All(before, pair => Assert.Equal(
+            pair.Value,
+            File.ReadAllBytes(Path.Combine(scope.Paths.UserXkbRoot, pair.Key))));
+    }
+
+    [Fact]
+    [Trait("Category", "Integration")]
     [Trait("Category", "ErrorPath")]
     public async Task InstallOrUpdateAsync_WhenUserRootContainsSymlink_RefusesToTraverseIt()
     {
@@ -262,6 +439,41 @@ public sealed class XkbUserInstallServiceTests
         Assert.False(result.Success);
         Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Code == "KSI004");
         Assert.Empty(Directory.EnumerateFileSystemEntries(scope.Paths.UserXkbRoot));
+    }
+
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Category", "ErrorPath")]
+    public async Task InstallOrUpdateAsync_WhenStateRootIsReadOnly_ReportsFailureWithoutLiveMutation()
+    {
+        if (OperatingSystem.IsWindows() ||
+            string.Equals(Environment.UserName, "root", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        using var scope = new TemporaryXdgScope();
+        Directory.CreateDirectory(scope.Paths.KeyboardStudioStateRoot);
+        File.SetUnixFileMode(
+            scope.Paths.KeyboardStudioStateRoot,
+            UnixFileMode.UserRead | UnixFileMode.UserExecute);
+        try
+        {
+            var metadata = Polish();
+
+            var result = await new XkbUserInstallService(new RecordingVerifier()).InstallOrUpdateAsync(
+                Bundle(metadata, "x"), metadata, scope.Paths, Capability(scope.Paths));
+
+            Assert.False(result.Success);
+            Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Code == "KSI008");
+            Assert.False(Directory.Exists(scope.Paths.UserXkbRoot));
+        }
+        finally
+        {
+            File.SetUnixFileMode(
+                scope.Paths.KeyboardStudioStateRoot,
+                UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
     }
 
     [Fact]
@@ -362,7 +574,9 @@ public sealed class XkbUserInstallServiceTests
                 Assert.True(File.Exists(Path.Combine(bundleRoot, "symbols", variant.BaseLayoutId)));
                 Assert.True(File.Exists(Path.Combine(bundleRoot, "rules", "evdev.xml")));
             });
-            return Task.FromResult(Result(FailVariantCall == VariantRoots.Count));
+            return Task.FromResult(Result(
+                FailVariantCall == VariantRoots.Count,
+                capability.XkbCliVersionOutput));
         }
 
         public Task<XkbUserBundleVerificationResult> VerifyBaseAsync(
@@ -372,15 +586,15 @@ public sealed class XkbUserInstallServiceTests
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            return Task.FromResult(Result(failed: false));
+            return Task.FromResult(Result(failed: false, capability.XkbCliVersionOutput));
         }
 
-        private static XkbUserBundleVerificationResult Result(bool failed) => new(
+        private static XkbUserBundleVerificationResult Result(bool failed, string? toolVersion) => new(
             failed
                 ? XkbUserBundleVerificationStatus.Failed
                 : XkbUserBundleVerificationStatus.Verified,
             "/usr/bin/xkbcli",
-            "xkbcli 1.13.1",
+            toolVersion,
             [],
             failed ? [new XkbDiagnostic("TEST", "Injected verification failure.")] : []);
     }
@@ -424,6 +638,13 @@ public sealed class XkbUserInstallServiceTests
                 source.Cancel();
             }
         }
+    }
+
+    private sealed class MutableTimeProvider : TimeProvider
+    {
+        public DateTimeOffset UtcNow { get; set; }
+
+        public override DateTimeOffset GetUtcNow() => UtcNow;
     }
 
     private sealed class SimulatedCrashException : Exception;

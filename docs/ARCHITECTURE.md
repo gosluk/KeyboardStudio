@@ -703,7 +703,7 @@ combined with the system defaults. Versions 1.9 and newer add `--test`; older ve
 discard the emitted full keymap. The verifier is mandatory in Linux integration CI but optional for
 local generation, so XKB text can be produced on any supported host.
 
-### 10.4 Import-derived per-user variants (planned Phase 14)
+### 10.4 Import-derived per-user variants
 
 The per-user variant path composes the implemented import and generation capabilities but is not a
 mode of the existing standalone build. It begins only with a system-origin import and keeps the
@@ -1268,9 +1268,9 @@ unsaved-changes confirmation path, and the startup seed and host-import fallback
 - importing geometry: physical layout still comes from the bundled templates;
 - editing, installing, or activating anything in a system or session XKB root.
 
-The list above is the completed MVP boundary. Phase 14 deliberately moves only explicit,
-transactional **per-user** XKB variant installation into planned scope. System-wide installation,
-X11 installation, and activation remain excluded.
+The list above is the completed MVP boundary. Phase 14 adds only explicit, transactional
+**per-user** XKB variant installation. System-wide installation, X11 installation, and activation
+remain excluded.
 
 Import is deliberately included in the boundary while dead keys are not, which is why import is
 specified as lossy: it drops what the model cannot hold and reports each loss (13.4).

@@ -36,7 +36,8 @@ public static class LayoutDerivationFactory
         var unsafeDiagnostics = result.Report.Diagnostics
             .Where(diagnostic => UnsafeDiagnosticCodes.Contains(diagnostic.Code))
             .ToArray();
-        var hasLayoutWideLoss = unsafeDiagnostics.Any(diagnostic => diagnostic.KeyId is null);
+        var hasLayoutWideLoss = unsafeDiagnostics.Any(diagnostic =>
+            diagnostic.KeyId is null && diagnostic.SourceKeyName is null);
 
         var baseline = project.Layout.Mappings
             .Select(mapping => KeyMappingSnapshot.From(

@@ -1,20 +1,19 @@
 {
   "sourceId": "linux-xkb",
-  "layoutId": "pl",
-  "variantId": "qwertz",
+  "layoutId": "al",
+  "variantId": null,
   "suggestedTemplateId": "iso-105",
   "keyboardId": "iso-105",
-  "projectName": "Polish (QWERTZ)",
-  "projectDescription": "Imported from pl(qwertz).",
+  "projectName": "Albanian",
+  "projectDescription": "Imported from al(basic).",
   "language": "und",
   "fidelity": "Reduced",
-  "keysImported": 49,
+  "keysImported": 48,
   "keysSkipped": 0,
   "includeChain": [
-    "pl(qwertz)",
+    "al(basic)",
     "latin(type3)",
     "latin(basic)",
-    "kpdl(comma)",
     "level3(ralt_switch)"
   ],
   "diagnostics": [
@@ -24,6 +23,13 @@
       "message": "Key <CAPS> at line 95 used 'actions', which has no equivalent in the model; it was ignored.",
       "keyId": "CapsLock",
       "layer": null
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI031",
+      "message": "'dead_tilde' is a dead key, which this model does not represent. The layer was left unmapped rather than given the accent as a character.",
+      "keyId": "Digit1",
+      "layer": "ShiftAltGr"
     },
     {
       "severity": "Warning",
@@ -49,6 +55,13 @@
     {
       "severity": "Warning",
       "code": "KSI031",
+      "message": "'dead_abovering' is a dead key, which this model does not represent. The layer was left unmapped rather than given the accent as a character.",
+      "keyId": "Digit5",
+      "layer": "AltGr"
+    },
+    {
+      "severity": "Warning",
+      "code": "KSI031",
       "message": "'dead_ogonek' is a dead key, which this model does not represent. The layer was left unmapped rather than given the accent as a character.",
       "keyId": "Digit6",
       "layer": "AltGr"
@@ -58,7 +71,7 @@
       "code": "KSI031",
       "message": "'dead_grave' is a dead key, which this model does not represent. The layer was left unmapped rather than given the accent as a character.",
       "keyId": "Digit7",
-      "layer": "AltGr"
+      "layer": "ShiftAltGr"
     },
     {
       "severity": "Warning",
@@ -147,20 +160,6 @@
     {
       "severity": "Warning",
       "code": "KSI031",
-      "message": "'dead_ogonek' is a dead key, which this model does not represent. The layer was left unmapped rather than given the accent as a character.",
-      "keyId": "Backquote",
-      "layer": "Shift"
-    },
-    {
-      "severity": "Warning",
-      "code": "KSI031",
-      "message": "'dead_grave' is a dead key, which this model does not represent. The layer was left unmapped rather than given the accent as a character.",
-      "keyId": "IntlHash",
-      "layer": "AltGr"
-    },
-    {
-      "severity": "Warning",
-      "code": "KSI031",
       "message": "'dead_breve' is a dead key, which this model does not represent. The layer was left unmapped rather than given the accent as a character.",
       "keyId": "IntlHash",
       "layer": "ShiftAltGr"
@@ -192,24 +191,24 @@
     {
       "keyId": "Backquote",
       "logicalKey": "Backquote",
-      "default": "˙",
-      "shift": null,
+      "default": "\\",
+      "shift": "|",
       "altGr": "¬",
       "shiftAltGr": "¬"
     },
     {
       "keyId": "BracketLeft",
       "logicalKey": "LeftBracket",
-      "default": "ż",
-      "shift": "ń",
+      "default": "ç",
+      "shift": "Ç",
       "altGr": "÷",
       "shiftAltGr": null
     },
     {
       "keyId": "BracketRight",
       "logicalKey": "RightBracket",
-      "default": "ś",
-      "shift": "ć",
+      "default": "@",
+      "shift": "'",
       "altGr": "×",
       "shiftAltGr": null
     },
@@ -225,7 +224,7 @@
       "keyId": "Digit0",
       "logicalKey": "Digit0",
       "default": "0",
-      "shift": "=",
+      "shift": ")",
       "altGr": null,
       "shiftAltGr": "°"
     },
@@ -235,7 +234,7 @@
       "default": "1",
       "shift": "!",
       "altGr": "~",
-      "shiftAltGr": "¡"
+      "shiftAltGr": null
     },
     {
       "keyId": "Digit2",
@@ -266,14 +265,14 @@
       "logicalKey": "Digit5",
       "default": "5",
       "shift": "%",
-      "altGr": "°",
+      "altGr": null,
       "shiftAltGr": "⅜"
     },
     {
       "keyId": "Digit6",
       "logicalKey": "Digit6",
       "default": "6",
-      "shift": "&",
+      "shift": "^",
       "altGr": null,
       "shiftAltGr": "⅝"
     },
@@ -281,15 +280,15 @@
       "keyId": "Digit7",
       "logicalKey": "Digit7",
       "default": "7",
-      "shift": "/",
-      "altGr": null,
-      "shiftAltGr": "⅞"
+      "shift": "&",
+      "altGr": "`",
+      "shiftAltGr": null
     },
     {
       "keyId": "Digit8",
       "logicalKey": "Digit8",
       "default": "8",
-      "shift": "(",
+      "shift": "*",
       "altGr": null,
       "shiftAltGr": "™"
     },
@@ -297,24 +296,24 @@
       "keyId": "Digit9",
       "logicalKey": "Digit9",
       "default": "9",
-      "shift": ")",
+      "shift": "(",
       "altGr": null,
       "shiftAltGr": "±"
     },
     {
       "keyId": "Equal",
       "logicalKey": "Equal",
-      "default": "'",
-      "shift": "*",
+      "default": "=",
+      "shift": "+",
       "altGr": null,
       "shiftAltGr": null
     },
     {
       "keyId": "IntlHash",
       "logicalKey": "InternationalHash",
-      "default": "ó",
-      "shift": "ź",
-      "altGr": null,
+      "default": "]",
+      "shift": "}",
+      "altGr": "¤",
       "shiftAltGr": null
     },
     {
@@ -355,7 +354,7 @@
       "default": "e",
       "shift": "E",
       "altGr": "€",
-      "shiftAltGr": "¢"
+      "shiftAltGr": "€"
     },
     {
       "keyId": "KeyF",
@@ -402,7 +401,7 @@
       "logicalKey": "K",
       "default": "k",
       "shift": "K",
-      "altGr": "ĸ",
+      "altGr": "ł",
       "shiftAltGr": "&"
     },
     {
@@ -528,18 +527,10 @@
     {
       "keyId": "Minus",
       "logicalKey": "Minus",
-      "default": "+",
-      "shift": "?",
+      "default": "-",
+      "shift": "_",
       "altGr": null,
       "shiftAltGr": "¿"
-    },
-    {
-      "keyId": "NumpadDecimal",
-      "logicalKey": "NumpadDecimal",
-      "default": "[NumpadDecimal]",
-      "shift": ",",
-      "altGr": null,
-      "shiftAltGr": null
     },
     {
       "keyId": "Period",
@@ -552,24 +543,24 @@
     {
       "keyId": "Quote",
       "logicalKey": "Quote",
-      "default": "ą",
-      "shift": "ę",
+      "default": "[",
+      "shift": "{",
       "altGr": "ß",
       "shiftAltGr": null
     },
     {
       "keyId": "Semicolon",
       "logicalKey": "Semicolon",
-      "default": "ł",
-      "shift": "Ł",
+      "default": "ë",
+      "shift": "Ë",
       "altGr": "$",
       "shiftAltGr": null
     },
     {
       "keyId": "Slash",
       "logicalKey": "Slash",
-      "default": "-",
-      "shift": "_",
+      "default": "/",
+      "shift": "?",
       "altGr": null,
       "shiftAltGr": null
     }

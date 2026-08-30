@@ -20,7 +20,7 @@
       "severity": "Warning",
       "code": "KSI021",
       "message": "Key <CAPS> at line 95 used 'actions', which has no equivalent in the model; it was ignored.",
-      "keyId": null,
+      "keyId": "CapsLock",
       "layer": null
     },
     {

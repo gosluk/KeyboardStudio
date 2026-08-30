@@ -19,4 +19,11 @@ public sealed record LayoutImportDiagnostic(
     string Code,
     string Message,
     string? KeyId = null,
-    ModifierLayer? Layer = null);
+    ModifierLayer? Layer = null)
+{
+    /// <summary>
+    /// Source-format key name before it can be resolved to an editor key ID. Importers use this to
+    /// keep loss attached to the key that caused it, including keys the selected template omits.
+    /// </summary>
+    public string? SourceKeyName { get; init; }
+}

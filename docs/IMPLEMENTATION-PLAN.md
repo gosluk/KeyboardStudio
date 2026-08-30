@@ -2014,6 +2014,8 @@ Fedora host.
 
 # Phase 14 — Import-derived per-user XKB variants
 
+**Implementation status:** complete (P14.1–P14.8).
+
 ## Objective
 
 Let a user import an installed system layout, modify the subset KeyboardStudio supports, generate a

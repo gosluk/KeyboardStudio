@@ -4,8 +4,8 @@ This file tracks execution of [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md)
 
 - Current work branch: `install-layout`
 - Last updated: 2026-08-30
-- Current phase: Phase 14 — Import-derived per-user XKB variants
-- Next work item: **P14.8 — Close compatibility, integration, and recovery coverage**
+- Current phase: Phase 14 — Import-derived per-user XKB variants (complete)
+- Next work item: none scheduled
 
 Legend: `[x]` complete, `[ ]` not yet complete.
 
@@ -182,14 +182,14 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 - [x] **P14.5** Implement ownership-aware merging and host-local state
 - [x] **P14.6** Add transactional install, update, verify, recovery, and uninstall
 - [x] **P14.7** Add the explicit user-variant UI workflow
-- [ ] **P14.8** Close compatibility, integration, and recovery coverage
+- [x] **P14.8** Close compatibility, integration, and recovery coverage
 
-**Phase status:** 7/8 work items complete. Phase in progress.
+**Phase status:** 8/8 work items complete. Phase complete.
 
 ## Progress summary
 
-- Completed work items: **101**
+- Completed work items: **102**
 - Total planned work items: **102**
-- Overall checklist progress: **101/102**
+- Overall checklist progress: **102/102**
 
 The checklist records work-item completion only. Phase-level acceptance criteria and test gates in `IMPLEMENTATION-PLAN.md` still apply before a phase is considered complete.
