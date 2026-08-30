@@ -16,9 +16,10 @@ The first version focuses on five capabilities:
 
 Everything not required by those capabilities is intentionally excluded from the first implementation.
 
-Both backends are implemented and tested. Capability 2 and the narrowing of the user interface to the
-Linux XKB target are adopted design landing in Phase 13; sections 2.6 and 13 describe the target
-state, not currently shipped behavior.
+Both backends, the non-empty/current-layout startup path, the Linux-focused target policy, and the
+per-user XKB variant workflow are implemented and tested. Sections 2.6, 10.4, and 13 describe that
+current architecture. The planned Phase 15 appearance and application-shell architecture is recorded
+separately in section 18 and [`THEMING.md`](THEMING.md); it is not shipped behavior yet.
 
 ---
 
@@ -1291,6 +1292,9 @@ INativeCompiler                (Windows backend only)
 ILayoutImportCatalog           (the only import type ViewModels see)
 ILayoutImportSource            (one per platform layout source)
 IBuildTargetVisibilityPolicy   (presentation-only target exposure)
+IApplicationSettingsStore      (host-local application preferences)
+IApplicationThemeService       (neutral theme choice to Avalonia variant)
+IStartupLayoutLoader           (host detection/import without document mutation)
 ```
 
 These boundaries protect the editor from persistence and platform-specific implementation details.
@@ -1324,3 +1328,56 @@ KeyboardStudio.App (composition + target-aware UI)
  `--> KeyboardStudio.Core
       KeyboardProject -> PhysicalKeyboard + KeyboardLayout + ProjectMetadata
 ```
+
+---
+
+## 18. Application themes, local settings, and startup shell
+
+Phase 15 adds an application-owned appearance and startup layer without changing the dependency
+direction above. Theme choice is host-local presentation state, not keyboard domain state and not a
+portable project setting.
+
+```text
+Local settings JSON
+        |
+        v
+IApplicationSettingsStore
+        |
+        +----> IApplicationThemeService ----> Application.RequestedThemeVariant
+        |                                              |
+        |                                              v
+        |                                  semantic DynamicResources
+        |
+        `----> AppearanceViewModel ----> selection and immediate persistence
+
+IStartupLayoutLoader ----> structured startup result
+                                  |
+                                  v
+MainWindowViewModel ----> adopt only while the startup document is untouched
+```
+
+White and Gray are custom Avalonia variants inheriting Light; Black inherits Dark. The inherited
+variant supplies complete Fluent control behavior while KeyboardStudio defines one identical
+semantic resource-key contract for all three palettes. Theme-dependent resources are always dynamic,
+and views contain no literal presentation colors.
+
+The settings store writes a versioned `settings.json` beneath the current user's local
+application-data directory. Missing, invalid, inaccessible, unknown, or future settings fall back to
+Gray without preventing startup. The composition root applies the loaded choice before constructing
+the first window, avoiding a first-frame theme flash. Changing appearance never marks a `.kbdproj`
+dirty or changes its serialized form.
+
+Startup layout loading becomes a data-returning service. The populated seed remains the immediate,
+editable first frame; on a supported Linux host, the loader imports the active layout asynchronously.
+Only `MainWindowViewModel`, as document owner, may replace the seed, and only while it is still the
+same clean, pathless startup document. This retains the current protection against a late background
+result overwriting user work.
+
+The standalone File menu row moves into the application header as an accessible vector icon beside
+`KeyboardStudio`. Theme selection uses a separate accessible Appearance trigger. The permanent
+`New from / Create` toolbar group is removed because a fresh window already contains the layout the
+user should edit; explicit New and geometry choices remain secondary File-menu operations.
+
+The detailed resource contract, failure behavior, UX scope, and acceptance criteria are in
+[`THEMING.md`](THEMING.md). The ordered work and test gates are in
+[`THEMING-IMPLEMENTATION-PLAN.md`](THEMING-IMPLEMENTATION-PLAN.md).

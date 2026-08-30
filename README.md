@@ -124,6 +124,11 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the complete architecture.
 
 See [docs/IMPLEMENTATION-PLAN.md](docs/IMPLEMENTATION-PLAN.md) for the phased implementation plan, acceptance criteria, test gates, milestones, and risk register.
 
+The planned White, Gray, and Black application themes, local preference boundary, header redesign,
+and direct-to-edit startup behavior are specified in
+[docs/THEMING.md](docs/THEMING.md). Their ordered Phase 15 work is in
+[docs/THEMING-IMPLEMENTATION-PLAN.md](docs/THEMING-IMPLEMENTATION-PLAN.md).
+
 ## Repository structure
 
 ```text
@@ -155,6 +160,8 @@ docs/
   PACKAGING.md
   VERSIONING.md
   PROJECT-FORMAT.md
+  THEMING.md
+  THEMING-IMPLEMENTATION-PLAN.md
   WINDOWS-BUILD.md
   DECISIONS.md
 ```
