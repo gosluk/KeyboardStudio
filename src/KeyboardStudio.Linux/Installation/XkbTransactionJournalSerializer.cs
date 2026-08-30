@@ -19,10 +19,17 @@ public static class XkbTransactionJournalSerializer
     public static XkbTransactionJournal Deserialize(string json)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(json);
-        var journal = JsonSerializer.Deserialize<XkbTransactionJournal>(json, Options)
-            ?? throw new InvalidDataException("The XKB transaction journal is empty.");
-        Validate(journal);
-        return journal;
+        try
+        {
+            var journal = JsonSerializer.Deserialize<XkbTransactionJournal>(json, Options)
+                ?? throw new InvalidDataException("The XKB transaction journal is empty.");
+            Validate(journal);
+            return journal;
+        }
+        catch (JsonException exception)
+        {
+            throw new InvalidDataException("The XKB transaction journal is malformed.", exception);
+        }
     }
 
     private static void Validate(XkbTransactionJournal journal)

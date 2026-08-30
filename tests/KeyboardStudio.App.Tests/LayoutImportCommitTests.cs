@@ -129,6 +129,37 @@ public sealed class LayoutImportCommitTests
 
     [Fact]
     [Trait("Category", "Unit")]
+    public async Task LinuxUserVariantMetadata_WhenEdited_IsPersistedInTheLinuxTargetProfile()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"kbdproj-{Guid.NewGuid():N}.kbdproj");
+        try
+        {
+            var interaction = new ImportingInteractionService { SavePath = path, VariantIndex = 1 };
+            var viewModel = TestMainWindow.WithImportCatalog(Catalog(), interaction);
+            await viewModel.ImportLayoutCommand.ExecuteAsync(null);
+
+            viewModel.LinuxVariant.VariantId = "keyboardstudio_programmer";
+            viewModel.LinuxVariant.DisplayName = "Polish Programmer - KeyboardStudio";
+            await viewModel.SaveAsCommand.ExecuteAsync(null);
+
+            await using var stream = File.OpenRead(path);
+            var document = await new JsonKeyboardProjectDocumentStore().LoadAsync(stream);
+            var linux = document.TargetProfiles[BuildProfileTargetIds.LinuxXkb].Settings;
+            Assert.Equal(
+                "keyboardstudio_programmer",
+                linux[BuildProfileKeys.UserVariantId]);
+            Assert.Equal(
+                "Polish Programmer - KeyboardStudio",
+                linux[BuildProfileKeys.UserVariantDescription]);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
     public async Task ImportFromFileCommand_WhenAccepted_DoesNotCreateAnInstallableDerivation()
     {
         var path = Path.Combine(Path.GetTempPath(), $"kbdproj-{Guid.NewGuid():N}.kbdproj");

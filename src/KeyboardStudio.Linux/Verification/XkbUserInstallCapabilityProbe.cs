@@ -5,7 +5,7 @@ using KeyboardStudio.Core;
 namespace KeyboardStudio.Linux;
 
 /// <summary>Reports whether this host can safely verify and use a per-user libxkbcommon root.</summary>
-public sealed partial class XkbUserInstallCapabilityProbe
+public sealed partial class XkbUserInstallCapabilityProbe : IXkbUserInstallCapabilityProbe
 {
     public static readonly Version MinimumVersion = new(1, 11, 0);
     public static readonly Version RecommendedVersion = new(1, 12, 2);

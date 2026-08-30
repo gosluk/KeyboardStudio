@@ -27,4 +27,12 @@ alone unless `KEYBOARDSTUDIO_TARGETS=all` is set. Hiding is presentation-only: e
 profile, `ExportTargetProfiles` keeps returning all of them, and the build orchestration below this
 layer is unchanged.
 
+`LinuxUserVariantViewModel` appears only for projects imported as new projects from the system XKB
+catalog. It coordinates the Linux workflow service, presents capability and ownership states,
+generates bundles beneath normal build output, and requires an exact-path confirmation before any
+install, update, or uninstall. The chosen public variant ID and display name live in hidden Linux
+target-profile settings so they round-trip with the project without becoming standalone build
+fields. XKB translation, verification, XML merging, and filesystem transactions remain in
+`KeyboardStudio.Linux`.
+
 Must not contain Windows keyboard-table generation logic.

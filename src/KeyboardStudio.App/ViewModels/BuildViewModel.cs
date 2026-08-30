@@ -263,6 +263,21 @@ public sealed class BuildViewModel : ObservableObject
         };
     }
 
+    public (string VariantId, string Description) GetLinuxUserVariantMetadata()
+    {
+        var settings = _profiles[BuildTarget.LinuxXkb];
+        return (
+            settings.Single(setting => setting.Key == BuildProfileKeys.UserVariantId).Value,
+            settings.Single(setting => setting.Key == BuildProfileKeys.UserVariantDescription).Value);
+    }
+
+    public void SetLinuxUserVariantMetadata(string variantId, string description)
+    {
+        var settings = _profiles[BuildTarget.LinuxXkb];
+        settings.Single(setting => setting.Key == BuildProfileKeys.UserVariantId).Value = variantId;
+        settings.Single(setting => setting.Key == BuildProfileKeys.UserVariantDescription).Value = description;
+    }
+
     private void RefreshReadiness()
     {
         var settings = GetProfileSettings();
@@ -362,10 +377,10 @@ public sealed class BuildViewModel : ObservableObject
         var defaults = CreateProfiles();
         foreach (var target in _profiles.Keys)
         {
-            var defaultValues = ToSettings(defaults[target]);
             foreach (var setting in _profiles[target])
             {
-                setting.Value = defaultValues[setting.Key];
+                setting.Value = defaults[target].Single(candidate =>
+                    candidate.Key == setting.Key).Value;
             }
         }
     }
@@ -392,7 +407,7 @@ public sealed class BuildViewModel : ObservableObject
 
     private static Dictionary<string, string> ToSettings(
         IReadOnlyList<BuildProfileSettingViewModel> settings) =>
-        settings.ToDictionary(
+        settings.Where(setting => setting.IsVisible || !string.IsNullOrEmpty(setting.Value)).ToDictionary(
             setting => setting.Key,
             setting => setting.Value,
             StringComparer.Ordinal);
@@ -641,7 +656,9 @@ public sealed class BuildViewModel : ObservableObject
             [
                 new(BuildProfileKeys.LayoutId, "Layout ID", "keyboardstudio"),
                 new(BuildProfileKeys.SectionId, "Section ID", "basic"),
-                new(BuildProfileKeys.Description, "Description", "KeyboardStudio layout")
+                new(BuildProfileKeys.Description, "Description", "KeyboardStudio layout"),
+                new(BuildProfileKeys.UserVariantId, "User variant ID", string.Empty, isVisible: false),
+                new(BuildProfileKeys.UserVariantDescription, "User variant name", string.Empty, isVisible: false)
             ]
         };
 

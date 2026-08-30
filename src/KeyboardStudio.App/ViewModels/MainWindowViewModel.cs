@@ -78,7 +78,8 @@ public sealed class MainWindowViewModel : ObservableObject
         ISeedProjectSource seedProjectSource,
         IBuildTargetVisibilityPolicy buildTargetVisibility,
         ILayoutImportCatalog? importCatalog = null,
-        IHostLayoutProbe? hostLayoutProbe = null)
+        IHostLayoutProbe? hostLayoutProbe = null,
+        ILinuxUserVariantWorkflowService? linuxUserVariantWorkflow = null)
     {
         ArgumentNullException.ThrowIfNull(templateProvider);
         ArgumentNullException.ThrowIfNull(interactionService);
@@ -112,6 +113,14 @@ public sealed class MainWindowViewModel : ObservableObject
             _documentService.CurrentTargetProfiles,
             BuildProfileChanged,
             buildTargetVisibility);
+        LinuxVariant = new LinuxUserVariantViewModel(
+            () => Project,
+            () => _documentService.CurrentLayoutDerivation,
+            () => Build.OutputDirectory,
+            linuxUserVariantWorkflow ?? new LinuxUserVariantWorkflowService(),
+            interactionService as ILinuxUserVariantInteractionService,
+            Build.GetLinuxUserVariantMetadata,
+            Build.SetLinuxUserVariantMetadata);
         NewCommand = new AsyncRelayCommand(NewDocumentAsync);
         OpenCommand = new AsyncRelayCommand(OpenDocumentAsync);
         SaveCommand = new AsyncRelayCommand(SaveDocumentAsync);
@@ -145,6 +154,7 @@ public sealed class MainWindowViewModel : ObservableObject
     }
 
     public BuildViewModel Build { get; }
+    public LinuxUserVariantViewModel LinuxVariant { get; }
     public IAsyncRelayCommand NewCommand { get; }
     public IAsyncRelayCommand OpenCommand { get; }
     public IAsyncRelayCommand SaveCommand { get; }
@@ -263,6 +273,7 @@ public sealed class MainWindowViewModel : ObservableObject
         var template = Templates.FirstOrDefault(candidate => candidate.Id == project.Keyboard.Id)
             ?? _selectedTemplate;
         ReplaceProject(project, template);
+        await LinuxVariant.RefreshAsync(CancellationToken.None);
 
         // An opened document says where it came from if it was ever imported, so provenance is
         // visible without having to open the file.
@@ -354,6 +365,7 @@ public sealed class MainWindowViewModel : ObservableObject
         ReplaceProject(project, template);
         _startupProject = project;
         ImportStatus = $"Started from this host's layout, {provenance.Describe()}.";
+        await LinuxVariant.RefreshAsync(cancellationToken);
     }
 
     /// <summary>
@@ -457,6 +469,7 @@ public sealed class MainWindowViewModel : ObservableObject
             ?? _selectedTemplate;
         ReplaceProject(project, template);
         ImportStatus = $"Imported {provenance.Describe()} from {descriptor.SourceLocation}.";
+        await LinuxVariant.RefreshAsync();
     }
 
     /// <summary>
@@ -511,7 +524,11 @@ public sealed class MainWindowViewModel : ObservableObject
                 [BuildProfileKeys.SectionId] = XkbLayoutMetadata.SanitizeIdentifier(
                     variantId,
                     "basic"),
-                [BuildProfileKeys.Description] = description
+                [BuildProfileKeys.Description] = description,
+                [BuildProfileKeys.UserVariantId] = XkbLayoutMetadata.SanitizeIdentifier(
+                    $"keyboardstudio_{variantId ?? "custom"}",
+                    "keyboardstudio_custom"),
+                [BuildProfileKeys.UserVariantDescription] = $"{description} - KeyboardStudio"
             });
 
         return profiles;
@@ -586,6 +603,7 @@ public sealed class MainWindowViewModel : ObservableObject
         Editor = CreateEditor(project, template);
         Diagnostics = CreateDiagnostics(Editor);
         Build.ApplyTargetProfiles(_documentService.CurrentTargetProfiles);
+        LinuxVariant.ResetForDocument();
         RefreshDiagnostics();
         RefreshDocumentState();
     }
@@ -593,6 +611,7 @@ public sealed class MainWindowViewModel : ObservableObject
     private void DocumentChanged()
     {
         _documentService.MarkDirty();
+        LinuxVariant.NotifyProjectChanged();
         RefreshDiagnostics();
         RefreshDocumentState();
     }

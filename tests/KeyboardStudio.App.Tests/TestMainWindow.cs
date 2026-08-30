@@ -49,7 +49,8 @@ internal static class TestMainWindow
             new EnvironmentBuildTargetVisibilityPolicy(
                 EnvironmentBuildTargetVisibilityPolicy.AllTargetsValue),
             catalog,
-            hostLayoutProbe ?? new FakeHostLayoutProbe(null));
+            hostLayoutProbe ?? new FakeHostLayoutProbe(null),
+            new SilentLinuxUserVariantWorkflowService());
 
     private static KeyboardProjectValidator CreateValidator() =>
         new KeyboardProjectValidator([

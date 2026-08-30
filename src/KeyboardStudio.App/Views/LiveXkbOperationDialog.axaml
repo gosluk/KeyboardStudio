@@ -1,0 +1,36 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="KeyboardStudio.App.LiveXkbOperationDialog"
+        Title="Confirm Linux user-layout operation"
+        Width="680"
+        SizeToContent="Height"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner">
+  <Grid RowDefinitions="Auto,Auto,Auto" Margin="18" RowSpacing="14">
+    <StackPanel Spacing="6">
+      <TextBlock Text="{Binding Heading}" FontSize="18" FontWeight="SemiBold" />
+      <TextBlock Text="KeyboardStudio will change only the following per-user XKB and state paths. Distribution files and the active desktop layout are not changed."
+                 TextWrapping="Wrap" />
+    </StackPanel>
+
+    <Border Grid.Row="1"
+            Padding="10"
+            Background="{DynamicResource KeyboardBezelBrush}"
+            BorderBrush="{DynamicResource KeyboardBezelBorderBrush}"
+            BorderThickness="1"
+            CornerRadius="6">
+      <ItemsControl ItemsSource="{Binding Paths}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <TextBlock Classes="mono" Text="{Binding}" TextWrapping="Wrap" Margin="0,2" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </Border>
+
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <Button Content="Cancel" IsCancel="True" Click="CancelClicked" />
+      <Button Content="{Binding ConfirmLabel}" Classes="accent" Click="ConfirmClicked" />
+    </StackPanel>
+  </Grid>
+</Window>

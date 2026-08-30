@@ -4,9 +4,9 @@
 
 This document is the adopted architecture for Phase 14. P14.1 project identity and immutable
 derivation persistence, P14.2 neutral diffing/derived translation, P14.3 isolated bundle generation,
-P14.4 capability probing/verification, P14.5 ownership-aware install planning, and P14.6
-transactional installation and recovery are implemented. The explicit application workflow remains
-planned.
+P14.4 capability probing/verification, P14.5 ownership-aware install planning, P14.6 transactional
+installation/recovery, and P14.7's explicit application workflow are implemented. Compatibility
+closure and the final end-to-end matrix remain for P14.8.
 
 The feature is deliberately narrower than a general XKB editor or installer. A user imports a
 layout already installed by the operating system, changes the mappings KeyboardStudio supports,
@@ -529,6 +529,28 @@ The Linux user-variant panel shows:
 Install, update, and uninstall always require an explicit action and show the exact paths to be
 changed. A successful operation tells the user that the desktop settings may need to be reopened or
 the session restarted. KeyboardStudio does not silently select the variant.
+
+The implemented `LinuxUserVariantViewModel` and main-window card expose this contract only when the
+open project has an immutable system-import derivation. The public ID defaults to
+`keyboardstudio_<base-variant>` and the display name to `<source description> - KeyboardStudio`.
+Both are stored as hidden Linux target-profile settings, so user edits survive save/reopen without
+changing the standalone Linux build profile or the version-3 document schema. Once installed, the
+public ID is read-only because it is the stable desktop-visible identity; the display name and key
+mappings can still produce an update.
+
+`LinuxUserVariantWorkflowService` performs translation/generation planning and asynchronous host
+inspection behind the ViewModel. It distinguishes unavailable, export-only, not installed,
+installed, update available, externally modified, broken, and base unavailable states. The card
+presents import fidelity, effective XDG paths, session/tool/version/registry capability, and
+structured warnings. Loose-file imports and migrated projects without a baseline receive re-import
+guidance instead of an enabled installer.
+
+Generate writes only beneath the selected build output and can be used in export-only mode. Every
+live action opens a confirmation dialog listing the three possible user-XKB files plus the manifest,
+journal, backup, and proposed-root transaction paths. Install, update, verify-installed, and
+uninstall call the P14.6 service and refresh status afterward. Cancellation is forwarded into the
+transaction and reports that any live changes were rolled back. Success explains that desktop
+settings may need to be reopened or the session restarted; activation remains out of scope.
 
 ---
 

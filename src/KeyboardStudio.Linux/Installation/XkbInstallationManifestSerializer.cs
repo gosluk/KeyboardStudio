@@ -19,10 +19,17 @@ public static class XkbInstallationManifestSerializer
     public static XkbInstallationManifest Deserialize(string json)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(json);
-        var manifest = JsonSerializer.Deserialize<XkbInstallationManifest>(json, Options)
-            ?? throw new InvalidDataException("The XKB installation manifest is empty.");
-        Validate(manifest);
-        return manifest;
+        try
+        {
+            var manifest = JsonSerializer.Deserialize<XkbInstallationManifest>(json, Options)
+                ?? throw new InvalidDataException("The XKB installation manifest is empty.");
+            Validate(manifest);
+            return manifest;
+        }
+        catch (JsonException exception)
+        {
+            throw new InvalidDataException("The XKB installation manifest is malformed.", exception);
+        }
     }
 
     private static void Validate(XkbInstallationManifest manifest)

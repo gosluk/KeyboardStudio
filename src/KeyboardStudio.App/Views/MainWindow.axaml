@@ -284,7 +284,10 @@
                 <ItemsControl Grid.Row="3" Grid.Column="1" ItemsSource="{Binding Build.ProfileSettings}">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                      <Grid ColumnDefinitions="88,*" ColumnSpacing="6" Margin="0,1">
+                      <Grid ColumnDefinitions="88,*"
+                            ColumnSpacing="6"
+                            Margin="0,1"
+                            IsVisible="{Binding IsVisible}">
                         <TextBlock Classes="field-label" Text="{Binding Label}" FontSize="12" />
                         <TextBox Grid.Column="1" Text="{Binding Value, Mode=TwoWay}" />
                       </Grid>
@@ -365,6 +368,97 @@
                          Text="{Binding Build.ActionStatus}"
                          TextWrapping="Wrap"
                          FontSize="12" />
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card" IsVisible="{Binding LinuxVariant.IsVisible}">
+            <StackPanel Spacing="7">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                <TextBlock Classes="section-title" Text="Linux user variant" />
+                <TextBlock Grid.Column="1"
+                           Text="{Binding LinuxVariant.Status}"
+                           FontSize="11"
+                           FontWeight="SemiBold" />
+              </Grid>
+
+              <TextBlock Text="Augments the imported system layout in your user XKB directory. It never edits /usr/share or activates a layout."
+                         Classes="muted"
+                         TextWrapping="Wrap"
+                         FontSize="11" />
+
+              <Grid ColumnDefinitions="96,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="6" RowSpacing="4">
+                <TextBlock Classes="field-label" Text="Base" />
+                <TextBlock Grid.Column="1">
+                  <Run Text="{Binding LinuxVariant.BaseLayout}" />
+                  <Run Text=" (" />
+                  <Run Text="{Binding LinuxVariant.BaseVariant}" />
+                  <Run Text=")" />
+                </TextBlock>
+                <TextBlock Grid.Row="1" Classes="field-label" Text="Import fidelity" />
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding LinuxVariant.SourceFidelity}" />
+                <TextBlock Grid.Row="2" Classes="field-label" Text="Variant ID" />
+                <TextBox Grid.Row="2"
+                         Grid.Column="1"
+                         Text="{Binding LinuxVariant.VariantId, Mode=TwoWay}"
+                         IsReadOnly="{Binding !LinuxVariant.CanEditVariantId}"
+                         PlaceholderText="keyboardstudio_programmer" />
+              </Grid>
+
+              <Grid ColumnDefinitions="96,*" ColumnSpacing="6">
+                <TextBlock Classes="field-label" Text="Display name" />
+                <TextBox Grid.Column="1"
+                         Text="{Binding LinuxVariant.DisplayName, Mode=TwoWay}"
+                         PlaceholderText="Polish - KeyboardStudio" />
+              </Grid>
+
+              <TextBlock Text="{Binding LinuxVariant.StatusText}"
+                         TextWrapping="Wrap"
+                         FontSize="12" />
+              <TextBlock Text="{Binding LinuxVariant.CapabilityText}"
+                         Classes="muted"
+                         TextWrapping="Wrap"
+                         FontSize="11" />
+              <TextBlock Text="{Binding LinuxVariant.PathsText}"
+                         Classes="mono"
+                         TextWrapping="Wrap"
+                         FontSize="10" />
+              <TextBlock Text="{Binding LinuxVariant.DiagnosticsText}"
+                         Foreground="{DynamicResource WarningForegroundBrush}"
+                         TextWrapping="Wrap"
+                         FontSize="11"
+                         IsVisible="{Binding LinuxVariant.HasDiagnostics}" />
+
+              <WrapPanel Orientation="Horizontal">
+                <Button Content="Refresh"
+                        Margin="0,0,6,4"
+                        Command="{Binding LinuxVariant.RefreshCommand}" />
+                <Button Content="Generate bundle"
+                        Margin="0,0,6,4"
+                        Command="{Binding LinuxVariant.GenerateCommand}" />
+                <Button Content="Install"
+                        Margin="0,0,6,4"
+                        Command="{Binding LinuxVariant.InstallCommand}" />
+                <Button Content="Update"
+                        Margin="0,0,6,4"
+                        Command="{Binding LinuxVariant.UpdateCommand}" />
+                <Button Content="Verify installed"
+                        Margin="0,0,6,4"
+                        Command="{Binding LinuxVariant.VerifyInstalledCommand}" />
+                <Button Content="Uninstall"
+                        Margin="0,0,6,4"
+                        Command="{Binding LinuxVariant.UninstallCommand}" />
+                <Button Content="Cancel"
+                        Margin="0,0,6,4"
+                        Command="{Binding LinuxVariant.CancelCommand}" />
+                <Button Content="Open bundle"
+                        Margin="0,0,0,4"
+                        Command="{Binding LinuxVariant.OpenOutputCommand}" />
+              </WrapPanel>
+              <TextBlock Text="{Binding LinuxVariant.GeneratedBundlePath}"
+                         Classes="mono"
+                         TextWrapping="Wrap"
+                         FontSize="10"
+                         IsVisible="{Binding LinuxVariant.HasGeneratedBundle}" />
             </StackPanel>
           </Border>
         </StackPanel>
