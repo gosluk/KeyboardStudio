@@ -33,7 +33,10 @@
                    for, now that changing geometry no longer replaces the document by itself. -->
               <MenuItem Header="New _geometry" ItemsSource="{Binding NewDocumentOptions}">
                 <MenuItem.ItemContainerTheme>
-                  <ControlTheme TargetType="MenuItem">
+                  <!-- BasedOn is not optional: a ControlTheme replaces the whole theme, and the
+                       one it replaces is where a MenuItem's template comes from. Without it the
+                       items are built, bound, and drawn at zero size — an empty submenu. -->
+                  <ControlTheme TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
                     <Setter Property="Header" Value="{Binding Name}" />
                     <Setter Property="Command" Value="{Binding Command}" />
                     <Setter Property="AutomationProperties.Name" Value="{Binding Name}" />

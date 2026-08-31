@@ -154,6 +154,38 @@ public sealed class ApplicationXamlHierarchyTests
         Assert.Empty(tooSmall);
     }
 
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void EveryControlThemeEitherOwnsATemplateOrIsBasedOnTheOneItReplaces()
+    {
+        // A ControlTheme replaces the whole theme, and the theme it replaces is where a control's
+        // ControlTemplate comes from. A theme that sets a few properties and neither declares
+        // BasedOn nor supplies a template leaves its controls built, bound, and drawn at zero
+        // size — which looks like an empty list rather than like a broken one, so nothing about it
+        // is obvious from the screen.
+        var untemplated = ApplicationXamlSource.All
+            .SelectMany(entry => XDocument.Parse(entry.Value)
+                .Descendants(Avalonia + "ControlTheme")
+                .Select(theme => (File: entry.Key, Theme: theme)))
+            .Where(candidate => !IsPrimitivePresenter(candidate.Theme))
+            .Where(candidate => candidate.Theme.Attribute("BasedOn") is null && !OwnsATemplate(candidate.Theme))
+            .Select(candidate => $"{candidate.File}: ControlTheme for {(string?)candidate.Theme.Attribute("TargetType")}")
+            .ToList();
+
+        Assert.Empty(untemplated);
+    }
+
+    /// <summary>
+    /// Whether the theme targets a presenter, which draws its content directly and so has no
+    /// template for a replacement theme to lose.
+    /// </summary>
+    private static bool IsPrimitivePresenter(XElement theme) =>
+        (string?)theme.Attribute("TargetType") == "ContentPresenter";
+
+    private static bool OwnsATemplate(XElement theme) =>
+        theme.Elements(Avalonia + "Setter")
+            .Any(setter => (string?)setter.Attribute("Property") == "Template");
+
     /// <summary>What a button does, however it was wired.</summary>
     private static string Action(XElement button) =>
         (string?)button.Attribute("Command")

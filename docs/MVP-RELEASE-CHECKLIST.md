@@ -24,7 +24,7 @@ have no unresolved defect.
 | Appearance never becomes project data | `AppearanceProjectIsolationTests` serializes a project either side of two theme changes and requires identical bytes and a still-clean document. |
 | A damaged preference cannot block startup | `JsonApplicationSettingsStoreTests` covers missing, corrupt, unknown-theme, future-schema, blocked-path, and interrupted-write cases, and proves a failed replacement preserves the last complete file. |
 | A fresh window needs no first press | `StartupLayoutLoaderTests` and `HostLayoutStartupImportTests` cover the loaded, unavailable, failed, cancelled, and discarded startup outcomes, and `MainWindowHeaderTests` proves no binding references the removed **Create** control. |
-| The header keeps every command accessible | `MainWindowHeaderTests` and `ApplicationXamlHierarchyTests` hold the File menu's commands and shortcuts, the accessible name on every icon-only control, the focus order, and the emphasis given to primary and destructive actions. |
+| The header keeps every command accessible | `MainWindowHeaderTests` and `ApplicationXamlHierarchyTests` hold the File menu's commands and shortcuts, the accessible name on every icon-only control, the focus order, the emphasis given to primary and destructive actions, and that no control theme drops the template it replaces. |
 
 ## Manual release observations
 
