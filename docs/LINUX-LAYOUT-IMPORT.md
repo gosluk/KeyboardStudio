@@ -297,7 +297,22 @@ does not own.
 
 A layout with no `<variantList>` yields one descriptor with `VariantId = null`, which resolves to the
 file's `default` section. Layouts present in `symbols/` but absent from the registry are still
-listed, with the file name as the display name and a `KSI010` informational diagnostic.
+listed, with the file name as the display name and a `KSI010` informational diagnostic — provided
+they are layouts at all.
+
+Most of `symbols/` is not. Thirty of the 133 files a stock xkeyboard-config ships there have no
+registry entry, and all but the user's own are components — `pc`, `latin`, `level3`, `capslock`,
+`keypad`, `altwin` — meant to be merged into a layout rather than chosen as one. Offering them put
+`altwin` between Albanian and Armenian in a list of countries and gave the user entries that import
+three keys.
+
+What separates the two is in the data: a layout sets `name[Group1]`, the name the desktop shows for
+the group it defines, and a component never does — a component that named a group would be naming
+every layout it is merged into. `XkbLayoutImportSource` reads the file's own default section for
+that statement and follows no includes, because `latin` would otherwise inherit "English (US)" from
+the `us` section it composes and is a component all the same. A layout the user wrote themselves
+survives the test: it has to name its group for the desktop to offer it, so the file that works
+outside this application is the file this application lists.
 
 ### 3.3.1 As built
 
@@ -853,6 +868,13 @@ and the user needs to see which keys were dropped before an import replaces thei
 
 "Replace mappings in current project" keeps the existing geometry, target profiles, and file path,
 mutating only `KeyboardLayout` — the common case of "start from Polish and change three keys".
+
+The list is ordered by the name on the row, not by the identifier behind it. The two disagree often:
+`af` is Dari, `al` is Albanian, `am` is Armenian, `ancient` is Ancient. Ordering on the code shows
+the user a column of language names in no order they can follow, so the layouts sort by display name
+and the variants under each sort the same way, behind the layout's own entry — which leads whatever
+it is called, because it is what the bare code means. The comparison is
+`InvariantCultureIgnoreCase`, so the order is the same on every host that runs the application.
 
 ViewModels — `LayoutImportViewModel`, `ImportableLayoutViewModel`, `LayoutImportReportViewModel` —
 depend on `ILayoutImportCatalog` only. Both entry points route through the existing

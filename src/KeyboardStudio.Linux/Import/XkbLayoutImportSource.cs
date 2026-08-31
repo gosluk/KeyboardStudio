@@ -1,3 +1,4 @@
+using System.Text;
 using KeyboardStudio.Core;
 
 namespace KeyboardStudio.Linux;
@@ -12,6 +13,12 @@ namespace KeyboardStudio.Linux;
 /// </summary>
 public sealed class XkbLayoutImportSource : ILayoutImportSource
 {
+    /// <summary>
+    /// Reads the files the registry does not describe, to tell a layout from a component.
+    /// Listing is single-threaded, so one parser serves the whole pass.
+    /// </summary>
+    private readonly XkbSymbolsParser _parser = new();
+
     private readonly IXkbFileSystem _fileSystem;
     private readonly IXkbDataRootLocator _dataRootLocator;
     private readonly IXkbLayoutRegistryReader _registryReader;
@@ -115,7 +122,9 @@ public sealed class XkbLayoutImportSource : ILayoutImportSource
 
         foreach (var (layoutId, symbols) in symbolsByLayout)
         {
-            if (described.Contains(layoutId) || !listed.Add((layoutId, null)))
+            if (described.Contains(layoutId) ||
+                !NamesAKeyboardGroup(symbols.Path) ||
+                !listed.Add((layoutId, null)))
             {
                 continue;
             }
@@ -143,6 +152,45 @@ public sealed class XkbLayoutImportSource : ILayoutImportSource
         });
 
         return Task.FromResult<IReadOnlyList<ImportableLayoutDescriptor>>(descriptors);
+    }
+
+    /// <summary>
+    /// Whether a symbols file the registry says nothing about is a layout in its own right.
+    /// </summary>
+    /// <remarks>
+    /// Most of <c>symbols/</c> is not layouts. Two thirds of the files a distribution ships there
+    /// are components — <c>pc</c>, <c>latin</c>, <c>level3</c>, <c>capslock</c>, <c>keypad</c> —
+    /// meant to be merged into a layout rather than chosen as one, and listing them puts
+    /// <c>altwin</c> between Albanian and Armenian in a list of countries.
+    ///
+    /// What separates the two is in the data: a layout sets <c>name[Group1]</c>, which is the name
+    /// the desktop shows for the group it defines. A component never does, because a component that
+    /// named a group would be naming every layout it is merged into. The test reads the file's own
+    /// default section and follows no includes: <c>latin</c> would inherit "English (US)" from the
+    /// <c>us</c> section it composes, and is a component all the same.
+    ///
+    /// The user's own layouts survive this. A layout dropped into an XKB root without a registry
+    /// entry still has to name its group for the desktop to offer it, so the file that works
+    /// outside this application is the file this application lists.
+    /// </remarks>
+    private bool NamesAKeyboardGroup(string path)
+    {
+        XkbSymbolsFile parsed;
+        try
+        {
+            using var stream = _fileSystem.OpenRead(path);
+            using var reader = new StreamReader(stream, Encoding.UTF8);
+            parsed = _parser.Parse(path, reader.ReadToEnd());
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // A file that cannot be read cannot be imported either, so it is not offered.
+            return false;
+        }
+
+        return parsed.DefaultSection?.Statements
+            .OfType<XkbNameStatement>()
+            .Any(name => name.Group == 1) == true;
     }
 
     /// <inheritdoc />

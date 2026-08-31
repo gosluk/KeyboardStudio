@@ -64,6 +64,17 @@ public sealed class XkbLayoutImportSourceTests
         };
         """;
 
+    /// <summary>
+    /// A component rather than a layout: it is merged into one and names no group of its own,
+    /// which is exactly what makes it not a thing to choose from a list.
+    /// </summary>
+    private const string Level3Symbols = """
+        default partial alphanumeric_keys
+        xkb_symbols "ralt_switch" {
+            key <RALT> { [ ISO_Level3_Shift ] };
+        };
+        """;
+
     [Fact]
     [Trait("Category", "Unit")]
     public async Task ImportAsync_ForALayoutWithNoVariant_ImportsTheFilesDefaultSection()
@@ -111,6 +122,8 @@ public sealed class XkbLayoutImportSourceTests
     [Trait("Category", "Unit")]
     public async Task ListAsync_ForALayoutTheRegistryDoesNotDescribe_ListsItUnderItsFileName()
     {
+        // A layout the user wrote themselves has no registry entry, and naming its group is what
+        // makes it a layout rather than one of the components beside it.
         var descriptors = await CreateSource().ListAsync();
 
         var custom = Assert.Single(descriptors, descriptor => descriptor.LayoutId == "mine");
@@ -118,6 +131,18 @@ public sealed class XkbLayoutImportSourceTests
         Assert.Equal("mine", custom.DisplayName);
         Assert.Empty(custom.Countries);
         Assert.Equal($"{UserRoot}/symbols/mine", custom.SourceLocation);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task ListAsync_ForAComponentTheRegistryDoesNotDescribe_LeavesItOut()
+    {
+        // Two thirds of a distribution's symbols/ directory is components meant to be merged into a
+        // layout, not chosen as one. Offering them puts `level3` between German and English in a
+        // list of countries and gives the user an entry that imports three keys.
+        var descriptors = await CreateSource().ListAsync();
+
+        Assert.DoesNotContain(descriptors, descriptor => descriptor.LayoutId == "level3");
     }
 
     [Fact]
@@ -197,6 +222,7 @@ public sealed class XkbLayoutImportSourceTests
             .AddFile($"{SystemRoot}/rules/evdev.xml", Registry)
             .AddFile($"{SystemRoot}/symbols/us", UsSymbols)
             .AddFile($"{SystemRoot}/symbols/de", DeSymbols)
+            .AddFile($"{SystemRoot}/symbols/level3", Level3Symbols)
             .AddFile($"{UserRoot}/symbols/mine", UsSymbols);
 
     private static XkbLayoutImportSource CreateSource(FakeXkbFileSystem? fileSystem = null)

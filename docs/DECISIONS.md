@@ -503,3 +503,23 @@ the findings that describe the one being imported.
 
 The alternative, filling unmapped keys from the seed project after import, was rejected: it would
 invent mappings the source never contained and make an import's output depend on which seed shipped.
+
+## AD-041 - The import catalog offers layouts, ordered by the name it shows
+
+A symbols file the registry does not describe is listed only when it names a keyboard group, and the
+list is ordered by display name rather than by layout identifier.
+
+Two thirds of a distribution's `symbols/` directory is components — `pc`, `latin`, `level3`,
+`capslock`, `keypad`, `altwin` — merged into a layout rather than chosen as one. Listing every file
+put `altwin` between Albanian and Armenian in what reads as a list of countries, and offered entries
+that import three keys. `name[Group1]` separates the two in the data: a layout names the group it
+defines, and a component cannot, because it would then be naming every layout it is merged into. The
+test reads the file's own default section and follows no includes, so `latin` does not inherit
+"English (US)" from the `us` section it composes. A layout the user wrote themselves still has to
+name its group for the desktop to offer it, so it is still listed here.
+
+Filtering to registry entries alone was rejected: it is what the desktop settings panels do, but it
+would drop the user's own layouts, which are the ones this application exists to edit.
+
+Ordering by identifier showed Dari above Albanian and Chinese below English — the column the user
+scans is the name, and the code that explains the order is not in it.

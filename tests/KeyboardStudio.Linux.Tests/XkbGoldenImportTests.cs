@@ -123,16 +123,16 @@ public sealed class XkbGoldenImportTests
 
     [Fact]
     [Trait("Category", "Golden")]
-    public async Task ListAsync_OverTheVendoredDatabase_OffersTheRegistrysLayoutsAndTheFilesItOmits()
+    public async Task ListAsync_OverTheVendoredDatabase_OffersTheLayoutsAndNoneOfTheComponents()
     {
         // The goldens each look up one entry, so between them they say nothing about the listing
-        // itself. The vendored root is small enough to state exhaustively, and it happens to hold
-        // both kinds of entry: five layouts the registry describes, and the files those layouts
-        // and the common base include, which are importable but nameless.
+        // itself. The vendored root is small enough to state exhaustively, and it holds both kinds
+        // of file: five layouts, and the seven components those layouts and the common base are
+        // built from, which are merged into a layout rather than chosen as one.
         var descriptors = await VendoredXkbFixture.CreateSource().ListAsync();
 
         Assert.Equal(
-            ["al", "de", "fr", "keypad", "kpdl", "latin", "level3", "nbsp", "pc", "pl", "srvr_ctrl", "us"],
+            ["al", "de", "fr", "pl", "us"],
             descriptors.Select(descriptor => descriptor.LayoutId).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal));
 
         // A layout the registry describes arrives with its description, its variants, and the
@@ -142,18 +142,6 @@ public sealed class XkbGoldenImportTests
         Assert.Equal("Polish", basic.DisplayName);
         Assert.Contains("PL", basic.Countries);
         Assert.Contains(polish, descriptor => descriptor.VariantId == "qwertz");
-
-        // A file nothing describes is offered under its own name and nothing more, which is the
-        // whole of what is known about it until someone imports it.
-        foreach (var file in new[] { "keypad", "kpdl", "latin", "level3", "nbsp", "pc", "srvr_ctrl" })
-        {
-            var entry = Assert.Single(descriptors, descriptor => descriptor.LayoutId == file);
-            Assert.Null(entry.VariantId);
-            Assert.Equal(file, entry.DisplayName);
-            Assert.Null(entry.ShortDescription);
-            Assert.Empty(entry.Languages);
-            Assert.Empty(entry.Countries);
-        }
 
         Assert.All(descriptors, descriptor => Assert.Equal(LayoutSourceOrigin.System, descriptor.Origin));
     }

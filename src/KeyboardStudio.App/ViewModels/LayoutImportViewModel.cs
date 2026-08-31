@@ -341,10 +341,14 @@ public sealed class LayoutImportViewModel : ObservableObject
                 ? await _catalog.ListAsync(cancellationToken)
                 : [_pinnedDescriptor];
 
+            // Ordered by the name on the row, not by the code behind it. Sorting on the identifier
+            // puts Dari above Albanian and Chinese below English, which reads as a list in no order
+            // at all: the code that explains it is not the text the user is scanning.
             _allLayouts = descriptors
                 .GroupBy(descriptor => descriptor.LayoutId, StringComparer.Ordinal)
-                .OrderBy(group => group.Key, StringComparer.Ordinal)
                 .Select(group => new ImportableLayoutViewModel(group.Key, group.ToArray()))
+                .OrderBy(layout => layout.DisplayName, StringComparer.InvariantCultureIgnoreCase)
+                .ThenBy(layout => layout.LayoutId, StringComparer.Ordinal)
                 .ToArray();
 
             // Set before filtering, because filtering selects an entry and starts importing it,

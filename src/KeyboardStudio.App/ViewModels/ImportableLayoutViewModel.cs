@@ -34,11 +34,13 @@ public sealed class ImportableLayoutViewModel
         LayoutId = layoutId;
 
         // The layout's own entry leads, because it is what "pl" means when nothing further is
-        // said; the variants follow in the order the source listed them, which is the order the
-        // distribution wrote them in.
+        // said. The rest follow by the name the list shows rather than by the identifier behind
+        // it, so that a drop-down of a dozen variants reads in the order it is displayed in.
         Variants = descriptors
-            .OrderBy(descriptor => descriptor.VariantId is null ? 0 : 1)
             .Select(descriptor => new ImportableVariantViewModel(descriptor))
+            .OrderBy(variant => variant.VariantId is null ? 0 : 1)
+            .ThenBy(variant => variant.DisplayName, StringComparer.InvariantCultureIgnoreCase)
+            .ThenBy(variant => variant.VariantId, StringComparer.Ordinal)
             .ToArray();
 
         var primary = Variants[0].Descriptor;

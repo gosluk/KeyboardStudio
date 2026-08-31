@@ -244,6 +244,46 @@ public sealed class LayoutImportViewModelTests
         Assert.Throws<ArgumentException>(() => new LayoutImportViewModel(Catalog(), []));
     }
 
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task LoadAsync_OrdersLayoutsByTheNameOnTheRow_NotTheCodeBehindIt()
+    {
+        // The identifier is a country code and the name is a language, and the two disagree often
+        // enough that ordering by the code reads as no order at all: `af` is Dari, `al` is
+        // Albanian, `am` is Armenian and `ancient` is Ancient.
+        var catalog = new FakeLayoutImportCatalog()
+            .Add("af", null, "Dari")
+            .Add("al", null, "Albanian")
+            .Add("am", null, "Armenian")
+            .Add("ancient", null, "Ancient");
+        var viewModel = Create(catalog);
+
+        await viewModel.LoadAsync();
+
+        Assert.Equal(
+            ["Albanian", "Ancient", "Armenian", "Dari"],
+            viewModel.Layouts.Select(layout => layout.DisplayName));
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task LoadAsync_OrdersVariantsByNameBehindTheDefault()
+    {
+        // The layout's own entry is what the bare code means, so it leads whatever it is called.
+        var catalog = new FakeLayoutImportCatalog()
+            .Add("pl", "qwertz", "Polish (QWERTZ)")
+            .Add("pl", "csb", "Kashubian")
+            .Add("pl", null, "Polish")
+            .Add("pl", "dvorak", "Polish (Dvorak)");
+        var viewModel = Create(catalog);
+
+        await viewModel.LoadAsync();
+
+        Assert.Equal(
+            ["Default", "Kashubian", "Polish (Dvorak)", "Polish (QWERTZ)"],
+            Assert.Single(viewModel.Layouts).Variants.Select(variant => variant.DisplayName));
+    }
+
     private static FakeLayoutImportCatalog Catalog() =>
         new FakeLayoutImportCatalog()
             .Add("pl", null, "Polish", ["pol"], ["PL"])
