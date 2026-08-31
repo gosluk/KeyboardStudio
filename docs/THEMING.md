@@ -6,9 +6,16 @@ This document defines the architecture for Phase 15: explicit White, Gray, and B
 themes; local persistence of the selected theme; a simplified application header; and a startup path
 that opens directly onto an editable layout without requiring the user to press **Create**.
 
-This is the architecture baseline. Application implementation must not begin until the decisions,
-boundaries, and acceptance criteria in this document have been reviewed. The executable work order is
-in [`THEMING-IMPLEMENTATION-PLAN.md`](THEMING-IMPLEMENTATION-PLAN.md).
+This is the architecture baseline, and it is implemented: every acceptance criterion in section 13
+is met and covered by the tests named in the
+[MVP release checklist](MVP-RELEASE-CHECKLIST.md). The executable work order is in
+[`THEMING-IMPLEMENTATION-PLAN.md`](THEMING-IMPLEMENTATION-PLAN.md).
+
+Two decisions were taken during implementation and are recorded in
+[`DECISIONS.md`](DECISIONS.md): Fluent's palette accent is pinned per inherited variant, because it
+otherwise follows the desktop's accent colour into every check mark and list selection (AD-038); and
+diagnostics collapse when there is nothing to report, expanding on the transition into error rather
+than on every validation pass (AD-039).
 
 The supplied wireframes define visual character, not control placement. They establish three tonal
 directions and a compact editor hierarchy; they do not require custom window chrome, a permanent

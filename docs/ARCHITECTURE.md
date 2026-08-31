@@ -16,10 +16,9 @@ The first version focuses on five capabilities:
 
 Everything not required by those capabilities is intentionally excluded from the first implementation.
 
-Both backends, the non-empty/current-layout startup path, the Linux-focused target policy, and the
-per-user XKB variant workflow are implemented and tested. Sections 2.6, 10.4, and 13 describe that
-current architecture. The planned Phase 15 appearance and application-shell architecture is recorded
-separately in section 18 and [`THEMING.md`](THEMING.md); it is not shipped behavior yet.
+Both backends, the non-empty/current-layout startup path, the Linux-focused target policy, the
+per-user XKB variant workflow, and the White/Gray/Black appearance and application shell are
+implemented and tested. Sections 2.6, 10.4, 13, and 18 describe that current architecture.
 
 ---
 
@@ -1333,9 +1332,9 @@ KeyboardStudio.App (composition + target-aware UI)
 
 ## 18. Application themes, local settings, and startup shell
 
-Phase 15 adds an application-owned appearance and startup layer without changing the dependency
-direction above. Theme choice is host-local presentation state, not keyboard domain state and not a
-portable project setting.
+An application-owned appearance and startup layer sits above the dependency direction described
+above without changing it. Theme choice is host-local presentation state, not keyboard domain state
+and not a portable project setting.
 
 ```text
 Local settings JSON
@@ -1377,6 +1376,17 @@ The standalone File menu row moves into the application header as an accessible 
 `KeyboardStudio`. Theme selection uses a separate accessible Appearance trigger. The permanent
 `New from / Create` toolbar group is removed because a fresh window already contains the layout the
 user should edit; explicit New and geometry choices remain secondary File-menu operations.
+
+`ApplicationThemeTokens` is the required key set, and tests hold all three dictionaries to it, audit
+every view for a colour of its own, and reject any resource key KeyboardStudio does not define
+itself. One exception exists: `FluentTheme.Palettes` pins the accent Fluent uses for its own check
+marks, list selection and scrollbars, which otherwise follows the desktop's accent colour (AD-038).
+
+Diagnostics collapse to one line while there is nothing to report and expand on the transition into
+error, so the keyboard keeps the room a permanently reserved panel used to take (AD-039). Emphasis
+is a contract rather than a decoration: Build and Install are the only primary actions, Uninstall
+and Discard the only destructive ones, and markup tests hold those lists along with the focus order,
+the accessible name on every icon-only control, and the floor on supporting-text size.
 
 The detailed resource contract, failure behavior, UX scope, and acceptance criteria are in
 [`THEMING.md`](THEMING.md). The ordered work and test gates are in

@@ -43,12 +43,22 @@ generation need no native development toolchain. A Windows DLL build additionall
 MSVC toolchain and Windows 10/11 SDK. Installing `xkbcli` is optional for local Linux generation and
 adds external compilation verification; Linux CI always performs that verification.
 
-A new document opens on the `us-basic` seed — a US layout on ISO-105 hardware with all 105 keys
-already mapped — rather than an empty keyboard, so there is always something to modify. Select a
-physical key, change its logical key or any of the four layer values, then use **File > Save As** for
-the `.kbdproj`, then build from the Build panel. Target profile edits are stored in the same project
-document and restored when it is reopened. Normal builds only generate artifacts; they never
-install or activate a keyboard layout.
+A fresh window opens on something editable and then settles onto the layout this host is already
+configured to type with, where that can be read — on other hosts it keeps the populated `us-basic`
+seed, a US layout on ISO-105 hardware with all 105 keys already mapped. Either way there is a
+working layout on screen from the first frame and nothing to press first. Select a physical key,
+change its logical key or any of the four layer values, then use **File > Save As** for the
+`.kbdproj`, then build from the Build panel. `Ctrl+N` makes a new document using the geometry
+already open, and the File menu offers the other geometries explicitly. Target profile edits are
+stored in the same project document and restored when it is reopened. Normal builds only generate
+artifacts; they never install or activate a keyboard layout.
+
+Document commands live behind the File icon beside the `KeyboardStudio` title, and the Appearance
+icon next to it offers three application themes — White, Gray, and Black. The choice applies to
+every window, dialog, menu, and keycap immediately, and is remembered in a per-user `settings.json`
+beneath the local application-data directory. It is never written into a `.kbdproj` and never marks
+one dirty. A damaged or unreadable preference file starts the application in Gray rather than
+failing, and is left untouched.
 
 The Linux user-variant workflow starts from an imported system layout, emits only the user's
 supported changes as a derived variant, and—after explicit confirmation—installs it transactionally
@@ -124,9 +134,9 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the complete architecture.
 
 See [docs/IMPLEMENTATION-PLAN.md](docs/IMPLEMENTATION-PLAN.md) for the phased implementation plan, acceptance criteria, test gates, milestones, and risk register.
 
-The planned White, Gray, and Black application themes, local preference boundary, header redesign,
-and direct-to-edit startup behavior are specified in
-[docs/THEMING.md](docs/THEMING.md). Their ordered Phase 15 work is in
+The White, Gray, and Black application themes, the local preference boundary, the application
+header, and the current-layout startup path are specified in
+[docs/THEMING.md](docs/THEMING.md); the ordered Phase 15 work and its test gates are in
 [docs/THEMING-IMPLEMENTATION-PLAN.md](docs/THEMING-IMPLEMENTATION-PLAN.md).
 
 ## Repository structure

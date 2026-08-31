@@ -13,7 +13,20 @@
     <!-- Fluent supplies the control resources KeyboardStudio does not define. Each KeyboardStudio
          variant inherits Fluent Light or Dark, so an unstyled corner of a control degrades to a
          readable colour rather than to nothing. -->
-    <FluentTheme />
+    <!--
+      Fluent draws its own check marks, radio dots, list selection and scrollbars from its palette
+      accent, which otherwise comes from the desktop's accent colour: a colour belonging to none of
+      these palettes that changes under the application without warning. Palettes is the supported
+      place to pin it, and the only place outside ThemeResources.axaml that names a colour. It
+      accepts the Light and Dark variants alone, so each KeyboardStudio variant is served by the
+      one it inherits — White and Gray from Light, Black from Dark.
+    -->
+    <FluentTheme>
+      <FluentTheme.Palettes>
+        <ColorPaletteResources x:Key="Light" Accent="#2F6FEB" />
+        <ColorPaletteResources x:Key="Dark" Accent="#5B9BFF" />
+      </FluentTheme.Palettes>
+    </FluentTheme>
     <StyleInclude Source="avares://KeyboardStudio/Styles/AppStyles.axaml" />
   </Application.Styles>
 </Application>

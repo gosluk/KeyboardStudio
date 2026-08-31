@@ -36,12 +36,17 @@ public sealed partial class ApplicationXamlPresentationTests
         Assert.Contains(ApplicationXamlSource.ThemeResourcesName, ApplicationXamlSource.All.Keys);
         Assert.True(ApplicationXamlSource.All.Count >= 10, "The application's XAML was not embedded.");
 
-        foreach (var (name, xaml) in ApplicationXamlSource.All)
+        foreach (var (name, rawXaml) in ApplicationXamlSource.All)
         {
             if (name == ApplicationXamlSource.ThemeResourcesName)
             {
                 continue;
             }
+
+            // Fluent's palette accent is the documented way to stop its own check marks and list
+            // selection following the desktop's accent colour, and it takes a colour rather than a
+            // resource. It is the one exception, and it is confined to this one element.
+            var xaml = ColorPalette().Replace(rawXaml, string.Empty);
 
             foreach (Match match in HexColour().Matches(xaml))
             {
@@ -131,6 +136,9 @@ public sealed partial class ApplicationXamlPresentationTests
 
     [GeneratedRegex(@"#[0-9A-Fa-f]{3,8}\b")]
     private static partial Regex HexColour();
+
+    [GeneratedRegex(@"<ColorPaletteResources\b[^>]*/>")]
+    private static partial Regex ColorPalette();
 
     [GeneratedRegex(@"(?<attribute>[A-Za-z.]+)\s*=\s*""(?<value>[^""]*)""")]
     private static partial Regex PresentationAttribute();

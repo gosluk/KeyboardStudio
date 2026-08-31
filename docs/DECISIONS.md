@@ -451,3 +451,33 @@ uses local vector resources rather than adding an icon package for two applicati
 
 The header shows a concise layout or filename and puts the full path in a tooltip. This keeps dirty,
 loading, import, and fallback state visible without allowing a long path to consume the header.
+
+## AD-038 - Fluent's palette accent is pinned per inherited variant
+
+`FluentTheme.Palettes` sets the accent Fluent uses for its own check marks, radio dots, list
+selection, and scrollbars. Left alone it follows the desktop's accent colour, so a KeyboardStudio
+theme would show a checkbox in whatever colour the host was configured for — a colour belonging to
+none of the three palettes, and one that changes under the application without warning.
+
+`Palettes` accepts the Light and Dark variants only. Each KeyboardStudio variant is therefore served
+by the one it inherits: White and Gray from Light, Black from Dark. This is the single exception to
+the rule that only `ThemeResources.axaml` names a colour, and the literal-colour audit permits it
+inside `ColorPaletteResources` and nowhere else.
+
+Overriding individual Fluent resource keys was rejected. Those keys are implementation detail and an
+Avalonia upgrade could rename them without failing a build; the palette accent is the documented
+customization point and is one value rather than a list.
+
+## AD-039 - Diagnostics collapse when there is nothing to report
+
+The diagnostics panel occupies one line while it has no entries, and expands on the transition into
+error rather than on every validation pass.
+
+A clean document is the normal case, so a panel that permanently reserved the bottom of the editor
+to say "No diagnostics" was taking that space from the keyboard to display nothing. Expanding on
+every refresh would fight the user instead: validation reruns on each edit, so a list they had just
+closed would reopen at the next keystroke for as long as the error stood. The panel therefore opens
+itself only when an error first appears, and the user's own collapse holds until the next one.
+
+The summary names severities — "1 error, 2 warnings" — rather than counting rows, so it reads the
+same with colour removed.
