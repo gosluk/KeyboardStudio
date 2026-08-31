@@ -11,7 +11,10 @@ Responsibilities:
 - rendering keyboard templates as reusable key controls;
 - application-level project document lifecycle through `IProjectDocumentService`;
 - file-picker interaction for project Open/Save As paths;
-- displaying validation, document, and build diagnostics.
+- displaying validation, document, and build diagnostics;
+- persisting host-local application preferences under `Settings/`.
+
+`JsonApplicationSettingsStore` persists application preferences — currently the selected appearance theme — as versioned JSON under the per-user local application-data directory resolved by `IApplicationSettingsPathProvider`. These are host-local preferences, not portable project data, so they never enter `.kbdproj` documents or `KeyboardStudio.Persistence`. Reads are tolerant: a missing, unreadable, corrupt, unknown-theme, or future-schema file leaves the original file untouched and returns the Gray defaults with a presentation-safe error rather than failing startup. Writes go to a same-directory temporary file that is then moved into place, so an interrupted save cannot destroy the last complete settings file.
 
 `ProjectDocumentService` owns New/Open/Save/Save As semantics, the current path, dirty state, and translation of expected persistence/I/O failures into presentation-safe errors. `AvaloniaProjectInteractionService` supplies native storage pickers, unsaved-change confirmation, and error presentation while JSON serialization remains in `KeyboardStudio.Persistence`.
 
