@@ -15,7 +15,8 @@ Responsibilities:
 - persisting host-local application preferences under `Settings/`;
 - applying the saved appearance theme before the first window exists;
 - owning the semantic colour contract every view draws through;
-- presenting document and appearance commands in one application header.
+- presenting document and appearance commands in one application header;
+- opening a fresh window onto the layout this host already types with.
 
 `JsonApplicationSettingsStore` persists application preferences — currently the selected appearance theme — as versioned JSON under the per-user local application-data directory resolved by `IApplicationSettingsPathProvider`. These are host-local preferences, not portable project data, so they never enter `.kbdproj` documents or `KeyboardStudio.Persistence`. Reads are tolerant: a missing, unreadable, corrupt, unknown-theme, or future-schema file leaves the original file untouched and returns the Gray defaults with a presentation-safe error rather than failing startup. Writes go to a same-directory temporary file that is then moved into place, so an interrupted save cannot destroy the last complete settings file.
 
@@ -26,6 +27,10 @@ Responsibilities:
 `AppearanceViewModel` presents the three choices and commits the one the user picks. It applies the theme first and saves second: appearance is worth nothing if it takes a round-trip to disk to appear, and a preference that cannot be written is still a preference the user made, so a failed save keeps the chosen theme for the session and says so beside the choice instead of reverting the window or interrupting with a dialog. Choosing the theme that is already active does nothing, so reopening the menu does not rewrite the settings file. It holds no reference to `ProjectDocumentService`, and a regression test serializes a project either side of a theme change to prove appearance never becomes document data.
 
 The application header carries the title, an icon File menu with every document command and its existing shortcut, the concise document label with the full path in a tooltip, the dirty badge, and the appearance menu. The standalone menu row is gone. Both icon triggers keep an accessible name and a tooltip, and the theme choices are a keyboard-navigable radio group with names and descriptions, so neither control depends on recognising its glyph.
+
+`StartupLayoutLoader` detects and reads the host's active layout and returns a `StartupLayoutResult` — data and status, never a decision. Whether a freshly read layout may replace what is on screen depends on what the user has done in the meantime, and that is knowledge `MainWindowViewModel` has and a loader does not; it keeps ownership of adoption, dirty state, provenance, profiles, and the untouched-startup guard. `StartupLayoutState` names what the editor is showing as a result: loading, the current layout, the populated seed fallback, or a result discarded because the user acted first. Nothing there throws: an unreadable layout, a host with no keyboard database, and a cancelled load are ordinary results for an import nobody asked for.
+
+A fresh window therefore opens on something editable and settles onto the host's own layout without a press of **Create**, which no longer exists. `Ctrl+N` makes a populated document using the geometry already open; the File menu's geometry entries are how a different one is asked for. Every one of those paths still goes through the unsaved-changes confirmation.
 
 `ProjectDocumentService` owns New/Open/Save/Save As semantics, the current path, dirty state, and translation of expected persistence/I/O failures into presentation-safe errors. `AvaloniaProjectInteractionService` supplies native storage pickers, unsaved-change confirmation, and error presentation while JSON serialization remains in `KeyboardStudio.Persistence`.
 

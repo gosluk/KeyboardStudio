@@ -29,6 +29,17 @@
           <Button.Flyout>
             <MenuFlyout Placement="BottomEdgeAlignedLeft">
               <MenuItem Header="_New" Command="{Binding NewCommand}" InputGesture="Ctrl+N" />
+              <!-- Ctrl+N keeps the geometry already open; these are how a different one is asked
+                   for, now that changing geometry no longer replaces the document by itself. -->
+              <MenuItem Header="New _geometry" ItemsSource="{Binding NewDocumentOptions}">
+                <MenuItem.ItemContainerTheme>
+                  <ControlTheme TargetType="MenuItem">
+                    <Setter Property="Header" Value="{Binding Name}" />
+                    <Setter Property="Command" Value="{Binding Command}" />
+                    <Setter Property="AutomationProperties.Name" Value="{Binding Name}" />
+                  </ControlTheme>
+                </MenuItem.ItemContainerTheme>
+              </MenuItem>
               <MenuItem Header="_Open…" Command="{Binding OpenCommand}" InputGesture="Ctrl+O" />
               <Separator />
               <MenuItem Header="_Import layout…" Command="{Binding ImportLayoutCommand}" />
@@ -107,7 +118,7 @@
 
               <!-- Wraps to a second line instead of clipping once the window is narrow. -->
               <WrapPanel Grid.Column="1" HorizontalAlignment="Right">
-                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,14,2">
+                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,2">
                   <TextBlock Classes="field-label" Text="Layer" />
                   <ComboBox ItemsSource="{Binding Editor.Layers}"
                             SelectedItem="{Binding Editor.ActiveLayerOption}"
@@ -121,24 +132,6 @@
                   <TextBlock Classes="muted"
                              Text="{Binding Editor.LayerSummary}"
                              FontSize="12" />
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,2">
-                  <TextBlock Classes="field-label" Text="New from" />
-                  <ComboBox ItemsSource="{Binding Templates}"
-                            SelectedItem="{Binding SelectedTemplate}"
-                            Width="140">
-                    <ComboBox.ItemTemplate>
-                      <DataTemplate>
-                        <TextBlock Text="{Binding Name}" />
-                      </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                  </ComboBox>
-                  <Button Content="Create"
-                          Command="{Binding NewCommand}"
-                          ToolTip.Tip="Replace the current project with a new one built from the selected template" />
-                  <Button Content="Import…"
-                          Command="{Binding ImportLayoutCommand}"
-                          ToolTip.Tip="Start from a layout this host already has installed" />
                 </StackPanel>
               </WrapPanel>
             </Grid>

@@ -58,7 +58,6 @@ public sealed class MainWindowDocumentLifecycleTests
         var originalProject = viewModel.Project;
         Assert.True(viewModel.Editor.SelectKey("KeyA"));
         viewModel.Editor.LayerMappings[0].Output = "z";
-        viewModel.SelectedTemplate = viewModel.Templates.Single(template => template.Id == "ansi-104");
 
         await viewModel.NewCommand.ExecuteAsync(null);
 
@@ -69,7 +68,7 @@ public sealed class MainWindowDocumentLifecycleTests
 
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task NewCommand_WhenUnsavedReplacementIsDiscarded_CreatesSelectedTemplateProject()
+    public async Task NewGeometry_WhenUnsavedReplacementIsDiscarded_CreatesThatGeometrysProject()
     {
         var interaction = new TestProjectInteractionService
         {
@@ -78,14 +77,32 @@ public sealed class MainWindowDocumentLifecycleTests
         var viewModel = new MainWindowViewModel(interaction);
         Assert.True(viewModel.Editor.SelectKey("KeyA"));
         viewModel.Editor.LayerMappings[0].Output = "z";
-        viewModel.SelectedTemplate = viewModel.Templates.Single(template => template.Id == "ansi-104");
 
-        await viewModel.NewCommand.ExecuteAsync(null);
+        await viewModel.NewDocumentOptions
+            .Single(option => option.TemplateId == "ansi-104")
+            .Command.ExecuteAsync(null);
 
         Assert.Equal("ansi-104", viewModel.Project.Keyboard.Id);
         Assert.Equal(104, viewModel.Editor.Keys.Count);
         Assert.False(viewModel.IsDirty);
         Assert.Null(viewModel.CurrentFilePath);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task NewCommand_WhenTheOpenDocumentIsAnsi_KeepsThatGeometry()
+    {
+        var viewModel = new MainWindowViewModel(new SilentProjectInteractionService());
+        await viewModel.NewDocumentOptions
+            .Single(option => option.TemplateId == "ansi-104")
+            .Command.ExecuteAsync(null);
+
+        // Ctrl+N is a new document, not a new keyboard: it keeps the one the user is working on.
+        await viewModel.NewCommand.ExecuteAsync(null);
+
+        Assert.Equal("ansi-104", viewModel.Project.Keyboard.Id);
+        Assert.NotEmpty(viewModel.Project.Layout.Mappings);
+        Assert.False(viewModel.IsDirty);
     }
 
     [Fact]

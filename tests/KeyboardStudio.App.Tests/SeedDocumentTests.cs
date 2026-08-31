@@ -45,9 +45,10 @@ public sealed class SeedDocumentTests
     public async Task NewCommand_WhenAnotherTemplateIsChosen_KeepsTheSeedMappingsThatFit()
     {
         var viewModel = new MainWindowViewModel();
-        viewModel.SelectedTemplate = viewModel.Templates.Single(template => template.Id == "ansi-104");
 
-        await viewModel.NewCommand.ExecuteAsync(null);
+        await viewModel.NewDocumentOptions
+            .Single(option => option.TemplateId == "ansi-104")
+            .Command.ExecuteAsync(null);
 
         Assert.Equal("ansi-104", viewModel.Project.Keyboard.Id);
         Assert.NotEmpty(viewModel.Project.Layout.Mappings);

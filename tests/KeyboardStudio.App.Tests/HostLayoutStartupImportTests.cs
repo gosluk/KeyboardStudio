@@ -81,7 +81,8 @@ public sealed class HostLayoutStartupImportTests
 
         Assert.Same(seed, viewModel.Project);
         Assert.False(viewModel.IsDirty);
-        Assert.Equal(string.Empty, viewModel.ImportStatus);
+        Assert.Equal(StartupLayoutState.SeedFallback, viewModel.StartupState);
+        Assert.Contains("built-in layout", viewModel.ImportStatus, StringComparison.Ordinal);
 
         var note = Assert.Single(
             viewModel.Diagnostics.Items,
@@ -184,6 +185,89 @@ public sealed class HostLayoutStartupImportTests
 
         Assert.Equal(0, probe.DetectCount);
         Assert.Empty(viewModel.Diagnostics.Items);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task ImportHostLayoutAsync_WhileTheLayoutIsBeingRead_SaysSoWithoutBlockingTheEditor()
+    {
+        var catalog = new SlowLayoutImportCatalog();
+        var viewModel = TestMainWindow.WithImportCatalog(
+            catalog,
+            new SilentProjectInteractionService(),
+            FakeHostLayoutProbe.Detecting("pl"));
+        Assert.Equal(StartupLayoutState.NotStarted, viewModel.StartupState);
+
+        var startup = viewModel.ImportHostLayoutAsync();
+
+        Assert.Equal(StartupLayoutState.Loading, viewModel.StartupState);
+        Assert.True(viewModel.IsLoadingCurrentLayout);
+        Assert.Contains("current layout", viewModel.ImportStatus, StringComparison.OrdinalIgnoreCase);
+
+        // The document on screen is editable throughout: nothing waits on the host.
+        Assert.NotEmpty(viewModel.Project.Layout.Mappings);
+        Assert.True(viewModel.Editor.SelectKey("KeyA"));
+
+        catalog.Release();
+        await startup;
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task ImportHostLayoutAsync_WhenTheHostLayoutImports_SettlesOnTheCurrentLayout()
+    {
+        var viewModel = TestMainWindow.WithImportCatalog(
+            new FakeLayoutImportCatalog(),
+            new SilentProjectInteractionService(),
+            FakeHostLayoutProbe.Detecting("pl", "qwertz"));
+
+        await viewModel.ImportHostLayoutAsync();
+
+        Assert.Equal(StartupLayoutState.CurrentLayout, viewModel.StartupState);
+        Assert.False(viewModel.IsLoadingCurrentLayout);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task ImportHostLayoutAsync_WhenNoLayoutCanBeRead_LeavesAPopulatedEditableSeed()
+    {
+        var viewModel = TestMainWindow.WithImportCatalog(
+            new FakeLayoutImportCatalog { HasAvailableSources = false },
+            new SilentProjectInteractionService(),
+            FakeHostLayoutProbe.Detecting("pl"));
+
+        await viewModel.ImportHostLayoutAsync();
+
+        Assert.Equal(StartupLayoutState.SeedFallback, viewModel.StartupState);
+        Assert.NotEmpty(viewModel.Project.Layout.Mappings);
+        Assert.Contains("built-in layout", viewModel.ImportStatus, StringComparison.Ordinal);
+
+        // Editable straight away: the fallback is a document, not a placeholder.
+        Assert.True(viewModel.Editor.SelectKey("KeyA"));
+        viewModel.Editor.LayerMappings[0].Output = "z";
+        Assert.True(viewModel.IsDirty);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task ImportHostLayoutAsync_WhenTheUserActedFirst_RecordsThatTheResultWasDiscarded()
+    {
+        var catalog = new SlowLayoutImportCatalog();
+        var viewModel = TestMainWindow.WithImportCatalog(
+            catalog,
+            new SilentProjectInteractionService(),
+            FakeHostLayoutProbe.Detecting("pl"));
+
+        var startup = viewModel.ImportHostLayoutAsync();
+        viewModel.Editor.SelectKey("KeyA");
+        viewModel.Editor.LayerMappings[0].Output = "q";
+        catalog.Release();
+        await startup;
+
+        Assert.Equal(StartupLayoutState.Discarded, viewModel.StartupState);
+
+        // The loading line belonged to a result that is not going to be used.
+        Assert.Equal(string.Empty, viewModel.ImportStatus);
     }
 
     /// <summary>

@@ -44,6 +44,7 @@ public sealed class MainWindowHeaderTests
 
         var commands = menu.Elements(Avalonia + "MenuItem")
             .Select(item => (string?)item.Attribute("Command"))
+            .Where(command => command is not null)
             .ToList();
 
         Assert.Equal(
@@ -56,6 +57,50 @@ public sealed class MainWindowHeaderTests
                 "{Binding SaveAsCommand}",
             ],
             commands);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TheFileMenuOffersAnExplicitGeometryForEachShippedTemplate()
+    {
+        var menu = HeaderChildren().Single(IsFileTrigger)
+            .Descendants(Avalonia + "MenuFlyout").Single();
+
+        var geometries = menu.Elements(Avalonia + "MenuItem")
+            .Single(item => (string?)item.Attribute("ItemsSource") == "{Binding NewDocumentOptions}");
+        var container = geometries.Descendants(Avalonia + "ControlTheme").Single();
+        var setters = container.Elements(Avalonia + "Setter")
+            .ToDictionary(
+                setter => (string)setter.Attribute("Property")!,
+                setter => (string)setter.Attribute("Value")!,
+                StringComparer.Ordinal);
+
+        Assert.Equal("{Binding Name}", setters["Header"]);
+        Assert.Equal("{Binding Command}", setters["Command"]);
+        Assert.Equal("{Binding Name}", setters["AutomationProperties.Name"]);
+
+        Assert.Equal(
+            ["ansi-104", "iso-105"],
+            new MainWindowViewModel().NewDocumentOptions
+                .Select(option => option.TemplateId)
+                .Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TheKeyboardToolbarNoLongerAsksForACreatePress()
+    {
+        var window = MainWindow();
+
+        Assert.DoesNotContain(
+            window.Descendants(Avalonia + "Button"),
+            button => (string?)button.Attribute("Content") == "Create");
+        Assert.DoesNotContain(
+            window.Descendants(Avalonia + "ComboBox"),
+            box => (string?)box.Attribute("ItemsSource") == "{Binding Templates}");
+        Assert.DoesNotContain(
+            window.Descendants(),
+            element => (string?)element.Attribute("SelectedItem") == "{Binding SelectedTemplate}");
     }
 
     [Fact]
