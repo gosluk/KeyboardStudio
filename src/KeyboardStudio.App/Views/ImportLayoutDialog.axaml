@@ -105,14 +105,9 @@
             <Grid RowDefinitions="Auto,Auto" RowSpacing="6">
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <TextBlock Classes="section-title" Text="Fidelity" />
-                <Border VerticalAlignment="Center"
-                        Padding="7,1"
-                        CornerRadius="9"
-                        Background="{DynamicResource BadgeBackgroundBrush}"
+                <Border Classes="badge"
                         IsVisible="{Binding Report, Converter={x:Static ObjectConverters.IsNotNull}}">
-                  <TextBlock Text="{Binding Report.FidelityLabel}"
-                             FontSize="11"
-                             Foreground="{DynamicResource MutedForegroundBrush}" />
+                  <TextBlock Text="{Binding Report.FidelityLabel}" />
                 </Border>
                 <TextBlock Classes="muted"
                            Text="{Binding Report.Summary}"
@@ -147,14 +142,7 @@
           <Border Classes="card">
             <Grid RowDefinitions="Auto,Auto" RowSpacing="6">
               <TextBlock Classes="section-title" Text="Preview" />
-              <Border Grid.Row="1"
-                      Padding="9"
-                      MinHeight="180"
-                      Background="{DynamicResource KeyboardBezelBrush}"
-                      BorderBrush="{DynamicResource KeyboardBezelBorderBrush}"
-                      BorderThickness="1"
-                      CornerRadius="10"
-                      ClipToBounds="True">
+              <Border Grid.Row="1" Classes="bezel" MinHeight="180">
                 <Viewbox Stretch="Uniform" StretchDirection="DownOnly">
                   <ItemsControl ItemsSource="{Binding PreviewKeys}"
                                 Width="{Binding PreviewWidth}"

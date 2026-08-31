@@ -1,62 +1,123 @@
+<!--
+  Structure and state for KeyboardStudio's own surfaces. Colour lives in ThemeResources.axaml and
+  reaches this file only through DynamicResource, so a palette change never edits a style and a
+  style never pins a colour.
+-->
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <Styles.Resources>
-    <ResourceDictionary>
-      <ResourceDictionary.ThemeDictionaries>
-        <ResourceDictionary x:Key="Light">
-          <SolidColorBrush x:Key="AppSurfaceBrush" Color="#F2F3F5" />
-          <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FFFFFF" />
-          <SolidColorBrush x:Key="CardBorderBrush" Color="#DEE1E6" />
-          <SolidColorBrush x:Key="BadgeBackgroundBrush" Color="#EDEFF2" />
-          <SolidColorBrush x:Key="HeadingForegroundBrush" Color="#1F2328" />
-          <SolidColorBrush x:Key="MutedForegroundBrush" Color="#6B7280" />
-          <SolidColorBrush x:Key="DangerForegroundBrush" Color="#C62828" />
-          <SolidColorBrush x:Key="WarningForegroundBrush" Color="#B45309" />
-          <SolidColorBrush x:Key="KeyboardBezelBrush" Color="#FCFCFD" />
-          <SolidColorBrush x:Key="KeyboardBezelBorderBrush" Color="#C4C9D0" />
-          <SolidColorBrush x:Key="KeyFaceBrush" Color="#FFFFFF" />
-          <SolidColorBrush x:Key="KeyFaceHoverBrush" Color="#EEF3FB" />
-          <SolidColorBrush x:Key="KeyFacePressedBrush" Color="#DFE5EE" />
-          <SolidColorBrush x:Key="KeyBorderBrush" Color="#8A9099" />
-          <SolidColorBrush x:Key="KeyLegendBrush" Color="#1F2328" />
-          <SolidColorBrush x:Key="KeyHintBrush" Color="#8A9099" />
-          <SolidColorBrush x:Key="KeyActiveLayerBrush" Color="#C5D9FA" />
-          <SolidColorBrush x:Key="KeyActiveLegendBrush" Color="#174EA6" />
-          <SolidColorBrush x:Key="KeySelectedFaceBrush" Color="#DCE9FF" />
-          <SolidColorBrush x:Key="KeySelectedBorderBrush" Color="#2F6FEB" />
-          <SolidColorBrush x:Key="KeyErrorFaceBrush" Color="#FCE4E5" />
-          <SolidColorBrush x:Key="KeyErrorBorderBrush" Color="#D13438" />
-        </ResourceDictionary>
-        <ResourceDictionary x:Key="Dark">
-          <SolidColorBrush x:Key="AppSurfaceBrush" Color="#1B1D21" />
-          <SolidColorBrush x:Key="CardBackgroundBrush" Color="#24272C" />
-          <SolidColorBrush x:Key="CardBorderBrush" Color="#383C43" />
-          <SolidColorBrush x:Key="BadgeBackgroundBrush" Color="#31353B" />
-          <SolidColorBrush x:Key="HeadingForegroundBrush" Color="#F0F2F5" />
-          <SolidColorBrush x:Key="MutedForegroundBrush" Color="#9AA1AB" />
-          <SolidColorBrush x:Key="DangerForegroundBrush" Color="#FF7B7B" />
-          <SolidColorBrush x:Key="WarningForegroundBrush" Color="#F0A93B" />
-          <SolidColorBrush x:Key="KeyboardBezelBrush" Color="#2B2F35" />
-          <SolidColorBrush x:Key="KeyboardBezelBorderBrush" Color="#3C424A" />
-          <SolidColorBrush x:Key="KeyFaceBrush" Color="#383D44" />
-          <SolidColorBrush x:Key="KeyFaceHoverBrush" Color="#454B54" />
-          <SolidColorBrush x:Key="KeyFacePressedBrush" Color="#2E3339" />
-          <SolidColorBrush x:Key="KeyBorderBrush" Color="#5A626C" />
-          <SolidColorBrush x:Key="KeyLegendBrush" Color="#EDEFF2" />
-          <SolidColorBrush x:Key="KeyHintBrush" Color="#98A0AA" />
-          <SolidColorBrush x:Key="KeyActiveLayerBrush" Color="#29476E" />
-          <SolidColorBrush x:Key="KeyActiveLegendBrush" Color="#A8C7FA" />
-          <SolidColorBrush x:Key="KeySelectedFaceBrush" Color="#1E3A63" />
-          <SolidColorBrush x:Key="KeySelectedBorderBrush" Color="#5B9BFF" />
-          <SolidColorBrush x:Key="KeyErrorFaceBrush" Color="#4A2224" />
-          <SolidColorBrush x:Key="KeyErrorBorderBrush" Color="#FF7B7B" />
-        </ResourceDictionary>
-      </ResourceDictionary.ThemeDictionaries>
-    </ResourceDictionary>
+    <!--
+      KeyboardStudio owns its button surface rather than tinting Fluent's. Fluent applies its hover
+      and pressed colours to named parts inside its own template, which cannot be redirected to a
+      token without depending on those names; owning the template makes every state a token and
+      leaves nothing for an Avalonia upgrade to change underneath the palette.
+    -->
+    <ControlTheme x:Key="AppButtonTheme" TargetType="Button">
+      <Setter Property="Background" Value="{DynamicResource ButtonSurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="5" />
+      <Setter Property="Padding" Value="11,4" />
+      <Setter Property="MinHeight" Value="30" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="FocusAdorner">
+        <FocusAdornerTemplate>
+          <Border BorderBrush="{DynamicResource FocusBorderBrush}"
+                  BorderThickness="2"
+                  CornerRadius="7"
+                  Margin="-2" />
+        </FocusAdornerTemplate>
+      </Setter>
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Name="PART_Surface"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="{TemplateBinding CornerRadius}"
+                  Padding="{TemplateBinding Padding}">
+            <ContentPresenter Name="PART_ContentPresenter"
+                              Content="{TemplateBinding Content}"
+                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                              Foreground="{TemplateBinding Foreground}"
+                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                              RecognizesAccessKey="True" />
+          </Border>
+        </ControlTemplate>
+      </Setter>
+
+      <Style Selector="^:pointerover">
+        <Setter Property="Background" Value="{DynamicResource ButtonHoverSurfaceBrush}" />
+      </Style>
+      <Style Selector="^:pressed">
+        <Setter Property="Background" Value="{DynamicResource ButtonPressedSurfaceBrush}" />
+      </Style>
+
+      <!-- Primary: the one action a surface is asking for. Build and explicit commits, nothing else. -->
+      <Style Selector="^.primary">
+        <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+      </Style>
+      <Style Selector="^.primary:pointerover">
+        <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}" />
+      </Style>
+      <Style Selector="^.primary:pressed">
+        <Setter Property="Background" Value="{DynamicResource AccentPressedBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentPressedBrush}" />
+      </Style>
+
+      <!-- Quiet: utility actions that should not compete with the work surface. -->
+      <Style Selector="^.quiet">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource SecondaryForegroundBrush}" />
+      </Style>
+      <Style Selector="^.quiet:pointerover">
+        <Setter Property="Background" Value="{DynamicResource QuietButtonHoverSurfaceBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryForegroundBrush}" />
+      </Style>
+      <Style Selector="^.quiet:pressed">
+        <Setter Property="Background" Value="{DynamicResource ButtonPressedSurfaceBrush}" />
+      </Style>
+
+      <!-- Destructive: reads as danger before it is pressed, not after. -->
+      <Style Selector="^.destructive">
+        <Setter Property="Background" Value="{DynamicResource DestructiveButtonSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DestructiveButtonBorderBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DestructiveButtonForegroundBrush}" />
+      </Style>
+      <Style Selector="^.destructive:pointerover">
+        <Setter Property="Background" Value="{DynamicResource DestructiveButtonHoverSurfaceBrush}" />
+      </Style>
+      <Style Selector="^.destructive:pressed">
+        <Setter Property="Background" Value="{DynamicResource DestructiveButtonPressedSurfaceBrush}" />
+      </Style>
+
+      <!-- Disabled last: no class may present an action that cannot be taken as available. -->
+      <Style Selector="^:disabled">
+        <Setter Property="Background" Value="{DynamicResource ButtonDisabledSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ButtonDisabledBorderBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource ButtonDisabledForegroundBrush}" />
+        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="Cursor" Value="Arrow" />
+      </Style>
+      <Style Selector="^.quiet:disabled">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+      </Style>
+    </ControlTheme>
   </Styles.Resources>
 
   <Style Selector="Window">
     <Setter Property="Background" Value="{DynamicResource AppSurfaceBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource PrimaryForegroundBrush}" />
     <Setter Property="FontFamily" Value="Inter, $Default" />
   </Style>
 
@@ -66,7 +127,54 @@
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="8" />
     <Setter Property="Padding" Value="10" />
-    <Setter Property="BoxShadow" Value="0 1 2 0 #12000000" />
+    <Setter Property="BoxShadow" Value="{DynamicResource CardBoxShadow}" />
+  </Style>
+
+  <!-- Supporting cards sit behind the keyboard in the hierarchy, so they carry no elevation. -->
+  <Style Selector="Border.card.quiet">
+    <Setter Property="Background" Value="{DynamicResource PanelSurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource SubtleBorderBrush}" />
+    <Setter Property="BoxShadow" Value="none" />
+  </Style>
+
+  <Style Selector="Border.badge">
+    <Setter Property="Background" Value="{DynamicResource BadgeBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BadgeBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="9" />
+    <Setter Property="Padding" Value="7,1" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <Style Selector="Border.badge > TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource BadgeForegroundBrush}" />
+    <Setter Property="FontSize" Value="12" />
+  </Style>
+
+  <Style Selector="Border.badge.warning">
+    <Setter Property="Background" Value="{DynamicResource DirtyBadgeSurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource DirtyBadgeBorderBrush}" />
+  </Style>
+
+  <Style Selector="Border.badge.warning > TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource DirtyBadgeForegroundBrush}" />
+  </Style>
+
+  <Style Selector="Border.problem">
+    <Setter Property="Background" Value="{DynamicResource BuildProblemSurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BuildProblemBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="5" />
+    <Setter Property="Padding" Value="8,6" />
+  </Style>
+
+  <Style Selector="Border.bezel">
+    <Setter Property="Background" Value="{DynamicResource KeyboardBezelBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource KeyboardBezelBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="9" />
+    <Setter Property="ClipToBounds" Value="True" />
   </Style>
 
   <Style Selector="TextBlock.app-title">
@@ -83,40 +191,107 @@
     <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
 
+  <!-- 12px is the floor for supporting text: below it the neutral palettes stop being legible
+       before they stop being readable. -->
   <Style Selector="TextBlock.muted">
     <Setter Property="Foreground" Value="{DynamicResource MutedForegroundBrush}" />
+    <Setter Property="FontSize" Value="12" />
     <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
 
   <Style Selector="TextBlock.field-label">
-    <Setter Property="Foreground" Value="{DynamicResource MutedForegroundBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource SecondaryForegroundBrush}" />
+    <Setter Property="FontSize" Value="12" />
     <Setter Property="VerticalAlignment" Value="Center" />
   </Style>
 
   <Style Selector="TextBlock.mono">
     <Setter Property="FontFamily" Value="monospace" />
     <Setter Property="FontSize" Value="12" />
+    <Setter Property="Foreground" Value="{DynamicResource SecondaryForegroundBrush}" />
+  </Style>
+
+  <Style Selector="TextBlock.danger">
+    <Setter Property="Foreground" Value="{DynamicResource DangerForegroundBrush}" />
+  </Style>
+
+  <Style Selector="TextBlock.warning">
+    <Setter Property="Foreground" Value="{DynamicResource WarningForegroundBrush}" />
   </Style>
 
   <Style Selector="Button:not(.key-face)">
-    <Setter Property="CornerRadius" Value="5" />
-    <Setter Property="MinHeight" Value="26" />
-    <Setter Property="Padding" Value="10,3" />
+    <Setter Property="Theme" Value="{StaticResource AppButtonTheme}" />
   </Style>
 
   <Style Selector="TextBox">
+    <Setter Property="Background" Value="{DynamicResource InputSurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource InputForegroundBrush}" />
+    <Setter Property="CaretBrush" Value="{DynamicResource InputForegroundBrush}" />
+    <Setter Property="SelectionBrush" Value="{DynamicResource SelectionSurfaceBrush}" />
+    <Setter Property="SelectionForegroundBrush" Value="{DynamicResource SelectionForegroundBrush}" />
     <Setter Property="CornerRadius" Value="5" />
-    <Setter Property="MinHeight" Value="26" />
-    <Setter Property="Padding" Value="7,2" />
+    <Setter Property="MinHeight" Value="30" />
+    <Setter Property="Padding" Value="8,4" />
+  </Style>
+
+  <Style Selector="TextBox:disabled">
+    <Setter Property="Background" Value="{DynamicResource InputDisabledSurfaceBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource DisabledForegroundBrush}" />
   </Style>
 
   <Style Selector="ComboBox">
+    <Setter Property="Background" Value="{DynamicResource InputSurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource InputForegroundBrush}" />
     <Setter Property="CornerRadius" Value="5" />
-    <Setter Property="MinHeight" Value="26" />
-    <Setter Property="Padding" Value="8,2" />
+    <Setter Property="MinHeight" Value="30" />
+    <Setter Property="Padding" Value="9,4" />
+  </Style>
+
+  <Style Selector="ComboBox:disabled">
+    <Setter Property="Background" Value="{DynamicResource InputDisabledSurfaceBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource DisabledForegroundBrush}" />
+  </Style>
+
+  <Style Selector="ListBox">
+    <Setter Property="Background" Value="{DynamicResource InputSurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="5" />
   </Style>
 
   <Style Selector="Menu">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource MenuForegroundBrush}" />
     <Setter Property="Padding" Value="4,1" />
+  </Style>
+
+  <Style Selector="MenuItem">
+    <Setter Property="Foreground" Value="{DynamicResource MenuForegroundBrush}" />
+  </Style>
+
+  <Style Selector="MenuFlyoutPresenter, ContextMenu">
+    <Setter Property="Background" Value="{DynamicResource MenuSurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource MenuBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="6" />
+  </Style>
+
+  <Style Selector="Separator">
+    <Setter Property="Background" Value="{DynamicResource MenuSeparatorBrush}" />
+  </Style>
+
+  <Style Selector="ToolTip">
+    <Setter Property="Background" Value="{DynamicResource TooltipSurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource TooltipBorderBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource TooltipForegroundBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="5" />
+  </Style>
+
+  <Style Selector="CheckBox, RadioButton">
+    <Setter Property="Foreground" Value="{DynamicResource PrimaryForegroundBrush}" />
+    <Setter Property="MinHeight" Value="30" />
   </Style>
 </Styles>

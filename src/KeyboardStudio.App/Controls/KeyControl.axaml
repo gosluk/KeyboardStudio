@@ -26,7 +26,8 @@
                   BorderBrush="{TemplateBinding BorderBrush}"
                   BorderThickness="{TemplateBinding BorderThickness}"
                   CornerRadius="{TemplateBinding CornerRadius}"
-                  Padding="{TemplateBinding Padding}">
+                  Padding="{TemplateBinding Padding}"
+                  BoxShadow="{DynamicResource KeyBoxShadow}">
             <ContentPresenter Content="{TemplateBinding Content}"
                               HorizontalContentAlignment="Stretch"
                               VerticalContentAlignment="Stretch" />

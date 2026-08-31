@@ -1,0 +1,411 @@
+<!--
+  The White, Gray, and Black palettes. This file is the whole application colour contract: every
+  theme-dependent colour, brush, and shadow the application draws is defined here and consumed
+  through DynamicResource, so no view can introduce a colour of its own.
+
+  The three dictionaries define exactly the same keys. ApplicationThemeTokens lists that required
+  set and a test holds all three dictionaries to it, because a missing key does not fail a build —
+  it falls back to an unrelated Fluent colour at runtime, in one state of one surface, where nobody
+  looks until a user does.
+-->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                xmlns:app="using:KeyboardStudio.App">
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="{x:Static app:ApplicationThemeVariants.White}">
+      <!-- Surfaces -->
+      <SolidColorBrush x:Key="AppSurfaceBrush"        Color="#F6F8FC" />
+      <SolidColorBrush x:Key="WorkspaceSurfaceBrush"  Color="#EDF1F8" />
+      <SolidColorBrush x:Key="PanelSurfaceBrush"      Color="#FFFFFF" />
+      <SolidColorBrush x:Key="ElevatedSurfaceBrush"   Color="#FFFFFF" />
+
+      <!-- Borders -->
+      <SolidColorBrush x:Key="SubtleBorderBrush"    Color="#E8ECF4" />
+      <SolidColorBrush x:Key="AppBorderBrush"       Color="#D6DDE8" />
+      <SolidColorBrush x:Key="StrongBorderBrush"    Color="#A8B3C4" />
+      <SolidColorBrush x:Key="SelectedBorderBrush"  Color="#2F6FEB" />
+      <SolidColorBrush x:Key="FocusBorderBrush"     Color="#1B4FCC" />
+
+      <!-- Foreground -->
+      <SolidColorBrush x:Key="PrimaryForegroundBrush"    Color="#16203A" />
+      <SolidColorBrush x:Key="SecondaryForegroundBrush"  Color="#57637C" />
+      <SolidColorBrush x:Key="DisabledForegroundBrush"   Color="#98A3B6" />
+      <SolidColorBrush x:Key="InverseForegroundBrush"    Color="#FFFFFF" />
+      <SolidColorBrush x:Key="LinkForegroundBrush"       Color="#1B4FCC" />
+      <SolidColorBrush x:Key="HeadingForegroundBrush"    Color="#16203A" />
+      <SolidColorBrush x:Key="MutedForegroundBrush"      Color="#57637C" />
+
+      <!-- Accent -->
+      <SolidColorBrush x:Key="AccentBrush"            Color="#2F6FEB" />
+      <SolidColorBrush x:Key="AccentHoverBrush"       Color="#2A62D1" />
+      <SolidColorBrush x:Key="AccentPressedBrush"     Color="#2454B3" />
+      <SolidColorBrush x:Key="AccentForegroundBrush"  Color="#FFFFFF" />
+
+      <!-- Status -->
+      <SolidColorBrush x:Key="SuccessSurfaceBrush"     Color="#E7F5EE" />
+      <SolidColorBrush x:Key="SuccessForegroundBrush"  Color="#14663C" />
+      <SolidColorBrush x:Key="SuccessBorderBrush"      Color="#98D0B3" />
+      <SolidColorBrush x:Key="WarningSurfaceBrush"     Color="#FCF1DF" />
+      <SolidColorBrush x:Key="WarningForegroundBrush"  Color="#8A5200" />
+      <SolidColorBrush x:Key="WarningBorderBrush"      Color="#E4BE7C" />
+      <SolidColorBrush x:Key="DangerSurfaceBrush"      Color="#FCE9E7" />
+      <SolidColorBrush x:Key="DangerForegroundBrush"   Color="#AE2318" />
+      <SolidColorBrush x:Key="DangerBorderBrush"       Color="#E8A099" />
+      <SolidColorBrush x:Key="InfoSurfaceBrush"        Color="#E9EFFD" />
+      <SolidColorBrush x:Key="InfoForegroundBrush"     Color="#1B4FCC" />
+      <SolidColorBrush x:Key="InfoBorderBrush"         Color="#A9C2F5" />
+
+      <!-- Cards -->
+      <SolidColorBrush x:Key="CardBackgroundBrush"  Color="#FFFFFF" />
+      <SolidColorBrush x:Key="CardBorderBrush"      Color="#E2E7F0" />
+
+      <!-- Menus -->
+      <SolidColorBrush x:Key="MenuSurfaceBrush"       Color="#FFFFFF" />
+      <SolidColorBrush x:Key="MenuBorderBrush"        Color="#D6DDE8" />
+      <SolidColorBrush x:Key="MenuForegroundBrush"    Color="#16203A" />
+      <SolidColorBrush x:Key="MenuHoverSurfaceBrush"  Color="#EDF2FD" />
+      <SolidColorBrush x:Key="MenuSeparatorBrush"     Color="#E8ECF4" />
+
+      <!-- Tooltips -->
+      <SolidColorBrush x:Key="TooltipSurfaceBrush"     Color="#FFFFFF" />
+      <SolidColorBrush x:Key="TooltipBorderBrush"      Color="#C9D3E2" />
+      <SolidColorBrush x:Key="TooltipForegroundBrush"  Color="#16203A" />
+
+      <!-- Badges -->
+      <SolidColorBrush x:Key="BadgeBackgroundBrush"  Color="#EAEFF8" />
+      <SolidColorBrush x:Key="BadgeForegroundBrush"  Color="#46516B" />
+      <SolidColorBrush x:Key="BadgeBorderBrush"      Color="#DCE3EF" />
+
+      <!-- Inputs -->
+      <SolidColorBrush x:Key="InputSurfaceBrush"          Color="#FFFFFF" />
+      <SolidColorBrush x:Key="InputBorderBrush"           Color="#C2CBD9" />
+      <SolidColorBrush x:Key="InputForegroundBrush"       Color="#16203A" />
+      <SolidColorBrush x:Key="InputPlaceholderBrush"      Color="#8A94A8" />
+      <SolidColorBrush x:Key="InputFocusBorderBrush"      Color="#2F6FEB" />
+      <SolidColorBrush x:Key="InputHoverSurfaceBrush"     Color="#F7F9FD" />
+      <SolidColorBrush x:Key="InputDisabledSurfaceBrush"  Color="#F1F3F7" />
+
+      <!-- Buttons -->
+      <SolidColorBrush x:Key="ButtonSurfaceBrush"                    Color="#FFFFFF" />
+      <SolidColorBrush x:Key="ButtonBorderBrush"                     Color="#C2CBD9" />
+      <SolidColorBrush x:Key="ButtonForegroundBrush"                 Color="#16203A" />
+      <SolidColorBrush x:Key="ButtonHoverSurfaceBrush"               Color="#F0F4FD" />
+      <SolidColorBrush x:Key="ButtonPressedSurfaceBrush"             Color="#E1E9F8" />
+      <SolidColorBrush x:Key="ButtonDisabledSurfaceBrush"            Color="#F1F3F7" />
+      <SolidColorBrush x:Key="ButtonDisabledForegroundBrush"         Color="#A0A9BA" />
+      <SolidColorBrush x:Key="ButtonDisabledBorderBrush"             Color="#E2E6EE" />
+      <SolidColorBrush x:Key="QuietButtonHoverSurfaceBrush"          Color="#EDF2FD" />
+      <SolidColorBrush x:Key="DestructiveButtonSurfaceBrush"         Color="#FFFFFF" />
+      <SolidColorBrush x:Key="DestructiveButtonBorderBrush"          Color="#D98D85" />
+      <SolidColorBrush x:Key="DestructiveButtonForegroundBrush"      Color="#AE2318" />
+      <SolidColorBrush x:Key="DestructiveButtonHoverSurfaceBrush"    Color="#FCEAE8" />
+      <SolidColorBrush x:Key="DestructiveButtonPressedSurfaceBrush"  Color="#F7D9D6" />
+
+      <!-- Selection -->
+      <SolidColorBrush x:Key="SelectionSurfaceBrush"     Color="#DCE9FF" />
+      <SolidColorBrush x:Key="SelectionForegroundBrush"  Color="#16203A" />
+      <SolidColorBrush x:Key="SelectionBorderBrush"      Color="#2F6FEB" />
+
+      <!-- Diagnostics -->
+      <SolidColorBrush x:Key="DiagnosticSurfaceBrush"       Color="#FBFCFE" />
+      <SolidColorBrush x:Key="DiagnosticHoverSurfaceBrush"  Color="#EFF4FD" />
+      <SolidColorBrush x:Key="DiagnosticBorderBrush"        Color="#E4E9F2" />
+
+      <!-- Build problems -->
+      <SolidColorBrush x:Key="BuildProblemSurfaceBrush"     Color="#FCE9E7" />
+      <SolidColorBrush x:Key="BuildProblemBorderBrush"      Color="#E8A099" />
+      <SolidColorBrush x:Key="BuildProblemForegroundBrush"  Color="#AE2318" />
+
+      <!-- Document state -->
+      <SolidColorBrush x:Key="DirtyBadgeSurfaceBrush"       Color="#FCF1DF" />
+      <SolidColorBrush x:Key="DirtyBadgeForegroundBrush"    Color="#8A5200" />
+      <SolidColorBrush x:Key="DirtyBadgeBorderBrush"        Color="#E4BE7C" />
+      <SolidColorBrush x:Key="ImportStatusForegroundBrush"  Color="#57637C" />
+
+      <!-- Keyboard -->
+      <SolidColorBrush x:Key="KeyboardBezelBrush"        Color="#FFFFFF" />
+      <SolidColorBrush x:Key="KeyboardBezelBorderBrush"  Color="#D6DDE8" />
+      <SolidColorBrush x:Key="KeyFaceBrush"              Color="#FFFFFF" />
+      <SolidColorBrush x:Key="KeyFaceHoverBrush"         Color="#EFF4FE" />
+      <SolidColorBrush x:Key="KeyFacePressedBrush"       Color="#DEE7F8" />
+      <SolidColorBrush x:Key="KeyBorderBrush"            Color="#A8B3C4" />
+      <SolidColorBrush x:Key="KeyLegendBrush"            Color="#16203A" />
+      <SolidColorBrush x:Key="KeyHintBrush"              Color="#76819A" />
+      <SolidColorBrush x:Key="KeyActiveLayerBrush"       Color="#D3E2FF" />
+      <SolidColorBrush x:Key="KeyActiveLegendBrush"      Color="#113A97" />
+      <SolidColorBrush x:Key="KeySelectedFaceBrush"      Color="#DCE9FF" />
+      <SolidColorBrush x:Key="KeySelectedBorderBrush"    Color="#2F6FEB" />
+      <SolidColorBrush x:Key="KeyErrorFaceBrush"         Color="#FCE9E7" />
+      <SolidColorBrush x:Key="KeyErrorBorderBrush"       Color="#AE2318" />
+
+      <!-- Elevation -->
+      <BoxShadows x:Key="CardBoxShadow">0 1 3 0 #14000000</BoxShadows>
+      <BoxShadows x:Key="KeyBoxShadow">0 1 2 0 #14000000</BoxShadows>
+      <BoxShadows x:Key="ElevatedBoxShadow">0 8 20 0 #1F000000</BoxShadows>
+    </ResourceDictionary>
+
+    <ResourceDictionary x:Key="{x:Static app:ApplicationThemeVariants.Gray}">
+      <!-- Surfaces -->
+      <SolidColorBrush x:Key="AppSurfaceBrush"        Color="#B9C0C8" />
+      <SolidColorBrush x:Key="WorkspaceSurfaceBrush"  Color="#AEB6BF" />
+      <SolidColorBrush x:Key="PanelSurfaceBrush"      Color="#CCD1D6" />
+      <SolidColorBrush x:Key="ElevatedSurfaceBrush"   Color="#DCE0E4" />
+
+      <!-- Borders -->
+      <SolidColorBrush x:Key="SubtleBorderBrush"    Color="#C0C6CD" />
+      <SolidColorBrush x:Key="AppBorderBrush"       Color="#9AA2AC" />
+      <SolidColorBrush x:Key="StrongBorderBrush"    Color="#79828E" />
+      <SolidColorBrush x:Key="SelectedBorderBrush"  Color="#1F5FD8" />
+      <SolidColorBrush x:Key="FocusBorderBrush"     Color="#14459E" />
+
+      <!-- Foreground -->
+      <SolidColorBrush x:Key="PrimaryForegroundBrush"    Color="#14181D" />
+      <SolidColorBrush x:Key="SecondaryForegroundBrush"  Color="#414A55" />
+      <SolidColorBrush x:Key="DisabledForegroundBrush"   Color="#7C848F" />
+      <SolidColorBrush x:Key="InverseForegroundBrush"    Color="#FFFFFF" />
+      <SolidColorBrush x:Key="LinkForegroundBrush"       Color="#14459E" />
+      <SolidColorBrush x:Key="HeadingForegroundBrush"    Color="#14181D" />
+      <SolidColorBrush x:Key="MutedForegroundBrush"      Color="#414A55" />
+
+      <!-- Accent -->
+      <SolidColorBrush x:Key="AccentBrush"            Color="#1F5FD8" />
+      <SolidColorBrush x:Key="AccentHoverBrush"       Color="#1B54C0" />
+      <SolidColorBrush x:Key="AccentPressedBrush"     Color="#1747A3" />
+      <SolidColorBrush x:Key="AccentForegroundBrush"  Color="#FFFFFF" />
+
+      <!-- Status -->
+      <SolidColorBrush x:Key="SuccessSurfaceBrush"     Color="#C3D9CB" />
+      <SolidColorBrush x:Key="SuccessForegroundBrush"  Color="#0F5330" />
+      <SolidColorBrush x:Key="SuccessBorderBrush"      Color="#7BA88D" />
+      <SolidColorBrush x:Key="WarningSurfaceBrush"     Color="#E0CFAF" />
+      <SolidColorBrush x:Key="WarningForegroundBrush"  Color="#6B3F00" />
+      <SolidColorBrush x:Key="WarningBorderBrush"      Color="#B08A45" />
+      <SolidColorBrush x:Key="DangerSurfaceBrush"      Color="#E3C4C1" />
+      <SolidColorBrush x:Key="DangerForegroundBrush"   Color="#8E1C13" />
+      <SolidColorBrush x:Key="DangerBorderBrush"       Color="#B87069" />
+      <SolidColorBrush x:Key="InfoSurfaceBrush"        Color="#C6D2EC" />
+      <SolidColorBrush x:Key="InfoForegroundBrush"     Color="#14459E" />
+      <SolidColorBrush x:Key="InfoBorderBrush"         Color="#7C97CE" />
+
+      <!-- Cards -->
+      <SolidColorBrush x:Key="CardBackgroundBrush"  Color="#CCD1D6" />
+      <SolidColorBrush x:Key="CardBorderBrush"      Color="#A5ADB6" />
+
+      <!-- Menus -->
+      <SolidColorBrush x:Key="MenuSurfaceBrush"       Color="#DCE0E4" />
+      <SolidColorBrush x:Key="MenuBorderBrush"        Color="#9AA2AC" />
+      <SolidColorBrush x:Key="MenuForegroundBrush"    Color="#14181D" />
+      <SolidColorBrush x:Key="MenuHoverSurfaceBrush"  Color="#C4CBD3" />
+      <SolidColorBrush x:Key="MenuSeparatorBrush"     Color="#B0B8C1" />
+
+      <!-- Tooltips -->
+      <SolidColorBrush x:Key="TooltipSurfaceBrush"     Color="#E4E7EA" />
+      <SolidColorBrush x:Key="TooltipBorderBrush"      Color="#8E97A1" />
+      <SolidColorBrush x:Key="TooltipForegroundBrush"  Color="#14181D" />
+
+      <!-- Badges -->
+      <SolidColorBrush x:Key="BadgeBackgroundBrush"  Color="#B5BCC5" />
+      <SolidColorBrush x:Key="BadgeForegroundBrush"  Color="#2A323B" />
+      <SolidColorBrush x:Key="BadgeBorderBrush"      Color="#9AA2AC" />
+
+      <!-- Inputs -->
+      <SolidColorBrush x:Key="InputSurfaceBrush"          Color="#E6E9EC" />
+      <SolidColorBrush x:Key="InputBorderBrush"           Color="#8E97A1" />
+      <SolidColorBrush x:Key="InputForegroundBrush"       Color="#14181D" />
+      <SolidColorBrush x:Key="InputPlaceholderBrush"      Color="#6C757F" />
+      <SolidColorBrush x:Key="InputFocusBorderBrush"      Color="#1F5FD8" />
+      <SolidColorBrush x:Key="InputHoverSurfaceBrush"     Color="#EFF1F3" />
+      <SolidColorBrush x:Key="InputDisabledSurfaceBrush"  Color="#C3C9CF" />
+
+      <!-- Buttons -->
+      <SolidColorBrush x:Key="ButtonSurfaceBrush"                    Color="#DCE0E4" />
+      <SolidColorBrush x:Key="ButtonBorderBrush"                     Color="#8E97A1" />
+      <SolidColorBrush x:Key="ButtonForegroundBrush"                 Color="#14181D" />
+      <SolidColorBrush x:Key="ButtonHoverSurfaceBrush"               Color="#E9ECEF" />
+      <SolidColorBrush x:Key="ButtonPressedSurfaceBrush"             Color="#C6CCD2" />
+      <SolidColorBrush x:Key="ButtonDisabledSurfaceBrush"            Color="#C3C9CF" />
+      <SolidColorBrush x:Key="ButtonDisabledForegroundBrush"         Color="#7C848F" />
+      <SolidColorBrush x:Key="ButtonDisabledBorderBrush"             Color="#ADB4BC" />
+      <SolidColorBrush x:Key="QuietButtonHoverSurfaceBrush"          Color="#C4CBD3" />
+      <SolidColorBrush x:Key="DestructiveButtonSurfaceBrush"         Color="#DCE0E4" />
+      <SolidColorBrush x:Key="DestructiveButtonBorderBrush"          Color="#A85B52" />
+      <SolidColorBrush x:Key="DestructiveButtonForegroundBrush"      Color="#8E1C13" />
+      <SolidColorBrush x:Key="DestructiveButtonHoverSurfaceBrush"    Color="#E7CFCC" />
+      <SolidColorBrush x:Key="DestructiveButtonPressedSurfaceBrush"  Color="#D8B6B2" />
+
+      <!-- Selection -->
+      <SolidColorBrush x:Key="SelectionSurfaceBrush"     Color="#C3D2F0" />
+      <SolidColorBrush x:Key="SelectionForegroundBrush"  Color="#14181D" />
+      <SolidColorBrush x:Key="SelectionBorderBrush"      Color="#1F5FD8" />
+
+      <!-- Diagnostics -->
+      <SolidColorBrush x:Key="DiagnosticSurfaceBrush"       Color="#C6CBD1" />
+      <SolidColorBrush x:Key="DiagnosticHoverSurfaceBrush"  Color="#D6DBE0" />
+      <SolidColorBrush x:Key="DiagnosticBorderBrush"        Color="#A5ADB6" />
+
+      <!-- Build problems -->
+      <SolidColorBrush x:Key="BuildProblemSurfaceBrush"     Color="#E3C4C1" />
+      <SolidColorBrush x:Key="BuildProblemBorderBrush"      Color="#B87069" />
+      <SolidColorBrush x:Key="BuildProblemForegroundBrush"  Color="#8E1C13" />
+
+      <!-- Document state -->
+      <SolidColorBrush x:Key="DirtyBadgeSurfaceBrush"       Color="#E0CFAF" />
+      <SolidColorBrush x:Key="DirtyBadgeForegroundBrush"    Color="#6B3F00" />
+      <SolidColorBrush x:Key="DirtyBadgeBorderBrush"        Color="#B08A45" />
+      <SolidColorBrush x:Key="ImportStatusForegroundBrush"  Color="#414A55" />
+
+      <!-- Keyboard -->
+      <SolidColorBrush x:Key="KeyboardBezelBrush"        Color="#A8B0B9" />
+      <SolidColorBrush x:Key="KeyboardBezelBorderBrush"  Color="#848D97" />
+      <SolidColorBrush x:Key="KeyFaceBrush"              Color="#DCE0E4" />
+      <SolidColorBrush x:Key="KeyFaceHoverBrush"         Color="#E9ECEF" />
+      <SolidColorBrush x:Key="KeyFacePressedBrush"       Color="#C6CCD2" />
+      <SolidColorBrush x:Key="KeyBorderBrush"            Color="#7B848F" />
+      <SolidColorBrush x:Key="KeyLegendBrush"            Color="#14181D" />
+      <SolidColorBrush x:Key="KeyHintBrush"              Color="#56606B" />
+      <SolidColorBrush x:Key="KeyActiveLayerBrush"       Color="#B9CDF2" />
+      <SolidColorBrush x:Key="KeyActiveLegendBrush"      Color="#10357A" />
+      <SolidColorBrush x:Key="KeySelectedFaceBrush"      Color="#C3D2F0" />
+      <SolidColorBrush x:Key="KeySelectedBorderBrush"    Color="#1F5FD8" />
+      <SolidColorBrush x:Key="KeyErrorFaceBrush"         Color="#E3C4C1" />
+      <SolidColorBrush x:Key="KeyErrorBorderBrush"       Color="#8E1C13" />
+
+      <!-- Elevation -->
+      <BoxShadows x:Key="CardBoxShadow">0 1 3 0 #1F000000</BoxShadows>
+      <BoxShadows x:Key="KeyBoxShadow">0 1 2 0 #26000000</BoxShadows>
+      <BoxShadows x:Key="ElevatedBoxShadow">0 8 20 0 #33000000</BoxShadows>
+    </ResourceDictionary>
+
+    <ResourceDictionary x:Key="{x:Static app:ApplicationThemeVariants.Black}">
+      <!-- Surfaces -->
+      <SolidColorBrush x:Key="AppSurfaceBrush"        Color="#0F1318" />
+      <SolidColorBrush x:Key="WorkspaceSurfaceBrush"  Color="#0B0E12" />
+      <SolidColorBrush x:Key="PanelSurfaceBrush"      Color="#1A1F25" />
+      <SolidColorBrush x:Key="ElevatedSurfaceBrush"   Color="#222831" />
+
+      <!-- Borders -->
+      <SolidColorBrush x:Key="SubtleBorderBrush"    Color="#232A32" />
+      <SolidColorBrush x:Key="AppBorderBrush"       Color="#333B45" />
+      <SolidColorBrush x:Key="StrongBorderBrush"    Color="#4A5462" />
+      <SolidColorBrush x:Key="SelectedBorderBrush"  Color="#5B9BFF" />
+      <SolidColorBrush x:Key="FocusBorderBrush"     Color="#8CBBFF" />
+
+      <!-- Foreground -->
+      <SolidColorBrush x:Key="PrimaryForegroundBrush"    Color="#EDF1F6" />
+      <SolidColorBrush x:Key="SecondaryForegroundBrush"  Color="#A3ADBA" />
+      <SolidColorBrush x:Key="DisabledForegroundBrush"   Color="#656F7C" />
+      <SolidColorBrush x:Key="InverseForegroundBrush"    Color="#0F1318" />
+      <SolidColorBrush x:Key="LinkForegroundBrush"       Color="#7FB0FF" />
+      <SolidColorBrush x:Key="HeadingForegroundBrush"    Color="#EDF1F6" />
+      <SolidColorBrush x:Key="MutedForegroundBrush"      Color="#A3ADBA" />
+
+      <!-- Accent -->
+      <SolidColorBrush x:Key="AccentBrush"            Color="#2F6BD6" />
+      <SolidColorBrush x:Key="AccentHoverBrush"       Color="#3B79E8" />
+      <SolidColorBrush x:Key="AccentPressedBrush"     Color="#2758B0" />
+      <SolidColorBrush x:Key="AccentForegroundBrush"  Color="#FFFFFF" />
+
+      <!-- Status -->
+      <SolidColorBrush x:Key="SuccessSurfaceBrush"     Color="#14301F" />
+      <SolidColorBrush x:Key="SuccessForegroundBrush"  Color="#6FD79B" />
+      <SolidColorBrush x:Key="SuccessBorderBrush"      Color="#2E6B47" />
+      <SolidColorBrush x:Key="WarningSurfaceBrush"     Color="#33260F" />
+      <SolidColorBrush x:Key="WarningForegroundBrush"  Color="#F0B44A" />
+      <SolidColorBrush x:Key="WarningBorderBrush"      Color="#7A5A22" />
+      <SolidColorBrush x:Key="DangerSurfaceBrush"      Color="#3A1D1D" />
+      <SolidColorBrush x:Key="DangerForegroundBrush"   Color="#FF8A82" />
+      <SolidColorBrush x:Key="DangerBorderBrush"       Color="#8A3B36" />
+      <SolidColorBrush x:Key="InfoSurfaceBrush"        Color="#16233A" />
+      <SolidColorBrush x:Key="InfoForegroundBrush"     Color="#7FB0FF" />
+      <SolidColorBrush x:Key="InfoBorderBrush"         Color="#2E4A7A" />
+
+      <!-- Cards -->
+      <SolidColorBrush x:Key="CardBackgroundBrush"  Color="#1A1F25" />
+      <SolidColorBrush x:Key="CardBorderBrush"      Color="#2C333C" />
+
+      <!-- Menus -->
+      <SolidColorBrush x:Key="MenuSurfaceBrush"       Color="#222831" />
+      <SolidColorBrush x:Key="MenuBorderBrush"        Color="#343C46" />
+      <SolidColorBrush x:Key="MenuForegroundBrush"    Color="#EDF1F6" />
+      <SolidColorBrush x:Key="MenuHoverSurfaceBrush"  Color="#2D353F" />
+      <SolidColorBrush x:Key="MenuSeparatorBrush"     Color="#333B45" />
+
+      <!-- Tooltips -->
+      <SolidColorBrush x:Key="TooltipSurfaceBrush"     Color="#262E38" />
+      <SolidColorBrush x:Key="TooltipBorderBrush"      Color="#3C444F" />
+      <SolidColorBrush x:Key="TooltipForegroundBrush"  Color="#EDF1F6" />
+
+      <!-- Badges -->
+      <SolidColorBrush x:Key="BadgeBackgroundBrush"  Color="#262E38" />
+      <SolidColorBrush x:Key="BadgeForegroundBrush"  Color="#BAC4D0" />
+      <SolidColorBrush x:Key="BadgeBorderBrush"      Color="#333B45" />
+
+      <!-- Inputs -->
+      <SolidColorBrush x:Key="InputSurfaceBrush"          Color="#12171C" />
+      <SolidColorBrush x:Key="InputBorderBrush"           Color="#3A424D" />
+      <SolidColorBrush x:Key="InputForegroundBrush"       Color="#EDF1F6" />
+      <SolidColorBrush x:Key="InputPlaceholderBrush"      Color="#78828F" />
+      <SolidColorBrush x:Key="InputFocusBorderBrush"      Color="#5B9BFF" />
+      <SolidColorBrush x:Key="InputHoverSurfaceBrush"     Color="#171D23" />
+      <SolidColorBrush x:Key="InputDisabledSurfaceBrush"  Color="#171B20" />
+
+      <!-- Buttons -->
+      <SolidColorBrush x:Key="ButtonSurfaceBrush"                    Color="#262E38" />
+      <SolidColorBrush x:Key="ButtonBorderBrush"                     Color="#3A424D" />
+      <SolidColorBrush x:Key="ButtonForegroundBrush"                 Color="#EDF1F6" />
+      <SolidColorBrush x:Key="ButtonHoverSurfaceBrush"               Color="#303945" />
+      <SolidColorBrush x:Key="ButtonPressedSurfaceBrush"             Color="#1E252D" />
+      <SolidColorBrush x:Key="ButtonDisabledSurfaceBrush"            Color="#1B2026" />
+      <SolidColorBrush x:Key="ButtonDisabledForegroundBrush"         Color="#626C79" />
+      <SolidColorBrush x:Key="ButtonDisabledBorderBrush"             Color="#2A313A" />
+      <SolidColorBrush x:Key="QuietButtonHoverSurfaceBrush"          Color="#2A323C" />
+      <SolidColorBrush x:Key="DestructiveButtonSurfaceBrush"         Color="#2A1A1A" />
+      <SolidColorBrush x:Key="DestructiveButtonBorderBrush"          Color="#7A3833" />
+      <SolidColorBrush x:Key="DestructiveButtonForegroundBrush"      Color="#FF8A82" />
+      <SolidColorBrush x:Key="DestructiveButtonHoverSurfaceBrush"    Color="#3A2220" />
+      <SolidColorBrush x:Key="DestructiveButtonPressedSurfaceBrush"  Color="#241615" />
+
+      <!-- Selection -->
+      <SolidColorBrush x:Key="SelectionSurfaceBrush"     Color="#1D3457" />
+      <SolidColorBrush x:Key="SelectionForegroundBrush"  Color="#EDF1F6" />
+      <SolidColorBrush x:Key="SelectionBorderBrush"      Color="#5B9BFF" />
+
+      <!-- Diagnostics -->
+      <SolidColorBrush x:Key="DiagnosticSurfaceBrush"       Color="#171C22" />
+      <SolidColorBrush x:Key="DiagnosticHoverSurfaceBrush"  Color="#222A33" />
+      <SolidColorBrush x:Key="DiagnosticBorderBrush"        Color="#2C333C" />
+
+      <!-- Build problems -->
+      <SolidColorBrush x:Key="BuildProblemSurfaceBrush"     Color="#3A1D1D" />
+      <SolidColorBrush x:Key="BuildProblemBorderBrush"      Color="#8A3B36" />
+      <SolidColorBrush x:Key="BuildProblemForegroundBrush"  Color="#FF8A82" />
+
+      <!-- Document state -->
+      <SolidColorBrush x:Key="DirtyBadgeSurfaceBrush"       Color="#33260F" />
+      <SolidColorBrush x:Key="DirtyBadgeForegroundBrush"    Color="#F0B44A" />
+      <SolidColorBrush x:Key="DirtyBadgeBorderBrush"        Color="#7A5A22" />
+      <SolidColorBrush x:Key="ImportStatusForegroundBrush"  Color="#A3ADBA" />
+
+      <!-- Keyboard -->
+      <SolidColorBrush x:Key="KeyboardBezelBrush"        Color="#14191F" />
+      <SolidColorBrush x:Key="KeyboardBezelBorderBrush"  Color="#2C333C" />
+      <SolidColorBrush x:Key="KeyFaceBrush"              Color="#353B43" />
+      <SolidColorBrush x:Key="KeyFaceHoverBrush"         Color="#414852" />
+      <SolidColorBrush x:Key="KeyFacePressedBrush"       Color="#2A3038" />
+      <SolidColorBrush x:Key="KeyBorderBrush"            Color="#4E5763" />
+      <SolidColorBrush x:Key="KeyLegendBrush"            Color="#EDF1F6" />
+      <SolidColorBrush x:Key="KeyHintBrush"              Color="#9AA4B1" />
+      <SolidColorBrush x:Key="KeyActiveLayerBrush"       Color="#24406B" />
+      <SolidColorBrush x:Key="KeyActiveLegendBrush"      Color="#B7D2FF" />
+      <SolidColorBrush x:Key="KeySelectedFaceBrush"      Color="#1D3457" />
+      <SolidColorBrush x:Key="KeySelectedBorderBrush"    Color="#5B9BFF" />
+      <SolidColorBrush x:Key="KeyErrorFaceBrush"         Color="#4A2422" />
+      <SolidColorBrush x:Key="KeyErrorBorderBrush"       Color="#FF8A82" />
+
+      <!-- Elevation -->
+      <BoxShadows x:Key="CardBoxShadow">0 1 3 0 #59000000</BoxShadows>
+      <BoxShadows x:Key="KeyBoxShadow">0 1 2 0 #59000000</BoxShadows>
+      <BoxShadows x:Key="ElevatedBoxShadow">0 8 20 0 #73000000</BoxShadows>
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>

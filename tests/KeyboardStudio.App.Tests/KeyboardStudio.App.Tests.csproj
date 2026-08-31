@@ -19,4 +19,11 @@
   <ItemGroup>
     <Compile Include="..\Shared\TestProjectFactory.cs" Link="Shared\TestProjectFactory.cs" />
   </ItemGroup>
+  <!-- The application's XAML is embedded here so the theme-contract and literal-colour audits read
+       the shipped markup rather than a path relative to whatever directory a runner starts in. -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\src\KeyboardStudio.App\**\*.axaml"
+                      Exclude="..\..\src\KeyboardStudio.App\bin\**;..\..\src\KeyboardStudio.App\obj\**"
+                      Link="ApplicationXaml\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
 </Project>

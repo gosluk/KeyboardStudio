@@ -1,0 +1,18 @@
+<!--
+  Application-owned vector icons, drawn on a 24x24 grid.
+
+  These are geometries rather than images so they inherit the foreground of whatever presents them
+  and stay sharp at every display scale. Phase 15 deliberately adds no icon package and no raster
+  asset: two icons do not justify a dependency whose licence, size, and update cadence the project
+  would then own.
+-->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- A document with a folded corner. The fold is a second subpath: the even-odd fill rule
+       removes the overlap, which draws the crease without a second shape. -->
+  <StreamGeometry x:Key="FileIconGeometry">M6,3 C6,2.4 6.4,2 7,2 H13.2 L19,7.8 V21 C19,21.6 18.6,22 18,22 H7 C6.4,22 6,21.6 6,21 Z M13,2.6 V8 H18.4 Z</StreamGeometry>
+
+  <!-- A half-filled disc: the conventional mark for choosing light or dark, and readable at 16px
+       where a palette or brush is not. -->
+  <StreamGeometry x:Key="AppearanceIconGeometry">M12,3 A9,9 0 1 0 12,21 A9,9 0 1 0 12,3 Z M12,3 A9,9 0 0 1 12,21 Z</StreamGeometry>
+</ResourceDictionary>

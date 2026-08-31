@@ -15,8 +15,8 @@
 
     <Border Grid.Row="1"
             Padding="10"
-            Background="{DynamicResource KeyboardBezelBrush}"
-            BorderBrush="{DynamicResource KeyboardBezelBorderBrush}"
+            Background="{DynamicResource WorkspaceSurfaceBrush}"
+            BorderBrush="{DynamicResource AppBorderBrush}"
             BorderThickness="1"
             CornerRadius="6">
       <ItemsControl ItemsSource="{Binding Paths}">
@@ -30,7 +30,7 @@
 
     <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
       <Button Content="Cancel" IsCancel="True" Click="CancelClicked" />
-      <Button Content="{Binding ConfirmLabel}" Classes="accent" Click="ConfirmClicked" />
+      <Button Content="{Binding ConfirmLabel}" Classes="primary" Click="ConfirmClicked" />
     </StackPanel>
   </Grid>
 </Window>
