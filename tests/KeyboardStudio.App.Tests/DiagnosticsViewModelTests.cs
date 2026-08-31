@@ -20,7 +20,7 @@ public sealed class DiagnosticsViewModelTests
         diagnostics.Refresh(result);
 
         Assert.Equal(3, diagnostics.Items.Count);
-        Assert.Equal("3 diagnostics", diagnostics.Summary);
+        Assert.Equal("1 error, 1 warning, 1 note", diagnostics.Summary);
         Assert.True(diagnostics.HasErrors);
         var error = diagnostics.Items[0];
         Assert.Equal(ValidationSeverity.Error, error.Severity);
@@ -133,5 +133,106 @@ public sealed class DiagnosticsViewModelTests
         public Task<string?> SelectSymbolsFilePathAsync() => Task.FromResult<string?>(null);
 
         public Task ShowErrorAsync(string title, string message) => Task.CompletedTask;
+    }
+
+    [Theory]
+    [InlineData(0, "No diagnostics")]
+    [InlineData(1, "1 error")]
+    [InlineData(3, "3 errors")]
+    [Trait("Category", "Unit")]
+    public void Summary_NamesWhatIsWrongRatherThanCountingIt(int errors, string expected)
+    {
+        var diagnostics = new DiagnosticsViewModel(_ => { });
+
+        diagnostics.Refresh(new ValidationResult(
+            Enumerable.Range(0, errors)
+                .Select(index => new ValidationIssue(
+                    ValidationSeverity.Error,
+                    $"TEST{index:000}",
+                    "Error"))
+                .ToList()));
+
+        // Severity is named, not only coloured: the summary has to say the same thing to someone
+        // who cannot tell the colours apart.
+        Assert.Equal(expected, diagnostics.Summary);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Refresh_WhenThereIsNothingToReport_StaysCollapsed()
+    {
+        var diagnostics = new DiagnosticsViewModel(_ => { });
+
+        diagnostics.Refresh(new ValidationResult([]));
+
+        Assert.False(diagnostics.IsExpanded);
+        Assert.False(diagnostics.HasIssues);
+        Assert.Null(diagnostics.HighestSeverity);
+        Assert.Equal("No diagnostics", diagnostics.Summary);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Refresh_WhenOnlyWarningsAppear_LeavesTheListCollapsed()
+    {
+        var diagnostics = new DiagnosticsViewModel(_ => { });
+
+        diagnostics.Refresh(new ValidationResult([
+            new ValidationIssue(ValidationSeverity.Warning, "TEST200", "Warning")
+        ]));
+
+        Assert.False(diagnostics.IsExpanded);
+        Assert.True(diagnostics.HasIssues);
+        Assert.Equal(ValidationSeverity.Warning, diagnostics.HighestSeverity);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Refresh_WhenAnErrorAppears_OpensTheList()
+    {
+        var diagnostics = new DiagnosticsViewModel(_ => { });
+        diagnostics.Refresh(new ValidationResult([]));
+
+        diagnostics.Refresh(new ValidationResult([
+            new ValidationIssue(ValidationSeverity.Error, "TEST300", "Error")
+        ]));
+
+        Assert.True(diagnostics.IsExpanded);
+        Assert.Equal(ValidationSeverity.Error, diagnostics.HighestSeverity);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Refresh_WhenTheUserClosesTheListWhileTheErrorStands_LeavesItClosed()
+    {
+        var diagnostics = new DiagnosticsViewModel(_ => { });
+        var error = new ValidationResult([
+            new ValidationIssue(ValidationSeverity.Error, "TEST300", "Error")
+        ]);
+        diagnostics.Refresh(error);
+        diagnostics.IsExpanded = false;
+
+        // Every edit revalidates. Reopening here would fight the user at every keystroke for as
+        // long as the error stood.
+        diagnostics.Refresh(error);
+
+        Assert.False(diagnostics.IsExpanded);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Refresh_WhenAnErrorReturnsAfterBeingFixed_OpensTheListAgain()
+    {
+        var diagnostics = new DiagnosticsViewModel(_ => { });
+        var error = new ValidationResult([
+            new ValidationIssue(ValidationSeverity.Error, "TEST300", "Error")
+        ]);
+        diagnostics.Refresh(error);
+        diagnostics.IsExpanded = false;
+        diagnostics.Refresh(new ValidationResult([]));
+
+        diagnostics.Refresh(error);
+
+        Assert.True(diagnostics.IsExpanded);
     }
 }

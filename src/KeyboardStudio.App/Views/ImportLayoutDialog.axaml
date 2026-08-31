@@ -17,8 +17,8 @@
                  VerticalAlignment="Center"
                  FontSize="12" />
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-        <Button Content="Cancel" Click="CancelClicked" />
-        <Button Content="Import" Click="ImportClicked" IsEnabled="{Binding CanAccept}" />
+        <Button Content="Cancel" Click="CancelClicked" IsCancel="True" />
+        <Button Classes="primary" Content="Import" Click="ImportClicked" IsEnabled="{Binding CanAccept}" />
       </StackPanel>
     </Grid>
 
@@ -37,7 +37,7 @@
               <DataTemplate>
                 <StackPanel Spacing="1" Margin="0,2">
                   <TextBlock Text="{Binding DisplayName}" FontSize="13" />
-                  <TextBlock Classes="muted" Text="{Binding Detail}" FontSize="11" />
+                  <TextBlock Classes="muted" Text="{Binding Detail}" FontSize="12" />
                 </StackPanel>
               </DataTemplate>
             </ListBox.ItemTemplate>
@@ -121,7 +121,7 @@
                 <TextBlock Classes="muted mono"
                            Text="{Binding Report.IncludeChain}"
                            TextWrapping="Wrap"
-                           FontSize="11"
+                           FontSize="12"
                            IsVisible="{Binding Report.HasIncludeChain, FallbackValue=False}" />
                 <ItemsControl ItemsSource="{Binding Report.Diagnostics}" MaxHeight="180">
                   <ItemsControl.ItemTemplate>
@@ -130,7 +130,7 @@
                         <TextBlock Text="{Binding Severity}" FontWeight="SemiBold" FontSize="12" />
                         <TextBlock Grid.Column="1" Classes="mono" Text="{Binding Code}" VerticalAlignment="Center" />
                         <TextBlock Grid.Column="2" Text="{Binding Message}" TextWrapping="Wrap" FontSize="12" />
-                        <TextBlock Grid.Column="3" Classes="muted" Text="{Binding KeyAssociation}" FontSize="11" />
+                        <TextBlock Grid.Column="3" Classes="muted" Text="{Binding KeyAssociation}" FontSize="12" />
                       </Grid>
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>

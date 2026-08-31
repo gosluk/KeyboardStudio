@@ -18,7 +18,7 @@
     <Grid RowDefinitions="Auto,*" ColumnDefinitions="*,360" Margin="10,8,10,10" ColumnSpacing="8" RowSpacing="8">
       <!-- One header row: identity, the document menu, what is open, and appearance. The standalone
            menu bar is gone; its commands live behind the File trigger beside the title. -->
-      <Grid Grid.ColumnSpan="2" ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto" ColumnSpacing="8">
+      <Grid Grid.ColumnSpan="2" ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto" ColumnSpacing="8" TabIndex="0">
         <TextBlock Classes="app-title" Text="KeyboardStudio" />
 
         <Button Grid.Column="1"
@@ -105,7 +105,10 @@
         </Button>
       </Grid>
 
-      <Grid Grid.Row="1" Grid.Column="0" RowDefinitions="Auto,*" RowSpacing="8">
+      <!-- The keyboard takes the room; diagnostics take what they need and no more. -->
+      <Grid Grid.Row="1" Grid.Column="0" RowDefinitions="*,Auto" RowSpacing="8" TabIndex="1">
+        <!-- Top-aligned in a star row: the keyboard is as large as its own aspect ratio allows and
+             no larger, and gives way rather than pushing diagnostics off a short window. -->
         <Border Classes="card" VerticalAlignment="Top">
           <Grid RowDefinitions="Auto,Auto" RowSpacing="8">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
@@ -180,20 +183,29 @@
           </Grid>
         </Border>
 
-        <Border Grid.Row="1" Classes="card">
-          <Grid RowDefinitions="Auto,*" RowSpacing="6">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Classes="section-title" Text="Diagnostics" />
-              <TextBlock Classes="muted" Text="{Binding Diagnostics.Summary}" FontSize="12" />
-            </StackPanel>
-            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+        <!-- A clean document is the normal case, so this collapses to one line and gives the room
+             back to the keyboard. It opens itself when an error appears. -->
+        <Border Grid.Row="1" Classes="card subtle" Padding="4,2" TabIndex="3">
+          <Expander Classes="flat"
+                    HorizontalAlignment="Stretch"
+                    IsExpanded="{Binding Diagnostics.IsExpanded, Mode=TwoWay}"
+                    IsEnabled="{Binding Diagnostics.HasIssues}"
+                    AutomationProperties.Name="Diagnostics">
+            <Expander.Header>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Classes="section-title" Text="Diagnostics" />
+                <TextBlock Classes="muted" Text="{Binding Diagnostics.Summary}" />
+              </StackPanel>
+            </Expander.Header>
+            <ScrollViewer MaxHeight="220" VerticalScrollBarVisibility="Auto">
               <ItemsControl ItemsSource="{Binding Diagnostics.Items}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
-                    <Button Command="{Binding SelectCommand}"
+                    <Button Classes="quiet"
+                            Command="{Binding SelectCommand}"
                             HorizontalAlignment="Stretch"
                             HorizontalContentAlignment="Stretch"
-                            Padding="8,4"
+                            Padding="8,5"
                             Margin="0,1">
                       <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="7">
                         <TextBlock Text="{Binding Severity}" FontWeight="SemiBold" FontSize="12" />
@@ -204,21 +216,24 @@
                                    FontSize="12" />
                         <TextBlock Grid.Column="3"
                                    Classes="muted"
-                                   Text="{Binding KeyAssociation}"
-                                   FontSize="11" />
+                                   Text="{Binding KeyAssociation}" />
                       </Grid>
                     </Button>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
             </ScrollViewer>
-          </Grid>
+          </Expander>
         </Border>
       </Grid>
 
-      <ScrollViewer Grid.Row="1" Grid.Column="1" VerticalScrollBarVisibility="Auto" Padding="0,0,4,0">
+      <ScrollViewer Grid.Row="1"
+                    Grid.Column="1"
+                    TabIndex="2"
+                    VerticalScrollBarVisibility="Auto"
+                    Padding="0,0,4,0">
         <StackPanel Spacing="8">
-          <Border Classes="card">
+          <Border Classes="card subtle">
             <StackPanel Spacing="5">
               <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="7">
                 <TextBlock Classes="section-title" Text="Selected key" />
@@ -248,6 +263,7 @@
                                Text="{Binding Output, Mode=TwoWay}"
                                PlaceholderText="No output" />
                       <Button Grid.Column="2"
+                              Classes="quiet"
                               Content="Clear"
                               Command="{Binding ClearCommand}" />
                       <TextBlock Grid.Row="1"
@@ -262,13 +278,13 @@
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
               <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,3,0,0">
-                <Button Content="Clear all outputs" Command="{Binding Editor.ClearAllOutputsCommand}" />
-                <Button Content="Unmap logical key" Command="{Binding Editor.UnmapLogicalKeyCommand}" />
+                <Button Classes="quiet" Content="Clear all outputs" Command="{Binding Editor.ClearAllOutputsCommand}" />
+                <Button Classes="quiet" Content="Unmap logical key" Command="{Binding Editor.UnmapLogicalKeyCommand}" />
               </StackPanel>
             </StackPanel>
           </Border>
 
-          <Border Classes="card">
+          <Border Classes="card subtle">
             <StackPanel Spacing="6">
               <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                 <TextBlock Classes="section-title" Text="Build" />
@@ -323,7 +339,7 @@
                 </ItemsControl>
               </Grid>
               <StackPanel Orientation="Horizontal" Spacing="6">
-                <Button Content="Build" Command="{Binding Build.BuildCommand}" />
+                <Button Classes="primary" Content="Build" Command="{Binding Build.BuildCommand}" />
                 <Button Content="Cancel" Command="{Binding Build.CancelBuildCommand}" />
                 <TextBlock Classes="muted" Text="{Binding Build.Status}" TextWrapping="Wrap" FontSize="12" />
               </StackPanel>
@@ -373,17 +389,21 @@
                   </ComboBox.ItemTemplate>
                 </ComboBox>
                 <Button Grid.Column="1"
+                        Classes="quiet"
                         Content="Inspect"
                         Command="{Binding Build.InspectGeneratedFileCommand}" />
               </Grid>
               <WrapPanel Orientation="Horizontal">
-                <Button Content="Open output"
+                <Button Classes="quiet"
+                        Content="Open output"
                         Margin="0,0,6,3"
                         Command="{Binding Build.OpenOutputDirectoryCommand}" />
-                <Button Content="Copy build log"
+                <Button Classes="quiet"
+                        Content="Copy build log"
                         Margin="0,0,6,3"
                         Command="{Binding Build.CopyBuildLogCommand}" />
-                <Button Content="Copy artifact path"
+                <Button Classes="quiet"
+                        Content="Copy artifact path"
                         Margin="0,0,0,3"
                         Command="{Binding Build.CopyArtifactPathCommand}" />
               </WrapPanel>
@@ -394,20 +414,20 @@
             </StackPanel>
           </Border>
 
-          <Border Classes="card" IsVisible="{Binding LinuxVariant.IsVisible}">
+          <Border Classes="card subtle" IsVisible="{Binding LinuxVariant.IsVisible}">
             <StackPanel Spacing="7">
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
                 <TextBlock Classes="section-title" Text="Linux user variant" />
                 <TextBlock Grid.Column="1"
                            Text="{Binding LinuxVariant.Status}"
-                           FontSize="11"
+                           FontSize="12"
                            FontWeight="SemiBold" />
               </Grid>
 
               <TextBlock Text="Augments the imported system layout in your user XKB directory. It never edits /usr/share or activates a layout."
                          Classes="muted"
                          TextWrapping="Wrap"
-                         FontSize="11" />
+                         FontSize="12" />
 
               <Grid ColumnDefinitions="96,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="6" RowSpacing="4">
                 <TextBlock Classes="field-label" Text="Base" />
@@ -440,11 +460,11 @@
               <TextBlock Text="{Binding LinuxVariant.CapabilityText}"
                          Classes="muted"
                          TextWrapping="Wrap"
-                         FontSize="11" />
+                         FontSize="12" />
               <TextBlock Text="{Binding LinuxVariant.PathsText}"
                          Classes="mono"
                          TextWrapping="Wrap"
-                         FontSize="10" />
+                         FontSize="12" />
               <TextBlock Classes="warning"
                          Text="{Binding LinuxVariant.DiagnosticsText}"
                          TextWrapping="Wrap"
@@ -452,35 +472,40 @@
                          IsVisible="{Binding LinuxVariant.HasDiagnostics}" />
 
               <WrapPanel Orientation="Horizontal">
-                <Button Content="Refresh"
+                <Button Classes="quiet"
+                        Content="Refresh"
                         Margin="0,0,6,4"
                         Command="{Binding LinuxVariant.RefreshCommand}" />
                 <Button Content="Generate bundle"
                         Margin="0,0,6,4"
                         Command="{Binding LinuxVariant.GenerateCommand}" />
-                <Button Content="Install"
+                <Button Classes="primary"
+                        Content="Install"
                         Margin="0,0,6,4"
                         Command="{Binding LinuxVariant.InstallCommand}" />
                 <Button Content="Update"
                         Margin="0,0,6,4"
                         Command="{Binding LinuxVariant.UpdateCommand}" />
-                <Button Content="Verify installed"
+                <Button Classes="quiet"
+                        Content="Verify installed"
                         Margin="0,0,6,4"
                         Command="{Binding LinuxVariant.VerifyInstalledCommand}" />
-                <Button Content="Uninstall"
+                <Button Classes="destructive"
+                        Content="Uninstall"
                         Margin="0,0,6,4"
                         Command="{Binding LinuxVariant.UninstallCommand}" />
                 <Button Content="Cancel"
                         Margin="0,0,6,4"
                         Command="{Binding LinuxVariant.CancelCommand}" />
-                <Button Content="Open bundle"
+                <Button Classes="quiet"
+                        Content="Open bundle"
                         Margin="0,0,0,4"
                         Command="{Binding LinuxVariant.OpenOutputCommand}" />
               </WrapPanel>
               <TextBlock Text="{Binding LinuxVariant.GeneratedBundlePath}"
                          Classes="mono"
                          TextWrapping="Wrap"
-                         FontSize="10"
+                         FontSize="12"
                          IsVisible="{Binding LinuxVariant.HasGeneratedBundle}" />
             </StackPanel>
           </Border>
