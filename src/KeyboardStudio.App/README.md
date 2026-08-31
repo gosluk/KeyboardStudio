@@ -12,9 +12,12 @@ Responsibilities:
 - application-level project document lifecycle through `IProjectDocumentService`;
 - file-picker interaction for project Open/Save As paths;
 - displaying validation, document, and build diagnostics;
-- persisting host-local application preferences under `Settings/`.
+- persisting host-local application preferences under `Settings/`;
+- applying the saved appearance theme before the first window exists.
 
 `JsonApplicationSettingsStore` persists application preferences — currently the selected appearance theme — as versioned JSON under the per-user local application-data directory resolved by `IApplicationSettingsPathProvider`. These are host-local preferences, not portable project data, so they never enter `.kbdproj` documents or `KeyboardStudio.Persistence`. Reads are tolerant: a missing, unreadable, corrupt, unknown-theme, or future-schema file leaves the original file untouched and returns the Gray defaults with a presentation-safe error rather than failing startup. Writes go to a same-directory temporary file that is then moved into place, so an interrupted save cannot destroy the last complete settings file.
+
+`ApplicationStartupSequence` is the composition order the application depends on: it loads the saved preferences, applies the theme they name, and only then builds the window. Restoring the appearance first is what stops the first frame rendering in the Fluent default and being corrected in front of the user, so the load is deliberately awaited rather than started alongside window construction. `AvaloniaApplicationThemeService` is the only type that touches `Application.RequestedThemeVariant`; everything above it, including ViewModels, deals in the neutral `ApplicationTheme`. `ApplicationThemeVariants` maps those three choices onto custom Avalonia variants that inherit Fluent Light (White, Gray) or Dark (Black), so a token KeyboardStudio does not define degrades to a readable Fluent colour instead of to nothing. The application no longer requests the `Default` variant and therefore no longer follows the operating-system theme.
 
 `ProjectDocumentService` owns New/Open/Save/Save As semantics, the current path, dirty state, and translation of expected persistence/I/O failures into presentation-safe errors. `AvaloniaProjectInteractionService` supplies native storage pickers, unsaved-change confirmation, and error presentation while JSON serialization remains in `KeyboardStudio.Persistence`.
 
