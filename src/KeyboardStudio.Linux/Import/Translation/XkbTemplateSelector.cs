@@ -39,10 +39,12 @@ public static class XkbTemplateSelector
     {
         ArgumentNullException.ThrowIfNull(symbols);
 
-        // Writing <LSGT> settles it. It is only a partial signal, though: the key is usually
-        // contributed by the `pc` component, which import does not compose, so most ISO layouts
-        // reach here without it and the country hint has to carry them.
-        if (symbols.Keys.Any(key => string.Equals(key.KeyName, IsoExtraKey, StringComparison.Ordinal)))
+        // The layout writing <LSGT> itself settles it. The common base writes the key too, for
+        // every layout composed onto it, so a definition inherited from there carries no signal and
+        // the country hint has to carry those layouts instead.
+        if (symbols.Keys.Any(key =>
+                !key.FromCommonBase &&
+                string.Equals(key.KeyName, IsoExtraKey, StringComparison.Ordinal)))
         {
             return Iso105;
         }

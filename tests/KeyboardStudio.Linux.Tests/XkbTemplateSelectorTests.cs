@@ -52,11 +52,25 @@ public sealed class XkbTemplateSelectorTests
         Assert.Equal("iso-105", XkbTemplateSelector.SelectTemplate(Symbols(), registryEntry: null));
     }
 
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void SelectTemplate_WhenOnlyTheCommonBaseWritesTheIsoOnlyKey_LeavesTheCountryToDecide()
+    {
+        // Every layout is composed onto the same base, and the base writes <LSGT> for all of them.
+        // Reading a signal into that would suggest ISO for every layout on earth.
+        var symbols = Symbols(BaseKey("<LSGT>", "less", "greater"));
+
+        Assert.Equal("ansi-104", XkbTemplateSelector.SelectTemplate(symbols, Registry("us", "US")));
+    }
+
     private static ResolvedXkbSymbols Symbols(params ResolvedXkbKey[] keys) =>
         new("/xkb/symbols/test", "basic", "Test", keys, ["test(basic)"], []);
 
     private static ResolvedXkbKey Key(string name, params string[] keysyms) =>
         new(name, keysyms, "test(basic)");
+
+    private static ResolvedXkbKey BaseKey(string name, params string[] keysyms) =>
+        new(name, keysyms, "pc(pc105)", FromCommonBase: true);
 
     private static XkbRegistryEntry Registry(string layoutId, params string[] countries) =>
         new(layoutId, VariantId: null, layoutId, ShortDescription: null, Languages: [], countries);

@@ -20,12 +20,32 @@ public sealed class XkbSymbolsResolverTests
         return resolved;
     }
 
-    private ResolvedXkbSymbols? ResolveOrNull(string file, string? section = null)
+    private ResolvedXkbSymbols? ResolveOrNull(string file, string? section = null) =>
+        CreateResolver().Resolve(file, section);
+
+    private ResolvedXkbSymbols ResolveLayout(string file, string? section = null)
+    {
+        var resolved = CreateResolver().ResolveLayout(file, section);
+        Assert.NotNull(resolved);
+        return resolved;
+    }
+
+    private XkbSymbolsResolver CreateResolver()
     {
         var roots = new[] { new XkbDataRoot(Root, LayoutSourceOrigin.System) };
-        var includeResolver = new XkbIncludeResolver(_fileSystem, roots);
-        return new XkbSymbolsResolver(_fileSystem, includeResolver).Resolve(file, section);
+        return new XkbSymbolsResolver(_fileSystem, new XkbIncludeResolver(_fileSystem, roots));
     }
+
+    /// <summary>A stand-in for the real <c>pc</c>: keys no national layout writes for itself.</summary>
+    private void AddCommonBase() =>
+        AddSymbols(XkbCommonBase.FileName, """
+            default partial alphanumeric_keys modifier_keys
+            xkb_symbols "pc105" {
+                key <ESC> { [ Escape ] };
+                key <LSGT> { [ less, greater ] };
+                key <AD01> { [ NoSymbol ] };
+            };
+            """);
 
     private static IReadOnlyList<string> KeysymsOf(ResolvedXkbSymbols resolved, string keyName) =>
         Assert.Single(resolved.Keys, key => key.KeyName == keyName).Keysyms;
@@ -418,5 +438,155 @@ public sealed class XkbSymbolsResolverTests
             """);
 
         Assert.Null(ResolveOrNull("us", "nosuchsection"));
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void ResolveLayout_ComposesTheLayoutOntoTheCommonBase()
+    {
+        // `rules/evdev` resolves every layout to `pc+<layout>`, so a layout that writes two dozen
+        // keys still describes a whole keyboard. Resolving the file alone describes two dozen keys.
+        AddCommonBase();
+        AddSymbols("pl", """
+            default partial alphanumeric_keys
+            xkb_symbols "basic" {
+                name[Group1] = "Polish";
+                key <AD01> { [ q, Q ] };
+            };
+            """);
+
+        var resolved = ResolveLayout("pl");
+
+        Assert.Equal(["<ESC>", "<LSGT>", "<AD01>"], resolved.Keys.Select(key => key.KeyName));
+        Assert.Equal(["q", "Q"], KeysymsOf(resolved, "<AD01>"));
+        Assert.Equal("Polish", resolved.DisplayName);
+        Assert.Equal("pl(basic)", resolved.Origin);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void ResolveLayout_MarksTheKeysTheCommonBaseContributed()
+    {
+        // Every layout inherits the same base, so a key only the base defines says nothing about
+        // this layout. Geometry inference and the fidelity report both need to tell the two apart.
+        AddCommonBase();
+        AddSymbols("pl", """
+            default partial alphanumeric_keys
+            xkb_symbols "basic" { key <AD01> { [ q, Q ] }; };
+            """);
+
+        var resolved = ResolveLayout("pl");
+
+        Assert.True(Assert.Single(resolved.Keys, key => key.KeyName == "<ESC>").FromCommonBase);
+        Assert.False(Assert.Single(resolved.Keys, key => key.KeyName == "<AD01>").FromCommonBase);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void ResolveLayout_ForAKeyTheBaseAlsoDefines_LetsTheLayoutWin()
+    {
+        AddCommonBase();
+        AddSymbols("pl", """
+            default partial alphanumeric_keys
+            xkb_symbols "basic" { key <LSGT> { [ backslash, bar ] }; };
+            """);
+
+        var resolved = ResolveLayout("pl");
+        var key = Assert.Single(resolved.Keys, candidate => candidate.KeyName == "<LSGT>");
+
+        Assert.Equal(["backslash", "bar"], key.Keysyms);
+        Assert.Equal("pl(basic)", key.Origin);
+        Assert.False(key.FromCommonBase);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void ResolveLayout_NamesTheBaseFirstInTheIncludeChain()
+    {
+        AddCommonBase();
+        AddSymbols("pl", """
+            default partial alphanumeric_keys
+            xkb_symbols "basic" { key <AD01> { [ q ] }; };
+            """);
+
+        Assert.Equal(["pc(pc105)", "pl(basic)"], ResolveLayout("pl").IncludeChain);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void ResolveLayout_WhenTheBaseNamesAGroup_KeepsTheLayoutsOwnName()
+    {
+        // A base that named a group would be naming every layout composed onto it.
+        AddSymbols(XkbCommonBase.FileName, """
+            default partial alphanumeric_keys
+            xkb_symbols "pc105" {
+                name[Group1] = "Generic";
+                key <ESC> { [ Escape ] };
+            };
+            """);
+        AddSymbols("pl", """
+            default partial alphanumeric_keys
+            xkb_symbols "basic" {
+                name[Group1] = "Polish";
+                key <AD01> { [ q ] };
+            };
+            """);
+
+        Assert.Equal("Polish", ResolveLayout("pl").DisplayName);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void ResolveLayout_WhenNoRootHoldsTheBase_ResolvesTheLayoutAloneAndSaysNothing()
+    {
+        // The base is an inference made on the layout's behalf, not something the layout asked
+        // for, so a root without one is not a finding against the import.
+        AddSymbols("pl", """
+            default partial alphanumeric_keys
+            xkb_symbols "basic" { key <AD01> { [ q ] }; };
+            """);
+
+        var resolved = ResolveLayout("pl");
+
+        Assert.Equal(["<AD01>"], resolved.Keys.Select(key => key.KeyName));
+        Assert.Empty(resolved.Diagnostics);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Resolve_ComposesNoBase_SoACallerCanStillAskAboutTheFileItself()
+    {
+        AddCommonBase();
+        AddSymbols("pl", """
+            default partial alphanumeric_keys
+            xkb_symbols "basic" { key <AD01> { [ q ] }; };
+            """);
+
+        Assert.Equal(["<AD01>"], Resolve("pl").Keys.Select(key => key.KeyName));
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Resolve_ForASectionItNeverMerged_DoesNotCarryItsFindings()
+    {
+        // A symbols file is read whole and mostly unused: `keypad` holds overlay sections no
+        // layout composes. Their losses are not this layout's.
+        AddSymbols("keypad", """
+            default hidden partial keypad_keys
+            xkb_symbols "x11" { key <KP7> { [ KP_Home, KP_7 ] }; };
+
+            hidden partial keypad_keys
+            xkb_symbols "overlay1" {
+                key <KP7> { [ KP_Home ], overlay1 = <KO7> };
+            };
+            """);
+        AddSymbols("pl", """
+            default partial alphanumeric_keys
+            xkb_symbols "basic" { include "keypad(x11)" };
+            """);
+
+        Assert.DoesNotContain(
+            Resolve("pl").Diagnostics,
+            diagnostic => diagnostic.Code == LayoutImportDiagnosticCodes.UnsupportedConstructIgnored);
     }
 }

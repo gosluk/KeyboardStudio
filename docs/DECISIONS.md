@@ -481,3 +481,25 @@ itself only when an error first appears, and the user's own collapse holds until
 
 The summary names severities — "1 error, 2 warnings" — rather than counting rows, so it reads the
 same with colour removed.
+
+## AD-040 - An imported layout is composed onto the XKB common base
+
+`IXkbSymbolsResolver.ResolveLayout` merges `symbols/pc` before the layout, the way `rules/evdev`
+does with its `pc+%l%(v)` fallback for every model and layout.
+
+A symbols file is not a keyboard. `pl` writes the two dozen keys that make a layout Polish, and
+Escape, the function row, the modifiers, the editing block, the arrows and the keypad are all
+somewhere else. Importing the file alone produced a board with 50 of 105 keys carrying any output —
+read on screen as a keyboard whose function row and keypad had no logical keys assigned, which is
+not a partial import of Polish but a misreading of how layouts are written. Composed, the same
+layout imports 105 keys.
+
+Every resolved key records whether the base or the layout defined it, because the base is identical
+for every layout and so says nothing about any one of them. Geometry inference ignores a `<LSGT>`
+that only the base wrote, or it would suggest ISO for every layout there is; and a loss inside a
+base key — a fifth level the model cannot hold, a key no template has — is neither counted against
+the import nor reported, because saying the same thing about every layout in the database buries
+the findings that describe the one being imported.
+
+The alternative, filling unmapped keys from the seed project after import, was rejected: it would
+invent mappings the source never contained and make an import's output depend on which seed shipped.

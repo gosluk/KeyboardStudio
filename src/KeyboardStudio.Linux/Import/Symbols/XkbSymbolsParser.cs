@@ -83,6 +83,11 @@ public sealed class XkbSymbolsParser
         var sections = new List<XkbSymbolsSection>();
         var flags = new List<string>();
 
+        // Findings raised outside every section — a block this reader does not handle at all. They
+        // describe the file rather than any one layout in it, so they travel with the file.
+        var fileDiagnostics = new List<LayoutImportDiagnostic>();
+        var claimed = 0;
+
         while (Current.Kind != XkbSymbolsTokenKind.EndOfFile)
         {
             if (Current.Kind != XkbSymbolsTokenKind.Identifier)
@@ -96,7 +101,12 @@ public sealed class XkbSymbolsParser
             if (string.Equals(word, "xkb_symbols", StringComparison.Ordinal))
             {
                 Advance();
-                sections.Add(ParseSection(flags));
+
+                // Findings raised while reading a section are that section's; everything raised
+                // since the previous one closed is the file's.
+                fileDiagnostics.AddRange(_diagnostics.Skip(claimed));
+                sections.Add(ParseSection(flags, _diagnostics.Count));
+                claimed = _diagnostics.Count;
                 flags.Clear();
                 continue;
             }
@@ -118,10 +128,12 @@ public sealed class XkbSymbolsParser
             flags.Clear();
         }
 
-        return new XkbSymbolsFile(path, sections, [.. _diagnostics]);
+        fileDiagnostics.AddRange(_diagnostics.Skip(claimed));
+
+        return new XkbSymbolsFile(path, sections, [.. fileDiagnostics]);
     }
 
-    private XkbSymbolsSection ParseSection(List<string> flags)
+    private XkbSymbolsSection ParseSection(List<string> flags, int diagnosticsBefore)
     {
         var name = Current.Kind == XkbSymbolsTokenKind.QuotedString ? Current.Text : string.Empty;
         if (Current.Kind == XkbSymbolsTokenKind.QuotedString)
@@ -156,7 +168,8 @@ public sealed class XkbSymbolsParser
             flags.Contains("default", StringComparer.Ordinal),
             flags.Contains("partial", StringComparer.Ordinal),
             flags.Contains("hidden", StringComparer.Ordinal),
-            statements);
+            statements,
+            [.. _diagnostics.Skip(diagnosticsBefore)]);
     }
 
     private XkbSymbolsStatement? ParseStatement()

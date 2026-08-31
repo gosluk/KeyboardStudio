@@ -159,7 +159,7 @@ public sealed class XkbLayoutImportSource : ILayoutImportSource
         // A null variant means the file's own default section, which is a section flagged `default`
         // and almost never one named it. Passing the word through as a section name would look for
         // a section no symbols file has.
-        var symbols = _symbolsResolver.Resolve(reference.LayoutId, reference.VariantId);
+        var symbols = _symbolsResolver.ResolveLayout(reference.LayoutId, reference.VariantId);
         if (symbols is null)
         {
             return Task.FromResult(LayoutImportResult.Failed(new LayoutImportReport(

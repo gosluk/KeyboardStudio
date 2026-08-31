@@ -236,6 +236,48 @@ public sealed class XkbLayoutImporterTests
         Assert.Equal(0, result.Report.KeysSkipped);
     }
 
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Import_ForAKeyOnlyTheCommonBaseDefines_ImportsItWithoutGradingTheLayoutOnIt()
+    {
+        // The base is the same for every layout, so what it costs is not this layout's cost. The
+        // function row's fifth level is a console switch no import can hold, and reporting it once
+        // per layout would bury the findings that describe the layout.
+        var result = Import(Symbols(BaseKey("<FK01>", "F1", "F1", "F1", "F1", "XF86_Switch_VT_1")));
+
+        var mapping = Assert.Single(result.Project!.Layout.Mappings);
+        Assert.Equal("F1", mapping.KeyId);
+        Assert.Equal(LogicalKey.F1, mapping.LogicalKey);
+        Assert.Empty(result.Report.Diagnostics);
+        Assert.Equal(LayoutImportFidelity.Exact, result.Report.Fidelity);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Import_ForAKeyTheLayoutDefines_StillReportsWhatItLost()
+    {
+        var result = Import(Symbols(Key("<AE11>", "minus", "underscore", "endash", "emdash", "U2212")));
+
+        Assert.Contains(
+            result.Report.Diagnostics,
+            item => item.Code == LayoutImportDiagnosticCodes.LayerBeyondModelDropped);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Import_ForABaseKeyNoTemplateHas_LeavesItOutWithoutCallingTheImportPartial()
+    {
+        // The base describes every key a PC keyboard might have, Japanese and Korean keys included.
+        // No template here has them, and the layout never asked for them.
+        var result = Import(Symbols(
+            BaseKey("<HKTG>", "Hiragana_Katakana"),
+            Key("<AD01>", "q")));
+
+        Assert.Equal("KeyQ", Assert.Single(result.Project!.Layout.Mappings).KeyId);
+        Assert.Equal(0, result.Report.KeysSkipped);
+        Assert.Empty(result.Report.Diagnostics);
+    }
+
     private static LayoutImportResult Import(ResolvedXkbSymbols symbols, LayoutImportOptions? options = null)
     {
         var importer = new XkbLayoutImporter(
@@ -251,4 +293,7 @@ public sealed class XkbLayoutImporterTests
 
     private static ResolvedXkbKey Key(string name, params string[] keysyms) =>
         new(name, keysyms, "test(basic)");
+
+    private static ResolvedXkbKey BaseKey(string name, params string[] keysyms) =>
+        new(name, keysyms, "pc(pc105)", FromCommonBase: true);
 }

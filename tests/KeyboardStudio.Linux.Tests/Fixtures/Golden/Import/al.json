@@ -8,9 +8,13 @@
   "projectDescription": "Imported from al(basic).",
   "language": "und",
   "fidelity": "Reduced",
-  "keysImported": 48,
+  "keysImported": 105,
   "keysSkipped": 0,
   "includeChain": [
+    "pc(pc105)",
+    "srvr_ctrl(fkey2vt)",
+    "keypad(x11)",
+    "keypad(operators)",
     "al(basic)",
     "latin(type3)",
     "latin(basic)",
@@ -19,10 +23,10 @@
   "diagnostics": [
     {
       "severity": "Warning",
-      "code": "KSI021",
-      "message": "Key <CAPS> at line 95 used 'actions', which has no equivalent in the model; it was ignored.",
-      "keyId": "CapsLock",
-      "layer": null
+      "code": "KSI031",
+      "message": "'dead_breve' is a dead key, which this model does not represent. The layer was left unmapped rather than given the accent as a character.",
+      "keyId": "IntlHash",
+      "layer": "ShiftAltGr"
     },
     {
       "severity": "Warning",
@@ -160,13 +164,6 @@
     {
       "severity": "Warning",
       "code": "KSI031",
-      "message": "'dead_breve' is a dead key, which this model does not represent. The layer was left unmapped rather than given the accent as a character.",
-      "keyId": "IntlHash",
-      "layer": "ShiftAltGr"
-    },
-    {
-      "severity": "Warning",
-      "code": "KSI031",
       "message": "'dead_belowdot' is a dead key, which this model does not represent. The layer was left unmapped rather than given the accent as a character.",
       "keyId": "Slash",
       "layer": "AltGr"
@@ -181,9 +178,49 @@
   ],
   "mappings": [
     {
+      "keyId": "AltLeft",
+      "logicalKey": "LeftAlt",
+      "default": "[LeftAlt]",
+      "shift": null,
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
       "keyId": "AltRight",
       "logicalKey": "RightAlt",
       "default": "[RightAlt]",
+      "shift": null,
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "ArrowDown",
+      "logicalKey": "ArrowDown",
+      "default": "[ArrowDown]",
+      "shift": null,
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "ArrowLeft",
+      "logicalKey": "ArrowLeft",
+      "default": "[ArrowLeft]",
+      "shift": null,
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "ArrowRight",
+      "logicalKey": "ArrowRight",
+      "default": "[ArrowRight]",
+      "shift": null,
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "ArrowUp",
+      "logicalKey": "ArrowUp",
+      "default": "[ArrowUp]",
       "shift": null,
       "altGr": null,
       "shiftAltGr": null
@@ -195,6 +232,14 @@
       "shift": "|",
       "altGr": "¬",
       "shiftAltGr": "¬"
+    },
+    {
+      "keyId": "Backspace",
+      "logicalKey": "Backspace",
+      "default": "[Backspace]",
+      "shift": "[Backspace]",
+      "altGr": null,
+      "shiftAltGr": null
     },
     {
       "keyId": "BracketLeft",
@@ -213,12 +258,52 @@
       "shiftAltGr": null
     },
     {
+      "keyId": "CapsLock",
+      "logicalKey": "CapsLock",
+      "default": "[CapsLock]",
+      "shift": null,
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
       "keyId": "Comma",
       "logicalKey": "Comma",
       "default": ",",
       "shift": ";",
       "altGr": "<",
       "shiftAltGr": "×"
+    },
+    {
+      "keyId": "ContextMenu",
+      "logicalKey": "ContextMenu",
+      "default": "[ContextMenu]",
+      "shift": null,
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "ControlLeft",
+      "logicalKey": "LeftControl",
+      "default": "[LeftControl]",
+      "shift": null,
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "ControlRight",
+      "logicalKey": "RightControl",
+      "default": "[RightControl]",
+      "shift": null,
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Delete",
+      "logicalKey": "Delete",
+      "default": "[Delete]",
+      "shift": null,
+      "altGr": null,
+      "shiftAltGr": null
     },
     {
       "keyId": "Digit0",
@@ -301,12 +386,156 @@
       "shiftAltGr": "±"
     },
     {
+      "keyId": "End",
+      "logicalKey": "End",
+      "default": "[End]",
+      "shift": null,
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Enter",
+      "logicalKey": "Enter",
+      "default": "[Enter]",
+      "shift": null,
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
       "keyId": "Equal",
       "logicalKey": "Equal",
       "default": "=",
       "shift": "+",
       "altGr": null,
       "shiftAltGr": null
+    },
+    {
+      "keyId": "Escape",
+      "logicalKey": "Escape",
+      "default": "[Escape]",
+      "shift": null,
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "F1",
+      "logicalKey": "F1",
+      "default": "[F1]",
+      "shift": "[F1]",
+      "altGr": "[F1]",
+      "shiftAltGr": "[F1]"
+    },
+    {
+      "keyId": "F10",
+      "logicalKey": "F10",
+      "default": "[F10]",
+      "shift": "[F10]",
+      "altGr": "[F10]",
+      "shiftAltGr": "[F10]"
+    },
+    {
+      "keyId": "F11",
+      "logicalKey": "F11",
+      "default": "[F11]",
+      "shift": "[F11]",
+      "altGr": "[F11]",
+      "shiftAltGr": "[F11]"
+    },
+    {
+      "keyId": "F12",
+      "logicalKey": "F12",
+      "default": "[F12]",
+      "shift": "[F12]",
+      "altGr": "[F12]",
+      "shiftAltGr": "[F12]"
+    },
+    {
+      "keyId": "F2",
+      "logicalKey": "F2",
+      "default": "[F2]",
+      "shift": "[F2]",
+      "altGr": "[F2]",
+      "shiftAltGr": "[F2]"
+    },
+    {
+      "keyId": "F3",
+      "logicalKey": "F3",
+      "default": "[F3]",
+      "shift": "[F3]",
+      "altGr": "[F3]",
+      "shiftAltGr": "[F3]"
+    },
+    {
+      "keyId": "F4",
+      "logicalKey": "F4",
+      "default": "[F4]",
+      "shift": "[F4]",
+      "altGr": "[F4]",
+      "shiftAltGr": "[F4]"
+    },
+    {
+      "keyId": "F5",
+      "logicalKey": "F5",
+      "default": "[F5]",
+      "shift": "[F5]",
+      "altGr": "[F5]",
+      "shiftAltGr": "[F5]"
+    },
+    {
+      "keyId": "F6",
+      "logicalKey": "F6",
+      "default": "[F6]",
+      "shift": "[F6]",
+      "altGr": "[F6]",
+      "shiftAltGr": "[F6]"
+    },
+    {
+      "keyId": "F7",
+      "logicalKey": "F7",
+      "default": "[F7]",
+      "shift": "[F7]",
+      "altGr": "[F7]",
+      "shiftAltGr": "[F7]"
+    },
+    {
+      "keyId": "F8",
+      "logicalKey": "F8",
+      "default": "[F8]",
+      "shift": "[F8]",
+      "altGr": "[F8]",
+      "shiftAltGr": "[F8]"
+    },
+    {
+      "keyId": "F9",
+      "logicalKey": "F9",
+      "default": "[F9]",
+      "shift": "[F9]",
+      "altGr": "[F9]",
+      "shiftAltGr": "[F9]"
+    },
+    {
+      "keyId": "Home",
+      "logicalKey": "Home",
+      "default": "[Home]",
+      "shift": null,
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Insert",
+      "logicalKey": "Insert",
+      "default": "[Insert]",
+      "shift": null,
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "IntlBackslash",
+      "logicalKey": "InternationalBackslash",
+      "default": "<",
+      "shift": ">",
+      "altGr": "|",
+      "shiftAltGr": "¦"
     },
     {
       "keyId": "IntlHash",
@@ -525,12 +754,188 @@
       "shiftAltGr": "<"
     },
     {
+      "keyId": "MetaLeft",
+      "logicalKey": "LeftMeta",
+      "default": "[LeftMeta]",
+      "shift": null,
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "MetaRight",
+      "logicalKey": "RightMeta",
+      "default": "[RightMeta]",
+      "shift": null,
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
       "keyId": "Minus",
       "logicalKey": "Minus",
       "default": "-",
       "shift": "_",
       "altGr": null,
       "shiftAltGr": "¿"
+    },
+    {
+      "keyId": "NumLock",
+      "logicalKey": "NumLock",
+      "default": "[NumLock]",
+      "shift": null,
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Numpad0",
+      "logicalKey": "Numpad0",
+      "default": "[Numpad0]",
+      "shift": "[Numpad0]",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Numpad1",
+      "logicalKey": "Numpad1",
+      "default": "[Numpad1]",
+      "shift": "[Numpad1]",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Numpad2",
+      "logicalKey": "Numpad2",
+      "default": "[Numpad2]",
+      "shift": "[Numpad2]",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Numpad3",
+      "logicalKey": "Numpad3",
+      "default": "[Numpad3]",
+      "shift": "[Numpad3]",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Numpad4",
+      "logicalKey": "Numpad4",
+      "default": "[Numpad4]",
+      "shift": "[Numpad4]",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Numpad5",
+      "logicalKey": "Numpad5",
+      "default": "[Numpad5]",
+      "shift": "[Numpad5]",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Numpad6",
+      "logicalKey": "Numpad6",
+      "default": "[Numpad6]",
+      "shift": "[Numpad6]",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Numpad7",
+      "logicalKey": "Numpad7",
+      "default": "[Numpad7]",
+      "shift": "[Numpad7]",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Numpad8",
+      "logicalKey": "Numpad8",
+      "default": "[Numpad8]",
+      "shift": "[Numpad8]",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Numpad9",
+      "logicalKey": "Numpad9",
+      "default": "[Numpad9]",
+      "shift": "[Numpad9]",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "NumpadAdd",
+      "logicalKey": "NumpadAdd",
+      "default": "[NumpadAdd]",
+      "shift": "[NumpadAdd]",
+      "altGr": "[NumpadAdd]",
+      "shiftAltGr": "[NumpadAdd]"
+    },
+    {
+      "keyId": "NumpadDecimal",
+      "logicalKey": "NumpadDecimal",
+      "default": "[NumpadDecimal]",
+      "shift": "[NumpadDecimal]",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "NumpadDivide",
+      "logicalKey": "NumpadDivide",
+      "default": "[NumpadDivide]",
+      "shift": "[NumpadDivide]",
+      "altGr": "[NumpadDivide]",
+      "shiftAltGr": "[NumpadDivide]"
+    },
+    {
+      "keyId": "NumpadEnter",
+      "logicalKey": "NumpadEnter",
+      "default": "[NumpadEnter]",
+      "shift": null,
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "NumpadMultiply",
+      "logicalKey": "NumpadMultiply",
+      "default": "[NumpadMultiply]",
+      "shift": "[NumpadMultiply]",
+      "altGr": "[NumpadMultiply]",
+      "shiftAltGr": "[NumpadMultiply]"
+    },
+    {
+      "keyId": "NumpadSubtract",
+      "logicalKey": "NumpadSubtract",
+      "default": "[NumpadSubtract]",
+      "shift": "[NumpadSubtract]",
+      "altGr": "[NumpadSubtract]",
+      "shiftAltGr": "[NumpadSubtract]"
+    },
+    {
+      "keyId": "PageDown",
+      "logicalKey": "PageDown",
+      "default": "[PageDown]",
+      "shift": null,
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "PageUp",
+      "logicalKey": "PageUp",
+      "default": "[PageUp]",
+      "shift": null,
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Pause",
+      "logicalKey": "Pause",
+      "default": "[Pause]",
+      "shift": "[Pause]",
+      "altGr": null,
+      "shiftAltGr": null
     },
     {
       "keyId": "Period",
@@ -541,11 +946,27 @@
       "shiftAltGr": "÷"
     },
     {
+      "keyId": "PrintScreen",
+      "logicalKey": "PrintScreen",
+      "default": "[PrintScreen]",
+      "shift": "[PrintScreen]",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
       "keyId": "Quote",
       "logicalKey": "Quote",
       "default": "[",
       "shift": "{",
       "altGr": "ß",
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "ScrollLock",
+      "logicalKey": "ScrollLock",
+      "default": "[ScrollLock]",
+      "shift": null,
+      "altGr": null,
       "shiftAltGr": null
     },
     {
@@ -557,10 +978,42 @@
       "shiftAltGr": null
     },
     {
+      "keyId": "ShiftLeft",
+      "logicalKey": "LeftShift",
+      "default": "[LeftShift]",
+      "shift": null,
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "ShiftRight",
+      "logicalKey": "RightShift",
+      "default": "[RightShift]",
+      "shift": null,
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
       "keyId": "Slash",
       "logicalKey": "Slash",
       "default": "/",
       "shift": "?",
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Space",
+      "logicalKey": "Space",
+      "default": "[Space]",
+      "shift": null,
+      "altGr": null,
+      "shiftAltGr": null
+    },
+    {
+      "keyId": "Tab",
+      "logicalKey": "Tab",
+      "default": "[Tab]",
+      "shift": "[Tab]",
       "altGr": null,
       "shiftAltGr": null
     }

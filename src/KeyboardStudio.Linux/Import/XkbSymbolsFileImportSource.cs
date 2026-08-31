@@ -106,7 +106,7 @@ public sealed class XkbSymbolsFileImportSource : ILayoutImportSource
                 fileName,
                 path));
 
-        var symbols = resolver.Resolve(fileName, reference.VariantId);
+        var symbols = resolver.ResolveLayout(fileName, reference.VariantId);
         if (symbols is null)
         {
             return Task.FromResult(Failed(reference.VariantId is null

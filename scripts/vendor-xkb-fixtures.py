@@ -39,6 +39,10 @@ TARGETS: list[tuple[str, str | None]] = [
     ("al", "plisi"),
 ]
 
+# Every import composes the layout onto this, the way `rules/evdev` does, so the fixtures need it
+# and everything it reaches even though no golden names it.
+COMMON_BASE: tuple[str, str | None] = ("pc", None)
+
 INCLUDE = re.compile(r'\b(?:include|augment|replace|alternate)\s+"([^"]+)"')
 SECTION = re.compile(r'(?P<flags>[a-z_ \t]*)xkb_symbols\s+"(?P<name>[^"]+)"\s*\{')
 
@@ -144,7 +148,7 @@ def main() -> None:
         / "tests" / "KeyboardStudio.Linux.Tests" / "Fixtures" / "Xkb")
     arguments = parser.parse_args()
 
-    files = sorted(closure(arguments.root, TARGETS))
+    files = sorted(closure(arguments.root, [COMMON_BASE, *TARGETS]))
     symbols = arguments.output / "symbols"
     shutil.rmtree(symbols, ignore_errors=True)
     symbols.mkdir(parents=True, exist_ok=True)
@@ -169,7 +173,8 @@ files are test input, are not compiled into any shipped artifact, and are never 
 
 `rules/evdev.xml` holds the registry entries for {', '.join(sorted({layout for layout, _ in TARGETS}))}
 only, lifted out of the upstream file unchanged. `symbols/` holds every file the vendored layouts
-reach through their includes:
+reach through their includes, together with `symbols/{COMMON_BASE[0]}` and its own includes, which
+every import composes underneath the layout:
 
 {chr(10).join(f'- `symbols/{file}`' for file in files)}
 """, encoding="utf-8")

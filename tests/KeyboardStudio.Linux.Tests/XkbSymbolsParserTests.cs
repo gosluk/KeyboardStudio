@@ -102,7 +102,7 @@ public sealed class XkbSymbolsParserTests
         var key = Assert.IsType<XkbKeyStatement>(file.Sections[0].Statements[0]);
         Assert.Equal(["grave", "asciitilde"], key.Keysyms);
 
-        var diagnostic = Assert.Single(file.Diagnostics);
+        var diagnostic = Assert.Single(file.Sections[0].Diagnostics);
         Assert.Equal(LayoutImportDiagnosticCodes.AlternateGroupsIgnored, diagnostic.Code);
         Assert.Equal(ValidationSeverity.Warning, diagnostic.Severity);
         Assert.Contains("<TLDE>", diagnostic.Message, StringComparison.Ordinal);
@@ -120,7 +120,9 @@ public sealed class XkbSymbolsParserTests
             """);
 
         Assert.Equal(["grave"], Assert.IsType<XkbKeyStatement>(file.Sections[0].Statements[0]).Keysyms);
-        Assert.Equal(LayoutImportDiagnosticCodes.AlternateGroupsIgnored, Assert.Single(file.Diagnostics).Code);
+        Assert.Equal(
+            LayoutImportDiagnosticCodes.AlternateGroupsIgnored,
+            Assert.Single(file.Sections[0].Diagnostics).Code);
     }
 
     [Fact]
@@ -135,7 +137,7 @@ public sealed class XkbSymbolsParserTests
             };
             """);
 
-        var diagnostic = Assert.Single(file.Diagnostics);
+        var diagnostic = Assert.Single(file.Sections[0].Diagnostics);
         Assert.Equal(LayoutImportDiagnosticCodes.UnsupportedConstructIgnored, diagnostic.Code);
         Assert.Equal(ValidationSeverity.Warning, diagnostic.Severity);
         Assert.Equal("<SPCE>", diagnostic.SourceKeyName);
@@ -243,7 +245,7 @@ public sealed class XkbSymbolsParserTests
             ["<AD01>", "<AD02>"],
             file.Sections[0].Statements.OfType<XkbKeyStatement>().Select(key => key.KeyName));
 
-        var diagnostic = Assert.Single(file.Diagnostics);
+        var diagnostic = Assert.Single(file.Sections[0].Diagnostics);
         Assert.Equal(LayoutImportDiagnosticCodes.UnrecognizedStatementSkipped, diagnostic.Code);
         Assert.Equal(ValidationSeverity.Info, diagnostic.Severity);
     }

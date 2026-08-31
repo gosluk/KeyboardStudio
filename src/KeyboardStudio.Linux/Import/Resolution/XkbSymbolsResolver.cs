@@ -38,7 +38,13 @@ public sealed class XkbSymbolsResolver : IXkbSymbolsResolver
         _includeResolver = includeResolver;
     }
 
-    public ResolvedXkbSymbols? Resolve(string file, string? section)
+    public ResolvedXkbSymbols? Resolve(string file, string? section) =>
+        Resolve(file, section, composeCommonBase: false);
+
+    public ResolvedXkbSymbols? ResolveLayout(string file, string? section) =>
+        Resolve(file, section, composeCommonBase: true);
+
+    private ResolvedXkbSymbols? Resolve(string file, string? section, bool composeCommonBase)
     {
         ArgumentNullException.ThrowIfNull(file);
 
@@ -57,6 +63,11 @@ public sealed class XkbSymbolsResolver : IXkbSymbolsResolver
 
         var state = new ResolutionState();
 
+        if (composeCommonBase)
+        {
+            MergeCommonBase(state);
+        }
+
         // The visited set holds path-and-section pairs rather than paths. A file including another
         // of its own sections is normal — pl(lefty) includes pl(basic) — so a file-granular set
         // would break those layouts while still missing cycles that run through two files.
@@ -69,6 +80,29 @@ public sealed class XkbSymbolsResolver : IXkbSymbolsResolver
             state.OrderedKeys(),
             state.Chain,
             state.Diagnostics);
+    }
+
+    /// <summary>
+    /// Merges <see cref="XkbCommonBase"/> before the layout, so that the layout's own definitions
+    /// override it exactly as the <c>pc+%l</c> composition in the rules does.
+    /// </summary>
+    /// <remarks>
+    /// A root that does not ship the base contributes nothing and is not a finding: the base is an
+    /// inference this resolver makes on the layout's behalf, not something the layout asked for. A
+    /// test fixture holding two symbols files is the ordinary case of that.
+    /// </remarks>
+    private void MergeCommonBase(ResolutionState state)
+    {
+        var path = _includeResolver.ResolveFilePath(XkbCommonBase.FileName);
+        var target = path is null ? null : ReadFile(path)?.DefaultSection;
+        if (path is null || target is null)
+        {
+            return;
+        }
+
+        state.MergingCommonBase = true;
+        Merge(path, target, XkbMergeMode.Override, depth: 0, state);
+        state.MergingCommonBase = false;
     }
 
     /// <summary>
@@ -133,11 +167,20 @@ public sealed class XkbSymbolsResolver : IXkbSymbolsResolver
 
         state.Chain.Add(origin);
 
-        // The parser's own findings belong to whoever includes this file, so they travel with it.
+        // The parser's own findings belong to whoever composes the definition, so they travel with
+        // it — but only the ones from the section actually being merged. A file is read whole and
+        // most of it is not used: `keypad` holds four overlay sections no layout composes, and
+        // reporting their losses against a layout that merged only `keypad(x11)` would describe
+        // something that never happened.
         var parsed = _fileCache[path];
         if (parsed is not null && state.ReportedFiles.Add(path))
         {
             state.Diagnostics.AddRange(parsed.Diagnostics);
+        }
+
+        if (state.ReportedSections.Add(key))
+        {
+            state.Diagnostics.AddRange(section.Diagnostics);
         }
 
         foreach (var statement in section.Statements)
@@ -150,6 +193,11 @@ public sealed class XkbSymbolsResolver : IXkbSymbolsResolver
 
                 case XkbKeyStatement keyStatement:
                     ApplyKey(keyStatement, EffectiveMerge(keyStatement.Merge, merge, state), origin, state);
+                    break;
+
+                case XkbNameStatement when state.MergingCommonBase:
+                    // The base names no group of its own, and a base that did would be naming
+                    // every layout composed onto it.
                     break;
 
                 case XkbNameStatement name when name.Group == 1:
@@ -226,7 +274,11 @@ public sealed class XkbSymbolsResolver : IXkbSymbolsResolver
             return;
         }
 
-        state.Keys[statement.KeyName] = new ResolvedXkbKey(statement.KeyName, statement.Keysyms, origin);
+        state.Keys[statement.KeyName] = new ResolvedXkbKey(
+            statement.KeyName,
+            statement.Keysyms,
+            origin,
+            state.MergingCommonBase);
         if (existing is null)
         {
             state.Order.Add(statement.KeyName);
@@ -285,11 +337,24 @@ public sealed class XkbSymbolsResolver : IXkbSymbolsResolver
 
         public HashSet<string> ReportedFiles { get; } = new(StringComparer.Ordinal);
 
+        /// <summary>
+        /// Sections whose findings have already been reported. A section reached twice through
+        /// different parents — a diamond in the include graph — lost what it lost once.
+        /// </summary>
+        public HashSet<(string Path, string Section)> ReportedSections { get; } = [];
+
         public List<string> Chain { get; } = [];
 
         public List<LayoutImportDiagnostic> Diagnostics { get; } = [];
 
         public string? DisplayName { get; set; }
+
+        /// <summary>
+        /// Whether the merge in progress is <see cref="XkbCommonBase"/> rather than the layout.
+        /// Every key it defines is marked, because a key the base supplies is common to every
+        /// layout and says nothing about this one.
+        /// </summary>
+        public bool MergingCommonBase { get; set; }
 
         /// <summary>
         /// Whether the 'alternate' approximation has been reported. One note per import says what
