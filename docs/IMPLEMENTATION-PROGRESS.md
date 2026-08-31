@@ -5,7 +5,7 @@ This file tracks execution of [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md)
 - Current work branch: `themes`
 - Last updated: 2026-08-31
 - Current phase: Phase 15 — Application themes and startup shell (in progress)
-- Next work item: P15.5 — Add theme selection and rebuild the application header/file menu
+- Next work item: P15.6 — Extract current-layout startup and remove Create from the normal path
 
 Legend: `[x]` complete, `[ ]` not yet complete.
 
@@ -192,17 +192,17 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 - [x] **P15.2** Add resilient local application-settings persistence
 - [x] **P15.3** Add the application theme runtime and first-frame restoration
 - [x] **P15.4** Implement White, Gray, and Black semantic resources
-- [ ] **P15.5** Add theme selection and rebuild the application header/file menu
+- [x] **P15.5** Add theme selection and rebuild the application header/file menu
 - [ ] **P15.6** Extract current-layout startup and remove Create from the normal path
 - [ ] **P15.7** Apply the committed UX hierarchy and accessibility refinements
 - [ ] **P15.8** Close automated, cross-platform, and visual verification
 
-**Phase status:** 4/8 work items complete. Phase in progress.
+**Phase status:** 5/8 work items complete. Phase in progress.
 
 ## Progress summary
 
-- Completed work items: **106**
+- Completed work items: **107**
 - Total planned work items: **110**
-- Overall checklist progress: **106/110**
+- Overall checklist progress: **107/110**
 
 The checklist records work-item completion only. Phase-level acceptance criteria and test gates in `IMPLEMENTATION-PLAN.md` still apply before a phase is considered complete.

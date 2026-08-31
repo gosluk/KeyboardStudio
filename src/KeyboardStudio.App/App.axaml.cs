@@ -12,16 +12,19 @@ public sealed partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            var startup = new ApplicationStartupSequence(
-                new JsonApplicationSettingsStore(new LocalApplicationSettingsPathProvider()),
-                new AvaloniaApplicationThemeService(this));
+            var settingsStore = new JsonApplicationSettingsStore(new LocalApplicationSettingsPathProvider());
+            var themeService = new AvaloniaApplicationThemeService(this);
+            var startup = new ApplicationStartupSequence(settingsStore, themeService);
 
             // The saved appearance is restored inside Start, before the window it returns exists,
-            // so the first frame is already drawn in the theme the user chose.
+            // so the first frame is already drawn in the theme the user chose. The header shares
+            // the same store and service, so a later choice writes to the file startup read.
             var window = startup.Start(() =>
             {
                 var shell = new MainWindow();
-                shell.DataContext = new MainWindowViewModel(new AvaloniaProjectInteractionService(shell));
+                shell.DataContext = new MainWindowViewModel(
+                    new AvaloniaProjectInteractionService(shell),
+                    new AppearanceViewModel(settingsStore, themeService));
                 return shell;
             });
 

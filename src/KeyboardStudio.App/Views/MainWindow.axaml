@@ -15,33 +15,84 @@
   </Window.KeyBindings>
 
   <DockPanel>
-    <Menu DockPanel.Dock="Top">
-      <MenuItem Header="_File">
-        <MenuItem Header="_New" Command="{Binding NewCommand}" />
-        <MenuItem Header="_Open…" Command="{Binding OpenCommand}" />
-        <Separator />
-        <MenuItem Header="_Import layout…" Command="{Binding ImportLayoutCommand}" />
-        <MenuItem Header="Import _from file…" Command="{Binding ImportFromFileCommand}" />
-        <Separator />
-        <MenuItem Header="_Save" Command="{Binding SaveCommand}" />
-        <MenuItem Header="Save _As…" Command="{Binding SaveAsCommand}" />
-      </MenuItem>
-    </Menu>
-
-    <Grid RowDefinitions="Auto,*" ColumnDefinitions="*,360" Margin="10,6,10,10" ColumnSpacing="8" RowSpacing="6">
-      <StackPanel Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="8">
+    <Grid RowDefinitions="Auto,*" ColumnDefinitions="*,360" Margin="10,8,10,10" ColumnSpacing="8" RowSpacing="8">
+      <!-- One header row: identity, the document menu, what is open, and appearance. The standalone
+           menu bar is gone; its commands live behind the File trigger beside the title. -->
+      <Grid Grid.ColumnSpan="2" ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto" ColumnSpacing="8">
         <TextBlock Classes="app-title" Text="KeyboardStudio" />
-        <TextBlock Classes="muted" Text="{Binding DocumentStatus}" FontSize="12" />
-        <Border Classes="badge warning" IsVisible="{Binding IsDirty}">
+
+        <Button Grid.Column="1"
+                Classes="quiet icon"
+                AutomationProperties.Name="File"
+                ToolTip.Tip="File menu">
+          <PathIcon Data="{StaticResource FileIconGeometry}" Width="15" Height="15" />
+          <Button.Flyout>
+            <MenuFlyout Placement="BottomEdgeAlignedLeft">
+              <MenuItem Header="_New" Command="{Binding NewCommand}" InputGesture="Ctrl+N" />
+              <MenuItem Header="_Open…" Command="{Binding OpenCommand}" InputGesture="Ctrl+O" />
+              <Separator />
+              <MenuItem Header="_Import layout…" Command="{Binding ImportLayoutCommand}" />
+              <MenuItem Header="Import _from file…" Command="{Binding ImportFromFileCommand}" />
+              <Separator />
+              <MenuItem Header="_Save" Command="{Binding SaveCommand}" InputGesture="Ctrl+S" />
+              <MenuItem Header="Save _As…" Command="{Binding SaveAsCommand}" InputGesture="Ctrl+Shift+S" />
+            </MenuFlyout>
+          </Button.Flyout>
+        </Button>
+
+        <!-- The label stays short; the whole path is one hover away rather than the width of the
+             header. -->
+        <TextBlock Grid.Column="2"
+                   Classes="muted"
+                   Text="{Binding DocumentStatus}"
+                   TextTrimming="CharacterEllipsis"
+                   MaxWidth="320"
+                   ToolTip.Tip="{Binding DocumentPath}" />
+
+        <Border Grid.Column="3" Classes="badge warning" IsVisible="{Binding IsDirty}">
           <TextBlock Text="Unsaved changes" />
         </Border>
-        <TextBlock Classes="muted"
+
+        <TextBlock Grid.Column="4"
+                   Classes="muted"
                    Text="{Binding ImportStatus}"
                    VerticalAlignment="Center"
                    TextTrimming="CharacterEllipsis"
-                   FontSize="12"
                    IsVisible="{Binding HasImportStatus}" />
-      </StackPanel>
+
+        <Button Grid.Column="5"
+                Classes="quiet icon"
+                AutomationProperties.Name="Appearance"
+                ToolTip.Tip="Appearance">
+          <PathIcon Data="{StaticResource AppearanceIconGeometry}" Width="15" Height="15" />
+          <Button.Flyout>
+            <Flyout Placement="BottomEdgeAlignedRight">
+              <StackPanel Spacing="6" MinWidth="200">
+                <TextBlock Classes="section-title" Text="Appearance" />
+                <ItemsControl ItemsSource="{Binding Appearance.Options}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <RadioButton GroupName="ApplicationTheme"
+                                   IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                   AutomationProperties.Name="{Binding Name}">
+                        <StackPanel Spacing="1">
+                          <TextBlock Text="{Binding Name}" />
+                          <TextBlock Classes="muted" Text="{Binding Description}" />
+                        </StackPanel>
+                      </RadioButton>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Classes="warning"
+                           Text="{Binding Appearance.Warning}"
+                           TextWrapping="Wrap"
+                           MaxWidth="240"
+                           IsVisible="{Binding Appearance.HasWarning}" />
+              </StackPanel>
+            </Flyout>
+          </Button.Flyout>
+        </Button>
+      </Grid>
 
       <Grid Grid.Row="1" Grid.Column="0" RowDefinitions="Auto,*" RowSpacing="8">
         <Border Classes="card" VerticalAlignment="Top">

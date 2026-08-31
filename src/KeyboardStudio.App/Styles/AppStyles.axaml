@@ -223,6 +223,14 @@
     <Setter Property="Theme" Value="{StaticResource AppButtonTheme}" />
   </Style>
 
+  <!-- Icon triggers are square and sized for a pointer, not for their glyph. -->
+  <Style Selector="Button.icon">
+    <Setter Property="Padding" Value="6" />
+    <Setter Property="MinWidth" Value="32" />
+    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="CornerRadius" Value="6" />
+  </Style>
+
   <Style Selector="TextBox">
     <Setter Property="Background" Value="{DynamicResource InputSurfaceBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
@@ -271,7 +279,7 @@
     <Setter Property="Foreground" Value="{DynamicResource MenuForegroundBrush}" />
   </Style>
 
-  <Style Selector="MenuFlyoutPresenter, ContextMenu">
+  <Style Selector="FlyoutPresenter, MenuFlyoutPresenter, ContextMenu">
     <Setter Property="Background" Value="{DynamicResource MenuSurfaceBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource MenuBorderBrush}" />
     <Setter Property="BorderThickness" Value="1" />

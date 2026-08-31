@@ -43,6 +43,19 @@ public sealed class MainWindowViewModel : ObservableObject
     }
 
     public MainWindowViewModel(
+        IProjectInteractionService interactionService,
+        AppearanceViewModel appearance)
+        : this(
+            new KeyboardTemplateProvider(),
+            interactionService,
+            CreateDefaultValidator(),
+            new EmbeddedSeedProjectSource(),
+            new EnvironmentBuildTargetVisibilityPolicy(),
+            appearance: appearance)
+    {
+    }
+
+    public MainWindowViewModel(
         IKeyboardTemplateProvider templateProvider,
         IProjectInteractionService interactionService)
         : this(templateProvider, interactionService, CreateDefaultValidator())
@@ -79,7 +92,8 @@ public sealed class MainWindowViewModel : ObservableObject
         IBuildTargetVisibilityPolicy buildTargetVisibility,
         ILayoutImportCatalog? importCatalog = null,
         IHostLayoutProbe? hostLayoutProbe = null,
-        ILinuxUserVariantWorkflowService? linuxUserVariantWorkflow = null)
+        ILinuxUserVariantWorkflowService? linuxUserVariantWorkflow = null,
+        AppearanceViewModel? appearance = null)
     {
         ArgumentNullException.ThrowIfNull(templateProvider);
         ArgumentNullException.ThrowIfNull(interactionService);
@@ -127,6 +141,10 @@ public sealed class MainWindowViewModel : ObservableObject
         SaveAsCommand = new AsyncRelayCommand(SaveAsDocumentAsync);
         ImportLayoutCommand = new AsyncRelayCommand(ImportLayoutAsync, () => CanImportLayout);
         ImportFromFileCommand = new AsyncRelayCommand(ImportFromFileAsync, () => CanImportLayout);
+
+        // Appearance is application state, not document state. It is reachable from this view model
+        // because the header presents it, and it holds no reference back to the document.
+        Appearance = appearance ?? new AppearanceViewModel();
     }
 
     public IReadOnlyList<KeyboardTemplateDescriptor> Templates { get; }
@@ -153,6 +171,7 @@ public sealed class MainWindowViewModel : ObservableObject
         private set => SetProperty(ref _editor, value);
     }
 
+    public AppearanceViewModel Appearance { get; }
     public BuildViewModel Build { get; }
     public LinuxUserVariantViewModel LinuxVariant { get; }
     public IAsyncRelayCommand NewCommand { get; }
@@ -196,7 +215,13 @@ public sealed class MainWindowViewModel : ObservableObject
 
     public string? CurrentFilePath => _documentService.CurrentFilePath;
 
-    public string DocumentStatus => CurrentFilePath ?? "Unsaved project";
+    /// <summary>The concise document label the header shows.</summary>
+    public string DocumentStatus => CurrentFilePath is { } path
+        ? Path.GetFileName(path)
+        : "Unsaved project";
+
+    /// <summary>The full path, which belongs in a tooltip rather than across the header.</summary>
+    public string DocumentPath => CurrentFilePath ?? "This project has not been saved yet.";
 
     public string WindowTitle => $"{Project.Metadata.Name}{(IsDirty ? " *" : string.Empty)} — KeyboardStudio";
 
@@ -627,6 +652,7 @@ public sealed class MainWindowViewModel : ObservableObject
         OnPropertyChanged(nameof(IsDirty));
         OnPropertyChanged(nameof(CurrentFilePath));
         OnPropertyChanged(nameof(DocumentStatus));
+        OnPropertyChanged(nameof(DocumentPath));
         OnPropertyChanged(nameof(WindowTitle));
     }
 
