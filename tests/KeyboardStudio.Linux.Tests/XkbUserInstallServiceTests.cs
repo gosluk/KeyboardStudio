@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using KeyboardStudio.Linux;
 using Xunit;
 
@@ -29,6 +30,61 @@ public sealed class XkbUserInstallServiceTests
         Assert.False(File.Exists(Path.Combine(scope.Paths.KeyboardStudioStateRoot, "journal.json")));
         Assert.False(Directory.Exists(Path.Combine(scope.Paths.KeyboardStudioStateRoot, "backups")));
         Assert.Single(result.Manifest!.Installations);
+    }
+
+    [Fact]
+    [Trait("Category", "Integration")]
+    public void InstallOrUpdateAsync_OnASingleThreadedUiContext_CompletesWithoutDeadlocking()
+    {
+        // A desktop host runs the workflow on one pumped thread, so every await inside the service
+        // resumes there. Blocking that thread for work whose own continuation is queued behind the
+        // block hangs the application mid-transaction. The suite's default context is backed by the
+        // thread pool and cannot expose that, so the UI thread is modelled explicitly here.
+        using var scope = new TemporaryXdgScope();
+        var service = new XkbUserInstallService(new RecordingVerifier());
+        var metadata = Polish();
+        using var finished = new ManualResetEventSlim(false);
+        XkbUserInstallResult? result = null;
+        Exception? failure = null;
+
+        var pump = new PumpedSynchronizationContext();
+        var thread = new Thread(() =>
+        {
+            SynchronizationContext.SetSynchronizationContext(pump);
+            pump.Post(
+                async _ =>
+                {
+                    try
+                    {
+                        result = await service.InstallOrUpdateAsync(
+                            Bundle(metadata, "x"), metadata, scope.Paths, Capability(scope.Paths));
+                    }
+                    catch (Exception exception)
+                    {
+                        failure = exception;
+                    }
+                    finally
+                    {
+                        pump.Complete();
+                        finished.Set();
+                    }
+                },
+                null);
+            pump.Run();
+        })
+        {
+            IsBackground = true,
+            Name = "ui"
+        };
+        thread.Start();
+
+        Assert.True(
+            finished.Wait(TimeSpan.FromSeconds(30)),
+            "The installation deadlocked instead of completing on the pumped thread.");
+        Assert.Null(failure);
+        Assert.True(result!.Success);
+        Assert.True(File.Exists(Path.Combine(scope.Paths.UserXkbRoot, "symbols", "keyboardstudio")));
+        Assert.False(File.Exists(Path.Combine(scope.Paths.KeyboardStudioStateRoot, "journal.json")));
     }
 
     [Fact]
@@ -551,6 +607,24 @@ public sealed class XkbUserInstallServiceTests
                 Directory.Delete(Root, recursive: true);
             }
         }
+    }
+
+    /// <summary>Models a UI thread: continuations run only while the owning thread pumps them.</summary>
+    private sealed class PumpedSynchronizationContext : SynchronizationContext
+    {
+        private readonly BlockingCollection<(SendOrPostCallback Callback, object? State)> _queue = [];
+
+        public override void Post(SendOrPostCallback d, object? state) => _queue.Add((d, state));
+
+        public void Run()
+        {
+            foreach (var (callback, state) in _queue.GetConsumingEnumerable())
+            {
+                callback(state);
+            }
+        }
+
+        public void Complete() => _queue.CompleteAdding();
     }
 
     private sealed class RecordingVerifier : IXkbUserBundleVerifier

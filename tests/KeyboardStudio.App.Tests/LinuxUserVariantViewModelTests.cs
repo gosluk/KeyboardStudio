@@ -153,6 +153,68 @@ public sealed class LinuxUserVariantViewModelTests
 
     [Fact]
     [Trait("Category", "Unit")]
+    public async Task EditingTheProject_KeepsTheHostsLiveActionsReachable()
+    {
+        var project = Project();
+        var workflow = new FakeLinuxUserVariantWorkflowService()
+            .AddInspection(Preparation(LinuxUserVariantStatus.Installed));
+        var viewModel = Create(project, Derivation(project), workflow);
+        await viewModel.RefreshAsync();
+
+        viewModel.NotifyProjectChanged();
+
+        Assert.Equal(LinuxUserVariantStatus.Installed, viewModel.Status);
+        Assert.True(viewModel.UpdateCommand.CanExecute(null));
+        Assert.True(viewModel.VerifyInstalledCommand.CanExecute(null));
+        Assert.True(viewModel.UninstallCommand.CanExecute(null));
+        Assert.False(viewModel.InstallCommand.CanExecute(null));
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task UpdateAfterAnEdit_RebuildsThePlanBeforeTouchingLiveFiles()
+    {
+        var project = Project();
+        var workflow = new FakeLinuxUserVariantWorkflowService()
+            .AddInspection(Preparation(LinuxUserVariantStatus.Installed))
+            .AddInspection(Preparation(LinuxUserVariantStatus.UpdateAvailable))
+            .AddInspection(Preparation(LinuxUserVariantStatus.Installed));
+        var interaction = new FakeLinuxUserVariantInteractionService();
+        var viewModel = Create(project, Derivation(project), workflow, interaction);
+        await viewModel.RefreshAsync();
+        viewModel.NotifyProjectChanged();
+
+        await viewModel.UpdateCommand.ExecuteAsync(null);
+
+        Assert.Equal("Update", interaction.LastAction);
+        Assert.Equal(1, workflow.InstallOrUpdateCount);
+        Assert.Equal(3, workflow.InspectCount);
+        Assert.Equal(LinuxUserVariantStatus.Installed, viewModel.Status);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task LiveAction_WhoseRebuiltPlanNoLongerApplies_ExplainsAndChangesNothing()
+    {
+        var project = Project();
+        var workflow = new FakeLinuxUserVariantWorkflowService()
+            .AddInspection(Preparation(LinuxUserVariantStatus.Installed))
+            .AddInspection(Preparation(LinuxUserVariantStatus.ExternallyModified));
+        var interaction = new FakeLinuxUserVariantInteractionService();
+        var viewModel = Create(project, Derivation(project), workflow, interaction);
+        await viewModel.RefreshAsync();
+        viewModel.NotifyProjectChanged();
+
+        await viewModel.UpdateCommand.ExecuteAsync(null);
+
+        Assert.Equal(0, workflow.InstallOrUpdateCount);
+        Assert.Null(interaction.LastAction);
+        Assert.Contains("Update no longer applies", viewModel.StatusText, StringComparison.Ordinal);
+        Assert.Contains("modified externally", viewModel.StatusText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
     public async Task Cancel_DuringLiveOperation_ReportsRollbackSafeCancellation()
     {
         var project = Project();

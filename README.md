@@ -22,11 +22,77 @@ is complete, referenced, and covered by CI, but its target is hidden from the Bu
 application with `KEYBOARDSTUDIO_TARGETS=all` to select it again. Hiding is presentation-only — a
 document authored with a Windows profile keeps it through save and reload either way.
 
+## Requirements
+
+Two separate sets that are easy to confuse. One is what a machine needs to **compile**
+KeyboardStudio and the artifacts it emits; the other is what an operating system must already
+provide for the built application to **function**. A host can satisfy either one without the other.
+
+### Tools required to compile
+
+| To build | Requirement |
+|---|---|
+| The application, the libraries, and every test | A .NET 10 SDK, version 10.0.100 or a later 10.0 feature band, as pinned by [`global.json`](global.json). Every project targets `net10.0`. |
+| A published, self-contained application | The `win-x64` or `linux-x64` runtime identifier. See [docs/PACKAGING.md](docs/PACKAGING.md). |
+| A native Windows keyboard-layout DLL | Windows on x64, with the MSVC x64 toolchain (`cl.exe`, `link.exe` from `bin/Hostx64/x64`) and a Windows 10/11 SDK supplying `rc.exe`, the `ucrt`/`shared`/`um` headers, and the matching x64 libraries. Discovered through `VCToolsInstallDir`, `VSINSTALLDIR`, `vswhere.exe`, `WindowsSdkDir`, and `WindowsSDKVersion`. See [Windows build prerequisites](docs/WINDOWS-BUILD.md#prerequisites). |
+| A Linux XKB symbols component | Nothing beyond the SDK. `xkbcli compile-keymap` is optional locally, where it adds external compilation verification on top of the managed structural checks; Linux CI always requires it. |
+
+Editing, persistence, validation, and Linux XKB generation need no native development toolchain.
+
+### OS requirements to function
+
+| To use | Requirement |
+|---|---|
+| The editor itself | An x64 Windows or Linux desktop. |
+| Startup on this host's current layout (Linux) | A readable canonical system XKB data root, normally `/usr/share/X11/xkb`. Without it the populated `us-basic` seed opens instead. |
+| Generating and exporting an XKB bundle | Nothing further. This stays available on every host below. |
+| Managed per-user installation — **Install**, **Update**, **Verify installed**, **Uninstall** | Every item in the list below. |
+
+Managed per-user installation is a libxkbcommon user-configuration feature rather than a universal
+Linux keyboard path, so all of the following must hold at once. Miss any one and the Linux
+user-variant panel keeps **Generate bundle** enabled and disables the other four:
+
+- **A Wayland session** (`XDG_SESSION_TYPE=wayland`) whose compositor compiles keymaps with
+  libxkbcommon. An X11 session is export-only: the X server uses hard-coded XKB paths and does not
+  treat the XDG directory as a replacement root.
+- **libxkbcommon 1.11.0 or newer**, required for the `%S` system-section include that inherits the
+  base layout. 1.12.2 or newer is the recommended baseline, because it also carries the
+  canonical-root fallback some xkeyboard-config 2.45+ installations need.
+- **`xkbcli` on `PATH`**, used to compile the keymap before and after writing anything. The shared
+  library alone is not enough; it lives in a separate package on most distributions:
+
+  | Distribution family | Install command |
+  |---|---|
+  | Fedora, RHEL | `sudo dnf install libxkbcommon-utils` |
+  | Debian, Ubuntu, Linux Mint, Pop!_OS, KDE neon | `sudo apt install libxkbcommon-tools` |
+  | Arch Linux, Manjaro | `sudo pacman -S libxkbcommon` (ships `xkbcli` in the library package) |
+  | openSUSE | `zypper search --provides xkbcli`, then install what it names |
+
+- **A canonical system XKB root** (`/usr/share/X11/xkb`) to inherit the imported base layout from.
+- **Absolute, unsuspicious XDG paths**: `XDG_CONFIG_HOME` and `XDG_STATE_HOME`, or an absolute
+  `HOME` for the `~/.config` and `~/.local/state` fallbacks. Installation writes only beneath
+  `$XDG_CONFIG_HOME/xkb` and `$XDG_STATE_HOME/keyboardstudio/xkb`; a relative value disables it. An
+  absent `~/.config/xkb` is normal, and the first approved installation creates it.
+- **A desktop settings tool that reads libxkbregistry**, if the variant is to appear in the layout
+  chooser on its own. This one is not a hard requirement: without it installation is still offered,
+  with a warning, and KeyboardStudio reports registry discovery separately from keymap compilation.
+
+The panel decides from a live probe of the running host, never from a distribution name, and shows
+what it found in its capability and diagnostics lines. To check the same facts by hand:
+
+```bash
+printf 'session=%s wayland=%s\n' "$XDG_SESSION_TYPE" "$WAYLAND_DISPLAY"
+command -v xkbcli && xkbcli --version
+```
+
+Nothing here is needed to edit, validate, save, or export. Installation is always explicitly
+confirmed, never automatic, and never activates a layout. The full capability model, the reduced
+modes, per-distribution expectations, and troubleshooting are in
+[docs/LINUX-USER-XKB-VARIANTS.md](docs/LINUX-USER-XKB-VARIANTS.md#4-runtime-requirements-and-compatibility).
+
 ## Quick start
 
-KeyboardStudio requires a compatible .NET 10 SDK as configured in [`global.json`](global.json).
-The configuration accepts installed .NET 10 feature bands rather than requiring one exact SDK patch.
-From the repository root:
+From the repository root, with a .NET 10 SDK installed:
 
 ```bash
 dotnet restore KeyboardStudio.slnx
@@ -37,11 +103,6 @@ On a Bash-capable host, `./scripts/run-app.sh` performs restore, compilation, an
 command using a compatible installed .NET 10 SDK. Self-contained Windows and Linux publishing is
 documented in
 [docs/PACKAGING.md](docs/PACKAGING.md).
-
-The editor runs on x64 Windows and Linux desktops. Editing, persistence, validation, and Linux XKB
-generation need no native development toolchain. A Windows DLL build additionally requires an x64
-MSVC toolchain and Windows 10/11 SDK. Installing `xkbcli` is optional for local Linux generation and
-adds external compilation verification; Linux CI always performs that verification.
 
 A fresh window opens on something editable and then settles onto the layout this host is already
 configured to type with, where that can be read — on other hosts it keeps the populated `us-basic`

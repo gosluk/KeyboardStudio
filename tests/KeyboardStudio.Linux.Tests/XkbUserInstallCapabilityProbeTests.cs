@@ -105,6 +105,11 @@ public sealed class XkbUserInstallCapabilityProbeTests
         Assert.Null(result.XkbCliPath);
         Assert.Empty(runner.Requests);
         Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Code == "KSC003");
+
+        // Naming the package turns the one blocker a user can act on into an instruction.
+        var missingCli = result.Diagnostics.Single(diagnostic => diagnostic.Code == "KSC003");
+        Assert.Contains("libxkbcommon-utils", missingCli.Message, StringComparison.Ordinal);
+        Assert.Contains("libxkbcommon-tools", missingCli.Message, StringComparison.Ordinal);
     }
 
     [Fact]

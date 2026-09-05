@@ -374,7 +374,7 @@ public sealed class XkbUserInstallService : IXkbUserInstallService
             foreach (var operation in plan.Operations)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                ApplyLiveOperation(operation, paths, transactionId);
+                await ApplyLiveOperationAsync(operation, paths, transactionId);
                 _observer.OnStep(
                     XkbInstallTransactionStep.DestinationApplied,
                     transactionId,
@@ -748,7 +748,10 @@ public sealed class XkbUserInstallService : IXkbUserInstallService
         }
     }
 
-    private static void ApplyLiveOperation(
+    // Awaited rather than blocked on: a desktop caller runs this on its single pumped UI thread, and
+    // waiting there for a write whose own continuation is queued back to that same thread deadlocks
+    // the application mid-transaction, with the journal and a temporary file left behind.
+    private static async Task ApplyLiveOperationAsync(
         XkbInstallOperation operation,
         XdgDirectoryPaths paths,
         string transactionId)
@@ -776,11 +779,13 @@ public sealed class XkbUserInstallService : IXkbUserInstallService
             return;
         }
 
-        AtomicWriteTextAsync(
+        // The token stays out of the individual write: the loop above is the cancellation point, so a
+        // started file either lands completely or leaves the destination untouched.
+        await AtomicWriteTextAsync(
             operation.DestinationPath,
             operation.Content!,
             transactionId,
-            CancellationToken.None).GetAwaiter().GetResult();
+            CancellationToken.None);
     }
 
     private static void ValidateAppliedOperations(IReadOnlyList<XkbInstallOperation> operations)

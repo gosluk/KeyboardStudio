@@ -15,6 +15,7 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
     private readonly ILinuxUserVariantWorkflowService _workflow;
     private readonly ILinuxUserVariantInteractionService _interaction;
     private LinuxUserVariantPreparation? _preparation;
+    private LinuxUserVariantPreparation? _lastInspection;
     private string _variantId = string.Empty;
     private string _displayName = string.Empty;
     private string _statusText = "Import a system layout to enable user variants.";
@@ -95,8 +96,11 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
         }
     }
 
+    // The last inspection outlives the plan an edit invalidates: neither what this host can do nor
+    // what is installed changes because a key was remapped, so reading the dropped plan here would
+    // report "Unavailable" for a variant that is installed and fine. StatusText carries the staleness.
     public LinuxUserVariantStatus Status =>
-        _preparation?.Status ?? LinuxUserVariantStatus.Unavailable;
+        _lastInspection?.Status ?? LinuxUserVariantStatus.Unavailable;
 
     public bool CanEditVariantId => !_installedIdentityLocked;
 
@@ -181,6 +185,7 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
         _hasUserEditedMetadata = false;
         _installedIdentityLocked = false;
         _preparation = null;
+        _lastInspection = null;
         GeneratedBundlePath = null;
         var derivation = _derivationProvider();
         var project = _projectProvider();
@@ -289,25 +294,40 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
     }
 
     private Task InstallAsync(CancellationToken cancellationToken) =>
-        RunLiveOperationAsync("Install", _workflow.InstallOrUpdateAsync, cancellationToken);
+        RunLiveOperationAsync(
+            "Install", AppliesToInstall, _workflow.InstallOrUpdateAsync, cancellationToken);
 
     private Task UpdateAsync(CancellationToken cancellationToken) =>
-        RunLiveOperationAsync("Update", _workflow.InstallOrUpdateAsync, cancellationToken);
+        RunLiveOperationAsync(
+            "Update", AppliesToUpdate, _workflow.InstallOrUpdateAsync, cancellationToken);
 
     private Task VerifyInstalledAsync(CancellationToken cancellationToken) =>
-        RunLiveOperationAsync("Verify installed", _workflow.VerifyInstalledAsync, cancellationToken);
+        RunLiveOperationAsync(
+            "Verify installed", AppliesToInstalled, _workflow.VerifyInstalledAsync, cancellationToken);
 
     private Task UninstallAsync(CancellationToken cancellationToken) =>
-        RunLiveOperationAsync("Uninstall", _workflow.UninstallAsync, cancellationToken);
+        RunLiveOperationAsync(
+            "Uninstall", AppliesToInstalled, _workflow.UninstallAsync, cancellationToken);
 
     private async Task RunLiveOperationAsync(
         string action,
+        Func<LinuxUserVariantPreparation, bool, bool> applies,
         Func<LinuxUserVariantPreparation, CancellationToken, Task<LinuxUserVariantOperationResult>> operation,
         CancellationToken cancellationToken)
     {
+        // The button may have been enabled from an inspection older than the current mappings, so the
+        // plan is rebuilt first and the action has to still apply to the rebuilt one - judged without
+        // the leniency enablement allows - before a single live file is touched.
         var preparation = await PrepareForActionAsync(cancellationToken);
-        if (preparation is not { CanManage: true, Paths: not null })
+        if (preparation is null)
         {
+            return;
+        }
+
+        if (preparation is not { CanManage: true, Paths: not null, Metadata: not null } ||
+            !applies(preparation, false))
+        {
+            StatusText = $"{action} no longer applies. {DescribeStatus(preparation.Status)}";
             return;
         }
 
@@ -391,6 +411,7 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
     private void ApplyPreparation(LinuxUserVariantPreparation preparation)
     {
         _preparation = preparation;
+        _lastInspection = preparation;
         _installedIdentityLocked = preparation.IsInstalled;
         if (preparation.Metadata is not null)
         {
@@ -428,17 +449,37 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
         !string.IsNullOrWhiteSpace(DisplayName) &&
         (_preparation is null || _preparation.CanGenerate);
 
-    private bool CanInstall() => !IsBusy &&
-        _preparation is { CanManage: true, Status: LinuxUserVariantStatus.NotInstalled };
+    private bool CanInstall() => CanRunLive(AppliesToInstall);
 
-    private bool CanUpdate() => !IsBusy &&
-        _preparation is { CanManage: true, Status: LinuxUserVariantStatus.UpdateAvailable };
+    private bool CanUpdate() => CanRunLive(AppliesToUpdate);
 
-    private bool CanVerifyInstalled() => !IsBusy &&
-        _preparation is { CanManage: true, IsInstalled: true };
+    private bool CanVerifyInstalled() => CanRunLive(AppliesToInstalled);
 
-    private bool CanUninstall() => !IsBusy &&
-        _preparation is { CanManage: true, IsInstalled: true };
+    private bool CanUninstall() => CanRunLive(AppliesToInstalled);
+
+    /// <summary>
+    /// Decides a live command from the last inspection, so an edit that drops the plan leaves the
+    /// actions this host is capable of reachable instead of dead until someone presses Refresh.
+    /// A dropped plan is passed on as staleness, which only widens what an action offers to do; the
+    /// action itself re-inspects and re-checks before writing anything.
+    /// </summary>
+    private bool CanRunLive(Func<LinuxUserVariantPreparation, bool, bool> applies) =>
+        !IsBusy && IsVisible &&
+        _lastInspection is { CanManage: true } inspection &&
+        applies(inspection, _preparation is null);
+
+    private static bool AppliesToInstall(LinuxUserVariantPreparation preparation, bool planIsStale) =>
+        preparation.Status is LinuxUserVariantStatus.NotInstalled;
+
+    // Editing an installed variant is what makes an update available, so a stale plan offers the
+    // update that the rebuild is expected to confirm. Externally modified and broken installations
+    // stay out of reach either way; they are never silently overwritten.
+    private static bool AppliesToUpdate(LinuxUserVariantPreparation preparation, bool planIsStale) =>
+        preparation.Status is LinuxUserVariantStatus.UpdateAvailable ||
+        (planIsStale && preparation.Status is LinuxUserVariantStatus.Installed);
+
+    private static bool AppliesToInstalled(LinuxUserVariantPreparation preparation, bool planIsStale) =>
+        preparation.IsInstalled;
 
     private void NotifyCommandStates()
     {

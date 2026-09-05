@@ -59,7 +59,10 @@ public sealed partial class XkbUserInstallCapabilityProbe : IXkbUserInstallCapab
         {
             diagnostics.Add(new XkbDiagnostic(
                 "KSC003",
-                "xkbcli is not available; the bundle can be exported but managed installation cannot be verified."));
+                "xkbcli was not found on PATH, so the bundle can be exported but installation cannot be " +
+                "verified or managed. It ships in the libxkbcommon command-line tools, packaged as " +
+                "libxkbcommon-utils on Fedora and RHEL, libxkbcommon-tools on Debian and Ubuntu, and " +
+                "inside libxkbcommon itself on Arch."));
         }
         else
         {
