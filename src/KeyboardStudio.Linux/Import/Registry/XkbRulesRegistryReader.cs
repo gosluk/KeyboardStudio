@@ -83,16 +83,18 @@ public sealed class XkbRulesRegistryReader : IXkbLayoutRegistryReader
 
             var languages = Codes(configItem, "languageList", "iso639Id");
             var countries = Codes(configItem, "countryList", "iso3166Id");
+            var description = Text(configItem?.Element("description"));
 
             // The layout itself is importable, not just its variants: it resolves to the symbols
             // file's `default` section.
             entries.Add(new XkbRegistryEntry(
                 layoutId,
                 VariantId: null,
-                DisplayName: Text(configItem?.Element("description")) ?? layoutId,
+                DisplayName: description ?? layoutId,
                 ShortDescription: Text(configItem?.Element("shortDescription")),
                 languages,
-                countries));
+                countries,
+                HasExplicitDescription: description is not null));
 
             var variants = layout.Element("variantList")?.Elements("variant") ?? [];
             foreach (var variant in variants)
@@ -109,14 +111,16 @@ public sealed class XkbRulesRegistryReader : IXkbLayoutRegistryReader
                 // variants, which say nothing.
                 var variantLanguages = Codes(variantConfig, "languageList", "iso639Id");
                 var variantCountries = Codes(variantConfig, "countryList", "iso3166Id");
+                var variantDescription = Text(variantConfig?.Element("description"));
 
                 entries.Add(new XkbRegistryEntry(
                     layoutId,
                     variantId,
-                    DisplayName: Text(variantConfig?.Element("description")) ?? $"{layoutId} ({variantId})",
+                    DisplayName: variantDescription ?? $"{layoutId} ({variantId})",
                     ShortDescription: Text(variantConfig?.Element("shortDescription")),
                     variantLanguages.Count > 0 ? variantLanguages : languages,
-                    variantCountries.Count > 0 ? variantCountries : countries));
+                    variantCountries.Count > 0 ? variantCountries : countries,
+                    HasExplicitDescription: variantDescription is not null));
             }
         }
 

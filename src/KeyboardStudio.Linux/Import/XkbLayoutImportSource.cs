@@ -88,43 +88,38 @@ public sealed class XkbLayoutImportSource : ILayoutImportSource
 
         var descriptors = new List<ImportableLayoutDescriptor>(symbolsByLayout.Count);
         var described = new HashSet<string>(StringComparer.Ordinal);
-        var listed = new HashSet<(string LayoutId, string? VariantId)>();
+        var registryEntries = ReadMergedRegistry(roots, cancellationToken);
 
-        foreach (var root in roots)
+        foreach (var entry in registryEntries)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            foreach (var entry in ReadRegistry(root))
+            // The registry describes layouts no root implements — `custom` is one the
+            // distribution ships for the user to write themselves. Listing an entry that
+            // cannot be imported only offers the user a dead end.
+            if (!symbolsByLayout.TryGetValue(entry.LayoutId, out var symbols))
             {
-                // The registry describes layouts no root implements — `custom` is one the
-                // distribution ships for the user to write themselves. Listing an entry that
-                // cannot be imported only offers the user a dead end.
-                if (!symbolsByLayout.TryGetValue(entry.LayoutId, out var symbols) ||
-                    !listed.Add((entry.LayoutId, entry.VariantId)))
-                {
-                    continue;
-                }
-
-                described.Add(entry.LayoutId);
-
-                descriptors.Add(new ImportableLayoutDescriptor(
-                    Id,
-                    entry.LayoutId,
-                    entry.VariantId,
-                    entry.DisplayName,
-                    entry.ShortDescription,
-                    entry.Languages,
-                    entry.Countries,
-                    symbols.Origin,
-                    symbols.Path));
+                continue;
             }
+
+            described.Add(entry.LayoutId);
+
+            descriptors.Add(new ImportableLayoutDescriptor(
+                Id,
+                entry.LayoutId,
+                entry.VariantId,
+                entry.DisplayName,
+                entry.ShortDescription,
+                entry.Languages,
+                entry.Countries,
+                symbols.Origin,
+                symbols.Path));
         }
 
         foreach (var (layoutId, symbols) in symbolsByLayout)
         {
             if (described.Contains(layoutId) ||
-                !NamesAKeyboardGroup(symbols.Path) ||
-                !listed.Add((layoutId, null)))
+                !NamesAKeyboardGroup(symbols.Path))
             {
                 continue;
             }
@@ -259,22 +254,74 @@ public sealed class XkbLayoutImportSource : ILayoutImportSource
         ImportableLayoutReference reference,
         CancellationToken cancellationToken)
     {
-        foreach (var root in _dataRootLocator.Locate())
+        return ReadMergedRegistry(_dataRootLocator.Locate(), cancellationToken)
+            .FirstOrDefault(entry =>
+                string.Equals(entry.LayoutId, reference.LayoutId, StringComparison.Ordinal) &&
+                string.Equals(entry.VariantId, reference.VariantId, StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// Merges registry overlays in root-precedence order. A user registry that adds a variant to
+    /// an existing layout normally repeats only the layout name; its missing presentation metadata
+    /// comes from the system registry without surrendering the user entry's precedence.
+    /// </summary>
+    private IReadOnlyList<XkbRegistryEntry> ReadMergedRegistry(
+        IReadOnlyList<XkbDataRoot> roots,
+        CancellationToken cancellationToken)
+    {
+        var entries = new Dictionary<(string LayoutId, string? VariantId), XkbRegistryEntry>();
+        var order = new List<(string LayoutId, string? VariantId)>();
+
+        foreach (var root in roots)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             foreach (var entry in ReadRegistry(root))
             {
-                if (string.Equals(entry.LayoutId, reference.LayoutId, StringComparison.Ordinal) &&
-                    string.Equals(entry.VariantId, reference.VariantId, StringComparison.Ordinal))
+                var key = (entry.LayoutId, entry.VariantId);
+                if (entries.TryGetValue(key, out var primary))
                 {
-                    return entry;
+                    entries[key] = FillMissingMetadata(primary, entry);
+                }
+                else
+                {
+                    entries.Add(key, entry);
+                    order.Add(key);
                 }
             }
         }
 
-        return null;
+        // A custom variant in a minimal user overlay inherited no language or country within that
+        // file. Do the same inheritance again after its base entry has been enriched from the
+        // lower-precedence system registry.
+        foreach (var key in order)
+        {
+            var entry = entries[key];
+            if (entry.VariantId is not null &&
+                entries.TryGetValue((entry.LayoutId, null), out var layout))
+            {
+                entries[key] = entry with
+                {
+                    Languages = entry.Languages.Count > 0 ? entry.Languages : layout.Languages,
+                    Countries = entry.Countries.Count > 0 ? entry.Countries : layout.Countries
+                };
+            }
+        }
+
+        return [.. order.Select(key => entries[key])];
     }
+
+    private static XkbRegistryEntry FillMissingMetadata(
+        XkbRegistryEntry primary,
+        XkbRegistryEntry fallback) =>
+        primary with
+        {
+            DisplayName = primary.HasExplicitDescription ? primary.DisplayName : fallback.DisplayName,
+            HasExplicitDescription = primary.HasExplicitDescription || fallback.HasExplicitDescription,
+            ShortDescription = primary.ShortDescription ?? fallback.ShortDescription,
+            Languages = primary.Languages.Count > 0 ? primary.Languages : fallback.Languages,
+            Countries = primary.Countries.Count > 0 ? primary.Countries : fallback.Countries
+        };
 
     /// <summary>
     /// Reads one root's registry, treating a malformed one as absent. A distribution shipping a
