@@ -90,33 +90,82 @@
           Classes.error="{Binding HasError, ElementName=Root}"
           Command="{Binding SelectCommand, ElementName=Root}">
     <ToolTip.Tip>
-      <Grid ColumnDefinitions="Auto,Auto" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="10">
-        <TextBlock Grid.Row="1" Text="Default" Foreground="{DynamicResource KeyHintBrush}" />
-        <TextBlock Grid.Row="1"
-                   Grid.Column="1"
-                   Text="{Binding DefaultAssignment, ElementName=Root}"
-                   TextWrapping="NoWrap"
-                   TextTrimming="None" />
+      <Grid Width="300"
+            ColumnDefinitions="*,*"
+            RowDefinitions="*,*"
+            ColumnSpacing="6"
+            RowSpacing="6">
+        <Border Classes="layer-slot"
+                Classes.active="{Binding IsShiftActive, ElementName=Root}"
+                Background="{DynamicResource KeyFaceBrush}"
+                BorderBrush="{DynamicResource KeyBorderBrush}"
+                BorderThickness="1"
+                Padding="8">
+          <StackPanel Spacing="4">
+            <TextBlock Text="Shift"
+                       Foreground="{DynamicResource KeyHintBrush}"
+                       FontSize="11" />
+            <TextBlock Text="{Binding ShiftAssignment, ElementName=Root}"
+                       Foreground="{DynamicResource KeyLegendBrush}"
+                       FontSize="14"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
 
-        <TextBlock Text="Shift" Foreground="{DynamicResource KeyHintBrush}" />
-        <TextBlock Grid.Column="1"
-                   Text="{Binding ShiftAssignment, ElementName=Root}"
-                   TextWrapping="NoWrap"
-                   TextTrimming="None" />
+        <Border Grid.Column="1"
+                Classes="layer-slot"
+                Classes.active="{Binding IsShiftAltGrActive, ElementName=Root}"
+                Background="{DynamicResource KeyFaceBrush}"
+                BorderBrush="{DynamicResource KeyBorderBrush}"
+                BorderThickness="1"
+                Padding="8">
+          <StackPanel Spacing="4">
+            <TextBlock Text="Shift + AltGr"
+                       Foreground="{DynamicResource KeyHintBrush}"
+                       FontSize="11" />
+            <TextBlock Text="{Binding ShiftAltGrAssignment, ElementName=Root}"
+                       Foreground="{DynamicResource KeyLegendBrush}"
+                       FontSize="14"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
 
-        <TextBlock Grid.Row="3" Text="AltGr" Foreground="{DynamicResource KeyHintBrush}" />
-        <TextBlock Grid.Row="3"
-                   Grid.Column="1"
-                   Text="{Binding AltGrAssignment, ElementName=Root}"
-                   TextWrapping="NoWrap"
-                   TextTrimming="None" />
+        <Border Grid.Row="1"
+                Classes="layer-slot"
+                Classes.active="{Binding IsDefaultActive, ElementName=Root}"
+                Background="{DynamicResource KeyFaceBrush}"
+                BorderBrush="{DynamicResource KeyBorderBrush}"
+                BorderThickness="1"
+                Padding="8">
+          <StackPanel Spacing="4">
+            <TextBlock Text="Default"
+                       Foreground="{DynamicResource KeyHintBrush}"
+                       FontSize="11" />
+            <TextBlock Text="{Binding DefaultAssignment, ElementName=Root}"
+                       Foreground="{DynamicResource KeyLegendBrush}"
+                       FontSize="14"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
 
-        <TextBlock Grid.Row="2" Text="Shift + AltGr" Foreground="{DynamicResource KeyHintBrush}" />
-        <TextBlock Grid.Row="2"
-                   Grid.Column="1"
-                   Text="{Binding ShiftAltGrAssignment, ElementName=Root}"
-                   TextWrapping="NoWrap"
-                   TextTrimming="None" />
+        <Border Grid.Row="1"
+                Grid.Column="1"
+                Classes="layer-slot"
+                Classes.active="{Binding IsAltGrActive, ElementName=Root}"
+                Background="{DynamicResource KeyFaceBrush}"
+                BorderBrush="{DynamicResource KeyBorderBrush}"
+                BorderThickness="1"
+                Padding="8">
+          <StackPanel Spacing="4">
+            <TextBlock Text="AltGr"
+                       Foreground="{DynamicResource KeyHintBrush}"
+                       FontSize="11" />
+            <TextBlock Text="{Binding AltGrAssignment, ElementName=Root}"
+                       Foreground="{DynamicResource KeyLegendBrush}"
+                       FontSize="14"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
       </Grid>
     </ToolTip.Tip>
     <Grid RowDefinitions="*,Auto">
