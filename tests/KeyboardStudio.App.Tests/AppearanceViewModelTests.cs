@@ -157,6 +157,22 @@ public sealed class AppearanceViewModelTests
 
     [Fact]
     [Trait("Category", "Unit")]
+    public async Task Summary_NamesTheActiveTheme_SoTheIconOnlyTriggerSaysWhatItIsSetTo()
+    {
+        var (viewModel, _, _) = Create();
+        var changed = new List<string?>();
+        viewModel.PropertyChanged += (_, args) => changed.Add(args.PropertyName);
+
+        Assert.Equal("Appearance: Gray", viewModel.Summary);
+
+        await viewModel.SelectAsync(ApplicationTheme.Black);
+
+        Assert.Equal("Appearance: Black", viewModel.Summary);
+        Assert.Contains(nameof(AppearanceViewModel.Summary), changed);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
     [Trait("Category", "ErrorPath")]
     public void Constructor_WhenACollaboratorIsMissing_Rejects()
     {

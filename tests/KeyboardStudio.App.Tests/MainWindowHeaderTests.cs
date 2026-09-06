@@ -154,7 +154,7 @@ public sealed class MainWindowHeaderTests
 
     [Fact]
     [Trait("Category", "Unit")]
-    public void TheAppearanceTriggerStillShowsItsGlyph()
+    public void TheAppearanceTriggerShowsItsGlyphAndNamesTheActiveTheme()
     {
         var trigger = HeaderChildren().Single(element =>
             (string?)element.Attribute("AutomationProperties.Name") == "Appearance");
@@ -162,6 +162,22 @@ public sealed class MainWindowHeaderTests
         Assert.Contains(
             trigger.Descendants(Avalonia + "PathIcon"),
             icon => (string?)icon.Attribute("Data") == "{StaticResource AppearanceIconGeometry}");
+        Assert.Equal("{Binding Appearance.Summary}", (string?)trigger.Attribute("ToolTip.Tip"));
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TheAppearanceGlyphIsAClosedRingRatherThanABareHalfDisc()
+    {
+        var geometry = (string)XDocument
+            .Parse(ApplicationXamlSource.Read("Styles.IconResources.axaml"))
+            .Root!
+            .Elements(Avalonia + "StreamGeometry")
+            .Single(element => (string?)element.Attribute(Xaml + "Key") == "AppearanceIconGeometry");
+
+        // Outer circle, inner circle, half-disc: the three even-odd subpaths that make the ring
+        // read as a divided circle instead of a blob. Two of them would be a solid half again.
+        Assert.Equal(3, geometry.Split('M', StringSplitOptions.RemoveEmptyEntries).Length);
     }
 
     [Fact]

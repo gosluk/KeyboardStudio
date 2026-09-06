@@ -47,6 +47,14 @@ public sealed class AppearanceViewModel : ObservableObject
 
     public ApplicationTheme SelectedTheme => _themeService.CurrentTheme;
 
+    /// <summary>
+    /// What the trigger says on hover. An icon-only control that opens a choice should say which
+    /// choice is in force, so the theme can be read without opening the menu to look.
+    /// </summary>
+    public string Summary => Options.FirstOrDefault(option => option.Theme == SelectedTheme) is { } active
+        ? $"Appearance: {active.Name}"
+        : "Appearance";
+
     /// <summary>True while a chosen theme is being written to the settings file.</summary>
     public bool IsBusy
     {
@@ -84,6 +92,7 @@ public sealed class AppearanceViewModel : ObservableObject
         _themeService.Apply(theme);
         SyncSelection();
         OnPropertyChanged(nameof(SelectedTheme));
+        OnPropertyChanged(nameof(Summary));
 
         IsBusy = true;
         try

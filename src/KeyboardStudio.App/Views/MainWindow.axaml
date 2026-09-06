@@ -109,8 +109,8 @@
                 Classes="quiet icon"
                 Margin="0,0,7,0"
                 AutomationProperties.Name="Appearance"
-                ToolTip.Tip="Appearance">
-          <PathIcon Data="{StaticResource AppearanceIconGeometry}" Width="15" Height="15" />
+                ToolTip.Tip="{Binding Appearance.Summary}">
+          <PathIcon Data="{StaticResource AppearanceIconGeometry}" Width="16" Height="16" />
           <Button.Flyout>
             <Flyout Placement="BottomEdgeAlignedRight">
               <StackPanel Spacing="6" MinWidth="200">

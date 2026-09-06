@@ -8,7 +8,14 @@
 -->
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-  <!-- A half-filled disc: the conventional mark for choosing light or dark, and readable at 16px
-       where a palette or brush is not. -->
-  <StreamGeometry x:Key="AppearanceIconGeometry">M12,3 A9,9 0 1 0 12,21 A9,9 0 1 0 12,3 Z M12,3 A9,9 0 0 1 12,21 Z</StreamGeometry>
+  <!--
+    The contrast mark: a ring whose right half is solid. Three subpaths under the even-odd rule —
+    the outer circle, the inner circle that hollows it into a 1.8-unit ring, and a half-disc that
+    fills the interior back in on one side only.
+
+    The ring is what makes it legible. A bare half-disc has no closed silhouette, so at trigger size
+    it reads as a blob rather than as a circle divided; the ring gives the eye the whole shape first
+    and the division second, which still holds at 14px.
+  -->
+  <StreamGeometry x:Key="AppearanceIconGeometry">M12,2.75 A9.25,9.25 0 1 1 12,21.25 A9.25,9.25 0 1 1 12,2.75 Z M12,4.55 A7.45,7.45 0 1 1 12,19.45 A7.45,7.45 0 1 1 12,4.55 Z M12,4.55 A7.45,7.45 0 0 1 12,19.45 Z</StreamGeometry>
 </ResourceDictionary>
