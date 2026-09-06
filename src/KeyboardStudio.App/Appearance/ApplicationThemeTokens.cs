@@ -113,7 +113,6 @@ public static class ApplicationThemeTokens
         // Keyboard
         "KeyboardBezelBrush",
         "KeyboardBezelBorderBrush",
-        "KeyboardInnerBorderBrush",
         "KeyboardBezelBoxShadow",
         "KeyBaseBrush",
         "KeyFaceBrush",

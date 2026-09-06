@@ -14,6 +14,7 @@ namespace KeyboardStudio.App.Tests;
 public sealed class ApplicationXamlHierarchyTests
 {
     private static readonly XNamespace Avalonia = "https://github.com/avaloniaui";
+    private static readonly XNamespace Controls = "using:KeyboardStudio.App.Controls";
 
     /// <summary>The actions allowed to present themselves as the one thing a surface is asking for.</summary>
     private static readonly string[] PrimaryActions =
@@ -131,10 +132,30 @@ public sealed class ApplicationXamlHierarchyTests
 
         // Exactly one card is allowed to sit above the rest, and it is the one holding the keyboard.
         Assert.Single(plain);
-        Assert.Contains(plain[0].Descendants(Avalonia + "Border"), border => Classes(border).Contains("bezel"));
+        Assert.Contains(plain[0].Descendants(Avalonia + "Viewbox"), _ => true);
+
+        // That card carries the whole surface. A bezel and an inner outline nested inside it drew
+        // three rounded rectangles where the design calls for one, and the two inner ones read as
+        // stray lines around an empty area rather than as depth under the keys.
+        Assert.Empty(plain[0].Descendants(Avalonia + "Border"));
         Assert.Equal(
             cards.Count - 1,
             cards.Count(card => Classes(card).Contains("subtle")));
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void EveryScrollerInTheWindowEndsInAFadeRatherThanACut()
+    {
+        var scrollers = MainWindow().Descendants(Avalonia + "ScrollViewer").ToList();
+
+        // Both of them: the inspector, which is taller than any window it is shown in, and the
+        // findings list, which is capped and so clips as soon as there is more than a screenful.
+        // A scroller that keeps a hard edge is the odd one out, not the default.
+        Assert.NotEmpty(scrollers);
+        Assert.All(
+            scrollers,
+            scroller => Assert.NotNull(scroller.Attribute(Controls + "ScrollFade.Edge")));
     }
 
     [Fact]

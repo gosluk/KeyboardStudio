@@ -145,49 +145,45 @@
         <!-- Top-aligned in a star row: the keyboard is as large as its own aspect ratio allows and
              no larger, and gives way rather than pushing diagnostics off a short window. -->
         <Border Classes="card" VerticalAlignment="Top">
-          <Border Classes="bezel">
-            <Border Classes="keyboard-inner">
-              <Viewbox Stretch="Uniform" StretchDirection="Both">
-                <ItemsControl ItemsSource="{Binding Editor.Keys}"
-                              Width="{Binding Editor.KeyboardWidth}"
-                              Height="{Binding Editor.KeyboardHeight}"
-                              UseLayoutRounding="False"
-                              RenderOptions.EdgeMode="Antialias">
-                  <ItemsControl.ItemContainerTheme>
-                    <ControlTheme TargetType="ContentPresenter">
-                      <Setter Property="Canvas.Left" Value="{Binding Left}" />
-                      <Setter Property="Canvas.Top" Value="{Binding Top}" />
-                    </ControlTheme>
-                  </ItemsControl.ItemContainerTheme>
-                  <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                      <Canvas />
-                    </ItemsPanelTemplate>
-                  </ItemsControl.ItemsPanel>
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                      <controls:KeyControl KeyId="{Binding KeyId}"
-                                           KeyName="{Binding KeyName}"
-                                           DefaultAssignment="{Binding DefaultAssignment}"
-                                           ShiftAssignment="{Binding ShiftAssignment}"
-                                           AltGrAssignment="{Binding AltGrAssignment}"
-                                           ShiftAltGrAssignment="{Binding ShiftAltGrAssignment}"
-                                           IsDefaultActive="{Binding IsDefaultActive}"
-                                           IsShiftActive="{Binding IsShiftActive}"
-                                           IsAltGrActive="{Binding IsAltGrActive}"
-                                           IsShiftAltGrActive="{Binding IsShiftAltGrActive}"
-                                           IsSelected="{Binding IsSelected}"
-                                           IsUnmapped="{Binding IsUnmapped}"
-                                           HasError="{Binding HasError}"
-                                           SelectCommand="{Binding SelectCommand}"
-                                           Width="{Binding Width}"
-                                           Height="{Binding Height}" />
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-              </Viewbox>
-            </Border>
-          </Border>
+          <Viewbox Stretch="Uniform" StretchDirection="Both">
+            <ItemsControl ItemsSource="{Binding Editor.Keys}"
+                          Width="{Binding Editor.KeyboardWidth}"
+                          Height="{Binding Editor.KeyboardHeight}"
+                          UseLayoutRounding="False"
+                          RenderOptions.EdgeMode="Antialias">
+              <ItemsControl.ItemContainerTheme>
+                <ControlTheme TargetType="ContentPresenter">
+                  <Setter Property="Canvas.Left" Value="{Binding Left}" />
+                  <Setter Property="Canvas.Top" Value="{Binding Top}" />
+                </ControlTheme>
+              </ItemsControl.ItemContainerTheme>
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <Canvas />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <controls:KeyControl KeyId="{Binding KeyId}"
+                                       KeyName="{Binding KeyName}"
+                                       DefaultAssignment="{Binding DefaultAssignment}"
+                                       ShiftAssignment="{Binding ShiftAssignment}"
+                                       AltGrAssignment="{Binding AltGrAssignment}"
+                                       ShiftAltGrAssignment="{Binding ShiftAltGrAssignment}"
+                                       IsDefaultActive="{Binding IsDefaultActive}"
+                                       IsShiftActive="{Binding IsShiftActive}"
+                                       IsAltGrActive="{Binding IsAltGrActive}"
+                                       IsShiftAltGrActive="{Binding IsShiftAltGrActive}"
+                                       IsSelected="{Binding IsSelected}"
+                                       IsUnmapped="{Binding IsUnmapped}"
+                                       HasError="{Binding HasError}"
+                                       SelectCommand="{Binding SelectCommand}"
+                                       Width="{Binding Width}"
+                                       Height="{Binding Height}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Viewbox>
         </Border>
 
         <!-- A clean document is the normal case, so this collapses to one line and gives the room
@@ -204,7 +200,11 @@
                 <TextBlock Classes="muted" Text="{Binding Diagnostics.Summary}" />
               </StackPanel>
             </Expander.Header>
-            <ScrollViewer MaxHeight="220" VerticalScrollBarVisibility="Auto">
+            <!-- Findings run past the fold as often as not, so the list ends by fading rather
+                 than by a cut through the middle of a row. -->
+            <ScrollViewer MaxHeight="220"
+                          VerticalScrollBarVisibility="Auto"
+                          controls:ScrollFade.Edge="24">
               <ItemsControl ItemsSource="{Binding Diagnostics.Items}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
@@ -235,11 +235,15 @@
         </Border>
       </Grid>
 
+      <!-- The inspector is taller than any window it is shown in, so both its ends are usually
+           clipped; they fade into the workspace instead of stopping against the header and the
+           bottom edge mid-control. -->
       <ScrollViewer Grid.Row="1"
                     Grid.Column="1"
                     TabIndex="2"
                     VerticalScrollBarVisibility="Auto"
-                    Padding="0,0,4,0">
+                    Padding="0,0,4,0"
+                    controls:ScrollFade.Edge="24">
         <StackPanel Spacing="8">
           <Border Classes="card subtle">
             <StackPanel Spacing="5">

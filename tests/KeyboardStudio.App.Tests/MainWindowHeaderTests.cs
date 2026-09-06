@@ -258,7 +258,7 @@ public sealed class MainWindowHeaderTests
             .Descendants(Avalonia + "Border")
             .Single(border => (string?)border.Attribute("Classes") == "card");
 
-        Assert.Equal("bezel", (string?)card.Elements().Single().Attribute("Classes"));
+        Assert.Equal(Avalonia + "Viewbox", card.Elements().Single().Name);
     }
 
     private static bool IsFileTrigger(XElement element) =>

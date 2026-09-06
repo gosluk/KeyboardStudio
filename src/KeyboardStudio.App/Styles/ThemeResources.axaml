@@ -176,7 +176,6 @@
         <GradientStop Color="#E3E9F0" Offset="1" />
       </LinearGradientBrush>
       <SolidColorBrush x:Key="KeyboardBezelBorderBrush" Color="#B8C3D0" />
-      <SolidColorBrush x:Key="KeyboardInnerBorderBrush" Color="#D9FFFFFF" />
       <BoxShadows x:Key="KeyboardBezelBoxShadow">0 14 32 0 #3320354F</BoxShadows>
       <LinearGradientBrush x:Key="KeyBaseBrush" StartPoint="50%,0%" EndPoint="50%,100%">
         <GradientStop Color="#BCC6D1" Offset="0" />
@@ -395,7 +394,6 @@
         <GradientStop Color="#959EA8" Offset="1" />
       </LinearGradientBrush>
       <SolidColorBrush x:Key="KeyboardBezelBorderBrush" Color="#747E89" />
-      <SolidColorBrush x:Key="KeyboardInnerBorderBrush" Color="#8AE9EDF1" />
       <BoxShadows x:Key="KeyboardBezelBoxShadow">0 16 34 0 #59343D47</BoxShadows>
       <LinearGradientBrush x:Key="KeyBaseBrush" StartPoint="50%,0%" EndPoint="50%,100%">
         <GradientStop Color="#747D87" Offset="0" />
@@ -614,7 +612,6 @@
         <GradientStop Color="#0C1014" Offset="1" />
       </LinearGradientBrush>
       <SolidColorBrush x:Key="KeyboardBezelBorderBrush" Color="#343D46" />
-      <SolidColorBrush x:Key="KeyboardInnerBorderBrush" Color="#525B6672" />
       <BoxShadows x:Key="KeyboardBezelBoxShadow">0 18 38 0 #D9000000</BoxShadows>
       <LinearGradientBrush x:Key="KeyBaseBrush" StartPoint="50%,0%" EndPoint="50%,100%">
         <GradientStop Color="#171B20" Offset="0" />
