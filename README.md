@@ -114,8 +114,8 @@ already open, and the File menu offers the other geometries explicitly. Target p
 stored in the same project document and restored when it is reopened. Normal builds only generate
 artifacts; they never install or activate a keyboard layout.
 
-Document commands live behind the File icon beside the `KeyboardStudio` title, and the Appearance
-icon next to it offers three application themes — White, Gray, and Black. The choice applies to
+Document commands live behind the blue `K` mark beside the `KeyboardStudio` title, and the Appearance
+icon at the far end of the header offers three application themes — White, Gray, and Black. The choice applies to
 every window, dialog, menu, and keycap immediately, and is remembered in a per-user `settings.json`
 beneath the local application-data directory. It is never written into a `.kbdproj` and never marks
 one dirty. A damaged or unreadable preference file starts the application in Gray rather than
