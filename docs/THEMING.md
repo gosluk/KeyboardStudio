@@ -36,7 +36,7 @@ Phase 15 must:
 - keep user appearance settings out of `.kbdproj` documents;
 - open a fresh window onto an editable host layout, with the populated seed as a safe fallback;
 - remove **New from / Create** from the primary editor toolbar;
-- move the File menu beside the `KeyboardStudio` title and render its trigger as an accessible icon;
+- move the File menu onto the brand mark beside the `KeyboardStudio` title, as one accessible trigger;
 - preserve existing file commands, shortcuts, dirty-state protection, and startup race protection;
 - improve hierarchy, readability, and progressive disclosure without changing the domain model.
 
@@ -332,7 +332,7 @@ window already contains the layout the user is expected to edit.
 New-project creation becomes secondary document navigation:
 
 - `Ctrl+N` creates a populated seed using the current document's geometry;
-- the File icon menu offers explicit ISO-105 and ANSI-104 new-document choices;
+- the File menu on the brand mark offers explicit ISO-105 and ANSI-104 new-document choices;
 - all paths continue through the current unsaved-changes confirmation;
 - Import remains available in the File menu.
 
@@ -420,7 +420,7 @@ The architecture is realized when:
 6. a fresh supported Linux session edits the detected current layout without pressing **Create**;
 7. a failed or unsupported host import leaves a populated, editable seed;
 8. startup import never overwrites a document the user has touched or replaced;
-9. the File icon sits beside `KeyboardStudio` and exposes all current file commands accessibly;
+9. the brand mark beside `KeyboardStudio` is the File trigger and exposes all current file commands accessibly;
 10. the permanent **New from / Create** toolbar group is gone;
 11. all existing document lifecycle, import, build, and packaging tests remain green;
 12. all touched C# files contain no more than one top-level type.

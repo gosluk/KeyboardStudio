@@ -16,10 +16,11 @@
 
   <DockPanel Background="{DynamicResource WorkspaceSurfaceBrush}">
     <Grid RowDefinitions="Auto,*" ColumnDefinitions="*,360" Margin="12,10,12,12" ColumnSpacing="10" RowSpacing="10">
-      <!-- One header row: identity, the document menu, what is open, and appearance. The standalone
-           menu bar is gone; its commands live behind the File trigger beside the title. -->
+      <!-- One header row: identity and the document menu on the left, what the editor is
+           showing on the right. The document label lives in the window title now, and the
+           keyboard's own toolbar moved up here, so the keyboard card holds nothing but keys. -->
       <Grid Grid.ColumnSpan="2"
-            ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto"
+            ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto"
             ColumnSpacing="9"
             MinHeight="48"
             TabIndex="0">
@@ -27,19 +28,14 @@
                 Classes="app-chrome"
                 IsHitTestVisible="False" />
 
-        <Border Grid.Column="0"
+        <!-- The brand mark is the File trigger. A logo that does nothing beside a small icon that
+             does the work is two targets for one job; this is the one. -->
+        <Button Grid.Column="0"
                 Classes="brand-mark"
-                Margin="7,6,0,6">
-          <TextBlock Text="K" />
-        </Border>
-
-        <TextBlock Grid.Column="1" Classes="app-title" Text="KeyboardStudio" />
-
-        <Button Grid.Column="2"
-                Classes="quiet icon"
+                Margin="7,6,0,6"
+                Content="K"
                 AutomationProperties.Name="File"
                 ToolTip.Tip="File menu">
-          <PathIcon Data="{StaticResource FileIconGeometry}" Width="15" Height="15" />
           <Button.Flyout>
             <MenuFlyout Placement="BottomEdgeAlignedLeft">
               <MenuItem Header="_New" Command="{Binding NewCommand}" InputGesture="Ctrl+N" />
@@ -68,25 +64,46 @@
           </Button.Flyout>
         </Button>
 
-        <!-- The label stays short; the whole path is one hover away rather than the width of the
-             header. -->
-        <TextBlock Grid.Column="3"
-                   Classes="muted"
-                   Text="{Binding DocumentStatus}"
-                   TextTrimming="CharacterEllipsis"
-                   MaxWidth="320"
+        <!-- The title bar names the open document; the whole path stays one hover away rather
+             than taking the width of the header to say the same thing. -->
+        <TextBlock Grid.Column="1"
+                   Classes="app-title"
+                   Text="KeyboardStudio"
                    ToolTip.Tip="{Binding DocumentPath}" />
 
-        <Border Grid.Column="4" Classes="badge warning" IsVisible="{Binding IsDirty}">
+        <Border Grid.Column="2" Classes="badge warning" IsVisible="{Binding IsDirty}">
           <TextBlock Text="Unsaved changes" />
         </Border>
 
-        <TextBlock Grid.Column="5"
+        <TextBlock Grid.Column="3"
                    Classes="muted"
                    Text="{Binding ImportStatus}"
                    VerticalAlignment="Center"
                    TextTrimming="CharacterEllipsis"
                    IsVisible="{Binding HasImportStatus}" />
+
+        <!-- Geometry and layer describe the same one thing the keyboard below is showing, so they
+             sit in the chrome that already names it rather than in a strip of their own. -->
+        <Border Grid.Column="4" Classes="badge">
+          <TextBlock Text="{Binding Editor.TemplateName}" />
+        </Border>
+
+        <StackPanel Grid.Column="5"
+                    Orientation="Horizontal"
+                    Spacing="6"
+                    VerticalAlignment="Center">
+          <TextBlock Classes="field-label" Text="Layer" />
+          <ComboBox ItemsSource="{Binding Editor.Layers}"
+                    SelectedItem="{Binding Editor.ActiveLayerOption}"
+                    Width="130">
+            <ComboBox.ItemTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding Label}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <TextBlock Classes="muted" Text="{Binding Editor.LayerSummary}" />
+        </StackPanel>
 
         <Button Grid.Column="6"
                 Classes="quiet icon"
@@ -128,38 +145,9 @@
         <!-- Top-aligned in a star row: the keyboard is as large as its own aspect ratio allows and
              no larger, and gives way rather than pushing diagnostics off a short window. -->
         <Border Classes="card" VerticalAlignment="Top">
-          <Grid RowDefinitions="Auto,Auto" RowSpacing="8">
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-              <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                <TextBlock Classes="section-title" Text="Keyboard" />
-                <Border Classes="badge">
-                  <TextBlock Text="{Binding Editor.TemplateName}" />
-                </Border>
-              </StackPanel>
-
-              <!-- Wraps to a second line instead of clipping once the window is narrow. -->
-              <WrapPanel Grid.Column="1" HorizontalAlignment="Right">
-                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,2">
-                  <TextBlock Classes="field-label" Text="Layer" />
-                  <ComboBox ItemsSource="{Binding Editor.Layers}"
-                            SelectedItem="{Binding Editor.ActiveLayerOption}"
-                            Width="130">
-                    <ComboBox.ItemTemplate>
-                      <DataTemplate>
-                        <TextBlock Text="{Binding Label}" />
-                      </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                  </ComboBox>
-                  <TextBlock Classes="muted"
-                             Text="{Binding Editor.LayerSummary}"
-                             FontSize="12" />
-                </StackPanel>
-              </WrapPanel>
-            </Grid>
-
-            <Border Grid.Row="1" Classes="bezel">
-              <Border Classes="keyboard-inner">
-                <Viewbox Stretch="Uniform" StretchDirection="Both">
+          <Border Classes="bezel">
+            <Border Classes="keyboard-inner">
+              <Viewbox Stretch="Uniform" StretchDirection="Both">
                 <ItemsControl ItemsSource="{Binding Editor.Keys}"
                               Width="{Binding Editor.KeyboardWidth}"
                               Height="{Binding Editor.KeyboardHeight}"
@@ -197,10 +185,9 @@
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
-                </Viewbox>
-              </Border>
+              </Viewbox>
             </Border>
-          </Grid>
+          </Border>
         </Border>
 
         <!-- A clean document is the normal case, so this collapses to one line and gives the room

@@ -24,16 +24,28 @@ public sealed class MainWindowHeaderTests
 
     [Fact]
     [Trait("Category", "Unit")]
-    public void TheFileTriggerSitsBesideTheApplicationTitle()
+    public void TheBrandMarkIsTheFileTriggerAndTheTitleFollowsIt()
     {
         var header = HeaderChildren();
+        var trigger = header.FindIndex(IsFileTrigger);
         var title = header.FindIndex(element =>
             (string?)element.Attribute("Text") == "KeyboardStudio");
-        var trigger = header.FindIndex(IsFileTrigger);
 
-        Assert.NotEqual(-1, title);
-        Assert.Equal(title + 1, trigger);
+        Assert.NotEqual(-1, trigger);
+        Assert.Equal(trigger + 1, title);
+
+        var mark = header[trigger];
+        Assert.Equal(Avalonia + "Button", mark.Name);
+        Assert.Equal("brand-mark", (string?)mark.Attribute("Classes"));
+        Assert.Equal("K", (string?)mark.Attribute("Content"));
     }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void NoSeparateIconRepeatsTheFileTrigger() =>
+        Assert.DoesNotContain(
+            MainWindow().Descendants(Avalonia + "PathIcon"),
+            icon => (string?)icon.Attribute("Data") == "{StaticResource FileIconGeometry}");
 
     [Fact]
     [Trait("Category", "Unit")]
@@ -128,19 +140,28 @@ public sealed class MainWindowHeaderTests
     }
 
     [Theory]
-    [InlineData("File", "FileIconGeometry")]
-    [InlineData("Appearance", "AppearanceIconGeometry")]
+    [InlineData("File")]
+    [InlineData("Appearance")]
     [Trait("Category", "Unit")]
-    public void EveryIconTriggerCarriesItsOwnName(string name, string geometry)
+    public void EveryWordlessTriggerCarriesItsOwnName(string name)
     {
         var trigger = HeaderChildren().Single(element =>
             (string?)element.Attribute(Avalonia + "AutomationProperties.Name") == name
             || (string?)element.Attribute("AutomationProperties.Name") == name);
 
         Assert.False(string.IsNullOrWhiteSpace((string?)trigger.Attribute("ToolTip.Tip")));
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TheAppearanceTriggerStillShowsItsGlyph()
+    {
+        var trigger = HeaderChildren().Single(element =>
+            (string?)element.Attribute("AutomationProperties.Name") == "Appearance");
+
         Assert.Contains(
             trigger.Descendants(Avalonia + "PathIcon"),
-            icon => (string?)icon.Attribute("Data") == $"{{StaticResource {geometry}}}");
+            icon => (string?)icon.Attribute("Data") == "{StaticResource AppearanceIconGeometry}");
     }
 
     [Fact]
@@ -173,23 +194,55 @@ public sealed class MainWindowHeaderTests
 
     [Fact]
     [Trait("Category", "Unit")]
-    public void TheHeaderLabelIsConciseAndTheFullPathIsATooltip()
+    public void TheHeaderNoLongerRepeatsTheDocumentTheTitleBarNames()
     {
-        var label = HeaderChildren()
-            .Single(element => (string?)element.Attribute("Text") == "{Binding DocumentStatus}");
+        var header = HeaderChildren();
 
-        Assert.Equal("{Binding DocumentPath}", (string?)label.Attribute("ToolTip.Tip"));
+        Assert.DoesNotContain(
+            header,
+            element => (string?)element.Attribute("Text") == "{Binding DocumentStatus}");
+
+        var title = header.Single(element => (string?)element.Attribute("Text") == "KeyboardStudio");
+        Assert.Equal("{Binding DocumentPath}", (string?)title.Attribute("ToolTip.Tip"));
     }
 
     [Fact]
     [Trait("Category", "Unit")]
-    public void DocumentStatus_IsAFileNameAndDocumentPath_IsTheWholePath()
+    public void WindowTitle_NamesTheFile_AndDocumentPath_IsTheWholePath()
     {
         var viewModel = new MainWindowViewModel();
 
-        Assert.Equal("Unsaved project", viewModel.DocumentStatus);
-        Assert.DoesNotContain(Path.DirectorySeparatorChar, viewModel.DocumentStatus);
+        Assert.StartsWith(viewModel.Project.Metadata.Name, viewModel.WindowTitle, StringComparison.Ordinal);
+        Assert.EndsWith(" — KeyboardStudio", viewModel.WindowTitle, StringComparison.Ordinal);
+        Assert.DoesNotContain(Path.DirectorySeparatorChar, viewModel.WindowTitle);
         Assert.False(string.IsNullOrWhiteSpace(viewModel.DocumentPath));
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TheGeometryAndLayerControlsMovedIntoTheHeader()
+    {
+        var header = HeaderChildren();
+
+        Assert.Contains(
+            header.SelectMany(element => element.DescendantsAndSelf()),
+            element => (string?)element.Attribute("Text") == "{Binding Editor.TemplateName}");
+
+        var layers = header.SelectMany(element => element.DescendantsAndSelf())
+            .Single(element => element.Name == Avalonia + "ComboBox");
+        Assert.Equal("{Binding Editor.Layers}", (string?)layers.Attribute("ItemsSource"));
+        Assert.Equal("{Binding Editor.ActiveLayerOption}", (string?)layers.Attribute("SelectedItem"));
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TheKeyboardCardHoldsNothingButTheKeyboard()
+    {
+        var card = MainWindow()
+            .Descendants(Avalonia + "Border")
+            .Single(border => (string?)border.Attribute("Classes") == "card");
+
+        Assert.Equal("bezel", (string?)card.Elements().Single().Attribute("Classes"));
     }
 
     private static bool IsFileTrigger(XElement element) =>

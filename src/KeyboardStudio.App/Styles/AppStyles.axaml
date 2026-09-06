@@ -199,22 +199,31 @@
     <Setter Property="BoxShadow" Value="{DynamicResource CardBoxShadow}" />
   </Style>
 
-  <Style Selector="Border.brand-mark">
+  <!-- The mark is also the File trigger, so it is a button wearing the mark rather than a block
+       beside one. It keeps the accent surface and radius and gains the hover, press, and focus
+       states every other trigger already has; the button theme supplies the rest. -->
+  <Style Selector="Button.brand-mark">
     <Setter Property="Width" Value="34" />
     <Setter Property="Height" Value="34" />
+    <Setter Property="MinWidth" Value="34" />
+    <Setter Property="MinHeight" Value="34" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="9" />
     <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}" />
-    <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="9" />
-    <Setter Property="BoxShadow" Value="{DynamicResource ButtonBoxShadow}" />
-  </Style>
-
-  <Style Selector="Border.brand-mark > TextBlock">
     <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}" />
     <Setter Property="FontSize" Value="18" />
     <Setter Property="FontWeight" Value="Bold" />
-    <Setter Property="HorizontalAlignment" Value="Center" />
-    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+
+  <Style Selector="Button.brand-mark:pointerover">
+    <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}" />
+  </Style>
+
+  <Style Selector="Button.brand-mark:pressed">
+    <Setter Property="Background" Value="{DynamicResource AccentPressedBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentPressedBrush}" />
   </Style>
 
   <!-- Supporting cards sit behind the keyboard in the hierarchy, so they carry no elevation. -->

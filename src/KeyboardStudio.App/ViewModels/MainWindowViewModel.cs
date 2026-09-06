@@ -250,15 +250,22 @@ public sealed class MainWindowViewModel : ObservableObject
 
     public string? CurrentFilePath => _documentService.CurrentFilePath;
 
-    /// <summary>The concise document label the header shows.</summary>
-    public string DocumentStatus => CurrentFilePath is { } path
-        ? Path.GetFileName(path)
-        : "Unsaved project";
-
     /// <summary>The full path, which belongs in a tooltip rather than across the header.</summary>
     public string DocumentPath => CurrentFilePath ?? "This project has not been saved yet.";
 
-    public string WindowTitle => $"{Project.Metadata.Name}{(IsDirty ? " *" : string.Empty)} — KeyboardStudio";
+    /// <summary>
+    /// The window title carries the open document, so the header does not have to. It names the
+    /// file once the project has one and the project's own name until then, because "unsaved" is
+    /// what the dirty badge says and a title that said it too would say nothing else.
+    /// </summary>
+    public string WindowTitle
+    {
+        get
+        {
+            var document = CurrentFilePath is { } path ? Path.GetFileName(path) : Project.Metadata.Name;
+            return $"{document}{(IsDirty ? " *" : string.Empty)} — KeyboardStudio";
+        }
+    }
 
     /// <summary>
     /// Produces the content of a new document. A new document is never empty: it starts from
@@ -709,7 +716,6 @@ public sealed class MainWindowViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(IsDirty));
         OnPropertyChanged(nameof(CurrentFilePath));
-        OnPropertyChanged(nameof(DocumentStatus));
         OnPropertyChanged(nameof(DocumentPath));
         OnPropertyChanged(nameof(WindowTitle));
     }
