@@ -22,6 +22,28 @@ public sealed class KeyboardEditor
         return true;
     }
 
+    /// <summary>
+    /// Assigns a functional key — an arrow, a numpad digit, Enter — as what <paramref name="keyId"/>
+    /// produces on <paramref name="layer"/>.
+    /// </summary>
+    /// <remarks>
+    /// The counterpart to <see cref="MapCharacter"/>. Both kinds of output have always existed in
+    /// the model and both arrive from imports; this is the verb that lets an editor create the
+    /// second kind rather than only read it.
+    /// </remarks>
+    public bool MapSpecialKey(string keyId, ModifierLayer layer, LogicalKey key)
+    {
+        var output = new SpecialKeyOutput(key);
+        var mapping = GetOrCreateMapping(keyId);
+        if (mapping.Outputs.TryGetValue(layer, out var current) && current == output)
+        {
+            return false;
+        }
+
+        mapping.Outputs[layer] = output;
+        return true;
+    }
+
     public bool MapLogicalKey(string keyId, LogicalKey key)
     {
         EnsurePhysicalKeyExists(keyId);

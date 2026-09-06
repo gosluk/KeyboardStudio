@@ -265,22 +265,80 @@
               <ItemsControl ItemsSource="{Binding Editor.LayerMappings}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
-                    <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="96,*,Auto" ColumnSpacing="6" Margin="0,1">
-                      <TextBlock Classes="field-label" Text="{Binding Label}" />
-                      <TextBox Grid.Column="1"
+                    <!-- A layer produces a character or a functional key, so the row carries the
+                         kind beside the value and swaps the editor to match. Both kinds have always
+                         been in the model and both arrive from imports; a lone text box could only
+                         show one of them, and silently overwrote the other.
+
+                         Two lines rather than one because the panel is a fixed 360, and a layer
+                         name, a kind, an editor and Clear abreast leave the editor too narrow to
+                         read a key name in. -->
+                    <Grid RowDefinitions="Auto,Auto,Auto,Auto"
+                          ColumnDefinitions="Auto,*,Auto"
+                          ColumnSpacing="6"
+                          Margin="0,0,0,6">
+                      <TextBlock Grid.ColumnSpan="3"
+                                 Classes="field-label"
+                                 Text="{Binding Label}"
+                                 Margin="0,0,0,2" />
+
+                      <ComboBox Grid.Row="1"
+                                Width="124"
+                                ItemsSource="{Binding Kinds}"
+                                SelectedItem="{Binding KindOption, Mode=TwoWay}"
+                                AutomationProperties.Name="Output kind">
+                        <ComboBox.ItemTemplate>
+                          <DataTemplate>
+                            <TextBlock Text="{Binding Label}" />
+                          </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                      </ComboBox>
+
+                      <TextBox Grid.Row="1"
+                               Grid.Column="1"
                                Text="{Binding Output, Mode=TwoWay}"
-                               PlaceholderText="No output" />
-                      <Button Grid.Column="2"
+                               PlaceholderText="Type a character"
+                               IsVisible="{Binding IsCharacter}"
+                               AutomationProperties.Name="Character" />
+
+                      <ComboBox Grid.Row="1"
+                                Grid.Column="1"
+                                HorizontalAlignment="Stretch"
+                                ItemsSource="{Binding SpecialKeys}"
+                                SelectedItem="{Binding SpecialKey, Mode=TwoWay}"
+                                PlaceholderText="Choose a key"
+                                IsVisible="{Binding IsSpecialKey}"
+                                AutomationProperties.Name="Key">
+                        <ComboBox.ItemTemplate>
+                          <DataTemplate>
+                            <TextBlock Text="{Binding Label}" />
+                          </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                      </ComboBox>
+
+                      <Button Grid.Row="1"
+                              Grid.Column="2"
                               Classes="quiet"
                               Content="Clear"
                               Command="{Binding ClearCommand}" />
-                      <TextBlock Grid.Row="1"
-                                 Grid.Column="1"
+
+                      <TextBlock Grid.Row="2"
+                                 Grid.ColumnSpan="3"
                                  Classes="danger"
                                  Text="{Binding ValidationMessage}"
                                  FontSize="12"
                                  TextWrapping="Wrap"
                                  IsVisible="{Binding HasValidationError}" />
+
+                      <!-- Advisory, never blocking: what a build target will not accept, said where
+                           the choice is made rather than only at build time. -->
+                      <TextBlock Grid.Row="3"
+                                 Grid.ColumnSpan="3"
+                                 Classes="muted"
+                                 Text="{Binding CapabilityWarning}"
+                                 FontSize="12"
+                                 TextWrapping="Wrap"
+                                 IsVisible="{Binding HasCapabilityWarning}" />
                     </Grid>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>

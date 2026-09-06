@@ -21,6 +21,56 @@ public sealed class KeyboardEditorTests
         Assert.Equal("ą", output.Value);
     }
 
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void MapSpecialKey_WhenAFunctionalKeyIsAssigned_UpdatesSelectedLayer()
+    {
+        var project = TestProjectFactory.Create();
+        var editor = new KeyboardEditor(project);
+
+        editor.MapSpecialKey("KeyA", ModifierLayer.Shift, LogicalKey.Numpad8);
+
+        var mapping = project.Layout.Find("KeyA");
+        var output = Assert.IsType<SpecialKeyOutput>(mapping!.Outputs[ModifierLayer.Shift]);
+        Assert.Equal(LogicalKey.Numpad8, output.Key);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void MapSpecialKey_WhenTheSameKeyIsAssignedTwice_ReportsNoChange()
+    {
+        var project = TestProjectFactory.Create();
+        var editor = new KeyboardEditor(project);
+
+        Assert.True(editor.MapSpecialKey("KeyA", ModifierLayer.Default, LogicalKey.ArrowUp));
+        Assert.False(editor.MapSpecialKey("KeyA", ModifierLayer.Default, LogicalKey.ArrowUp));
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void MapSpecialKey_WhenALayerAlreadyTypesACharacter_ReplacesIt()
+    {
+        var project = TestProjectFactory.Create();
+        var editor = new KeyboardEditor(project);
+        editor.MapCharacter("KeyA", ModifierLayer.AltGr, "ą");
+
+        Assert.True(editor.MapSpecialKey("KeyA", ModifierLayer.AltGr, LogicalKey.Home));
+
+        Assert.Equal(
+            new SpecialKeyOutput(LogicalKey.Home),
+            project.Layout.Find("KeyA")!.Outputs[ModifierLayer.AltGr]);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void MapSpecialKey_WhenThePhysicalKeyIsUnknown_Rejects()
+    {
+        var editor = new KeyboardEditor(TestProjectFactory.Create());
+
+        Assert.Throws<ArgumentException>(
+            () => editor.MapSpecialKey("NoSuchKey", ModifierLayer.Default, LogicalKey.Home));
+    }
+
     [Theory]
     [Trait("Category", "Unit")]
     [InlineData(LogicalKey.A)]

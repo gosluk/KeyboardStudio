@@ -134,6 +134,7 @@ public sealed class MainWindowViewModel : ObservableObject
             buildTargetVisibility,
             SelectKey,
             RefreshProblemKeys);
+        _editor.ApplyBuildTargets(Build.Targets.Select(target => target.Target));
         LinuxVariant = new LinuxUserVariantViewModel(
             () => Project,
             () => _documentService.CurrentLayoutDerivation,
@@ -308,8 +309,19 @@ public sealed class MainWindowViewModel : ObservableObject
 
     private KeyboardEditorViewModel CreateEditor(
         KeyboardProject project,
-        KeyboardTemplateDescriptor template) =>
-        new(new KeyboardEditor(project), template, DocumentChanged);
+        KeyboardTemplateDescriptor template)
+    {
+        var editor = new KeyboardEditorViewModel(new KeyboardEditor(project), template, DocumentChanged);
+
+        // The first editor is built before the build panel exists, and it is the build panel that
+        // knows which targets this host can produce. It applies them to itself once it is up.
+        if (Build is not null)
+        {
+            editor.ApplyBuildTargets(Build.Targets.Select(target => target.Target));
+        }
+
+        return editor;
+    }
 
     /// <summary>
     /// Creates a populated document. With no template named — <c>Ctrl+N</c> — it keeps the geometry
