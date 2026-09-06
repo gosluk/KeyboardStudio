@@ -110,7 +110,14 @@ public sealed class ApplicationXamlHierarchyTests
 
         Assert.Equal("Diagnostics", (string?)expander.Attribute("AutomationProperties.Name"));
         Assert.Equal("{Binding Diagnostics.IsExpanded, Mode=TwoWay}", (string?)expander.Attribute("IsExpanded"));
-        Assert.Equal("{Binding Diagnostics.HasIssues}", (string?)expander.Attribute("IsEnabled"));
+
+        // Absent rather than present and empty. It was a disabled strip reporting "No diagnostics",
+        // which is the state a clean document is in for as long as it stays clean, and it held a row
+        // of the editor column to say so. Visibility rather than IsEnabled gives the row back.
+        var panel = expander.Parent!;
+        Assert.Equal(Avalonia + "Border", panel.Name);
+        Assert.Equal("{Binding Diagnostics.HasIssues}", (string?)panel.Attribute("IsVisible"));
+        Assert.Null(expander.Attribute("IsEnabled"));
 
         // The editor column gives the keyboard the room and diagnostics only what they need.
         var editorColumn = MainWindow()

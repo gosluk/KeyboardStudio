@@ -186,13 +186,18 @@
           </Viewbox>
         </Border>
 
-        <!-- A clean document is the normal case, so this collapses to one line and gives the room
-             back to the keyboard. It opens itself when an error appears. -->
-        <Border Grid.Row="1" Classes="card subtle" Padding="4,2" TabIndex="3">
+        <!-- A clean document is the normal case, so the panel is absent rather than present and
+             empty: a disabled strip saying "No diagnostics" holds a row of the column in order to
+             report nothing. When there is something to say it appears, collapsed to one line, and
+             opens itself on an error. -->
+        <Border Grid.Row="1"
+                Classes="card subtle"
+                Padding="4,2"
+                TabIndex="3"
+                IsVisible="{Binding Diagnostics.HasIssues}">
           <Expander Classes="flat"
                     HorizontalAlignment="Stretch"
                     IsExpanded="{Binding Diagnostics.IsExpanded, Mode=TwoWay}"
-                    IsEnabled="{Binding Diagnostics.HasIssues}"
                     AutomationProperties.Name="Diagnostics">
             <Expander.Header>
               <StackPanel Orientation="Horizontal" Spacing="8">

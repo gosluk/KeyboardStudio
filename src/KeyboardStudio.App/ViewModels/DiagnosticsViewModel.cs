@@ -18,6 +18,10 @@ public sealed class DiagnosticsViewModel : ObservableObject
 
     public ObservableCollection<DiagnosticViewModel> Items { get; } = [];
 
+    /// <summary>
+    /// Whether there is anything to report. The panel is on screen only when this holds: an empty
+    /// one says "No diagnostics" and takes a row of the editor column to do it.
+    /// </summary>
     public bool HasIssues => Items.Count > 0;
 
     public bool HasErrors => Items.Any(item => item.Severity == ValidationSeverity.Error);
@@ -26,10 +30,10 @@ public sealed class DiagnosticsViewModel : ObservableObject
     /// Whether the list of diagnostics is showing.
     /// </summary>
     /// <remarks>
-    /// A clean document is the normal case, and a panel that reserves the bottom of the editor to
-    /// say so is taking space from the keyboard to display nothing. The list is expanded when an
-    /// error appears and otherwise left to the user, who may collapse it again and have that stick
-    /// until the next error.
+    /// Whether the panel is on screen at all is <see cref="HasIssues"/>; this is the second
+    /// question, of whether what it holds is worth opening for. A warning or a note is said well
+    /// enough by the header summary, so only an error opens the list. It is otherwise left to the
+    /// user, who may collapse it again and have that stick until the next error.
     /// </remarks>
     public bool IsExpanded
     {
