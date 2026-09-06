@@ -235,4 +235,28 @@ public sealed class DiagnosticsViewModelTests
 
         Assert.True(diagnostics.IsExpanded);
     }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void ReportedProblemKeys_SurviveTheNextValidationPass()
+    {
+        // Validation reruns on every edit. A key a build refused stays marked until the build says
+        // otherwise, or the mark would vanish at the next keystroke.
+        var editor = new MainWindowViewModel().Editor;
+        var keyA = editor.Keys.Single(key => key.KeyId == "KeyA");
+        var keyB = editor.Keys.Single(key => key.KeyId == "KeyB");
+
+        editor.ApplyReportedProblemKeys(["KeyA"]);
+        editor.ApplyDiagnostics([
+            new ValidationIssue(ValidationSeverity.Error, "TEST301", "Error", "KeyB")
+        ]);
+
+        Assert.True(keyA.HasError);
+        Assert.True(keyB.HasError);
+
+        editor.ApplyReportedProblemKeys([]);
+
+        Assert.False(keyA.HasError);
+        Assert.True(keyB.HasError);
+    }
 }

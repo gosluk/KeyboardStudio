@@ -382,6 +382,53 @@ public sealed class BuildViewModelTests
         new EnvironmentBuildTargetVisibilityPolicy(
             EnvironmentBuildTargetVisibilityPolicy.AllTargetsValue);
 
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task BuildResult_ReportsOnlyTheKeysItsErrorsName()
+    {
+        var result = new KeyboardBuildResult(
+            false,
+            [],
+            new ArtifactBuildResult(
+                false,
+                null,
+                [
+                    new BuildArtifactDiagnostic(
+                        BuildDiagnosticSeverity.Error,
+                        "KSL003",
+                        "Key 'KeyA' could not be translated.",
+                        "KeyA"),
+                    new BuildArtifactDiagnostic(
+                        BuildDiagnosticSeverity.Warning,
+                        "KSL004",
+                        "Key 'KeyB' was approximated.",
+                        "KeyB"),
+                    new BuildArtifactDiagnostic(
+                        BuildDiagnosticSeverity.Error,
+                        "KSL005",
+                        "The artifact failed verification.")
+                ]));
+        var service = new RecordingBuildService { PendingResult = Task.FromResult(result) };
+        var selected = new List<string>();
+        var viewModel = new BuildViewModel(
+            CreateProject,
+            service,
+            selectKey: selected.Add);
+
+        await viewModel.BuildCommand.ExecuteAsync(null);
+
+        // The warning names a key too, but a warning is not a fault to mark the keyboard with.
+        Assert.Equal(["KeyA"], viewModel.ProblemKeyIds);
+        var keyed = viewModel.Problems.Single(problem => problem.Code == "KSL003");
+        Assert.Equal("Key: KeyA", keyed.KeyAssociation);
+        Assert.False(viewModel.Problems.Single(problem => problem.Code == "KSL005").HasKey);
+
+        keyed.SelectCommand.Execute(null);
+        viewModel.Problems.Single(problem => problem.Code == "KSL005").SelectCommand.Execute(null);
+
+        Assert.Equal(["KeyA"], selected);
+    }
+
     private static BuildViewModel CreateViewModel(
         ITargetBuildService service,
         IBuildInteractionService? interactionService = null,

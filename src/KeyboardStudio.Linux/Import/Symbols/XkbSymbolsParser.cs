@@ -39,7 +39,6 @@ public sealed class XkbSymbolsParser
     /// </summary>
     private static readonly HashSet<string> IgnoredKeyProperties = new(StringComparer.OrdinalIgnoreCase)
     {
-        "type",
         "virtualmods",
 
         // The abbreviation of the same property. XKB accepts both spellings and
@@ -301,6 +300,7 @@ public sealed class XkbSymbolsParser
         SkipIf(XkbSymbolsTokenKind.KeyName);
 
         IReadOnlyList<string> keysyms = [];
+        string? keyType = null;
         var sawExtraGroup = false;
         var positionalGroup = 0;
 
@@ -367,6 +367,20 @@ public sealed class XkbSymbolsParser
                     continue;
                 }
 
+                // The type changes no output, so the editor never sees it — but it is the whole
+                // mechanism by which a level is reachable, so it is kept for anyone writing this
+                // key back out.
+                if (string.Equals(property, "type", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (group == 1 && Current.Kind == XkbSymbolsTokenKind.QuotedString)
+                    {
+                        keyType = Current.Text;
+                    }
+
+                    SkipKeyPropertyValue();
+                    continue;
+                }
+
                 if (UnsupportedKeyProperties.Contains(property))
                 {
                     Report(
@@ -403,7 +417,7 @@ public sealed class XkbSymbolsParser
                 keyName);
         }
 
-        return new XkbKeyStatement(merge, keyName, keysyms);
+        return new XkbKeyStatement(merge, keyName, keysyms, keyType);
     }
 
     /// <summary>

@@ -285,6 +285,67 @@ public sealed class LinuxUserVariantViewModelTests
         Assert.False(viewModel.InstallCommand.CanExecute(null));
     }
 
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task Refresh_WhenAFindingNamesAKey_MakesItAWayToReachThatKey()
+    {
+        var project = Project();
+        var workflow = new FakeLinuxUserVariantWorkflowService().AddInspection(
+            Preparation(
+                LinuxUserVariantStatus.Unavailable,
+                [
+                    new XkbDiagnostic(
+                        "KSU001",
+                        "Physical key 'Minus' cannot be overridden.",
+                        "Minus"),
+                    new XkbDiagnostic("KSC006", "A newer libxkbcommon version is recommended.")
+                ],
+                includeBundle: false));
+        var selected = new List<string>();
+        var problemKeyRefreshes = 0;
+        var viewModel = new LinuxUserVariantViewModel(
+            () => project,
+            () => Derivation(project),
+            () => "/tmp/output",
+            workflow,
+            selectKey: selected.Add,
+            problemKeysChanged: () => problemKeyRefreshes++);
+
+        await viewModel.RefreshAsync();
+
+        Assert.Equal(2, viewModel.Diagnostics.Count);
+        var keyed = viewModel.Diagnostics.Single(diagnostic => diagnostic.Code == "KSU001");
+        Assert.True(keyed.HasKey);
+        Assert.Equal("Key: Minus", keyed.KeyAssociation);
+        Assert.False(viewModel.Diagnostics.Single(diagnostic => diagnostic.Code == "KSC006").HasKey);
+
+        keyed.SelectCommand.Execute(null);
+
+        Assert.Equal(["Minus"], selected);
+        Assert.Equal(["Minus"], viewModel.ProblemKeyIds);
+        Assert.True(problemKeyRefreshes > 0);
+        Assert.Contains("KSU001", viewModel.DiagnosticsText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task Refresh_WhenNothingBlocksTheBundle_ReportsNoProblemKeys()
+    {
+        // The same finding shape, but the variant can still be generated: it is advice, and advice
+        // does not light a key up.
+        var project = Project();
+        var workflow = new FakeLinuxUserVariantWorkflowService().AddInspection(
+            Preparation(
+                LinuxUserVariantStatus.NotInstalled,
+                [new XkbDiagnostic("KSC006", "A newer libxkbcommon is recommended.", "Minus")]));
+        var viewModel = Create(project, Derivation(project), workflow);
+
+        await viewModel.RefreshAsync();
+
+        Assert.True(Assert.Single(viewModel.Diagnostics).HasKey);
+        Assert.Empty(viewModel.ProblemKeyIds);
+    }
+
     private static LinuxUserVariantViewModel Create(
         KeyboardProject project,
         LayoutDerivation derivation,

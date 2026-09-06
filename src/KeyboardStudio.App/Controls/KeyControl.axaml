@@ -91,28 +91,28 @@
           Command="{Binding SelectCommand, ElementName=Root}">
     <ToolTip.Tip>
       <Grid ColumnDefinitions="Auto,Auto" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="10">
-        <TextBlock Text="Default" Foreground="{DynamicResource KeyHintBrush}" />
-        <TextBlock Grid.Column="1"
+        <TextBlock Grid.Row="1" Text="Default" Foreground="{DynamicResource KeyHintBrush}" />
+        <TextBlock Grid.Row="1"
+                   Grid.Column="1"
                    Text="{Binding DefaultAssignment, ElementName=Root}"
                    TextWrapping="NoWrap"
                    TextTrimming="None" />
 
-        <TextBlock Grid.Row="1" Text="Shift" Foreground="{DynamicResource KeyHintBrush}" />
-        <TextBlock Grid.Row="1"
-                   Grid.Column="1"
+        <TextBlock Text="Shift" Foreground="{DynamicResource KeyHintBrush}" />
+        <TextBlock Grid.Column="1"
                    Text="{Binding ShiftAssignment, ElementName=Root}"
                    TextWrapping="NoWrap"
                    TextTrimming="None" />
 
-        <TextBlock Grid.Row="2" Text="AltGr" Foreground="{DynamicResource KeyHintBrush}" />
-        <TextBlock Grid.Row="2"
+        <TextBlock Grid.Row="3" Text="AltGr" Foreground="{DynamicResource KeyHintBrush}" />
+        <TextBlock Grid.Row="3"
                    Grid.Column="1"
                    Text="{Binding AltGrAssignment, ElementName=Root}"
                    TextWrapping="NoWrap"
                    TextTrimming="None" />
 
-        <TextBlock Grid.Row="3" Text="Shift + AltGr" Foreground="{DynamicResource KeyHintBrush}" />
-        <TextBlock Grid.Row="3"
+        <TextBlock Grid.Row="2" Text="Shift + AltGr" Foreground="{DynamicResource KeyHintBrush}" />
+        <TextBlock Grid.Row="2"
                    Grid.Column="1"
                    Text="{Binding ShiftAltGrAssignment, ElementName=Root}"
                    TextWrapping="NoWrap"
@@ -120,34 +120,10 @@
       </Grid>
     </ToolTip.Tip>
     <Grid RowDefinitions="*,Auto">
-      <!-- The positions mirror the supplied keycap: unshifted assignments are on top,
-           shifted assignments below, and AltGr assignments occupy the right column. -->
+      <!-- The positions mirror the supplied keycap: unshifted assignments are on bottom,
+           shifted assignments above, and AltGr assignments occupy the right column. -->
       <Grid ColumnDefinitions="*,*" RowDefinitions="*,*">
         <Border Classes="layer-slot"
-                Classes.active="{Binding IsDefaultActive, ElementName=Root}">
-          <ToolTip.Tip>
-            <TextBlock Text="{Binding DefaultAssignment, ElementName=Root}"
-                       TextWrapping="NoWrap"
-                       TextTrimming="None"
-                       Margin="2,0" />
-          </ToolTip.Tip>
-          <TextBlock Classes="key-assignment"
-                     Text="{Binding DefaultAssignment, ElementName=Root}" />
-        </Border>
-        <Border Grid.Column="1"
-                Classes="layer-slot"
-                Classes.active="{Binding IsAltGrActive, ElementName=Root}">
-          <ToolTip.Tip>
-            <TextBlock Text="{Binding AltGrAssignment, ElementName=Root}"
-                       TextWrapping="NoWrap"
-                       TextTrimming="None"
-                       Margin="2,0" />
-          </ToolTip.Tip>
-          <TextBlock Classes="key-assignment"
-                     Text="{Binding AltGrAssignment, ElementName=Root}" />
-        </Border>
-        <Border Grid.Row="1"
-                Classes="layer-slot"
                 Classes.active="{Binding IsShiftActive, ElementName=Root}">
           <ToolTip.Tip>
             <TextBlock Text="{Binding ShiftAssignment, ElementName=Root}"
@@ -158,8 +134,7 @@
           <TextBlock Classes="key-assignment"
                      Text="{Binding ShiftAssignment, ElementName=Root}" />
         </Border>
-        <Border Grid.Row="1"
-                Grid.Column="1"
+        <Border Grid.Column="1"
                 Classes="layer-slot"
                 Classes.active="{Binding IsShiftAltGrActive, ElementName=Root}">
           <ToolTip.Tip>
@@ -170,6 +145,31 @@
           </ToolTip.Tip>
           <TextBlock Classes="key-assignment"
                      Text="{Binding ShiftAltGrAssignment, ElementName=Root}" />
+        </Border>
+        <Border Grid.Row="1"
+                Classes="layer-slot"
+                Classes.active="{Binding IsDefaultActive, ElementName=Root}">
+          <ToolTip.Tip>
+            <TextBlock Text="{Binding DefaultAssignment, ElementName=Root}"
+                       TextWrapping="NoWrap"
+                       TextTrimming="None"
+                       Margin="2,0" />
+          </ToolTip.Tip>
+          <TextBlock Classes="key-assignment"
+                     Text="{Binding DefaultAssignment, ElementName=Root}" />
+        </Border>
+        <Border Grid.Row="1"
+                Grid.Column="1"
+                Classes="layer-slot"
+                Classes.active="{Binding IsAltGrActive, ElementName=Root}">
+          <ToolTip.Tip>
+            <TextBlock Text="{Binding AltGrAssignment, ElementName=Root}"
+                       TextWrapping="NoWrap"
+                       TextTrimming="None"
+                       Margin="2,0" />
+          </ToolTip.Tip>
+          <TextBlock Classes="key-assignment"
+                     Text="{Binding AltGrAssignment, ElementName=Root}" />
         </Border>
       </Grid>
       <TextBlock Grid.Row="1"

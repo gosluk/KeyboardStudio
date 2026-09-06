@@ -20,6 +20,12 @@ public sealed class KeyboardEditorViewModel : ObservableObject
 
     private readonly Action _documentChanged;
     private readonly KeyboardEditor _editor;
+
+    /// <summary>Keys the last validation pass reported an error on.</summary>
+    private readonly HashSet<string> _validationErrorKeys = new(StringComparer.Ordinal);
+
+    /// <summary>Keys a build or an installation reported a problem on.</summary>
+    private readonly HashSet<string> _reportedProblemKeys = new(StringComparer.Ordinal);
     private ModifierLayer _activeLayer;
     private IReadOnlyList<LayerMappingViewModel> _layerMappings = [];
     private KeyViewModel? _selectedKey;
@@ -179,13 +185,47 @@ public sealed class KeyboardEditorViewModel : ObservableObject
     {
         ArgumentNullException.ThrowIfNull(issues);
 
-        var errorKeyIds = issues
-            .Where(issue => issue.Severity == ValidationSeverity.Error && issue.KeyId is not null)
-            .Select(issue => issue.KeyId!)
-            .ToHashSet(StringComparer.Ordinal);
+        _validationErrorKeys.Clear();
+        foreach (var issue in issues)
+        {
+            if (issue.Severity == ValidationSeverity.Error && issue.KeyId is not null)
+            {
+                _validationErrorKeys.Add(issue.KeyId);
+            }
+        }
+
+        RefreshKeyErrors();
+    }
+
+    /// <summary>
+    /// Marks the keys named by findings from outside validation: a build that could not translate
+    /// a key, an installation that refused one.
+    /// </summary>
+    /// <remarks>
+    /// They are held apart from validation's own because the two run on different clocks.
+    /// Validation reruns on every edit, and folding a build's findings into it would erase them at
+    /// the next keystroke; keeping them separate lets a key stay marked until the panel that
+    /// marked it says otherwise.
+    /// </remarks>
+    public void ApplyReportedProblemKeys(IEnumerable<string> keyIds)
+    {
+        ArgumentNullException.ThrowIfNull(keyIds);
+
+        _reportedProblemKeys.Clear();
+        foreach (var keyId in keyIds)
+        {
+            _reportedProblemKeys.Add(keyId);
+        }
+
+        RefreshKeyErrors();
+    }
+
+    private void RefreshKeyErrors()
+    {
         foreach (var key in Keys)
         {
-            key.HasError = errorKeyIds.Contains(key.KeyId);
+            key.HasError = _validationErrorKeys.Contains(key.KeyId) ||
+                           _reportedProblemKeys.Contains(key.KeyId);
         }
     }
 

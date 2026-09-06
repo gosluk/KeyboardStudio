@@ -367,4 +367,34 @@ public sealed class XkbSymbolsParserTests
         Assert.Equal(XkbMergeMode.Augment, include.Merge);
         Assert.Equal("us(basic)", include.Specification);
     }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Parse_ForAKeyThatDeclaresItsType_KeepsTheTypeOfTheFirstGroup()
+    {
+        // The type changes no output, so the model has no place for it — but it is the only thing
+        // that makes a fifth level reachable, so writing this key back out needs it.
+        var section = ParseSingleSection(
+            """
+                key <AE11> {[ ssharp, question, backslash, questiondown, U1E9E ], type[group1]="FOUR_LEVEL_PLUS_LOCK" };
+                key <AE12> {[ dead_acute, dead_grave ]};
+                key <FK01> { type="CTRL+ALT", symbols[Group1] = [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, XF86_Switch_VT_1 ] };
+                key <AD01> {[ q, Q ], type[group2]="ALPHABETIC" };
+            """);
+
+        var keys = section.Statements.OfType<XkbKeyStatement>()
+            .ToDictionary(statement => statement.KeyName, StringComparer.Ordinal);
+        Assert.Equal("FOUR_LEVEL_PLUS_LOCK", keys["<AE11>"].KeyType);
+        Assert.Null(keys["<AE12>"].KeyType);
+        Assert.Equal("CTRL+ALT", keys["<FK01>"].KeyType);
+        Assert.Equal(
+            ["NoSymbol", "NoSymbol", "NoSymbol", "NoSymbol", "XF86_Switch_VT_1"],
+            keys["<FK01>"].Keysyms);
+
+        // A type for a group the model does not hold describes a layout it never imports.
+        Assert.Null(keys["<AD01>"].KeyType);
+        Assert.DoesNotContain(
+            section.Diagnostics,
+            diagnostic => diagnostic.Code == LayoutImportDiagnosticCodes.UnrecognizedStatementSkipped);
+    }
 }

@@ -12,7 +12,9 @@ public sealed class JsonKeyboardProjectDocumentStore : IKeyboardProjectDocumentS
 
     /// <summary>
     /// The envelope version written today. Version 2 added <c>importProvenance</c>; version 3 added
-    /// the immutable <c>layoutDerivation</c> baseline.
+    /// the immutable <c>layoutDerivation</c> baseline, whose mappings later gained the optional
+    /// source levels a lossy import used to discard. Those are additive within version 3: a
+    /// derivation saved without them reads back exactly as it did before, keys included.
     /// </summary>
     public const int CurrentDocumentSchemaVersion = 3;
 
@@ -229,7 +231,9 @@ public sealed class JsonKeyboardProjectDocumentStore : IKeyboardProjectDocumentS
             LogicalKey = mapping.LogicalKey,
             Outputs = mapping.Outputs.ToDictionary(pair => pair.Key, pair => pair.Value)
         }).Outputs,
-        IsSafeToOverride = mapping.IsSafeToOverride
+        IsSafeToOverride = mapping.IsSafeToOverride,
+        SourceLevels = [.. mapping.SourceLevels],
+        SourceKeyType = mapping.SourceKeyType
     };
 
     private static LayoutDerivation ToDomain(LayoutDerivationDto derivation)
@@ -275,7 +279,13 @@ public sealed class JsonKeyboardProjectDocumentStore : IKeyboardProjectDocumentS
                 "Layout derivation baseline outputs must not be null.")
         });
 
-        return KeyMappingSnapshot.From(persisted, mapping.IsSafeToOverride);
+        return new KeyMappingSnapshot(
+            persisted.KeyId,
+            persisted.LogicalKey,
+            persisted.Outputs,
+            mapping.IsSafeToOverride,
+            mapping.SourceLevels ?? [],
+            mapping.SourceKeyType);
     }
 
     private static string RequireProvenanceIdentifier(string? value, string name)

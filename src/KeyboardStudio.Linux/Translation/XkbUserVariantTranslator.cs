@@ -7,6 +7,22 @@ public sealed class XkbUserVariantTranslator
 {
     public const string UnsafeSourceBehaviorCode = "KSU001";
     public const string UnsupportedOutputCode = "KSU002";
+    public const string UnwritableSourceLevelCode = "KSU003";
+
+    /// <summary>
+    /// What may be written back verbatim into a generated symbols file. Source levels and key types
+    /// reach here having been read out of the host's own XKB data, and they leave here inside a
+    /// file that gets compiled — so they are checked against the notation they claim to be in
+    /// rather than trusted for having come from a file that parsed.
+    /// </summary>
+    private static readonly System.Buffers.SearchValues<char> KeysymCharacters =
+        System.Buffers.SearchValues.Create(
+            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_");
+
+    /// <summary>Type names additionally carry '+', as in <c>CTRL+ALT</c>.</summary>
+    private static readonly System.Buffers.SearchValues<char> KeyTypeCharacters =
+        System.Buffers.SearchValues.Create(
+            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_+");
 
     private static readonly ModifierLayer[] Layers =
     [
@@ -52,9 +68,13 @@ public sealed class XkbUserVariantTranslator
         {
             if (!change.IsSafeToOverride)
             {
+                // Levels the model could not hold are no longer a reason to be here: those come
+                // back from the source. What is left is loss no override can put back.
                 diagnostics.Add(new XkbDiagnostic(
                     UnsafeSourceBehaviorCode,
-                    $"Physical key '{change.KeyId}' cannot be overridden because its source behavior was not represented exactly during import.",
+                    $"Physical key '{change.KeyId}' cannot be overridden: importing it lost behavior " +
+                    "that writing the key back cannot restore — another group, a key action, or a " +
+                    "construct the reader did not recognize.",
                     change.KeyId));
                 continue;
             }
@@ -72,12 +92,19 @@ public sealed class XkbUserVariantTranslator
                 continue;
             }
 
+            var sourceTypeName = SelectSourceTypeName(change, keysyms.Length, diagnostics);
+            if (keysyms.Length > Layers.Length && sourceTypeName is null)
+            {
+                continue;
+            }
+
             var logicalKey = change.Current?.LogicalKey ?? change.Baseline!.LogicalKey;
             mappings.Add(new XkbUserVariantKeyMapping(
                 change.KeyId,
                 keyNameResult.KeyName!,
-                SelectType(change.KeyId, logicalKey, keysyms.Length),
-                keysyms));
+                SelectType(change.KeyId, logicalKey, Math.Min(keysyms.Length, Layers.Length)),
+                keysyms,
+                sourceTypeName));
         }
 
         if (diagnostics.Count > 0)
@@ -97,39 +124,74 @@ public sealed class XkbUserVariantTranslator
             []);
     }
 
+    /// <summary>
+    /// Builds the complete level list this key will be written with.
+    ///
+    /// An override replaces a key entirely, so every level it has must be named here — including
+    /// the ones the model never held. Those come back verbatim from the source the import kept
+    /// beside the mapping: a dead key on the third level, a fifth level reached through Lock. What
+    /// the user changed is theirs; what they never saw stays what it was.
+    /// </summary>
     private string[]? TranslateKeysyms(
         KeyboardKeyDifference change,
         List<XkbDiagnostic> diagnostics)
     {
-        if (change.Current is null)
-        {
-            return Enumerable.Repeat(
-                    "NoSymbol",
-                    Math.Max(1, HighestRelevantLevel(change)))
-                .ToArray();
-        }
+        var source = change.Baseline?.SourceLevels ?? [];
+        var modelLevels = Math.Max(
+            1,
+            Math.Max(
+                HighestRelevantLevel(change),
+                change.Current is null ? 0 : HighestCurrentLevel(change.Current)));
+        var keysyms = new string[Math.Max(modelLevels, source.Count)];
 
-        var keysyms = new string[Layers.Length];
-        for (var index = 0; index < Layers.Length; index++)
+        for (var index = 0; index < keysyms.Length; index++)
         {
-            if (!change.Current.Outputs.TryGetValue(Layers[index], out var output))
+            if (index >= Layers.Length)
             {
-                keysyms[index] = "NoSymbol";
+                // Past the model entirely. Only the source ever described this level, so only the
+                // source can write it.
+                if (!TryTakeSourceLevel(source, index, change.KeyId, diagnostics, out keysyms[index]))
+                {
+                    return null;
+                }
+
                 continue;
             }
 
-            if (!_keysymMapper.TryMap(output, out keysyms[index]))
+            var layer = Layers[index];
+            if (change.Current?.Outputs.TryGetValue(layer, out var output) == true)
             {
-                diagnostics.Add(new XkbDiagnostic(
-                    UnsupportedOutputCode,
-                    $"Output on layer '{Layers[index]}' cannot be represented as an XKB keysym.",
-                    change.KeyId));
-                return null;
+                if (!_keysymMapper.TryMap(output, out keysyms[index]))
+                {
+                    diagnostics.Add(new XkbDiagnostic(
+                        UnsupportedOutputCode,
+                        $"Output on layer '{layer}' cannot be represented as an XKB keysym.",
+                        change.KeyId));
+                    return null;
+                }
+
+                continue;
             }
+
+            // The editor shows nothing on this layer, which means one of two different things: the
+            // import could not represent what the source had and the user never saw it, or the
+            // user cleared an output the import did hold. Only the second is a change to write.
+            if (change.Baseline?.Outputs.ContainsKey(layer) != true && index < source.Count)
+            {
+                if (!TryTakeSourceLevel(source, index, change.KeyId, diagnostics, out keysyms[index]))
+                {
+                    return null;
+                }
+
+                continue;
+            }
+
+            keysyms[index] = "NoSymbol";
         }
 
-        var currentHasExplicitOutputs = change.Current.Outputs.Count > 0;
-        if (!currentHasExplicitOutputs)
+        // A key left with a logical identity but no outputs of its own types what it is named
+        // after, which is what the editor shows for it.
+        if (change.Current is { Outputs.Count: 0 })
         {
             if (!_keysymMapper.TryMap(change.Current.LogicalKey, out keysyms[0]))
             {
@@ -141,9 +203,68 @@ public sealed class XkbUserVariantTranslator
             }
         }
 
-        var levelCount = Math.Max(HighestRelevantLevel(change), HighestCurrentLevel(change.Current));
-        return keysyms[..Math.Max(1, levelCount)];
+        return keysyms;
     }
+
+    /// <summary>
+    /// Reads one level back out of the source, refusing anything that would not be a keysym name.
+    /// </summary>
+    private static bool TryTakeSourceLevel(
+        IReadOnlyList<string> source,
+        int index,
+        string keyId,
+        List<XkbDiagnostic> diagnostics,
+        out string keysym)
+    {
+        keysym = index < source.Count ? source[index] : "NoSymbol";
+        if (IsWritable(keysym, KeysymCharacters))
+        {
+            return true;
+        }
+
+        diagnostics.Add(new XkbDiagnostic(
+            UnwritableSourceLevelCode,
+            $"Level {index + 1} of physical key '{keyId}' reads '{keysym}' in the imported layout, " +
+            "which is not a keysym name that can be written back.",
+            keyId));
+        return false;
+    }
+
+    /// <summary>
+    /// The type to write, when the key needs the source's own.
+    ///
+    /// A key whose levels all fit the model is typed from the model, so that levels the user has
+    /// just added stay reachable. A key with more levels than that can only reach them through the
+    /// type the source declared, and without one there is no way to write the key without losing
+    /// them — which is the refusal this method reports.
+    /// </summary>
+    private static string? SelectSourceTypeName(
+        KeyboardKeyDifference change,
+        int levelCount,
+        List<XkbDiagnostic> diagnostics)
+    {
+        if (levelCount <= Layers.Length)
+        {
+            return null;
+        }
+
+        var sourceType = change.Baseline?.SourceKeyType;
+        if (sourceType is not null && IsWritable(sourceType, KeyTypeCharacters))
+        {
+            return sourceType;
+        }
+
+        diagnostics.Add(new XkbDiagnostic(
+            UnwritableSourceLevelCode,
+            $"Physical key '{change.KeyId}' has {levelCount} levels in the imported layout, and the " +
+            "key type that reaches the ones beyond the fourth " +
+            (sourceType is null ? "was not declared there." : $"reads '{sourceType}', which cannot be written back."),
+            change.KeyId));
+        return null;
+    }
+
+    private static bool IsWritable(string value, System.Buffers.SearchValues<char> allowed) =>
+        value.Length > 0 && !value.AsSpan().ContainsAnyExcept(allowed);
 
     private static int HighestRelevantLevel(KeyboardKeyDifference change)
     {

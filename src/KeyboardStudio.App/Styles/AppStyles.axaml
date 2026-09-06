@@ -169,6 +169,15 @@
     <Setter Property="Foreground" Value="{DynamicResource DirtyBadgeForegroundBrush}" />
   </Style>
 
+  <!-- A finding that names a key is a place to go; one that names none is only a message. The
+       cursor is what says which, before the click that would find out. -->
+  <Style Selector="Button.diagnostic-row">
+    <Setter Property="Cursor" Value="Arrow" />
+  </Style>
+  <Style Selector="Button.diagnostic-row.actionable">
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+
   <Style Selector="Border.problem">
     <Setter Property="Background" Value="{DynamicResource BuildProblemSurfaceBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource BuildProblemBorderBrush}" />

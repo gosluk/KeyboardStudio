@@ -589,4 +589,36 @@ public sealed class XkbSymbolsResolverTests
             Resolve("pl").Diagnostics,
             diagnostic => diagnostic.Code == LayoutImportDiagnosticCodes.UnsupportedConstructIgnored);
     }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Resolve_ForAKeyType_MergesItLikeTheOutputsItGoverns()
+    {
+        // A definition may set only a type, which is the shape srvr_ctrl uses; another may restate
+        // the outputs without restating the type. Both have to end up on the same resolved key.
+        AddSymbols("base", """
+            default partial xkb_symbols "basic" {
+                key <AE11> {[ ssharp, question ], type[group1]="TWO_LEVEL" };
+                key <AE12> {[ acute, grave ]};
+                key <AD01> {[ q, Q ], type[group1]="ALPHABETIC" };
+            };
+            """);
+        AddSymbols("layer", """
+            default partial xkb_symbols "basic" {
+                include "base(basic)"
+                key <AE11> { type[group1]="FOUR_LEVEL_PLUS_LOCK" };
+                key <AE12> {[ acute, grave, cedilla, cedilla ]};
+                key <AD01> {[ a, A ]};
+            };
+            """);
+
+        var resolved = Resolve("layer");
+
+        var keys = resolved.Keys.ToDictionary(key => key.KeyName, StringComparer.Ordinal);
+        Assert.Equal("FOUR_LEVEL_PLUS_LOCK", keys["<AE11>"].KeyType);
+        Assert.Equal(["ssharp", "question"], keys["<AE11>"].Keysyms);
+        Assert.Null(keys["<AE12>"].KeyType);
+        Assert.Equal("ALPHABETIC", keys["<AD01>"].KeyType);
+        Assert.Equal(["a", "A"], keys["<AD01>"].Keysyms);
+    }
 }

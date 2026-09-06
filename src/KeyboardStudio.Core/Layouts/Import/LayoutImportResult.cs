@@ -25,16 +25,27 @@ public sealed record LayoutImportResult(
     LayoutImportReport Report,
     string? ResolvedSectionId)
 {
+    /// <summary>
+    /// What the source said about each imported key, beside what the model could hold of it. Empty
+    /// for a source that cannot report it; a derived layout then keeps refusing to override the
+    /// keys whose import was lossy, exactly as it did before any source could.
+    /// </summary>
+    public IReadOnlyList<LayoutImportKeySource> KeySources { get; init; } = [];
+
     /// <summary>Creates the result of an import that produced a project.</summary>
     public static LayoutImportResult Succeeded(
         KeyboardProject project,
         string? suggestedTemplateId,
         LayoutImportReport report,
-        string? resolvedSectionId = null)
+        string? resolvedSectionId = null,
+        IReadOnlyList<LayoutImportKeySource>? keySources = null)
     {
         ArgumentNullException.ThrowIfNull(project);
         ArgumentNullException.ThrowIfNull(report);
-        return new LayoutImportResult(true, project, suggestedTemplateId, report, resolvedSectionId);
+        return new LayoutImportResult(true, project, suggestedTemplateId, report, resolvedSectionId)
+        {
+            KeySources = keySources ?? []
+        };
     }
 
     /// <summary>

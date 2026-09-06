@@ -266,11 +266,18 @@ public sealed class XkbSymbolsResolver : IXkbSymbolsResolver
             return;
         }
 
-        // A statement that carries no keysyms set only properties the model does not hold, such as a
-        // key type. Under override that leaves the existing outputs alone; under replace the whole
-        // definition goes, which is the one place the two modes visibly differ.
+        // A statement that carries no keysyms set only properties, a key type among them. Under
+        // override that leaves the existing outputs alone — but the type it declared is the whole
+        // content of such a statement, and dropping it here is what used to make the key
+        // unwritable later. Under replace the whole definition goes, which is the one place the
+        // two modes visibly differ.
         if (existing is not null && statement.Keysyms.Count == 0 && merge != XkbMergeMode.Replace)
         {
+            if (statement.KeyType is not null)
+            {
+                state.Keys[statement.KeyName] = existing with { KeyType = statement.KeyType };
+            }
+
             return;
         }
 
@@ -278,7 +285,10 @@ public sealed class XkbSymbolsResolver : IXkbSymbolsResolver
             statement.KeyName,
             statement.Keysyms,
             origin,
-            state.MergingCommonBase);
+            state.MergingCommonBase,
+            // A definition that restates a key's outputs without restating its type inherits the
+            // type already in force, exactly as XKB's own override does.
+            statement.KeyType ?? (merge == XkbMergeMode.Replace ? null : existing?.KeyType));
         if (existing is null)
         {
             state.Order.Add(statement.KeyName);

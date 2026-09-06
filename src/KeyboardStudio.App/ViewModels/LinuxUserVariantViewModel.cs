@@ -1,6 +1,8 @@
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using KeyboardStudio.Core;
+using KeyboardStudio.Linux;
 using KeyboardStudio.Persistence;
 
 namespace KeyboardStudio.App;
@@ -12,6 +14,8 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
     private readonly Func<string> _outputDirectoryProvider;
     private readonly Func<(string VariantId, string Description)> _metadataProvider;
     private readonly Action<string, string> _metadataChanged;
+    private readonly Action<string> _selectKey;
+    private readonly Action _problemKeysChanged;
     private readonly ILinuxUserVariantWorkflowService _workflow;
     private readonly ILinuxUserVariantInteractionService _interaction;
     private LinuxUserVariantPreparation? _preparation;
@@ -21,7 +25,6 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
     private string _statusText = "Import a system layout to enable user variants.";
     private string _capabilityText = string.Empty;
     private string _pathsText = string.Empty;
-    private string _diagnosticsText = string.Empty;
     private string? _generatedBundlePath;
     private bool _isBusy;
     private bool _hasUserEditedMetadata;
@@ -35,13 +38,17 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
         ILinuxUserVariantWorkflowService workflow,
         ILinuxUserVariantInteractionService? interaction = null,
         Func<(string VariantId, string Description)>? metadataProvider = null,
-        Action<string, string>? metadataChanged = null)
+        Action<string, string>? metadataChanged = null,
+        Action<string>? selectKey = null,
+        Action? problemKeysChanged = null)
     {
         _projectProvider = projectProvider ?? throw new ArgumentNullException(nameof(projectProvider));
         _derivationProvider = derivationProvider ?? throw new ArgumentNullException(nameof(derivationProvider));
         _outputDirectoryProvider = outputDirectoryProvider ?? throw new ArgumentNullException(nameof(outputDirectoryProvider));
         _metadataProvider = metadataProvider ?? (() => (string.Empty, string.Empty));
         _metadataChanged = metadataChanged ?? ((_, _) => { });
+        _selectKey = selectKey ?? (_ => { });
+        _problemKeysChanged = problemKeysChanged ?? (() => { });
         _workflow = workflow ?? throw new ArgumentNullException(nameof(workflow));
         _interaction = interaction ?? new NoOpLinuxUserVariantInteractionService();
 
@@ -122,19 +129,27 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
         private set => SetProperty(ref _pathsText, value);
     }
 
-    public string DiagnosticsText
-    {
-        get => _diagnosticsText;
-        private set
-        {
-            if (SetProperty(ref _diagnosticsText, value))
-            {
-                OnPropertyChanged(nameof(HasDiagnostics));
-            }
-        }
-    }
+    /// <summary>
+    /// What the last inspection or operation reported, one row each. A row that names a key can be
+    /// clicked to go to it, which is the difference between a message about a key and a way to
+    /// reach the key it is about.
+    /// </summary>
+    public ObservableCollection<DiagnosticViewModel> Diagnostics { get; } = [];
 
-    public bool HasDiagnostics => DiagnosticsText.Length > 0;
+    /// <summary>The same findings as one block of text, for hosts that show them that way.</summary>
+    public string DiagnosticsText => string.Join(
+        Environment.NewLine,
+        Diagnostics.Select(diagnostic => diagnostic.Code.Length == 0
+            ? diagnostic.Message
+            : $"{diagnostic.Code}: {diagnostic.Message}"));
+
+    public bool HasDiagnostics => Diagnostics.Count > 0;
+
+    /// <summary>The keys these findings name, for the editor to mark. Errors only.</summary>
+    public IReadOnlyList<string> ProblemKeyIds => [.. Diagnostics
+        .Where(diagnostic => diagnostic.HasKey && diagnostic.IsError)
+        .Select(diagnostic => diagnostic.KeyId!)
+        .Distinct(StringComparer.Ordinal)];
 
     public string? GeneratedBundlePath
     {
@@ -217,7 +232,7 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
             : "Checking this host's per-user XKB support…";
         CapabilityText = string.Empty;
         PathsText = string.Empty;
-        DiagnosticsText = string.Empty;
+        SetDiagnostics([]);
         NotifyCommandStates();
     }
 
@@ -269,7 +284,14 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
         {
             _preparation = null;
             StatusText = $"Could not inspect the user variant: {exception.Message}";
-            DiagnosticsText = exception.Message;
+            SetDiagnostics([
+                new DiagnosticViewModel(
+                    ValidationSeverity.Error,
+                    string.Empty,
+                    exception.Message,
+                    null,
+                    _selectKey)
+            ]);
         }
         finally
         {
@@ -362,9 +384,11 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
         {
             var result = await operation();
             StatusText = result.Message;
-            DiagnosticsText = string.Join(
-                Environment.NewLine,
-                result.Diagnostics.Select(diagnostic => $"{diagnostic.Code}: {diagnostic.Message}"));
+
+            // An operation that failed reports why, and every one of those reasons stopped it.
+            SetDiagnostics(Describe(
+                result.Diagnostics,
+                result.Success ? ValidationSeverity.Warning : ValidationSeverity.Error));
             if (result.Success && result.OutputPath is not null)
             {
                 GeneratedBundlePath = result.OutputPath;
@@ -428,9 +452,10 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
         PathsText = preparation.Paths is null
             ? "No safe per-user XKB paths were resolved."
             : $"XKB: {preparation.Paths.UserXkbRoot}{Environment.NewLine}State: {preparation.Paths.KeyboardStudioStateRoot}";
-        DiagnosticsText = string.Join(
-            Environment.NewLine,
-            preparation.Diagnostics.Select(diagnostic => $"{diagnostic.Code}: {diagnostic.Message}"));
+        // An inspection that cannot produce a bundle is describing what blocks one.
+        SetDiagnostics(Describe(
+            preparation.Diagnostics,
+            preparation.CanGenerate ? ValidationSeverity.Warning : ValidationSeverity.Error));
         NotifyCommandStates();
     }
 
@@ -480,6 +505,30 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
 
     private static bool AppliesToInstalled(LinuxUserVariantPreparation preparation, bool planIsStale) =>
         preparation.IsInstalled;
+
+    private IEnumerable<DiagnosticViewModel> Describe(
+        IReadOnlyList<XkbDiagnostic> diagnostics,
+        ValidationSeverity severity) =>
+        diagnostics.Select(diagnostic => new DiagnosticViewModel(
+            severity,
+            diagnostic.Code,
+            diagnostic.Message,
+            diagnostic.KeyId,
+            _selectKey));
+
+    private void SetDiagnostics(IEnumerable<DiagnosticViewModel> diagnostics)
+    {
+        Diagnostics.Clear();
+        foreach (var diagnostic in diagnostics)
+        {
+            Diagnostics.Add(diagnostic);
+        }
+
+        OnPropertyChanged(nameof(DiagnosticsText));
+        OnPropertyChanged(nameof(HasDiagnostics));
+        OnPropertyChanged(nameof(ProblemKeyIds));
+        _problemKeysChanged();
+    }
 
     private void NotifyCommandStates()
     {

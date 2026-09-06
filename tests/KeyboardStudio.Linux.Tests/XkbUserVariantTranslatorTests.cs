@@ -193,6 +193,156 @@ public sealed class XkbUserVariantTranslatorTests
         Assert.Equal("KeyA", diagnostic.KeyId);
     }
 
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Translate_WhenTheKeyHasLevelsBeyondTheModel_KeepsThemAndTheTypeThatReachesThem()
+    {
+        // The German ß key: five levels, the fifth reached through Lock, which is why the source
+        // declares a type for it. Changing what the key types must not cost it that level.
+        var baseline = Mapping(
+            "Minus",
+            LogicalKey.Minus,
+            (ModifierLayer.Default, new CharacterOutput("ß")),
+            (ModifierLayer.Shift, new CharacterOutput("?")),
+            (ModifierLayer.AltGr, new CharacterOutput("\\")),
+            (ModifierLayer.ShiftAltGr, new CharacterOutput("¿")));
+        var current = Mapping(
+            "Minus",
+            LogicalKey.Minus,
+            (ModifierLayer.Default, new CharacterOutput("-")),
+            (ModifierLayer.Shift, new CharacterOutput("_")));
+
+        var result = Translate(
+            [current],
+            [
+                new KeyMappingSnapshot(
+                    baseline.KeyId,
+                    baseline.LogicalKey,
+                    baseline.Outputs,
+                    isSafeToOverride: true,
+                    ["ssharp", "question", "backslash", "questiondown", "U1E9E"],
+                    "FOUR_LEVEL_PLUS_LOCK")
+            ]);
+
+        var mapping = Assert.Single(result.Layout!.Mappings);
+        Assert.Equal(["minus", "underscore", "NoSymbol", "NoSymbol", "U1E9E"], mapping.Keysyms);
+        Assert.Equal("FOUR_LEVEL_PLUS_LOCK", mapping.SourceTypeName);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Translate_WhenALevelWasNeverRepresented_WritesTheSourceBackUnchanged()
+    {
+        // The editor shows nothing on the third and fourth levels because a dead key has no
+        // character. Nothing was changed there, so nothing there may change.
+        var baseline = Mapping(
+            "Equal",
+            LogicalKey.Equal,
+            (ModifierLayer.Default, new CharacterOutput("´")));
+        var current = Mapping(
+            "Equal",
+            LogicalKey.Equal,
+            (ModifierLayer.Default, new CharacterOutput("=")));
+
+        var result = Translate(
+            [current],
+            [
+                new KeyMappingSnapshot(
+                    baseline.KeyId,
+                    baseline.LogicalKey,
+                    baseline.Outputs,
+                    isSafeToOverride: true,
+                    ["acute", "dead_grave", "dead_cedilla", "dead_ogonek"])
+            ]);
+
+        var mapping = Assert.Single(result.Layout!.Mappings);
+        Assert.Equal(["equal", "dead_grave", "dead_cedilla", "dead_ogonek"], mapping.Keysyms);
+        Assert.Null(mapping.SourceTypeName);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Translate_WhenTheUserClearsALevelTheImportHeld_StillEmptiesIt()
+    {
+        // The source also describes this level, but the user saw it and removed it. Restoring it
+        // from the source would undo the edit instead of preserving what was never edited.
+        var baseline = Mapping(
+            "KeyA",
+            LogicalKey.A,
+            (ModifierLayer.Default, new CharacterOutput("a")),
+            (ModifierLayer.Shift, new CharacterOutput("A")),
+            (ModifierLayer.AltGr, new CharacterOutput("ą")));
+        var current = Mapping(
+            "KeyA",
+            LogicalKey.A,
+            (ModifierLayer.Default, new CharacterOutput("a")),
+            (ModifierLayer.Shift, new CharacterOutput("A")));
+
+        var result = Translate(
+            [current],
+            [
+                new KeyMappingSnapshot(
+                    baseline.KeyId,
+                    baseline.LogicalKey,
+                    baseline.Outputs,
+                    isSafeToOverride: true,
+                    ["a", "A", "aogonek"])
+            ]);
+
+        var mapping = Assert.Single(result.Layout!.Mappings);
+        Assert.Equal(["a", "A", "NoSymbol"], mapping.Keysyms);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    [Trait("Category", "ErrorPath")]
+    public void Translate_WhenASourceLevelIsNotAKeysymName_RefusesTheKeyRatherThanWriteIt()
+    {
+        var baseline = Mapping("KeyA", LogicalKey.A, (ModifierLayer.Default, new CharacterOutput("a")));
+        var current = Mapping("KeyA", LogicalKey.A, (ModifierLayer.Default, new CharacterOutput("x")));
+
+        var result = Translate(
+            [current],
+            [
+                new KeyMappingSnapshot(
+                    baseline.KeyId,
+                    baseline.LogicalKey,
+                    baseline.Outputs,
+                    isSafeToOverride: true,
+                    ["a", "] };  key <AB01> { [ z"])
+            ]);
+
+        Assert.False(result.Success);
+        var diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal(XkbUserVariantTranslator.UnwritableSourceLevelCode, diagnostic.Code);
+        Assert.Equal("KeyA", diagnostic.KeyId);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    [Trait("Category", "ErrorPath")]
+    public void Translate_WhenLevelsRunPastTheModelWithNoTypeToReachThem_RefusesTheKey()
+    {
+        var baseline = Mapping("KeyA", LogicalKey.A, (ModifierLayer.Default, new CharacterOutput("a")));
+        var current = Mapping("KeyA", LogicalKey.A, (ModifierLayer.Default, new CharacterOutput("x")));
+
+        var result = Translate(
+            [current],
+            [
+                new KeyMappingSnapshot(
+                    baseline.KeyId,
+                    baseline.LogicalKey,
+                    baseline.Outputs,
+                    isSafeToOverride: true,
+                    ["a", "A", "NoSymbol", "NoSymbol", "U1E9E"])
+            ]);
+
+        Assert.False(result.Success);
+        Assert.Equal(
+            XkbUserVariantTranslator.UnwritableSourceLevelCode,
+            Assert.Single(result.Diagnostics).Code);
+    }
+
     private static XkbUserVariantTranslationResult Translate(
         IReadOnlyList<KeyMapping> current,
         IReadOnlyList<KeyMappingSnapshot> baseline)

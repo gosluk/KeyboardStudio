@@ -131,7 +131,9 @@ public sealed class MainWindowViewModel : ObservableObject
             interactionService as IBuildInteractionService,
             _documentService.CurrentTargetProfiles,
             BuildProfileChanged,
-            buildTargetVisibility);
+            buildTargetVisibility,
+            SelectKey,
+            RefreshProblemKeys);
         LinuxVariant = new LinuxUserVariantViewModel(
             () => Project,
             () => _documentService.CurrentLayoutDerivation,
@@ -139,7 +141,9 @@ public sealed class MainWindowViewModel : ObservableObject
             linuxUserVariantWorkflow ?? new LinuxUserVariantWorkflowService(),
             interactionService as ILinuxUserVariantInteractionService,
             Build.GetLinuxUserVariantMetadata,
-            Build.SetLinuxUserVariantMetadata);
+            Build.SetLinuxUserVariantMetadata,
+            SelectKey,
+            RefreshProblemKeys);
         NewCommand = new AsyncRelayCommand(() => NewDocumentAsync());
         NewDocumentOptions = Templates
             .Select(template => new NewDocumentOptionViewModel(
@@ -712,6 +716,24 @@ public sealed class MainWindowViewModel : ObservableObject
 
     private static DiagnosticsViewModel CreateDiagnostics(KeyboardEditorViewModel editor) =>
         new(keyId => editor.SelectKey(keyId));
+
+    /// <summary>Shows the key a finding names, wherever the finding was shown.</summary>
+    private void SelectKey(string keyId) => Editor.SelectKey(keyId);
+
+    /// <summary>
+    /// Marks every key the build and installation panels are currently complaining about.
+    ///
+    /// Both panels report into one call because the editor marks a key, not a panel: a key either
+    /// has something wrong with it or does not, and whichever panel found it, the mark means the
+    /// same thing. The panels replace their own findings wholesale, so recomputing the union each
+    /// time is also what unmarks a key whose problem has gone.
+    /// </summary>
+    private void RefreshProblemKeys() =>
+        Editor.ApplyReportedProblemKeys(
+        [
+            .. Build?.ProblemKeyIds ?? [],
+            .. LinuxVariant?.ProblemKeyIds ?? []
+        ]);
 
     /// <summary>
     /// Re-runs validation and shows what it found, plus the standing note about a host layout that

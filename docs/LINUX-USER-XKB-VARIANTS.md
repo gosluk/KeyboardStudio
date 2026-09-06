@@ -327,7 +327,8 @@ LayoutDerivation
 
 Only an import-as-new-project from a system-origin catalog entry establishes an installable
 derivation in the first version. Each baseline mapping records whether source behavior lost during
-import makes that key unsafe to override. Loose-file imports, mapping replacement, startup
+import makes that key unsafe to override, and carries the source's own levels and key type so that
+loss confined to a key's levels no longer has to. Loose-file imports, mapping replacement, startup
 inference, and migrated version-2 documents do not gain a derivation. The baseline never changes
 during editing or when the document is loaded. Re-importing deliberately creates a new baseline
 and installation ID.
@@ -340,11 +341,29 @@ supported mapping through the highest relevant level, including an explicit `NoS
 user cleared a level. This prevents a partial statement from accidentally retaining an old
 inherited level.
 
-The current importer intentionally drops dead keys, actions, groups above one, and levels above
-four. If a changed key had unsupported source behavior that the baseline could not represent, the
-translator blocks variant generation with a key-specific diagnostic. It does not infer that an
-invisible source level should be erased. Later work can add explicit override intent or broader XKB
-constructs.
+The importer projects a key onto four layers of representable characters, which is the right shape
+for an editor and not the whole truth about a key. What it cannot project — a dead key, a level
+above the fourth, a keysym with no character behind it — it now keeps verbatim beside the mapping,
+together with the key type the source declared, in `LayoutImportKeySource`. Those are opaque to the
+model: never shown, never edited, and meaningful only to the backend that read them.
+
+That is what makes the key writable again. An override replaces a key whole, so the translator
+names every level it has: the user's own where the editor holds one, an explicit `NoSymbol` where
+the user cleared one the import did hold, and the source's own text everywhere the model never
+represented anything. A key whose levels run past the fourth is written with the type the source
+declared, because nothing else reaches them; the model's own type is used for every key that fits
+within four, so that levels the user has just added stay reachable. Every level and type taken from
+the source is checked against the notation it claims to be in before it is written back, and a key
+that fails that check is refused rather than written.
+
+Loss that is not a level still puts a key out of reach: another group, a key action, a construct
+the reader did not recognize, a composition that was approximated or could not be read. Nothing
+kept beside the mapping describes those, so overriding the key would still erase them, and the
+translator blocks generation for that key with a key-specific diagnostic.
+
+Source levels are additive within the version-3 document schema. A derivation saved before they
+were kept has none, and its keys stay exactly as safe or unsafe to override as they were recorded —
+re-importing the layout is what gives an existing project the fuller baseline.
 
 The result of translation is separate from the existing standalone model:
 
@@ -577,6 +596,8 @@ The Linux user-variant panel shows:
 - host capability and desktop-discovery status;
 - project status: not installed, installed, update available, externally modified, broken, or base
   unavailable;
+- what it found, one row each: a row that names a key selects that key on the keyboard, and a key
+  named by a finding that blocks the variant is marked on the keyboard as well;
 - actions: Generate bundle, Install, Update, Verify installed, Uninstall, and Open output folder.
 
 Install, update, and uninstall always require an explicit action and show the exact paths to be

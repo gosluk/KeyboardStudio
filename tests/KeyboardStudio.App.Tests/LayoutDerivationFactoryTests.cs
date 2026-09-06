@@ -40,7 +40,76 @@ public sealed class LayoutDerivationFactoryTests
         Assert.False(Assert.Single(derivation.BaselineMappings).IsSafeToOverride);
     }
 
-    private static LayoutDerivation Create(LayoutImportDiagnostic diagnostic)
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Create_WhenTheOnlyLossIsALevelTheSourceStillDescribes_KeepsTheKeySafe()
+    {
+        var diagnostic = new LayoutImportDiagnostic(
+            ValidationSeverity.Warning,
+            LayoutImportDiagnosticCodes.LayerBeyondModelDropped,
+            "Level 5 of '<AD01>' was dropped; the model holds four levels.",
+            KeyId: "KeyA");
+
+        var derivation = Create(
+            diagnostic,
+            new LayoutImportKeySource("KeyA", "<AD01>", ["a", "A", "aogonek", "Aogonek", "U1E9E"], "FOUR_LEVEL_PLUS_LOCK"));
+
+        Assert.True(Assert.Single(derivation.BaselineMappings).IsSafeToOverride);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Create_WhenALevelWasLostAndNoSourceCameWithIt_LeavesTheKeyUnsafe()
+    {
+        var diagnostic = new LayoutImportDiagnostic(
+            ValidationSeverity.Warning,
+            LayoutImportDiagnosticCodes.DeadKeyDropped,
+            "A dead key was dropped.",
+            KeyId: "KeyA");
+
+        var derivation = Create(diagnostic);
+
+        Assert.False(Assert.Single(derivation.BaselineMappings).IsSafeToOverride);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Create_WhenTheLossIsNotALevel_LeavesTheKeyUnsafeEvenWithItsSource()
+    {
+        // An action is not a level, so nothing the source says about levels can restore it.
+        var diagnostic = new LayoutImportDiagnostic(
+            ValidationSeverity.Warning,
+            LayoutImportDiagnosticCodes.UnsupportedConstructIgnored,
+            "Key <AD01> used 'actions', which has no equivalent in the model; it was ignored.",
+            KeyId: "KeyA");
+
+        var derivation = Create(
+            diagnostic,
+            new LayoutImportKeySource("KeyA", "<AD01>", ["a", "A"], null));
+
+        Assert.False(Assert.Single(derivation.BaselineMappings).IsSafeToOverride);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Create_CarriesTheSourceLevelsOntoTheBaseline()
+    {
+        var derivation = Create(
+            new LayoutImportDiagnostic(
+                ValidationSeverity.Warning,
+                LayoutImportDiagnosticCodes.LayerBeyondModelDropped,
+                "Level 5 was dropped.",
+                KeyId: "KeyA"),
+            new LayoutImportKeySource("KeyA", "<AD01>", ["a", "A", "aogonek", "Aogonek", "U1E9E"], "FOUR_LEVEL_PLUS_LOCK"));
+
+        var mapping = Assert.Single(derivation.BaselineMappings);
+        Assert.Equal(["a", "A", "aogonek", "Aogonek", "U1E9E"], mapping.SourceLevels);
+        Assert.Equal("FOUR_LEVEL_PLUS_LOCK", mapping.SourceKeyType);
+    }
+
+    private static LayoutDerivation Create(
+        LayoutImportDiagnostic diagnostic,
+        LayoutImportKeySource? keySource = null)
     {
         var project = TestProjectFactory.Create();
         project.Layout.Mappings.Clear();
@@ -62,7 +131,8 @@ public sealed class LayoutDerivationFactoryTests
                 KeysSkipped: 0,
                 ResolvedIncludeChain: ["pl(qwertz)"],
                 Diagnostics: [diagnostic]),
-            "qwertz");
+            "qwertz",
+            keySource is null ? [] : [keySource]);
         var descriptor = new ImportableLayoutDescriptor(
             "linux-xkb",
             "pl",

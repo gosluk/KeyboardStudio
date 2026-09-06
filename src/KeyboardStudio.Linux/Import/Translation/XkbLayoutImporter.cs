@@ -166,6 +166,10 @@ public sealed class XkbLayoutImporter
         // keycodes/evdev declares to be one key, and the host reads the later statement as the
         // one that wins.
         var mappingsByKeyId = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        // What each key said before the model reduced it. Keyed the same way the mappings are, so
+        // that a second name for one key replaces its source too rather than leaving the first.
+        var sourcesByKeyId = new Dictionary<string, LayoutImportKeySource>(StringComparer.Ordinal);
         var keysImported = 0;
         var keysSkipped = 0;
 
@@ -218,6 +222,12 @@ public sealed class XkbLayoutImporter
                     layout.Mappings.Add(mapping);
                     keysImported++;
                 }
+
+                sourcesByKeyId[keyId] = new LayoutImportKeySource(
+                    keyId,
+                    key.KeyName,
+                    key.Keysyms,
+                    key.KeyType);
             }
             else if (!everythingWasEmpty && !key.FromCommonBase)
             {
@@ -247,7 +257,8 @@ public sealed class XkbLayoutImporter
                 keysSkipped,
                 symbols.IncludeChain,
                 diagnostics),
-            symbols.Section);
+            symbols.Section,
+            [.. layout.Mappings.Select(mapping => sourcesByKeyId[mapping.KeyId])]);
     }
 
     /// <summary>

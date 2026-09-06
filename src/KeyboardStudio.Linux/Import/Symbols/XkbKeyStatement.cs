@@ -13,7 +13,14 @@ namespace KeyboardStudio.Linux;
 /// The first group's keysym names in level order. Empty when the statement set only properties the
 /// model does not hold, such as a key type — such a statement still exists, and a merge may need it.
 /// </param>
+/// <param name="KeyType">
+/// The type the statement declared for the first group, or <see langword="null"/> when it declared
+/// none. The model has no place for a type, but a derived layout that overrides this key must write
+/// it back: the type is what decides which modifiers reach which level, and a key with a fifth
+/// level has no way to reach it without the type that says so.
+/// </param>
 public sealed record XkbKeyStatement(
     XkbMergeMode Merge,
     string KeyName,
-    IReadOnlyList<string> Keysyms) : XkbSymbolsStatement;
+    IReadOnlyList<string> Keysyms,
+    string? KeyType = null) : XkbSymbolsStatement;

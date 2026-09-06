@@ -204,7 +204,8 @@
               <ItemsControl ItemsSource="{Binding Diagnostics.Items}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
-                    <Button Classes="quiet"
+                    <Button Classes="quiet diagnostic-row"
+                            Classes.actionable="{Binding HasKey}"
                             Command="{Binding SelectCommand}"
                             HorizontalAlignment="Stretch"
                             HorizontalContentAlignment="Stretch"
@@ -359,20 +360,34 @@
               <ItemsControl ItemsSource="{Binding Build.Problems}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
-                    <Border Classes="problem" Margin="0,1">
-                      <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                        <TextBlock Text="{Binding Category}" FontWeight="SemiBold" FontSize="12" />
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5">
-                          <TextBlock Text="{Binding Severity}" FontSize="12" />
-                          <TextBlock Classes="mono" Text="{Binding Code}" VerticalAlignment="Center" />
-                        </StackPanel>
-                        <TextBlock Grid.Row="1"
-                                   Grid.ColumnSpan="2"
-                                   Text="{Binding Message}"
-                                   TextWrapping="Wrap"
-                                   FontSize="12" />
-                      </Grid>
-                    </Border>
+                    <Button Classes="quiet diagnostic-row"
+                            Classes.actionable="{Binding HasKey}"
+                            Command="{Binding SelectCommand}"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Stretch"
+                            Padding="0"
+                            Margin="0,1">
+                      <Border Classes="problem">
+                        <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                          <TextBlock Text="{Binding Category}" FontWeight="SemiBold" FontSize="12" />
+                          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5">
+                            <TextBlock Text="{Binding Severity}" FontSize="12" />
+                            <TextBlock Classes="mono" Text="{Binding Code}" VerticalAlignment="Center" />
+                          </StackPanel>
+                          <TextBlock Grid.Row="1"
+                                     Text="{Binding Message}"
+                                     TextWrapping="Wrap"
+                                     FontSize="12" />
+                          <Border Grid.Row="1"
+                                  Grid.Column="1"
+                                  Classes="badge warning"
+                                  VerticalAlignment="Bottom"
+                                  IsVisible="{Binding HasKey}">
+                            <TextBlock Text="{Binding KeyAssociation}" />
+                          </Border>
+                        </Grid>
+                      </Border>
+                    </Button>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
@@ -468,11 +483,39 @@
                          Classes="mono"
                          TextWrapping="Wrap"
                          FontSize="12" />
-              <TextBlock Classes="warning"
-                         Text="{Binding LinuxVariant.DiagnosticsText}"
-                         TextWrapping="Wrap"
-                         FontSize="12"
-                         IsVisible="{Binding LinuxVariant.HasDiagnostics}" />
+              <ItemsControl ItemsSource="{Binding LinuxVariant.Diagnostics}"
+                            IsVisible="{Binding LinuxVariant.HasDiagnostics}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Button Classes="quiet diagnostic-row"
+                            Classes.actionable="{Binding HasKey}"
+                            Command="{Binding SelectCommand}"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Stretch"
+                            Padding="6,4"
+                            Margin="0,1">
+                      <StackPanel Spacing="2">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <TextBlock Classes="mono"
+                                     Text="{Binding Code}"
+                                     FontSize="12"
+                                     VerticalAlignment="Center" />
+                          <Border Classes="badge warning"
+                                  IsVisible="{Binding HasKey}"
+                                  VerticalAlignment="Center">
+                            <TextBlock Text="{Binding KeyAssociation}" />
+                          </Border>
+                        </StackPanel>
+                        <TextBlock Classes.warning="{Binding !IsError}"
+                                   Classes.danger="{Binding IsError}"
+                                   Text="{Binding Message}"
+                                   TextWrapping="Wrap"
+                                   FontSize="12" />
+                      </StackPanel>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
 
               <WrapPanel Orientation="Horizontal">
                 <Button Classes="quiet"
