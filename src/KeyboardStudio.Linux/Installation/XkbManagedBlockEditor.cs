@@ -7,12 +7,18 @@ namespace KeyboardStudio.Linux;
 /// <summary>Edits only comment-delimited KeyboardStudio blocks in a shared symbols file.</summary>
 public static partial class XkbManagedBlockEditor
 {
+    /// <param name="reclaimUnrecordedBlock">
+    /// Allows a block that already carries this project's markers to be overwritten when the
+    /// installation manifest records nothing about it. A lost or reset manifest otherwise leaves
+    /// the orphaned block unwritable, so a rebuilt project could never be installed over it.
+    /// </param>
     public static XkbManagedBlockEditResult Upsert(
         string existingContent,
         string projectInstallationId,
         string publicVariantId,
         string desiredBlock,
-        string? expectedExistingBlockSha256)
+        string? expectedExistingBlockSha256,
+        bool reclaimUnrecordedBlock = false)
     {
         ArgumentNullException.ThrowIfNull(existingContent);
         ValidateId(projectInstallationId);
@@ -73,12 +79,16 @@ public static partial class XkbManagedBlockEditor
         }
 
         var existingBlock = NormalizeBlock(existingContent.Substring(target.Start, target.Length));
-        if (expectedExistingBlockSha256 is null ||
-            !string.Equals(Hash(existingBlock), expectedExistingBlockSha256, StringComparison.Ordinal))
+        var claimed = expectedExistingBlockSha256 is null
+            ? reclaimUnrecordedBlock
+            : string.Equals(Hash(existingBlock), expectedExistingBlockSha256, StringComparison.Ordinal);
+        if (!claimed)
         {
             diagnostics.Add(new XkbDiagnostic(
                 "KSM003",
-                "The existing managed block was changed outside KeyboardStudio."));
+                expectedExistingBlockSha256 is null
+                    ? "A managed block for this project exists that the installation manifest does not record."
+                    : "The existing managed block was changed outside KeyboardStudio."));
             return Failed(existingContent, diagnostics);
         }
 

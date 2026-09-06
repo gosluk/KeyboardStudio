@@ -82,6 +82,40 @@ public sealed class XkbRegistryDocumentMergerTests
 
     [Fact]
     [Trait("Category", "Unit")]
+    public void Upsert_WhenAnUnrecordedOwnedEntryMayBeReclaimed_UpdatesIt()
+    {
+        var initial = XkbRegistryDocumentMerger.Upsert(null, Metadata(), null);
+        var renamed = Metadata(description: "Polish Programmer - KeyboardStudio");
+
+        var result = XkbRegistryDocumentMerger.Upsert(
+            initial.Content,
+            renamed,
+            expectedExistingEntrySha256: null,
+            reclaimUnrecordedEntry: true);
+
+        Assert.True(result.Success);
+        Assert.Contains("Polish Programmer - KeyboardStudio", result.Content);
+        Assert.DoesNotContain(">Polish - KeyboardStudio<", result.Content);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    [Trait("Category", "ErrorPath")]
+    public void Upsert_WhenAnUnrecordedOwnedEntryMayNotBeReclaimed_RefusesReplacement()
+    {
+        var initial = XkbRegistryDocumentMerger.Upsert(null, Metadata(), null);
+
+        var result = XkbRegistryDocumentMerger.Upsert(
+            initial.Content,
+            Metadata(description: "Polish Programmer - KeyboardStudio"),
+            expectedExistingEntrySha256: null);
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Code == "KSR003");
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
     [Trait("Category", "ErrorPath")]
     public void Upsert_WhenVariantIsUnowned_RefusesCollision()
     {

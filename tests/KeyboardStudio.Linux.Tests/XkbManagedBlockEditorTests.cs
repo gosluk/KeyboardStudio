@@ -109,6 +109,54 @@ public sealed class XkbManagedBlockEditorTests
 
     [Fact]
     [Trait("Category", "Unit")]
+    public void Upsert_WhenAnUnrecordedBlockMayBeReclaimed_OverwritesIt()
+    {
+        var initial = XkbManagedBlockEditor.Upsert(
+            "// unrelated\n",
+            FirstId,
+            "keyboardstudio_one",
+            Block(FirstId, "keyboardstudio_one"),
+            null);
+
+        var result = XkbManagedBlockEditor.Upsert(
+            initial.Content!,
+            FirstId,
+            "keyboardstudio_one",
+            Block(FirstId, "keyboardstudio_one", "    // rebuilt\n"),
+            expectedExistingBlockSha256: null,
+            reclaimUnrecordedBlock: true);
+
+        Assert.True(result.Success);
+        Assert.StartsWith("// unrelated\n", result.Content);
+        Assert.Contains("// rebuilt", result.Content);
+        Assert.Equal(1, result.Content!.Split($"BEGIN KeyboardStudio {FirstId}").Length - 1);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    [Trait("Category", "ErrorPath")]
+    public void Upsert_WhenAnUnrecordedBlockMayNotBeReclaimed_RefusesReplacement()
+    {
+        var initial = XkbManagedBlockEditor.Upsert(
+            string.Empty,
+            FirstId,
+            "keyboardstudio_one",
+            Block(FirstId, "keyboardstudio_one"),
+            null);
+
+        var result = XkbManagedBlockEditor.Upsert(
+            initial.Content!,
+            FirstId,
+            "keyboardstudio_one",
+            Block(FirstId, "keyboardstudio_one", "    // rebuilt\n"),
+            expectedExistingBlockSha256: null);
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Code == "KSM003");
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
     [Trait("Category", "ErrorPath")]
     public void Upsert_WhenPublicSectionAlreadyExistsOutsideManagedBlock_RefusesCollision()
     {

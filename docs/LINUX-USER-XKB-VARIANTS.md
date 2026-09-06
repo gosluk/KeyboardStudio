@@ -442,7 +442,10 @@ deterministic multi-project generator plus an output writer:
 
 The bundle manifest records schema/generator versions, stable variant identities, changed physical
 keys, and SHA-256 hashes of every installable file. Generation refuses internal-section and public
-layout/variant collisions before producing a bundle.
+layout/variant collisions before producing a bundle. Writing a bundle over a previous one prunes the
+files that generation no longer produces - a bridge for a base layout the project has stopped
+deriving from, say - so the bundle root holds exactly the current bundle. Only a root carrying the
+generated bundle manifest is pruned; any other directory at that path is left as it is.
 
 P14.4 verification uses the official order-sensitive invocation shape
 `xkbcli compile-keymap --include <staged-root> --include-defaults --test`. For every proposed
@@ -462,21 +465,26 @@ P14.6 executes the resulting typed operations transactionally.
 
 ### File ownership
 
-- `symbols/keyboardstudio` is app-owned only when it has the KeyboardStudio generated header and a
-  matching installation manifest. Otherwise installation refuses to replace it.
+- `symbols/keyboardstudio` is app-owned only when it has the KeyboardStudio generated header. A file
+  the manifest records must also still hash to what was recorded; a header-carrying file the
+  manifest says nothing about is reclaimed instead of refused, because a lost or reset manifest
+  cannot make KeyboardStudio's own generated file someone else's.
 - `symbols/<base-layout>` is shared. KeyboardStudio edits only stable comment-delimited managed
   blocks and preserves all other bytes.
 - `rules/evdev.xml` is shared. It is changed through an XML-aware merger with external entity
   resolution disabled. Unknown elements and unrelated entries are preserved.
 - a public `(base layout ID, variant ID)` collision is an error unless the existing entry belongs to
   the same project installation ID.
-- unexpected edits to a previously managed block are conflicts, not permission to overwrite.
+- unexpected edits to a managed block the manifest records are conflicts, not permission to
+  overwrite. A block or registry entry carrying this project's ownership markers that the manifest
+  does not record is reclaimed by an install, so a rebuilt project reaches the desktop instead of
+  stranding behind state the app can no longer describe.
 
 `XkbManagedBlockEditor` preserves all bytes outside the selected comment-delimited block and hashes
 the normalized owned block. `XkbRegistryDocumentMerger` parses with DTD processing ignored and no
 XML resolver, preserves unknown elements and unrelated variants, and owns entries through adjacent
 project-ID comments. Both refuse missing, duplicated, malformed, unowned, or hash-mismatched target
-content.
+content, and both overwrite an unrecorded target only when the caller asks them to reclaim it.
 
 ### Host-local state
 
@@ -499,8 +507,10 @@ are added by the P14.6 transaction layer rather than to each durable installatio
 `XkbInstallPlanner` consumes only generated bundle content, an XDG path result, the manifest, and
 immutable live-file snapshots. It returns exact create/replace/delete operations plus the next
 manifest. It does not touch the filesystem. The planner rejects an unowned or whole-file-modified
-`symbols/keyboardstudio`, changed target blocks/registry entries, public collisions, unsafe paths,
-and snapshots marked as symlinks. Unrelated bridge bytes and XML nodes are retained.
+`symbols/keyboardstudio`, changed recorded blocks/registry entries, public collisions, unsafe paths,
+and snapshots marked as symlinks. When the manifest holds no installation for the project being
+planned, its owned content is reclaimed and rewritten rather than refused. Unrelated bridge bytes
+and XML nodes are retained.
 
 ### Installation transaction
 
@@ -543,7 +553,9 @@ Cancellation or any ordinary I/O, validation, or verification failure after jour
 destinations and the previous manifest. A journal left by process interruption is replayed
 idempotently before the next install, update, verify-installed, or uninstall command. Backup hashes
 are checked before recovery, and a failed recovery retains the journal and backups instead of
-guessing.
+guessing. The same pass deletes the service's own abandoned temporary files - a killed process
+leaves one whose rename never ran - once they are old enough that no transaction could still be
+writing them.
 
 Uninstall removes only sections, managed blocks, and XML nodes owned by the selected installation
 ID. It deletes a shared file only when no non-KeyboardStudio content remains. After uninstall, it

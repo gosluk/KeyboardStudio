@@ -207,9 +207,15 @@ public sealed class LinuxUserVariantWorkflowService : ILinuxUserVariantWorkflowS
                 preparation.Bundle,
                 outputDirectory,
                 cancellationToken);
+            var superseded = write.RemovedPaths.Count switch
+            {
+                0 => string.Empty,
+                1 => " One superseded file from the previous bundle was removed.",
+                var count => $" {count} superseded files from the previous bundle were removed."
+            };
             return new LinuxUserVariantOperationResult(
                 true,
-                $"Generated the user XKB bundle at {write.BundleRoot}.",
+                $"Generated the user XKB bundle at {write.BundleRoot}.{superseded}",
                 write.BundleRoot,
                 []);
         }

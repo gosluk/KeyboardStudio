@@ -15,10 +15,15 @@ public static class XkbRegistryDocumentMerger
         CloseInput = true
     };
 
+    /// <param name="reclaimUnrecordedEntry">
+    /// Allows an entry already owned by this project to be overwritten when the installation
+    /// manifest records nothing about it, so a lost or reset manifest cannot strand the entry.
+    /// </param>
     public static XkbRegistryMergeResult Upsert(
         string? existingContent,
         XkbUserVariantMetadata metadata,
-        string? expectedExistingEntrySha256)
+        string? expectedExistingEntrySha256,
+        bool reclaimUnrecordedEntry = false)
     {
         ArgumentNullException.ThrowIfNull(metadata);
         var diagnostics = new List<XkbDiagnostic>();
@@ -42,12 +47,16 @@ public static class XkbRegistryDocumentMerger
             }
 
             var currentHash = HashElement(variant);
-            if (expectedExistingEntrySha256 is null ||
-                !string.Equals(currentHash, expectedExistingEntrySha256, StringComparison.Ordinal))
+            var claimed = expectedExistingEntrySha256 is null
+                ? reclaimUnrecordedEntry
+                : string.Equals(currentHash, expectedExistingEntrySha256, StringComparison.Ordinal);
+            if (!claimed)
             {
                 diagnostics.Add(new XkbDiagnostic(
                     "KSR003",
-                    "The existing managed registry entry was changed outside KeyboardStudio."));
+                    expectedExistingEntrySha256 is null
+                        ? "A registry entry owned by this project exists that the installation manifest does not record."
+                        : "The existing managed registry entry was changed outside KeyboardStudio."));
                 return Failed(existingContent, diagnostics);
             }
 
