@@ -84,6 +84,16 @@ public sealed class AvaloniaProjectInteractionService :
         IReadOnlyList<string> paths) =>
         new LiveXkbOperationDialog(action, paths).ShowDialog<bool>(_owner);
 
+    public Task<bool> ConfirmIncompleteKeysAsync(
+        string action,
+        IReadOnlyList<string> losses) =>
+        new LiveXkbOperationDialog(
+            $"{action} with keys that cannot be written in full?",
+            "The imported layout holds more of these keys than this project can write back. " +
+            "Everything else is written as usual; each line below is what is not.",
+            losses,
+            action).ShowDialog<bool>(_owner);
+
     public async Task OpenDirectoryAsync(string path)
     {
         var directory = new DirectoryInfo(Path.GetFullPath(path));

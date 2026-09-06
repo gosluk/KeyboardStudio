@@ -75,13 +75,21 @@ A derived user variant overrides whole keys, so its findings are mostly about on
 
 | Code | Severity | Meaning | Key linked |
 |---|---|---|---|
-| `KSU001` | Error | The key cannot be overridden: its import lost something no source detail can restore — another group, a key action, an unrecognized construct, an approximated composition. | Yes |
+| `KSU001` | Error | The key cannot be overridden as it stands: its import dropped levels the model does not hold, and the project has no record of what they were. | Yes |
 | `KSU002` | Error | An output or logical key cannot be represented as an XKB keysym. | Yes |
 | `KSU003` | Error | The source's own text for a level or key type cannot be written back as XKB notation, or a key has levels past the fourth and the source declared no type that reaches them. | Yes |
+| `KSU004` | Info | The key was written anyway, and this is what writing it cost. Raised only for a loss the user has been shown and has agreed to. | Yes |
 
 Levels the model never held — a dead key, a fifth level, a keysym with no character — are not
-`KSU001`. They are kept verbatim from the source and written back around the user's change; see
-[LINUX-USER-XKB-VARIANTS.md](LINUX-USER-XKB-VARIANTS.md).
+`KSU001` when the import recorded them: they are kept verbatim from the source and written back
+around the user's change.
+
+`KSU001` and `KSU003` describe something specific that would be dropped, so both can be accepted:
+the panel names the affected keys, asks before writing, and reports what was given up as `KSU004`.
+`KSU002` cannot — an output with no keysym leaves nothing to write and nothing to drop instead.
+Loss that is not a level — an ignored alternate group, an unsupported key construct, an inexactly
+composed layout — no longer refuses anything, because an override replaces only the group-1 symbols
+and type of the keys it names. See [LINUX-USER-XKB-VARIANTS.md](LINUX-USER-XKB-VARIANTS.md).
 
 ## Layout import diagnostics
 

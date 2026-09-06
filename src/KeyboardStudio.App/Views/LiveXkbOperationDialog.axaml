@@ -9,8 +9,7 @@
   <Grid RowDefinitions="Auto,Auto,Auto" Margin="18" RowSpacing="14">
     <StackPanel Spacing="6">
       <TextBlock Text="{Binding Heading}" FontSize="18" FontWeight="SemiBold" />
-      <TextBlock Text="KeyboardStudio will change only the following per-user XKB and state paths. Distribution files and the active desktop layout are not changed."
-                 TextWrapping="Wrap" />
+      <TextBlock Text="{Binding Explanation}" TextWrapping="Wrap" />
     </StackPanel>
 
     <Border Grid.Row="1"
@@ -19,7 +18,7 @@
             BorderBrush="{DynamicResource AppBorderBrush}"
             BorderThickness="1"
             CornerRadius="6">
-      <ItemsControl ItemsSource="{Binding Paths}">
+      <ItemsControl ItemsSource="{Binding Items}">
         <ItemsControl.ItemTemplate>
           <DataTemplate>
             <TextBlock Classes="mono" Text="{Binding}" TextWrapping="Wrap" Margin="0,2" />

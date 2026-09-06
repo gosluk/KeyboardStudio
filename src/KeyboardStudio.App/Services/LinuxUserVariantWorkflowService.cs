@@ -143,7 +143,14 @@ public sealed class LinuxUserVariantWorkflowService : ILinuxUserVariantWorkflowS
             derivation.ResolvedBaseSectionId,
             requestedId,
             requestedName);
-        var translation = _translator.Translate(project, derivation.BaselineMappings, metadata);
+        // Translating with acceptance is how the cost of a key that cannot be written in full
+        // becomes knowable at all; the bundle it produces is withheld behind that cost, which the
+        // caller has to accept before anything is written.
+        var translation = _translator.Translate(
+            project,
+            derivation.BaselineMappings,
+            metadata,
+            acceptIncompleteKeys: true);
         diagnostics.AddRange(translation.Diagnostics);
         if (!translation.Success)
         {
@@ -187,7 +194,10 @@ public sealed class LinuxUserVariantWorkflowService : ILinuxUserVariantWorkflowS
             paths,
             capability,
             manifest,
-            diagnostics);
+            diagnostics)
+        {
+            AcceptedLoss = translation.AcceptedLoss
+        };
     }
 
     public async Task<LinuxUserVariantOperationResult> GenerateAsync(

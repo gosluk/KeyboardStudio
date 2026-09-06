@@ -21,6 +21,22 @@ internal sealed class FakeLinuxUserVariantInteractionService : ILinuxUserVariant
         return Task.FromResult(Confirm);
     }
 
+    public bool ConfirmIncompleteKeys { get; set; } = true;
+
+    public IReadOnlyList<string> LastLosses { get; private set; } = [];
+
+    public int IncompleteKeyPrompts { get; private set; }
+
+    public Task<bool> ConfirmIncompleteKeysAsync(
+        string action,
+        IReadOnlyList<string> losses)
+    {
+        LastAction = action;
+        LastLosses = losses;
+        IncompleteKeyPrompts++;
+        return Task.FromResult(ConfirmIncompleteKeys);
+    }
+
     public Task OpenDirectoryAsync(string path)
     {
         OpenedPath = path;

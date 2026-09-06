@@ -177,6 +177,102 @@ public sealed class XkbUserVariantTranslatorTests
 
     [Fact]
     [Trait("Category", "Unit")]
+    public void Translate_WhenLossIsAccepted_WritesTheUnsafeKeyFromWhatTheEditorHolds()
+    {
+        var baseline = Mapping("KeyA", LogicalKey.A, (ModifierLayer.Default, new CharacterOutput("a")));
+        var current = Mapping("KeyA", LogicalKey.A, (ModifierLayer.Default, new CharacterOutput("x")));
+
+        var result = Translate(
+            [current],
+            [KeyMappingSnapshot.From(baseline, isSafeToOverride: false)],
+            acceptIncompleteKeys: true);
+
+        Assert.True(result.Success);
+        var mapping = Assert.Single(result.Layout!.Mappings);
+        Assert.Equal(["x"], mapping.Keysyms);
+        var accepted = Assert.Single(result.AcceptedLoss);
+        Assert.Equal(XkbUserVariantTranslator.AcceptedIncompleteKeyCode, accepted.Code);
+        Assert.Equal("KeyA", accepted.KeyId);
+        Assert.Contains(accepted, result.Diagnostics);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Translate_WhenLossIsAccepted_LeavesAnUnwritableSourceLevelEmpty()
+    {
+        var baseline = Mapping("KeyA", LogicalKey.A, (ModifierLayer.Default, new CharacterOutput("a")));
+        var current = Mapping("KeyA", LogicalKey.A, (ModifierLayer.Default, new CharacterOutput("x")));
+
+        var result = Translate(
+            [current],
+            [
+                new KeyMappingSnapshot(
+                    baseline.KeyId,
+                    baseline.LogicalKey,
+                    baseline.Outputs,
+                    isSafeToOverride: true,
+                    ["a", "] };  key <AB01> { [ z"])
+            ],
+            acceptIncompleteKeys: true);
+
+        Assert.True(result.Success);
+        Assert.Equal(["x", "NoSymbol"], Assert.Single(result.Layout!.Mappings).Keysyms);
+        Assert.Equal("KeyA", Assert.Single(result.AcceptedLoss).KeyId);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Translate_WhenLossIsAccepted_TrimsLevelsNoTypeCanReach()
+    {
+        var baseline = Mapping("KeyA", LogicalKey.A, (ModifierLayer.Default, new CharacterOutput("a")));
+        var current = Mapping("KeyA", LogicalKey.A, (ModifierLayer.Default, new CharacterOutput("x")));
+
+        var result = Translate(
+            [current],
+            [
+                new KeyMappingSnapshot(
+                    baseline.KeyId,
+                    baseline.LogicalKey,
+                    baseline.Outputs,
+                    isSafeToOverride: true,
+                    ["a", "A", "NoSymbol", "NoSymbol", "U1E9E"])
+            ],
+            acceptIncompleteKeys: true);
+
+        Assert.True(result.Success);
+        // The first four levels are still carried in full - the second is the source's own, since
+        // the editor never held it. Only the fifth, which nothing can now reach, is gone.
+        var mapping = Assert.Single(result.Layout!.Mappings);
+        Assert.Equal(["x", "A", "NoSymbol", "NoSymbol"], mapping.Keysyms);
+        Assert.Null(mapping.SourceTypeName);
+        Assert.Single(result.AcceptedLoss);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    [Trait("Category", "ErrorPath")]
+    public void Translate_WhenAnOutputCannotBeAKeysym_IsNotSomethingAcceptanceCanLift()
+    {
+        // Every other refusal describes something to drop. This one has nothing to write at all,
+        // so agreeing to it would mean agreeing to nothing in particular.
+        var baseline = Mapping("KeyA", LogicalKey.A, (ModifierLayer.Default, new CharacterOutput("a")));
+        var current = Mapping("KeyA", LogicalKey.A, (ModifierLayer.Default, new CharacterOutput("x")));
+
+        var result = Translate(
+            [current],
+            [KeyMappingSnapshot.From(baseline)],
+            acceptIncompleteKeys: true,
+            new RefusingKeysymMapper());
+
+        Assert.False(result.Success);
+        Assert.Equal(
+            XkbUserVariantTranslator.UnsupportedOutputCode,
+            Assert.Single(result.Diagnostics).Code);
+        Assert.Empty(result.AcceptedLoss);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
     public void Translate_WhenChangedSourceKeyWasLossy_BlocksGenerationForThatKey()
     {
         var baseline = Mapping("KeyA", LogicalKey.A, (ModifierLayer.Default, new CharacterOutput("a")));
@@ -345,7 +441,9 @@ public sealed class XkbUserVariantTranslatorTests
 
     private static XkbUserVariantTranslationResult Translate(
         IReadOnlyList<KeyMapping> current,
-        IReadOnlyList<KeyMappingSnapshot> baseline)
+        IReadOnlyList<KeyMappingSnapshot> baseline,
+        bool acceptIncompleteKeys = false,
+        IXkbKeysymMapper? keysymMapper = null)
     {
         var project = new KeyboardProject
         {
@@ -353,7 +451,29 @@ public sealed class XkbUserVariantTranslatorTests
             Keyboard = new PhysicalKeyboard { Id = "iso-105" },
             Layout = new KeyboardLayout { Mappings = current.ToList() }
         };
-        return new XkbUserVariantTranslator().Translate(project, baseline, Metadata());
+        var translator = keysymMapper is null
+            ? new XkbUserVariantTranslator()
+            : new XkbUserVariantTranslator(
+                new KeyboardLayoutDiffer(),
+                new XkbKeyNameMapper(),
+                keysymMapper);
+        return translator.Translate(project, baseline, Metadata(), acceptIncompleteKeys);
+    }
+
+    /// <summary>A mapper that can represent nothing, to reach the one refusal acceptance cannot lift.</summary>
+    private sealed class RefusingKeysymMapper : IXkbKeysymMapper
+    {
+        public bool TryMap(KeyOutput output, out string keysym)
+        {
+            keysym = string.Empty;
+            return false;
+        }
+
+        public bool TryMap(LogicalKey logicalKey, out string keysym)
+        {
+            keysym = string.Empty;
+            return false;
+        }
     }
 
     private static XkbUserVariantMetadata Metadata() => new(

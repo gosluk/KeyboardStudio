@@ -7,24 +7,23 @@ namespace KeyboardStudio.App;
 public static class LayoutDerivationFactory
 {
     /// <summary>
-    /// Loss that keeping the source's own levels cannot undo: another group, a key action, a
-    /// construct the reader did not recognize, a composition that was approximated or could not be
-    /// read. None of it is a level of one key, so writing that key back out restores nothing.
-    /// </summary>
-    private static readonly HashSet<string> UnrecoverableDiagnosticCodes =
-    [
-        LayoutImportDiagnosticCodes.AlternateGroupsIgnored,
-        LayoutImportDiagnosticCodes.UnsupportedConstructIgnored,
-        LayoutImportDiagnosticCodes.UnrecognizedStatementSkipped,
-        LayoutImportDiagnosticCodes.MergeModeApproximated,
-        LayoutImportDiagnosticCodes.CompositionTargetUnavailable
-    ];
-
-    /// <summary>
-    /// Loss confined to the levels of a single key: a level past the four the model holds, a dead
-    /// key, a keysym with no character behind it. <see cref="LayoutImportKeySource.Levels"/> holds
-    /// every one of them verbatim, so a key whose source came with the import can be overridden
-    /// without erasing anything — the backend writes the levels it never represented straight back.
+    /// The only loss an override can still erase: the levels of the key being overridden.
+    ///
+    /// An override does not replace a key. XKB merges a key definition field by field, and a
+    /// derived variant writes exactly two of them — the group-1 symbols and the group-1 type — so
+    /// everything else the key carries survives it. That was confirmed against the compiler:
+    /// overriding group 1 of a key leaves its <c>actions</c> and its second group exactly as the
+    /// base defined them. Alternate groups and unsupported key constructs are therefore not
+    /// reasons to refuse an override, and neither is an inexactly composed layout: a statement the
+    /// reader skipped, a merge mode it approximated, or an include it could not resolve may leave
+    /// the baseline an imperfect picture of the host, but overriding one key cannot erase another
+    /// key that was never written.
+    ///
+    /// What an override does replace is the levels. A level the model could not hold is carried
+    /// verbatim in <see cref="LayoutImportKeySource.Levels"/> and written back around the user's
+    /// change — so a key whose source came with the import stays safe. A key whose source did not
+    /// (a derivation saved before they were kept) has nothing to write those levels from, and only
+    /// that key is left unsafe to override.
     /// </summary>
     private static readonly HashSet<string> LevelDiagnosticCodes =
     [
@@ -49,12 +48,12 @@ public static class LayoutDerivationFactory
         }
 
         var lossyDiagnostics = result.Report.Diagnostics
-            .Where(diagnostic => UnrecoverableDiagnosticCodes.Contains(diagnostic.Code) ||
-                                 LevelDiagnosticCodes.Contains(diagnostic.Code))
+            .Where(diagnostic => LevelDiagnosticCodes.Contains(diagnostic.Code))
             .ToArray();
 
-        // Loss that names no key cannot be reasoned about per key, so it costs every key its
-        // override — whichever kind it was.
+        // Level loss that names no key cannot be attributed to one, so it costs every key its
+        // override. Nothing else is layout-wide any more: loss that is not a level does not travel
+        // to a key an override never touches.
         var hasLayoutWideLoss = lossyDiagnostics.Any(diagnostic =>
             diagnostic.KeyId is null && diagnostic.SourceKeyName is null);
         var sources = result.KeySources.ToDictionary(
@@ -85,32 +84,15 @@ public static class LayoutDerivationFactory
     }
 
     /// <summary>
-    /// Whether one key can be replaced whole without erasing what the import could not hold.
-    ///
-    /// Loss of a level is answered by the source that recorded it; every other kind of loss still
-    /// puts the key out of reach, because nothing kept beside the mapping describes it.
+    /// Whether this key's levels can be written back without erasing one the import could not hold.
+    /// A key that lost a level keeps its override only if the source that describes that level
+    /// came with the import.
     /// </summary>
     private static bool IsSafeToOverride(
         string keyId,
         IReadOnlyList<LayoutImportDiagnostic> lossyDiagnostics,
-        LayoutImportKeySource? source)
-    {
-        var recoverable = true;
-        foreach (var diagnostic in lossyDiagnostics)
-        {
-            if (!string.Equals(diagnostic.KeyId, keyId, StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            if (UnrecoverableDiagnosticCodes.Contains(diagnostic.Code))
-            {
-                return false;
-            }
-
-            recoverable = false;
-        }
-
-        return recoverable || source is { Levels.Count: > 0 };
-    }
+        LayoutImportKeySource? source) =>
+        source is { Levels.Count: > 0 } ||
+        !lossyDiagnostics.Any(diagnostic =>
+            string.Equals(diagnostic.KeyId, keyId, StringComparison.Ordinal));
 }

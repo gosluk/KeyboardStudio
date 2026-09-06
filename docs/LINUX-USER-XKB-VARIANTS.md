@@ -356,10 +356,28 @@ within four, so that levels the user has just added stay reachable. Every level 
 the source is checked against the notation it claims to be in before it is written back, and a key
 that fails that check is refused rather than written.
 
-Loss that is not a level still puts a key out of reach: another group, a key action, a construct
-the reader did not recognize, a composition that was approximated or could not be read. Nothing
-kept beside the mapping describes those, so overriding the key would still erase them, and the
-translator blocks generation for that key with a key-specific diagnostic.
+Loss that is not a level does not put a key out of reach, because an override does not replace a
+key. XKB merges a key definition field by field, and a derived variant writes exactly two of them —
+the group-1 symbols and the group-1 type. Confirmed against the compiler: overriding group 1 of a
+key leaves its `actions` and its second group exactly as the base defined them. So an ignored
+alternate group and an unsupported key construct are not reasons to refuse, and neither is an
+inexactly composed layout — a skipped statement, an approximated merge mode, an unresolved include
+may leave the baseline an imperfect picture of the host, but overriding one key cannot erase
+another key that was never written.
+
+What remains is a key whose own levels cannot all be written: one whose source never came with the
+import, a source level that is not writable as XKB notation, levels past the fourth with no
+declared type to reach them. Each of those describes exactly what would be dropped, so each is
+offered rather than refused outright. `Translate` takes `acceptIncompleteKeys`; with it, such a key
+is written from what can be carried and every drop is returned in `AcceptedLoss` as `KSU004`. The
+one refusal acceptance cannot lift is an output that has no keysym at all (`KSU002`): there is
+nothing to write and nothing to drop instead.
+
+Nothing decides that on the user's behalf. Inspection translates with acceptance so that the cost
+is knowable at all, and the resulting bundle is withheld behind that cost: `LinuxUserVariantViewModel`
+shows the affected keys and asks before every Generate, Install, and Update, and a refusal cancels
+the operation. The answer is not stored — it is about the keys in front of the user at that moment,
+and nothing stays switched on to make the next variant lossy without being asked again.
 
 Source levels are additive within the version-3 document schema. A derivation saved before they
 were kept has none, and its keys stay exactly as safe or unsafe to override as they were recorded —
@@ -598,6 +616,8 @@ The Linux user-variant panel shows:
   unavailable;
 - what it found, one row each: a row that names a key selects that key on the keyboard, and a key
   named by a finding that blocks the variant is marked on the keyboard as well;
+- before writing anything, a confirmation naming every key that cannot be written in full and what
+  each one costs, whenever there is one;
 - actions: Generate bundle, Install, Update, Verify installed, Uninstall, and Open output folder.
 
 Install, update, and uninstall always require an explicit action and show the exact paths to be

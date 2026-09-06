@@ -346,6 +346,75 @@ public sealed class LinuxUserVariantViewModelTests
         Assert.Empty(viewModel.ProblemKeyIds);
     }
 
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task Install_WhenKeysCannotBeWrittenInFull_AsksBeforeAnythingIsWritten()
+    {
+        var project = Project();
+        var loss = new XkbDiagnostic(
+            "KSU004",
+            "Physical key 'Minus' is written with the levels the editor holds.",
+            "Minus");
+        var workflow = new FakeLinuxUserVariantWorkflowService()
+            .AddInspection(Preparation(LinuxUserVariantStatus.NotInstalled, acceptedLoss: [loss]))
+            .AddInspection(Preparation(LinuxUserVariantStatus.NotInstalled, acceptedLoss: [loss]));
+        var interaction = new FakeLinuxUserVariantInteractionService { ConfirmIncompleteKeys = false };
+        var viewModel = Create(project, Derivation(project), workflow, interaction);
+        await viewModel.RefreshAsync();
+
+        await viewModel.InstallCommand.ExecuteAsync(null);
+
+        Assert.Equal(1, interaction.IncompleteKeyPrompts);
+        Assert.Equal([loss.Message], interaction.LastLosses);
+        Assert.Equal(0, workflow.InstallOrUpdateCount);
+        Assert.Contains("cancelled", viewModel.StatusText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("cannot be written in full", viewModel.StatusText, StringComparison.Ordinal);
+
+        interaction.ConfirmIncompleteKeys = true;
+        await viewModel.InstallCommand.ExecuteAsync(null);
+
+        Assert.Equal(2, interaction.IncompleteKeyPrompts);
+        Assert.Equal(1, workflow.InstallOrUpdateCount);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task Generate_WhenEveryKeyIsWrittenInFull_AsksNothing()
+    {
+        var project = Project();
+        var workflow = new FakeLinuxUserVariantWorkflowService()
+            .AddInspection(Preparation(LinuxUserVariantStatus.NotInstalled));
+        var interaction = new FakeLinuxUserVariantInteractionService();
+        var viewModel = Create(project, Derivation(project), workflow, interaction);
+        await viewModel.RefreshAsync();
+
+        await viewModel.GenerateCommand.ExecuteAsync(null);
+
+        Assert.Equal(0, interaction.IncompleteKeyPrompts);
+        Assert.Equal(1, workflow.GenerateCount);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task Uninstall_WhenKeysCannotBeWrittenInFull_DoesNotAskAboutThem()
+    {
+        // Uninstalling writes none of the generated keys, so the keys it cannot write in full are
+        // not a question it has any business asking.
+        var project = Project();
+        var loss = new XkbDiagnostic("KSU004", "Physical key 'Minus' is written incompletely.", "Minus");
+        var workflow = new FakeLinuxUserVariantWorkflowService()
+            .AddInspection(Preparation(LinuxUserVariantStatus.Installed, acceptedLoss: [loss]))
+            .AddInspection(Preparation(LinuxUserVariantStatus.NotInstalled));
+        var interaction = new FakeLinuxUserVariantInteractionService();
+        var viewModel = Create(project, Derivation(project), workflow, interaction);
+        await viewModel.RefreshAsync();
+
+        await viewModel.UninstallCommand.ExecuteAsync(null);
+
+        Assert.Equal(0, interaction.IncompleteKeyPrompts);
+        Assert.Equal(1, workflow.UninstallCount);
+    }
+
     private static LinuxUserVariantViewModel Create(
         KeyboardProject project,
         LayoutDerivation derivation,
@@ -356,7 +425,8 @@ public sealed class LinuxUserVariantViewModelTests
     private static LinuxUserVariantPreparation Preparation(
         LinuxUserVariantStatus status,
         IReadOnlyList<XkbDiagnostic>? diagnostics = null,
-        bool includeBundle = true)
+        bool includeBundle = true,
+        IReadOnlyList<XkbDiagnostic>? acceptedLoss = null)
     {
         var metadata = new XkbUserVariantMetadata(
             "7c31d5f2a19e40a4b0ef64f01a295135",
@@ -420,7 +490,10 @@ public sealed class LinuxUserVariantViewModelTests
             paths,
             capability,
             manifest,
-            diagnostics ?? []);
+            diagnostics ?? [])
+        {
+            AcceptedLoss = acceptedLoss ?? []
+        };
     }
 
     private static KeyboardProject Project()

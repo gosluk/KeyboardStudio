@@ -28,8 +28,25 @@ public sealed class LayoutDerivationFactoryTests
 
     [Fact]
     [Trait("Category", "Unit")]
-    public void Create_WhenLossIsLayoutWide_MarksEveryMappingUnsafe()
+    public void Create_WhenLevelLossNamesNoKey_MarksEveryMappingUnsafe()
     {
+        // A dropped level that cannot be attributed to a key could belong to any of them.
+        var diagnostic = new LayoutImportDiagnostic(
+            ValidationSeverity.Warning,
+            LayoutImportDiagnosticCodes.LayerBeyondModelDropped,
+            "A level beyond the fourth was dropped.");
+
+        var derivation = Create(diagnostic);
+
+        Assert.False(Assert.Single(derivation.BaselineMappings).IsSafeToOverride);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Create_WhenAnIncludeWasUnavailable_StillAllowsOverrides()
+    {
+        // The layout was composed inexactly, so the baseline may be an imperfect picture of the
+        // host — but overriding one key cannot erase a key that was never written.
         var diagnostic = new LayoutImportDiagnostic(
             ValidationSeverity.Warning,
             LayoutImportDiagnosticCodes.CompositionTargetUnavailable,
@@ -37,7 +54,7 @@ public sealed class LayoutDerivationFactoryTests
 
         var derivation = Create(diagnostic);
 
-        Assert.False(Assert.Single(derivation.BaselineMappings).IsSafeToOverride);
+        Assert.True(Assert.Single(derivation.BaselineMappings).IsSafeToOverride);
     }
 
     [Fact]
@@ -74,20 +91,20 @@ public sealed class LayoutDerivationFactoryTests
 
     [Fact]
     [Trait("Category", "Unit")]
-    public void Create_WhenTheLossIsNotALevel_LeavesTheKeyUnsafeEvenWithItsSource()
+    public void Create_WhenTheLossIsNotALevel_KeepsTheKeySafe()
     {
-        // An action is not a level, so nothing the source says about levels can restore it.
+        // An override writes the group-1 symbols and type and nothing else, and XKB merges a key
+        // field by field: the action this import dropped is still the base's to keep. Confirmed
+        // against xkbcli — overriding group 1 leaves actions[1] and group 2 exactly as they were.
         var diagnostic = new LayoutImportDiagnostic(
             ValidationSeverity.Warning,
             LayoutImportDiagnosticCodes.UnsupportedConstructIgnored,
             "Key <AD01> used 'actions', which has no equivalent in the model; it was ignored.",
             KeyId: "KeyA");
 
-        var derivation = Create(
-            diagnostic,
-            new LayoutImportKeySource("KeyA", "<AD01>", ["a", "A"], null));
+        var derivation = Create(diagnostic);
 
-        Assert.False(Assert.Single(derivation.BaselineMappings).IsSafeToOverride);
+        Assert.True(Assert.Single(derivation.BaselineMappings).IsSafeToOverride);
     }
 
     [Fact]

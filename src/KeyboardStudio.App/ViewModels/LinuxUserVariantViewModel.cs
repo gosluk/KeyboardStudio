@@ -302,7 +302,8 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
     private async Task GenerateAsync(CancellationToken cancellationToken)
     {
         var preparation = await PrepareForActionAsync(cancellationToken);
-        if (preparation?.CanGenerate != true)
+        if (preparation?.CanGenerate != true ||
+            !await ConfirmAcceptedLossAsync(preparation, "Generate bundle"))
         {
             return;
         }
@@ -317,11 +318,19 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
 
     private Task InstallAsync(CancellationToken cancellationToken) =>
         RunLiveOperationAsync(
-            "Install", AppliesToInstall, _workflow.InstallOrUpdateAsync, cancellationToken);
+            "Install",
+            AppliesToInstall,
+            _workflow.InstallOrUpdateAsync,
+            cancellationToken,
+            writesKeys: true);
 
     private Task UpdateAsync(CancellationToken cancellationToken) =>
         RunLiveOperationAsync(
-            "Update", AppliesToUpdate, _workflow.InstallOrUpdateAsync, cancellationToken);
+            "Update",
+            AppliesToUpdate,
+            _workflow.InstallOrUpdateAsync,
+            cancellationToken,
+            writesKeys: true);
 
     private Task VerifyInstalledAsync(CancellationToken cancellationToken) =>
         RunLiveOperationAsync(
@@ -331,11 +340,16 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
         RunLiveOperationAsync(
             "Uninstall", AppliesToInstalled, _workflow.UninstallAsync, cancellationToken);
 
+    /// <param name="writesKeys">
+    /// Whether this operation writes the generated keys. Verifying and uninstalling do not, so
+    /// they are not the place to ask about keys that cannot be written in full.
+    /// </param>
     private async Task RunLiveOperationAsync(
         string action,
         Func<LinuxUserVariantPreparation, bool, bool> applies,
         Func<LinuxUserVariantPreparation, CancellationToken, Task<LinuxUserVariantOperationResult>> operation,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool writesKeys = false)
     {
         // The button may have been enabled from an inspection older than the current mappings, so the
         // plan is rebuilt first and the action has to still apply to the rebuilt one - judged without
@@ -350,6 +364,11 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
             !applies(preparation, false))
         {
             StatusText = $"{action} no longer applies. {DescribeStatus(preparation.Status)}";
+            return;
+        }
+
+        if (writesKeys && !await ConfirmAcceptedLossAsync(preparation, action))
+        {
             return;
         }
 
@@ -505,6 +524,31 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
 
     private static bool AppliesToInstalled(LinuxUserVariantPreparation preparation, bool planIsStale) =>
         preparation.IsInstalled;
+
+    /// <summary>
+    /// Asks before writing keys that cannot be written in full, and reports a refusal as the
+    /// cancellation it is. A variant that carries everything asks nothing.
+    /// </summary>
+    private async Task<bool> ConfirmAcceptedLossAsync(
+        LinuxUserVariantPreparation preparation,
+        string action)
+    {
+        if (preparation.AcceptedLoss.Count == 0)
+        {
+            return true;
+        }
+
+        var losses = preparation.AcceptedLoss.Select(loss => loss.Message).ToArray();
+        if (await _interaction.ConfirmIncompleteKeysAsync(action, losses))
+        {
+            return true;
+        }
+
+        StatusText = losses.Length == 1
+            ? $"{action} cancelled: one key cannot be written in full."
+            : $"{action} cancelled: {losses.Length} keys cannot be written in full.";
+        return false;
+    }
 
     private IEnumerable<DiagnosticViewModel> Describe(
         IReadOnlyList<XkbDiagnostic> diagnostics,
