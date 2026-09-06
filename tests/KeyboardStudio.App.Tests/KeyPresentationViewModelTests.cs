@@ -371,4 +371,45 @@ public sealed class KeyPresentationViewModelTests
 
         Assert.Equal("Enter", enter.KeyName);
     }
+
+    [Theory]
+    [Trait("Category", "Unit")]
+    [InlineData(LogicalKey.A, "A")]
+    [InlineData(LogicalKey.F12, "F12")]
+    [InlineData(LogicalKey.Digit8, "8")]
+    [InlineData(LogicalKey.Escape, "Esc")]
+    [InlineData(LogicalKey.PrintScreen, "Print\nScreen")]
+    [InlineData(LogicalKey.PageDown, "Page\nDown")]
+    [InlineData(LogicalKey.ArrowUp, "↑")]
+    [InlineData(LogicalKey.ArrowLeft, "←")]
+    [InlineData(LogicalKey.NumpadDivide, "Num /")]
+    [InlineData(LogicalKey.Numpad9, "Num 9")]
+    [InlineData(LogicalKey.LeftControl, "L Ctrl")]
+    [InlineData(LogicalKey.RightMeta, "R Meta")]
+    [InlineData(LogicalKey.ContextMenu, "Menu")]
+    public void SpecialKeyOutput_WhenRefreshed_UsesCompactLogicalKeyLegend(
+        LogicalKey logicalKey,
+        string expectedLegend)
+    {
+        var physicalKey = new PhysicalKey
+        {
+            Id = "KeyA",
+            ScanCode = 0x1E
+        };
+        var output = new SpecialKeyOutput(logicalKey);
+        var mapping = new KeyMapping
+        {
+            KeyId = physicalKey.Id,
+            Outputs =
+            {
+                [ModifierLayer.Default] = output
+            }
+        };
+        var key = new KeyViewModel(physicalKey, mapping, _ => { }, 48, 4);
+
+        key.Refresh(ModifierLayer.Default);
+
+        Assert.Equal(expectedLegend, key.DefaultAssignment);
+        Assert.Same(output, mapping.Outputs[ModifierLayer.Default]);
+    }
 }

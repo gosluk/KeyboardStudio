@@ -32,7 +32,9 @@ public sealed class XkbLayoutImportSourceTests
             <layout>
               <configItem>
                 <name>de</name>
+                <shortDescription>de</shortDescription>
                 <description>German</description>
+                <languageList><iso639Id>deu</iso639Id></languageList>
                 <countryList><iso3166Id>DE</iso3166Id></countryList>
               </configItem>
             </layout>
@@ -61,6 +63,17 @@ public sealed class XkbLayoutImportSourceTests
         xkb_symbols "basic" {
             name[Group1] = "German";
             key <LatZ> { [ z, Z ] };
+        };
+        """;
+
+    /// <summary>
+    /// A component rather than a layout: it is merged into one and names no group of its own,
+    /// which is exactly what makes it not a thing to choose from a list.
+    /// </summary>
+    private const string Level3Symbols = """
+        default partial alphanumeric_keys
+        xkb_symbols "ralt_switch" {
+            key <RALT> { [ ISO_Level3_Shift ] };
         };
         """;
 
@@ -111,6 +124,8 @@ public sealed class XkbLayoutImportSourceTests
     [Trait("Category", "Unit")]
     public async Task ListAsync_ForALayoutTheRegistryDoesNotDescribe_ListsItUnderItsFileName()
     {
+        // A layout the user wrote themselves has no registry entry, and naming its group is what
+        // makes it a layout rather than one of the components beside it.
         var descriptors = await CreateSource().ListAsync();
 
         var custom = Assert.Single(descriptors, descriptor => descriptor.LayoutId == "mine");
@@ -118,6 +133,18 @@ public sealed class XkbLayoutImportSourceTests
         Assert.Equal("mine", custom.DisplayName);
         Assert.Empty(custom.Countries);
         Assert.Equal($"{UserRoot}/symbols/mine", custom.SourceLocation);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task ListAsync_ForAComponentTheRegistryDoesNotDescribe_LeavesItOut()
+    {
+        // Two thirds of a distribution's symbols/ directory is components meant to be merged into a
+        // layout, not chosen as one. Offering them puts `level3` between German and English in a
+        // list of countries and gives the user an entry that imports three keys.
+        var descriptors = await CreateSource().ListAsync();
+
+        Assert.DoesNotContain(descriptors, descriptor => descriptor.LayoutId == "level3");
     }
 
     [Fact]
@@ -164,6 +191,62 @@ public sealed class XkbLayoutImportSourceTests
 
     [Fact]
     [Trait("Category", "Unit")]
+    public async Task ListAsync_ForAMinimalUserVariantOverlay_FillsMissingMetadataFromTheSystemRegistry()
+    {
+        // KeyboardStudio's per-user installer adds a variant under a layout config item that names
+        // only the base layout. The overlay wins XKB precedence, but the system registry still owns
+        // the human-readable base name and its language and country metadata.
+        var fileSystem = FileSystem()
+            .AddFile($"{UserRoot}/symbols/de", """
+                partial alphanumeric_keys
+                xkb_symbols "keyboardstudio_custom" {
+                    include "keyboardstudio(custom)"
+                };
+                """)
+            .AddFile($"{UserRoot}/rules/evdev.xml", """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <xkbConfigRegistry version="1.1">
+                  <layoutList>
+                    <layout>
+                      <configItem><name>de</name></configItem>
+                      <variantList>
+                        <variant>
+                          <configItem>
+                            <name>keyboardstudio_custom</name>
+                            <shortDescription>de</shortDescription>
+                            <description>German - KeyboardStudio</description>
+                          </configItem>
+                        </variant>
+                      </variantList>
+                    </layout>
+                  </layoutList>
+                </xkbConfigRegistry>
+                """);
+        XkbDataRoot[] roots =
+        [
+            new(UserRoot, LayoutSourceOrigin.User),
+            new(SystemRoot, LayoutSourceOrigin.System)
+        ];
+
+        var descriptors = await CreateSource(fileSystem, roots).ListAsync();
+
+        var layout = Single(descriptors, "de");
+        Assert.Equal("German", layout.DisplayName);
+        Assert.Equal("de", layout.ShortDescription);
+        Assert.Equal(["deu"], layout.Languages);
+        Assert.Equal(["DE"], layout.Countries);
+        Assert.Equal(LayoutSourceOrigin.User, layout.Origin);
+        Assert.Equal($"{UserRoot}/symbols/de", layout.SourceLocation);
+
+        var variant = Assert.Single(descriptors, descriptor =>
+            descriptor is { LayoutId: "de", VariantId: "keyboardstudio_custom" });
+        Assert.Equal("German - KeyboardStudio", variant.DisplayName);
+        Assert.Equal(["deu"], variant.Languages);
+        Assert.Equal(["DE"], variant.Countries);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
     public async Task ImportAsync_ForALayoutNoRootDefines_FailsWithoutThrowing()
     {
         var result = await CreateSource().ImportAsync(
@@ -197,13 +280,16 @@ public sealed class XkbLayoutImportSourceTests
             .AddFile($"{SystemRoot}/rules/evdev.xml", Registry)
             .AddFile($"{SystemRoot}/symbols/us", UsSymbols)
             .AddFile($"{SystemRoot}/symbols/de", DeSymbols)
+            .AddFile($"{SystemRoot}/symbols/level3", Level3Symbols)
             .AddFile($"{UserRoot}/symbols/mine", UsSymbols);
 
-    private static XkbLayoutImportSource CreateSource(FakeXkbFileSystem? fileSystem = null)
+    private static XkbLayoutImportSource CreateSource(
+        FakeXkbFileSystem? fileSystem = null,
+        IReadOnlyList<XkbDataRoot>? roots = null)
     {
         fileSystem ??= FileSystem();
 
-        XkbDataRoot[] roots =
+        roots ??=
         [
             new(SystemRoot, LayoutSourceOrigin.System),
             new(UserRoot, LayoutSourceOrigin.User)

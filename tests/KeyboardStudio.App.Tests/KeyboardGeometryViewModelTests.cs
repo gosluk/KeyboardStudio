@@ -29,10 +29,9 @@ public sealed class KeyboardGeometryViewModelTests
     public async Task NewCommand_WhenAnsiTemplateIsChosen_RebuildsEditorWithAnsiGeometry()
     {
         var viewModel = new MainWindowViewModel();
-        var ansiTemplate = Assert.Single(viewModel.Templates, template => template.Id == "ansi-104");
+        var ansi = Assert.Single(viewModel.NewDocumentOptions, option => option.TemplateId == "ansi-104");
 
-        viewModel.SelectedTemplate = ansiTemplate;
-        await viewModel.NewCommand.ExecuteAsync(null);
+        await ansi.Command.ExecuteAsync(null);
 
         Assert.Equal("ansi-104", viewModel.Project.Keyboard.Id);
         Assert.Equal(104, viewModel.Editor.Keys.Count);

@@ -138,7 +138,7 @@ public sealed class KeyViewModel : ObservableObject
         return output switch
         {
             CharacterOutput character => character.Value,
-            SpecialKeyOutput specialKey => specialKey.Key.ToString(),
+            SpecialKeyOutput specialKey => LogicalKeyLegend.For(specialKey.Key),
             _ => string.Empty
         };
     }

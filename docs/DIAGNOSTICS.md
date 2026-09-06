@@ -69,6 +69,28 @@ not Windows or the process architecture cannot load the requested target.
 tool path, arguments, version, output, exit code, duration, and retained log without installing or
 activating the generated layout.
 
+## Linux user-variant diagnostics
+
+A derived user variant overrides whole keys, so its findings are mostly about one key at a time.
+
+| Code | Severity | Meaning | Key linked |
+|---|---|---|---|
+| `KSU001` | Error | The key cannot be overridden as it stands: its import dropped levels the model does not hold, and the project has no record of what they were. | Yes |
+| `KSU002` | Error | An output or logical key cannot be represented as an XKB keysym. | Yes |
+| `KSU003` | Error | The source's own text for a level or key type cannot be written back as XKB notation, or a key has levels past the fourth and the source declared no type that reaches them. | Yes |
+| `KSU004` | Info | The key was written anyway, and this is what writing it cost. Raised only for a loss the user has been shown and has agreed to. | Yes |
+
+Levels the model never held — a dead key, a fifth level, a keysym with no character — are not
+`KSU001` when the import recorded them: they are kept verbatim from the source and written back
+around the user's change.
+
+`KSU001` and `KSU003` describe something specific that would be dropped, so both can be accepted:
+the panel names the affected keys, asks before writing, and reports what was given up as `KSU004`.
+`KSU002` cannot — an output with no keysym leaves nothing to write and nothing to drop instead.
+Loss that is not a level — an ignored alternate group, an unsupported key construct, an inexactly
+composed layout — no longer refuses anything, because an override replaces only the group-1 symbols
+and type of the keys it names. See [LINUX-USER-XKB-VARIANTS.md](LINUX-USER-XKB-VARIANTS.md).
+
 ## Layout import diagnostics
 
 | Code | Severity | Meaning | Key linked |
@@ -118,6 +140,20 @@ then it explains something that is no longer on screen.
 - New checks receive new codes instead of overloading an unrelated existing code.
 - Only `Error` diagnostics block build orchestration.
 - `Warning` and `Info` diagnostics remain visible but allow the build pipeline to proceed.
+
+## Findings are places, not just text
+
+Wherever a finding is shown — the editor's diagnostics list, the build panel, the Linux
+user-variant panel — a finding that names a key is a way to reach that key: the row is a control,
+and choosing it selects the key on the keyboard. A row that names no key reads the same but does
+nothing, and says so by keeping the ordinary cursor.
+
+Errors also mark the key itself, so the keyboard shows where the problem is without the list having
+to be read first. Only `Error` marks: warnings and notes are shown in the list and left off the
+keyboard, because a red key that means "note" would be a lie about the key. Validation errors and
+the errors a build or an installation reports are held separately and shown together — validation
+reruns on every keystroke, and a key a build refused stays marked until that build's panel says
+otherwise.
 
 ## Continuous editor validation
 

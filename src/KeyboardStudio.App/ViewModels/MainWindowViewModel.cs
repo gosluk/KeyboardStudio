@@ -11,11 +11,13 @@ namespace KeyboardStudio.App;
 public sealed class MainWindowViewModel : ObservableObject
 {
     private const string DefaultTemplateId = "iso-105";
+    private const string LoadingCurrentLayoutStatus = "Loading the current layout…";
 
     private readonly ProjectDocumentService _documentService;
     private readonly IProjectInteractionService _interactionService;
     private readonly ILayoutImportCatalog _importCatalog;
     private readonly IHostLayoutProbe _hostLayoutProbe;
+    private readonly IStartupLayoutLoader _startupLayoutLoader;
     private readonly IKeyboardTemplateProvider _templateProvider;
     private readonly IKeyboardProjectValidator _validator;
     private readonly ISeedProjectSource _seedProjectSource;
@@ -23,6 +25,7 @@ public sealed class MainWindowViewModel : ObservableObject
     private ValidationIssue? _hostImportIssue;
     private KeyboardProject _startupProject;
     private string _importStatus = string.Empty;
+    private StartupLayoutState _startupState = StartupLayoutState.NotStarted;
     private KeyboardTemplateDescriptor _selectedTemplate;
     private KeyboardProject _project;
     private KeyboardEditorViewModel _editor;
@@ -39,6 +42,19 @@ public sealed class MainWindowViewModel : ObservableObject
 
     public MainWindowViewModel(IProjectInteractionService interactionService)
         : this(new KeyboardTemplateProvider(), interactionService)
+    {
+    }
+
+    public MainWindowViewModel(
+        IProjectInteractionService interactionService,
+        AppearanceViewModel appearance)
+        : this(
+            new KeyboardTemplateProvider(),
+            interactionService,
+            CreateDefaultValidator(),
+            new EmbeddedSeedProjectSource(),
+            new EnvironmentBuildTargetVisibilityPolicy(),
+            appearance: appearance)
     {
     }
 
@@ -79,7 +95,9 @@ public sealed class MainWindowViewModel : ObservableObject
         IBuildTargetVisibilityPolicy buildTargetVisibility,
         ILayoutImportCatalog? importCatalog = null,
         IHostLayoutProbe? hostLayoutProbe = null,
-        ILinuxUserVariantWorkflowService? linuxUserVariantWorkflow = null)
+        ILinuxUserVariantWorkflowService? linuxUserVariantWorkflow = null,
+        AppearanceViewModel? appearance = null,
+        IStartupLayoutLoader? startupLayoutLoader = null)
     {
         ArgumentNullException.ThrowIfNull(templateProvider);
         ArgumentNullException.ThrowIfNull(interactionService);
@@ -90,6 +108,7 @@ public sealed class MainWindowViewModel : ObservableObject
         _templateProvider = templateProvider;
         _importCatalog = importCatalog ?? HostLayoutImportCatalog.Create(templateProvider);
         _hostLayoutProbe = hostLayoutProbe ?? HostLayoutImportCatalog.CreateHostProbe();
+        _startupLayoutLoader = startupLayoutLoader ?? new StartupLayoutLoader(_importCatalog, _hostLayoutProbe);
         _interactionService = interactionService;
         _validator = validator;
         _seedProjectSource = seedProjectSource;
@@ -112,7 +131,10 @@ public sealed class MainWindowViewModel : ObservableObject
             interactionService as IBuildInteractionService,
             _documentService.CurrentTargetProfiles,
             BuildProfileChanged,
-            buildTargetVisibility);
+            buildTargetVisibility,
+            SelectKey,
+            RefreshProblemKeys);
+        _editor.ApplyBuildTargets(Build.Targets.Select(target => target.Target));
         LinuxVariant = new LinuxUserVariantViewModel(
             () => Project,
             () => _documentService.CurrentLayoutDerivation,
@@ -120,13 +142,25 @@ public sealed class MainWindowViewModel : ObservableObject
             linuxUserVariantWorkflow ?? new LinuxUserVariantWorkflowService(),
             interactionService as ILinuxUserVariantInteractionService,
             Build.GetLinuxUserVariantMetadata,
-            Build.SetLinuxUserVariantMetadata);
-        NewCommand = new AsyncRelayCommand(NewDocumentAsync);
+            Build.SetLinuxUserVariantMetadata,
+            SelectKey,
+            RefreshProblemKeys);
+        NewCommand = new AsyncRelayCommand(() => NewDocumentAsync());
+        NewDocumentOptions = Templates
+            .Select(template => new NewDocumentOptionViewModel(
+                template.Id,
+                template.Name,
+                new AsyncRelayCommand(() => NewDocumentAsync(template))))
+            .ToList();
         OpenCommand = new AsyncRelayCommand(OpenDocumentAsync);
         SaveCommand = new AsyncRelayCommand(SaveDocumentAsync);
         SaveAsCommand = new AsyncRelayCommand(SaveAsDocumentAsync);
         ImportLayoutCommand = new AsyncRelayCommand(ImportLayoutAsync, () => CanImportLayout);
         ImportFromFileCommand = new AsyncRelayCommand(ImportFromFileAsync, () => CanImportLayout);
+
+        // Appearance is application state, not document state. It is reachable from this view model
+        // because the header presents it, and it holds no reference back to the document.
+        Appearance = appearance ?? new AppearanceViewModel();
     }
 
     public IReadOnlyList<KeyboardTemplateDescriptor> Templates { get; }
@@ -153,6 +187,12 @@ public sealed class MainWindowViewModel : ObservableObject
         private set => SetProperty(ref _editor, value);
     }
 
+    /// <summary>
+    /// The explicit geometry choices the File menu offers, one per shipped template.
+    /// </summary>
+    public IReadOnlyList<NewDocumentOptionViewModel> NewDocumentOptions { get; }
+
+    public AppearanceViewModel Appearance { get; }
     public BuildViewModel Build { get; }
     public LinuxUserVariantViewModel LinuxVariant { get; }
     public IAsyncRelayCommand NewCommand { get; }
@@ -186,6 +226,21 @@ public sealed class MainWindowViewModel : ObservableObject
 
     public bool HasImportStatus => ImportStatus.Length > 0;
 
+    /// <summary>What the editor is showing, as far as the startup layout is concerned.</summary>
+    public StartupLayoutState StartupState
+    {
+        get => _startupState;
+        private set
+        {
+            if (SetProperty(ref _startupState, value))
+            {
+                OnPropertyChanged(nameof(IsLoadingCurrentLayout));
+            }
+        }
+    }
+
+    public bool IsLoadingCurrentLayout => StartupState == StartupLayoutState.Loading;
+
     public DiagnosticsViewModel Diagnostics
     {
         get => _diagnostics;
@@ -196,9 +251,22 @@ public sealed class MainWindowViewModel : ObservableObject
 
     public string? CurrentFilePath => _documentService.CurrentFilePath;
 
-    public string DocumentStatus => CurrentFilePath ?? "Unsaved project";
+    /// <summary>The full path, which belongs in a tooltip rather than across the header.</summary>
+    public string DocumentPath => CurrentFilePath ?? "This project has not been saved yet.";
 
-    public string WindowTitle => $"{Project.Metadata.Name}{(IsDirty ? " *" : string.Empty)} — KeyboardStudio";
+    /// <summary>
+    /// The window title carries the open document, so the header does not have to. It names the
+    /// file once the project has one and the project's own name until then, because "unsaved" is
+    /// what the dirty badge says and a title that said it too would say nothing else.
+    /// </summary>
+    public string WindowTitle
+    {
+        get
+        {
+            var document = CurrentFilePath is { } path ? Path.GetFileName(path) : Project.Metadata.Name;
+            return $"{document}{(IsDirty ? " *" : string.Empty)} — KeyboardStudio";
+        }
+    }
 
     /// <summary>
     /// Produces the content of a new document. A new document is never empty: it starts from
@@ -241,18 +309,39 @@ public sealed class MainWindowViewModel : ObservableObject
 
     private KeyboardEditorViewModel CreateEditor(
         KeyboardProject project,
-        KeyboardTemplateDescriptor template) =>
-        new(new KeyboardEditor(project), template, DocumentChanged);
+        KeyboardTemplateDescriptor template)
+    {
+        var editor = new KeyboardEditorViewModel(new KeyboardEditor(project), template, DocumentChanged);
 
-    private async Task NewDocumentAsync()
+        // The first editor is built before the build panel exists, and it is the build panel that
+        // knows which targets this host can produce. It applies them to itself once it is up.
+        if (Build is not null)
+        {
+            editor.ApplyBuildTargets(Build.Targets.Select(target => target.Target));
+        }
+
+        return editor;
+    }
+
+    /// <summary>
+    /// Creates a populated document. With no template named — <c>Ctrl+N</c> — it keeps the geometry
+    /// of the document already open, because that is the keyboard the user is working on.
+    /// </summary>
+    private async Task NewDocumentAsync(KeyboardTemplateDescriptor? template = null)
     {
         if (!await ConfirmDocumentReplacementAsync())
         {
             return;
         }
 
+        // Read before the document is replaced: CreateNew builds from whatever this is set to.
+        _selectedTemplate = template ?? CurrentGeometry;
         ReplaceProject(_documentService.CreateNew(), _selectedTemplate);
     }
+
+    /// <summary>The template describing the open document's geometry.</summary>
+    private KeyboardTemplateDescriptor CurrentGeometry =>
+        Templates.FirstOrDefault(candidate => candidate.Id == Project.Keyboard.Id) ?? _selectedTemplate;
 
     private async Task OpenDocumentAsync()
     {
@@ -293,60 +382,63 @@ public sealed class MainWindowViewModel : ObservableObject
     /// of file reads and is worth none of that delay. So this is started separately, after the
     /// window exists, and the document it produces arrives a moment later or not at all.
     ///
-    /// Everything that can fail here fails quietly. Nobody asked for this import: a dialog about a
-    /// layout the user never mentioned would be an interruption, so a failure leaves a diagnostics
-    /// entry and the document the editor already had.
+    /// The reading is the loader's; the deciding is this method's. Everything that can fail fails
+    /// quietly: nobody asked for this import, so a dialog about a layout the user never mentioned
+    /// would be an interruption. A failure leaves a diagnostics entry and the document the editor
+    /// already had.
     /// </remarks>
     public async Task ImportHostLayoutAsync(CancellationToken cancellationToken = default)
     {
-        if (!_importCatalog.HasAvailableSources)
-        {
-            // Nothing on this host can list a layout, so there is nothing to detect and nothing to
-            // report either: the starting document was always going to be the only one there was.
-            return;
-        }
+        StartupState = StartupLayoutState.Loading;
+        ImportStatus = LoadingCurrentLayoutStatus;
 
-        var reference = _hostLayoutProbe.Detect();
-        if (reference is null)
-        {
-            return;
-        }
-
-        LayoutImportResult result;
-        try
-        {
-            // Onto the thread pool in one hop. A source composes a layout from files as it is
-            // asked for it and hands back a task that is already finished, so awaiting it on the
-            // UI thread would hold the window for the whole of the work rather than none of it.
-            result = await Task.Run(
-                () => _importCatalog.ImportAsync(reference, LayoutImportOptions.Default, cancellationToken),
-                cancellationToken);
-        }
-        catch (OperationCanceledException)
-        {
-            return;
-        }
-        catch (Exception exception) when (
-            exception is IOException or UnauthorizedAccessException or InvalidOperationException)
-        {
-            NoteHostLayoutUnavailable(reference, exception.Message);
-            return;
-        }
-
-        if (result is not { Success: true, Project: { } imported })
-        {
-            NoteHostLayoutUnavailable(reference, "it could not be read on this host");
-            return;
-        }
+        var result = await _startupLayoutLoader.LoadAsync(cancellationToken);
 
         if (!IsUntouchedStartupDocument)
         {
             // The user got there first. Whatever they are working in now is what they asked for,
             // and replacing it because a background task finished would be the editor overruling
             // them on the strength of a guess.
+            StartupState = StartupLayoutState.Discarded;
+            if (ImportStatus == LoadingCurrentLayoutStatus)
+            {
+                ImportStatus = string.Empty;
+            }
+
             return;
         }
 
+        switch (result)
+        {
+            case { Status: StartupLayoutStatus.Cancelled }:
+                StartupState = StartupLayoutState.Discarded;
+                ImportStatus = string.Empty;
+                return;
+
+            case { Status: StartupLayoutStatus.Unavailable }:
+                FallBackToSeed();
+                return;
+
+            case { Status: StartupLayoutStatus.Failed, Reference: { } failed }:
+                NoteHostLayoutUnavailable(failed, result.FailureReason ?? "it could not be read on this host");
+                FallBackToSeed();
+                return;
+
+            case { Status: StartupLayoutStatus.Imported, Reference: { } reference, Project: { } imported }:
+                await AdoptStartupLayoutAsync(reference, imported, cancellationToken);
+                return;
+
+            default:
+                FallBackToSeed();
+                return;
+        }
+    }
+
+    private async Task AdoptStartupLayoutAsync(
+        ImportableLayoutReference reference,
+        KeyboardProject imported,
+        CancellationToken cancellationToken)
+    {
         var provenance = new LayoutImportProvenance(
             reference.SourceId,
             reference.LayoutId,
@@ -364,8 +456,19 @@ public sealed class MainWindowViewModel : ObservableObject
 
         ReplaceProject(project, template);
         _startupProject = project;
+        StartupState = StartupLayoutState.CurrentLayout;
         ImportStatus = $"Started from this host's layout, {provenance.Describe()}.";
         await LinuxVariant.RefreshAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Keeps the populated starting document and says so, without turning an ordinary situation
+    /// into an error the user has to dismiss.
+    /// </summary>
+    private void FallBackToSeed()
+    {
+        StartupState = StartupLayoutState.SeedFallback;
+        ImportStatus = "Editing the built-in layout. File › Import layout starts from one this host has installed.";
     }
 
     /// <summary>
@@ -396,8 +499,7 @@ public sealed class MainWindowViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Imports a layout the host advertises, from <b>File &gt; Import layout…</b> or the editor's
-    /// own Import button.
+    /// Imports a layout the host advertises, from <b>File &gt; Import layout…</b>.
     /// </summary>
     private Task ImportLayoutAsync() =>
         RunImportAsync(new LayoutImportViewModel(_importCatalog, Templates, _selectedTemplate));
@@ -626,12 +728,30 @@ public sealed class MainWindowViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(IsDirty));
         OnPropertyChanged(nameof(CurrentFilePath));
-        OnPropertyChanged(nameof(DocumentStatus));
+        OnPropertyChanged(nameof(DocumentPath));
         OnPropertyChanged(nameof(WindowTitle));
     }
 
     private static DiagnosticsViewModel CreateDiagnostics(KeyboardEditorViewModel editor) =>
         new(keyId => editor.SelectKey(keyId));
+
+    /// <summary>Shows the key a finding names, wherever the finding was shown.</summary>
+    private void SelectKey(string keyId) => Editor.SelectKey(keyId);
+
+    /// <summary>
+    /// Marks every key the build and installation panels are currently complaining about.
+    ///
+    /// Both panels report into one call because the editor marks a key, not a panel: a key either
+    /// has something wrong with it or does not, and whichever panel found it, the mark means the
+    /// same thing. The panels replace their own findings wholesale, so recomputing the union each
+    /// time is also what unmarks a key whose problem has gone.
+    /// </summary>
+    private void RefreshProblemKeys() =>
+        Editor.ApplyReportedProblemKeys(
+        [
+            .. Build?.ProblemKeyIds ?? [],
+            .. LinuxVariant?.ProblemKeyIds ?? []
+        ]);
 
     /// <summary>
     /// Re-runs validation and shows what it found, plus the standing note about a host layout that

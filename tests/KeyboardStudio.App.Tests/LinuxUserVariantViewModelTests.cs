@@ -153,6 +153,68 @@ public sealed class LinuxUserVariantViewModelTests
 
     [Fact]
     [Trait("Category", "Unit")]
+    public async Task EditingTheProject_KeepsTheHostsLiveActionsReachable()
+    {
+        var project = Project();
+        var workflow = new FakeLinuxUserVariantWorkflowService()
+            .AddInspection(Preparation(LinuxUserVariantStatus.Installed));
+        var viewModel = Create(project, Derivation(project), workflow);
+        await viewModel.RefreshAsync();
+
+        viewModel.NotifyProjectChanged();
+
+        Assert.Equal(LinuxUserVariantStatus.Installed, viewModel.Status);
+        Assert.True(viewModel.UpdateCommand.CanExecute(null));
+        Assert.True(viewModel.VerifyInstalledCommand.CanExecute(null));
+        Assert.True(viewModel.UninstallCommand.CanExecute(null));
+        Assert.False(viewModel.InstallCommand.CanExecute(null));
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task UpdateAfterAnEdit_RebuildsThePlanBeforeTouchingLiveFiles()
+    {
+        var project = Project();
+        var workflow = new FakeLinuxUserVariantWorkflowService()
+            .AddInspection(Preparation(LinuxUserVariantStatus.Installed))
+            .AddInspection(Preparation(LinuxUserVariantStatus.UpdateAvailable))
+            .AddInspection(Preparation(LinuxUserVariantStatus.Installed));
+        var interaction = new FakeLinuxUserVariantInteractionService();
+        var viewModel = Create(project, Derivation(project), workflow, interaction);
+        await viewModel.RefreshAsync();
+        viewModel.NotifyProjectChanged();
+
+        await viewModel.UpdateCommand.ExecuteAsync(null);
+
+        Assert.Equal("Update", interaction.LastAction);
+        Assert.Equal(1, workflow.InstallOrUpdateCount);
+        Assert.Equal(3, workflow.InspectCount);
+        Assert.Equal(LinuxUserVariantStatus.Installed, viewModel.Status);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task LiveAction_WhoseRebuiltPlanNoLongerApplies_ExplainsAndChangesNothing()
+    {
+        var project = Project();
+        var workflow = new FakeLinuxUserVariantWorkflowService()
+            .AddInspection(Preparation(LinuxUserVariantStatus.Installed))
+            .AddInspection(Preparation(LinuxUserVariantStatus.ExternallyModified));
+        var interaction = new FakeLinuxUserVariantInteractionService();
+        var viewModel = Create(project, Derivation(project), workflow, interaction);
+        await viewModel.RefreshAsync();
+        viewModel.NotifyProjectChanged();
+
+        await viewModel.UpdateCommand.ExecuteAsync(null);
+
+        Assert.Equal(0, workflow.InstallOrUpdateCount);
+        Assert.Null(interaction.LastAction);
+        Assert.Contains("Update no longer applies", viewModel.StatusText, StringComparison.Ordinal);
+        Assert.Contains("modified externally", viewModel.StatusText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
     public async Task Cancel_DuringLiveOperation_ReportsRollbackSafeCancellation()
     {
         var project = Project();
@@ -223,6 +285,136 @@ public sealed class LinuxUserVariantViewModelTests
         Assert.False(viewModel.InstallCommand.CanExecute(null));
     }
 
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task Refresh_WhenAFindingNamesAKey_MakesItAWayToReachThatKey()
+    {
+        var project = Project();
+        var workflow = new FakeLinuxUserVariantWorkflowService().AddInspection(
+            Preparation(
+                LinuxUserVariantStatus.Unavailable,
+                [
+                    new XkbDiagnostic(
+                        "KSU001",
+                        "Physical key 'Minus' cannot be overridden.",
+                        "Minus"),
+                    new XkbDiagnostic("KSC006", "A newer libxkbcommon version is recommended.")
+                ],
+                includeBundle: false));
+        var selected = new List<string>();
+        var problemKeyRefreshes = 0;
+        var viewModel = new LinuxUserVariantViewModel(
+            () => project,
+            () => Derivation(project),
+            () => "/tmp/output",
+            workflow,
+            selectKey: selected.Add,
+            problemKeysChanged: () => problemKeyRefreshes++);
+
+        await viewModel.RefreshAsync();
+
+        Assert.Equal(2, viewModel.Diagnostics.Count);
+        var keyed = viewModel.Diagnostics.Single(diagnostic => diagnostic.Code == "KSU001");
+        Assert.True(keyed.HasKey);
+        Assert.Equal("Key: Minus", keyed.KeyAssociation);
+        Assert.False(viewModel.Diagnostics.Single(diagnostic => diagnostic.Code == "KSC006").HasKey);
+
+        keyed.SelectCommand.Execute(null);
+
+        Assert.Equal(["Minus"], selected);
+        Assert.Equal(["Minus"], viewModel.ProblemKeyIds);
+        Assert.True(problemKeyRefreshes > 0);
+        Assert.Contains("KSU001", viewModel.DiagnosticsText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task Refresh_WhenNothingBlocksTheBundle_ReportsNoProblemKeys()
+    {
+        // The same finding shape, but the variant can still be generated: it is advice, and advice
+        // does not light a key up.
+        var project = Project();
+        var workflow = new FakeLinuxUserVariantWorkflowService().AddInspection(
+            Preparation(
+                LinuxUserVariantStatus.NotInstalled,
+                [new XkbDiagnostic("KSC006", "A newer libxkbcommon is recommended.", "Minus")]));
+        var viewModel = Create(project, Derivation(project), workflow);
+
+        await viewModel.RefreshAsync();
+
+        Assert.True(Assert.Single(viewModel.Diagnostics).HasKey);
+        Assert.Empty(viewModel.ProblemKeyIds);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task Install_WhenKeysCannotBeWrittenInFull_AsksBeforeAnythingIsWritten()
+    {
+        var project = Project();
+        var loss = new XkbDiagnostic(
+            "KSU004",
+            "Physical key 'Minus' is written with the levels the editor holds.",
+            "Minus");
+        var workflow = new FakeLinuxUserVariantWorkflowService()
+            .AddInspection(Preparation(LinuxUserVariantStatus.NotInstalled, acceptedLoss: [loss]))
+            .AddInspection(Preparation(LinuxUserVariantStatus.NotInstalled, acceptedLoss: [loss]));
+        var interaction = new FakeLinuxUserVariantInteractionService { ConfirmIncompleteKeys = false };
+        var viewModel = Create(project, Derivation(project), workflow, interaction);
+        await viewModel.RefreshAsync();
+
+        await viewModel.InstallCommand.ExecuteAsync(null);
+
+        Assert.Equal(1, interaction.IncompleteKeyPrompts);
+        Assert.Equal([loss.Message], interaction.LastLosses);
+        Assert.Equal(0, workflow.InstallOrUpdateCount);
+        Assert.Contains("cancelled", viewModel.StatusText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("cannot be written in full", viewModel.StatusText, StringComparison.Ordinal);
+
+        interaction.ConfirmIncompleteKeys = true;
+        await viewModel.InstallCommand.ExecuteAsync(null);
+
+        Assert.Equal(2, interaction.IncompleteKeyPrompts);
+        Assert.Equal(1, workflow.InstallOrUpdateCount);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task Generate_WhenEveryKeyIsWrittenInFull_AsksNothing()
+    {
+        var project = Project();
+        var workflow = new FakeLinuxUserVariantWorkflowService()
+            .AddInspection(Preparation(LinuxUserVariantStatus.NotInstalled));
+        var interaction = new FakeLinuxUserVariantInteractionService();
+        var viewModel = Create(project, Derivation(project), workflow, interaction);
+        await viewModel.RefreshAsync();
+
+        await viewModel.GenerateCommand.ExecuteAsync(null);
+
+        Assert.Equal(0, interaction.IncompleteKeyPrompts);
+        Assert.Equal(1, workflow.GenerateCount);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task Uninstall_WhenKeysCannotBeWrittenInFull_DoesNotAskAboutThem()
+    {
+        // Uninstalling writes none of the generated keys, so the keys it cannot write in full are
+        // not a question it has any business asking.
+        var project = Project();
+        var loss = new XkbDiagnostic("KSU004", "Physical key 'Minus' is written incompletely.", "Minus");
+        var workflow = new FakeLinuxUserVariantWorkflowService()
+            .AddInspection(Preparation(LinuxUserVariantStatus.Installed, acceptedLoss: [loss]))
+            .AddInspection(Preparation(LinuxUserVariantStatus.NotInstalled));
+        var interaction = new FakeLinuxUserVariantInteractionService();
+        var viewModel = Create(project, Derivation(project), workflow, interaction);
+        await viewModel.RefreshAsync();
+
+        await viewModel.UninstallCommand.ExecuteAsync(null);
+
+        Assert.Equal(0, interaction.IncompleteKeyPrompts);
+        Assert.Equal(1, workflow.UninstallCount);
+    }
+
     private static LinuxUserVariantViewModel Create(
         KeyboardProject project,
         LayoutDerivation derivation,
@@ -233,7 +425,8 @@ public sealed class LinuxUserVariantViewModelTests
     private static LinuxUserVariantPreparation Preparation(
         LinuxUserVariantStatus status,
         IReadOnlyList<XkbDiagnostic>? diagnostics = null,
-        bool includeBundle = true)
+        bool includeBundle = true,
+        IReadOnlyList<XkbDiagnostic>? acceptedLoss = null)
     {
         var metadata = new XkbUserVariantMetadata(
             "7c31d5f2a19e40a4b0ef64f01a295135",
@@ -297,7 +490,10 @@ public sealed class LinuxUserVariantViewModelTests
             paths,
             capability,
             manifest,
-            diagnostics ?? []);
+            diagnostics ?? [])
+        {
+            AcceptedLoss = acceptedLoss ?? []
+        };
     }
 
     private static KeyboardProject Project()

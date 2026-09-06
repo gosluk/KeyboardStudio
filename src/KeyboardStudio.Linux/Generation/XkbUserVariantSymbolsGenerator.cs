@@ -46,7 +46,7 @@ public static class XkbUserVariantSymbolsGenerator
                     .Append(mapping.KeyName)
                     .AppendLine(" {")
                     .Append("        type[Group1] = \"")
-                    .Append(XkbKeyTypeNames.Get(mapping.Type))
+                    .Append(EscapeQuoted(mapping.SourceTypeName ?? XkbKeyTypeNames.Get(mapping.Type)))
                     .AppendLine("\",")
                     .Append("        symbols[Group1] = [ ")
                     .AppendJoin(", ", mapping.Keysyms)

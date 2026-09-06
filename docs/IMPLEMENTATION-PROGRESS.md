@@ -2,10 +2,10 @@
 
 This file tracks execution of [`IMPLEMENTATION-PLAN.md`](IMPLEMENTATION-PLAN.md).
 
-- Current work branch: `install-layout`
-- Last updated: 2026-08-30
-- Current phase: Phase 14 — Import-derived per-user XKB variants (complete)
-- Next work item: none scheduled
+- Current work branch: `themes`
+- Last updated: 2026-08-31
+- Current phase: Phase 15 — Application themes and startup shell (complete)
+- Next work item: none; Phase 15 is complete
 
 Legend: `[x]` complete, `[ ]` not yet complete.
 
@@ -186,10 +186,23 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 
 **Phase status:** 8/8 work items complete. Phase complete.
 
+## Phase 15 — Application themes and startup shell
+
+- [x] **P15.1** Approve architecture, token contract, and UX acceptance criteria
+- [x] **P15.2** Add resilient local application-settings persistence
+- [x] **P15.3** Add the application theme runtime and first-frame restoration
+- [x] **P15.4** Implement White, Gray, and Black semantic resources
+- [x] **P15.5** Add theme selection and rebuild the application header/file menu
+- [x] **P15.6** Extract current-layout startup and remove Create from the normal path
+- [x] **P15.7** Apply the committed UX hierarchy and accessibility refinements
+- [x] **P15.8** Close automated, cross-platform, and visual verification
+
+**Phase status:** 8/8 work items complete. Phase complete.
+
 ## Progress summary
 
-- Completed work items: **102**
-- Total planned work items: **102**
-- Overall checklist progress: **102/102**
+- Completed work items: **110**
+- Total planned work items: **110**
+- Overall checklist progress: **110/110**
 
 The checklist records work-item completion only. Phase-level acceptance criteria and test gates in `IMPLEMENTATION-PLAN.md` still apply before a phase is considered complete.

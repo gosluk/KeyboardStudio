@@ -166,6 +166,10 @@ public sealed class XkbLayoutImporter
         // keycodes/evdev declares to be one key, and the host reads the later statement as the
         // one that wins.
         var mappingsByKeyId = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        // What each key said before the model reduced it. Keyed the same way the mappings are, so
+        // that a second name for one key replaces its source too rather than leaving the first.
+        var sourcesByKeyId = new Dictionary<string, LayoutImportKeySource>(StringComparer.Ordinal);
         var keysImported = 0;
         var keysSkipped = 0;
 
@@ -174,6 +178,16 @@ public sealed class XkbLayoutImporter
             var resolution = _keyNameResolver.Resolve(templateId, key.KeyName);
             if (resolution.KeyId is not { } keyId)
             {
+                // A key only the common base names is not part of this layout, so failing to place
+                // it is not a loss the layout should be graded on or told about. The base describes
+                // every key a PC keyboard might have — the Japanese and Korean keys, the fake keys
+                // that exist to carry modifier mappings — and none of them belong to any template
+                // here.
+                if (key.FromCommonBase)
+                {
+                    continue;
+                }
+
                 diagnostics.Add(resolution.Diagnostic!);
                 keysSkipped++;
                 continue;
@@ -181,6 +195,11 @@ public sealed class XkbLayoutImporter
 
             if (!templateKeyIds.Contains(keyId))
             {
+                if (key.FromCommonBase)
+                {
+                    continue;
+                }
+
                 diagnostics.Add(new LayoutImportDiagnostic(
                     ValidationSeverity.Info,
                     LayoutImportDiagnosticCodes.PhysicalKeyNotInTemplate,
@@ -203,8 +222,14 @@ public sealed class XkbLayoutImporter
                     layout.Mappings.Add(mapping);
                     keysImported++;
                 }
+
+                sourcesByKeyId[keyId] = new LayoutImportKeySource(
+                    keyId,
+                    key.KeyName,
+                    key.Keysyms,
+                    key.KeyType);
             }
-            else if (!everythingWasEmpty)
+            else if (!everythingWasEmpty && !key.FromCommonBase)
             {
                 // The key named outputs and none of them survived, so the key itself is a loss.
                 // A key the file deliberately left blank is not, and is counted as neither.
@@ -217,7 +242,7 @@ public sealed class XkbLayoutImporter
             Metadata = new ProjectMetadata
             {
                 Name = options.ProjectName ?? symbols.DisplayName ?? symbols.Section,
-                Description = $"Imported from {symbols.IncludeChain[0]}."
+                Description = $"Imported from {symbols.Origin}."
             },
             Keyboard = keyboard,
             Layout = layout
@@ -232,7 +257,8 @@ public sealed class XkbLayoutImporter
                 keysSkipped,
                 symbols.IncludeChain,
                 diagnostics),
-            symbols.Section);
+            symbols.Section,
+            [.. layout.Mappings.Select(mapping => sourcesByKeyId[mapping.KeyId])]);
     }
 
     /// <summary>
@@ -253,23 +279,33 @@ public sealed class XkbLayoutImporter
         KeyOutput? defaultLayerOutput = null;
         everythingWasEmpty = true;
 
+        // What the common base loses, it loses identically for every layout there is — the fifth
+        // level of the function row is a console switch, and no import can hold it. Reporting that
+        // against each layout in turn says nothing about the layout and buries the findings that
+        // do. A key the layout defines for itself is reported however the base also defines it.
+        var report = !key.FromCommonBase;
+
         for (var level = 0; level < key.Keysyms.Count; level++)
         {
             if (level >= LayersByLevel.Length)
             {
                 everythingWasEmpty = false;
-                diagnostics.Add(new LayoutImportDiagnostic(
-                    ValidationSeverity.Warning,
-                    LayoutImportDiagnosticCodes.LayerBeyondModelDropped,
-                    $"Level {level + 1} of '{key.KeyName}' was dropped; the model holds four levels.",
-                    keyId));
+                if (report)
+                {
+                    diagnostics.Add(new LayoutImportDiagnostic(
+                        ValidationSeverity.Warning,
+                        LayoutImportDiagnosticCodes.LayerBeyondModelDropped,
+                        $"Level {level + 1} of '{key.KeyName}' was dropped; the model holds four levels.",
+                        keyId));
+                }
+
                 continue;
             }
 
             var layer = LayersByLevel[level];
             var decoded = _keysymDecoder.Decode(key.Keysyms[level], keyId, layer);
 
-            if (decoded.Diagnostic is { } diagnostic)
+            if (decoded.Diagnostic is { } diagnostic && report)
             {
                 diagnostics.Add(diagnostic);
             }

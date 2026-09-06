@@ -1,13 +1,24 @@
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace KeyboardStudio.Linux;
 
 /// <summary>Executes ownership-aware XKB plans with verification, journaling, and rollback.</summary>
-public sealed class XkbUserInstallService : IXkbUserInstallService
+public sealed partial class XkbUserInstallService : IXkbUserInstallService
 {
     private const string ManifestFileName = "installations.json";
     private const string JournalFileName = "journal.json";
+
+    /// <summary>How long a temporary file must sit untouched before recovery treats it as dead.</summary>
+    private static readonly TimeSpan AbandonedTemporaryAge = TimeSpan.FromMinutes(10);
+
+    private static readonly EnumerationOptions SweepOptions = new()
+    {
+        RecurseSubdirectories = true,
+        AttributesToSkip = FileAttributes.ReparsePoint,
+        IgnoreInaccessible = true
+    };
 
     private readonly IXkbUserBundleVerifier _verifier;
     private readonly TimeProvider _timeProvider;
@@ -272,6 +283,15 @@ public sealed class XkbUserInstallService : IXkbUserInstallService
             return new XkbUserRecoveryResult(false, false, null, safety);
         }
 
+        try
+        {
+            SweepAbandonedTemporaries(paths);
+        }
+        catch (Exception exception) when (IsFileSystemOrDataException(exception))
+        {
+            // Clearing dead temporary files is opportunistic and must never block an operation.
+        }
+
         var journalPath = Path.Combine(paths.KeyboardStudioStateRoot, JournalFileName);
         if (!File.Exists(journalPath))
         {
@@ -313,6 +333,36 @@ public sealed class XkbUserInstallService : IXkbUserInstallService
                 false,
                 null,
                 [new XkbDiagnostic("KSI009", $"Interrupted XKB transaction recovery failed: {exception.Message}")]);
+        }
+    }
+
+    /// <summary>
+    /// Deletes this service's own leftover temporary files. A process killed mid-write leaves one
+    /// behind whose <see cref="File.Move(string, string, bool)"/> never ran, so the destination is
+    /// untouched and the leftover is nothing but litter in a directory the desktop reads. Only a
+    /// file old enough that no transaction could still be writing it is removed.
+    /// </summary>
+    private void SweepAbandonedTemporaries(XdgDirectoryPaths paths)
+    {
+        var cutoff = (_timeProvider.GetUtcNow() - AbandonedTemporaryAge).UtcDateTime;
+        foreach (var root in new[] { paths.UserXkbRoot, paths.KeyboardStudioStateRoot })
+        {
+            if (!Directory.Exists(root) || IsSymbolicLink(root))
+            {
+                continue;
+            }
+
+            foreach (var path in Directory.EnumerateFiles(root, "*", SweepOptions))
+            {
+                if (!AbandonedTemporaryPattern().IsMatch(Path.GetFileName(path)) ||
+                    IsSymbolicLink(path) ||
+                    File.GetLastWriteTimeUtc(path) > cutoff)
+                {
+                    continue;
+                }
+
+                File.Delete(path);
+            }
         }
     }
 
@@ -374,7 +424,7 @@ public sealed class XkbUserInstallService : IXkbUserInstallService
             foreach (var operation in plan.Operations)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                ApplyLiveOperation(operation, paths, transactionId);
+                await ApplyLiveOperationAsync(operation, paths, transactionId);
                 _observer.OnStep(
                     XkbInstallTransactionStep.DestinationApplied,
                     transactionId,
@@ -748,7 +798,10 @@ public sealed class XkbUserInstallService : IXkbUserInstallService
         }
     }
 
-    private static void ApplyLiveOperation(
+    // Awaited rather than blocked on: a desktop caller runs this on its single pumped UI thread, and
+    // waiting there for a write whose own continuation is queued back to that same thread deadlocks
+    // the application mid-transaction, with the journal and a temporary file left behind.
+    private static async Task ApplyLiveOperationAsync(
         XkbInstallOperation operation,
         XdgDirectoryPaths paths,
         string transactionId)
@@ -776,11 +829,13 @@ public sealed class XkbUserInstallService : IXkbUserInstallService
             return;
         }
 
-        AtomicWriteTextAsync(
+        // The token stays out of the individual write: the loop above is the cancellation point, so a
+        // started file either lands completely or leaves the destination untouched.
+        await AtomicWriteTextAsync(
             operation.DestinationPath,
             operation.Content!,
             transactionId,
-            CancellationToken.None).GetAwaiter().GetResult();
+            CancellationToken.None);
     }
 
     private static void ValidateAppliedOperations(IReadOnlyList<XkbInstallOperation> operations)
@@ -1093,6 +1148,11 @@ public sealed class XkbUserInstallService : IXkbUserInstallService
         IReadOnlyList<XkbDiagnostic> diagnostics,
         bool recovered = false) =>
         new(false, command, null, null, null, recovered, RolledBack: false, diagnostics);
+
+    [GeneratedRegex(
+        @"^.+\.keyboardstudio-[0-9A-Fa-f]{32}\.(tmp|restore|deleted)$",
+        RegexOptions.CultureInvariant)]
+    private static partial Regex AbandonedTemporaryPattern();
 
     private sealed record ReadStateResult(
         bool Success,

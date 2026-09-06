@@ -381,3 +381,145 @@ Paths, installed variants, content hashes, backups, and transaction journals des
 so they live under `${XDG_STATE_HOME:-$HOME/.local/state}/keyboardstudio/xkb`, not in `.kbdproj`.
 This keeps project files portable and makes ownership checks independent of project renames or file
 copies.
+
+## AD-033 - Appearance settings are local application state, not project data
+
+The selected White, Gray, or Black application theme is stored in a versioned JSON file beneath the
+current user's local application-data directory. It is never serialized into `.kbdproj` and never
+marks the open keyboard project dirty.
+
+Appearance describes how one installation presents every document, not what a keyboard project
+means. Putting it in the project envelope would make opening a file unexpectedly restyle the whole
+application, create meaningless project diffs, and couple portable persistence to Avalonia. The
+settings contract and store therefore live in `KeyboardStudio.App`; `KeyboardStudio.Persistence`
+remains responsible for portable keyboard documents.
+
+Missing, damaged, inaccessible, unknown, or future settings fall back to Gray without blocking
+startup. Explicit changes are saved immediately through an atomic same-directory replacement.
+
+## AD-034 - Three custom variants share one semantic resource contract
+
+KeyboardStudio defines White and Gray variants that inherit Avalonia Light and a Black variant that
+inherits Avalonia Dark. Fluent supplies complete fallback control semantics; KeyboardStudio supplies
+the application surfaces, keycaps, state colors, borders, text, and shadows through semantic dynamic
+resources.
+
+All three theme dictionaries define the same required keys. Views and control templates consume
+those keys through `DynamicResource` and do not contain literal presentation colors. This makes a
+missing theme value detectable as a contract failure and lets the application switch variants
+without rebuilding the visual tree.
+
+Gray is the deterministic first-run default. Following the operating-system variant remains outside
+the first three-theme scope.
+
+## AD-035 - The saved theme is applied before the first window is constructed
+
+The application composition root loads local settings and applies the selected custom theme to
+`Application.RequestedThemeVariant` before constructing `MainWindow`.
+
+Applying the preference from a window ViewModel would render the first frame with the wrong Fluent
+variant and then correct it visibly. Theme selection remains testable through an application-theme
+service boundary; only its Avalonia implementation touches `Application`.
+
+A user selection applies immediately and then saves. A save failure leaves the requested theme
+active for the current session and reports a non-modal warning rather than rolling the UI back.
+
+## AD-036 - Startup layout loading returns data; the document owner decides replacement
+
+Host detection and import move behind `IStartupLayoutLoader`, which returns a structured result but
+does not mutate a project, ViewModel, or Avalonia control. `MainWindowViewModel` remains the document
+owner and adopts a result only while the original startup project is the same instance, clean, and
+pathless.
+
+The populated seed still renders immediately, so host file I/O cannot delay the first frame. A
+supported Linux host then settles on its active layout without user action. Unsupported or failed
+imports leave the seed editable and present non-modal fallback information. A late result can never
+overwrite edits, Open, Import, or New.
+
+The permanent `New from [template] [Create]` toolbar group is removed. New-project creation remains
+available through the File menu and `Ctrl+N`, behind the existing unsaved-changes confirmation.
+
+## AD-037 - Document commands use an accessible icon menu in the application header
+
+The standalone File menu row moves into the application header immediately beside the
+`KeyboardStudio` title. Its trigger is an application-owned vector icon with the accessible name
+`File`, tooltip text, visible keyboard focus, and all existing commands and shortcuts.
+
+An adjacent Appearance trigger exposes White, Gray, and Black as mutually exclusive named choices.
+Icon-only presentation does not remove textual automation names or keyboard access. KeyboardStudio
+uses local vector resources rather than adding an icon package for two application-shell symbols.
+
+The header shows a concise layout or filename and puts the full path in a tooltip. This keeps dirty,
+loading, import, and fallback state visible without allowing a long path to consume the header.
+
+## AD-038 - Fluent's palette accent is pinned per inherited variant
+
+`FluentTheme.Palettes` sets the accent Fluent uses for its own check marks, radio dots, list
+selection, and scrollbars. Left alone it follows the desktop's accent colour, so a KeyboardStudio
+theme would show a checkbox in whatever colour the host was configured for — a colour belonging to
+none of the three palettes, and one that changes under the application without warning.
+
+`Palettes` accepts the Light and Dark variants only. Each KeyboardStudio variant is therefore served
+by the one it inherits: White and Gray from Light, Black from Dark. This is the single exception to
+the rule that only `ThemeResources.axaml` names a colour, and the literal-colour audit permits it
+inside `ColorPaletteResources` and nowhere else.
+
+Overriding individual Fluent resource keys was rejected. Those keys are implementation detail and an
+Avalonia upgrade could rename them without failing a build; the palette accent is the documented
+customization point and is one value rather than a list.
+
+## AD-039 - Diagnostics collapse when there is nothing to report
+
+The diagnostics panel occupies one line while it has no entries, and expands on the transition into
+error rather than on every validation pass.
+
+A clean document is the normal case, so a panel that permanently reserved the bottom of the editor
+to say "No diagnostics" was taking that space from the keyboard to display nothing. Expanding on
+every refresh would fight the user instead: validation reruns on each edit, so a list they had just
+closed would reopen at the next keystroke for as long as the error stood. The panel therefore opens
+itself only when an error first appears, and the user's own collapse holds until the next one.
+
+The summary names severities — "1 error, 2 warnings" — rather than counting rows, so it reads the
+same with colour removed.
+
+## AD-040 - An imported layout is composed onto the XKB common base
+
+`IXkbSymbolsResolver.ResolveLayout` merges `symbols/pc` before the layout, the way `rules/evdev`
+does with its `pc+%l%(v)` fallback for every model and layout.
+
+A symbols file is not a keyboard. `pl` writes the two dozen keys that make a layout Polish, and
+Escape, the function row, the modifiers, the editing block, the arrows and the keypad are all
+somewhere else. Importing the file alone produced a board with 50 of 105 keys carrying any output —
+read on screen as a keyboard whose function row and keypad had no logical keys assigned, which is
+not a partial import of Polish but a misreading of how layouts are written. Composed, the same
+layout imports 105 keys.
+
+Every resolved key records whether the base or the layout defined it, because the base is identical
+for every layout and so says nothing about any one of them. Geometry inference ignores a `<LSGT>`
+that only the base wrote, or it would suggest ISO for every layout there is; and a loss inside a
+base key — a fifth level the model cannot hold, a key no template has — is neither counted against
+the import nor reported, because saying the same thing about every layout in the database buries
+the findings that describe the one being imported.
+
+The alternative, filling unmapped keys from the seed project after import, was rejected: it would
+invent mappings the source never contained and make an import's output depend on which seed shipped.
+
+## AD-041 - The import catalog offers layouts, ordered by the name it shows
+
+A symbols file the registry does not describe is listed only when it names a keyboard group, and the
+list is ordered by display name rather than by layout identifier.
+
+Two thirds of a distribution's `symbols/` directory is components — `pc`, `latin`, `level3`,
+`capslock`, `keypad`, `altwin` — merged into a layout rather than chosen as one. Listing every file
+put `altwin` between Albanian and Armenian in what reads as a list of countries, and offered entries
+that import three keys. `name[Group1]` separates the two in the data: a layout names the group it
+defines, and a component cannot, because it would then be naming every layout it is merged into. The
+test reads the file's own default section and follows no includes, so `latin` does not inherit
+"English (US)" from the `us` section it composes. A layout the user wrote themselves still has to
+name its group for the desktop to offer it, so it is still listed here.
+
+Filtering to registry entries alone was rejected: it is what the desktop settings panels do, but it
+would drop the user's own layouts, which are the ones this application exists to edit.
+
+Ordering by identifier showed Dari above Albanian and Chinese below English — the column the user
+scans is the name, and the code that explains the order is not in it.

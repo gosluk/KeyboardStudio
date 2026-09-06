@@ -327,7 +327,8 @@ LayoutDerivation
 
 Only an import-as-new-project from a system-origin catalog entry establishes an installable
 derivation in the first version. Each baseline mapping records whether source behavior lost during
-import makes that key unsafe to override. Loose-file imports, mapping replacement, startup
+import makes that key unsafe to override, and carries the source's own levels and key type so that
+loss confined to a key's levels no longer has to. Loose-file imports, mapping replacement, startup
 inference, and migrated version-2 documents do not gain a derivation. The baseline never changes
 during editing or when the document is loaded. Re-importing deliberately creates a new baseline
 and installation ID.
@@ -340,11 +341,47 @@ supported mapping through the highest relevant level, including an explicit `NoS
 user cleared a level. This prevents a partial statement from accidentally retaining an old
 inherited level.
 
-The current importer intentionally drops dead keys, actions, groups above one, and levels above
-four. If a changed key had unsupported source behavior that the baseline could not represent, the
-translator blocks variant generation with a key-specific diagnostic. It does not infer that an
-invisible source level should be erased. Later work can add explicit override intent or broader XKB
-constructs.
+The importer projects a key onto four layers of representable characters, which is the right shape
+for an editor and not the whole truth about a key. What it cannot project — a dead key, a level
+above the fourth, a keysym with no character behind it — it now keeps verbatim beside the mapping,
+together with the key type the source declared, in `LayoutImportKeySource`. Those are opaque to the
+model: never shown, never edited, and meaningful only to the backend that read them.
+
+That is what makes the key writable again. An override replaces a key whole, so the translator
+names every level it has: the user's own where the editor holds one, an explicit `NoSymbol` where
+the user cleared one the import did hold, and the source's own text everywhere the model never
+represented anything. A key whose levels run past the fourth is written with the type the source
+declared, because nothing else reaches them; the model's own type is used for every key that fits
+within four, so that levels the user has just added stay reachable. Every level and type taken from
+the source is checked against the notation it claims to be in before it is written back, and a key
+that fails that check is refused rather than written.
+
+Loss that is not a level does not put a key out of reach, because an override does not replace a
+key. XKB merges a key definition field by field, and a derived variant writes exactly two of them —
+the group-1 symbols and the group-1 type. Confirmed against the compiler: overriding group 1 of a
+key leaves its `actions` and its second group exactly as the base defined them. So an ignored
+alternate group and an unsupported key construct are not reasons to refuse, and neither is an
+inexactly composed layout — a skipped statement, an approximated merge mode, an unresolved include
+may leave the baseline an imperfect picture of the host, but overriding one key cannot erase
+another key that was never written.
+
+What remains is a key whose own levels cannot all be written: one whose source never came with the
+import, a source level that is not writable as XKB notation, levels past the fourth with no
+declared type to reach them. Each of those describes exactly what would be dropped, so each is
+offered rather than refused outright. `Translate` takes `acceptIncompleteKeys`; with it, such a key
+is written from what can be carried and every drop is returned in `AcceptedLoss` as `KSU004`. The
+one refusal acceptance cannot lift is an output that has no keysym at all (`KSU002`): there is
+nothing to write and nothing to drop instead.
+
+Nothing decides that on the user's behalf. Inspection translates with acceptance so that the cost
+is knowable at all, and the resulting bundle is withheld behind that cost: `LinuxUserVariantViewModel`
+shows the affected keys and asks before every Generate, Install, and Update, and a refusal cancels
+the operation. The answer is not stored — it is about the keys in front of the user at that moment,
+and nothing stays switched on to make the next variant lossy without being asked again.
+
+Source levels are additive within the version-3 document schema. A derivation saved before they
+were kept has none, and its keys stay exactly as safe or unsafe to override as they were recorded —
+re-importing the layout is what gives an existing project the fuller baseline.
 
 The result of translation is separate from the existing standalone model:
 
@@ -442,7 +479,10 @@ deterministic multi-project generator plus an output writer:
 
 The bundle manifest records schema/generator versions, stable variant identities, changed physical
 keys, and SHA-256 hashes of every installable file. Generation refuses internal-section and public
-layout/variant collisions before producing a bundle.
+layout/variant collisions before producing a bundle. Writing a bundle over a previous one prunes the
+files that generation no longer produces - a bridge for a base layout the project has stopped
+deriving from, say - so the bundle root holds exactly the current bundle. Only a root carrying the
+generated bundle manifest is pruned; any other directory at that path is left as it is.
 
 P14.4 verification uses the official order-sensitive invocation shape
 `xkbcli compile-keymap --include <staged-root> --include-defaults --test`. For every proposed
@@ -462,21 +502,26 @@ P14.6 executes the resulting typed operations transactionally.
 
 ### File ownership
 
-- `symbols/keyboardstudio` is app-owned only when it has the KeyboardStudio generated header and a
-  matching installation manifest. Otherwise installation refuses to replace it.
+- `symbols/keyboardstudio` is app-owned only when it has the KeyboardStudio generated header. A file
+  the manifest records must also still hash to what was recorded; a header-carrying file the
+  manifest says nothing about is reclaimed instead of refused, because a lost or reset manifest
+  cannot make KeyboardStudio's own generated file someone else's.
 - `symbols/<base-layout>` is shared. KeyboardStudio edits only stable comment-delimited managed
   blocks and preserves all other bytes.
 - `rules/evdev.xml` is shared. It is changed through an XML-aware merger with external entity
   resolution disabled. Unknown elements and unrelated entries are preserved.
 - a public `(base layout ID, variant ID)` collision is an error unless the existing entry belongs to
   the same project installation ID.
-- unexpected edits to a previously managed block are conflicts, not permission to overwrite.
+- unexpected edits to a managed block the manifest records are conflicts, not permission to
+  overwrite. A block or registry entry carrying this project's ownership markers that the manifest
+  does not record is reclaimed by an install, so a rebuilt project reaches the desktop instead of
+  stranding behind state the app can no longer describe.
 
 `XkbManagedBlockEditor` preserves all bytes outside the selected comment-delimited block and hashes
 the normalized owned block. `XkbRegistryDocumentMerger` parses with DTD processing ignored and no
 XML resolver, preserves unknown elements and unrelated variants, and owns entries through adjacent
 project-ID comments. Both refuse missing, duplicated, malformed, unowned, or hash-mismatched target
-content.
+content, and both overwrite an unrecorded target only when the caller asks them to reclaim it.
 
 ### Host-local state
 
@@ -499,8 +544,10 @@ are added by the P14.6 transaction layer rather than to each durable installatio
 `XkbInstallPlanner` consumes only generated bundle content, an XDG path result, the manifest, and
 immutable live-file snapshots. It returns exact create/replace/delete operations plus the next
 manifest. It does not touch the filesystem. The planner rejects an unowned or whole-file-modified
-`symbols/keyboardstudio`, changed target blocks/registry entries, public collisions, unsafe paths,
-and snapshots marked as symlinks. Unrelated bridge bytes and XML nodes are retained.
+`symbols/keyboardstudio`, changed recorded blocks/registry entries, public collisions, unsafe paths,
+and snapshots marked as symlinks. When the manifest holds no installation for the project being
+planned, its owned content is reclaimed and rewritten rather than refused. Unrelated bridge bytes
+and XML nodes are retained.
 
 ### Installation transaction
 
@@ -543,7 +590,9 @@ Cancellation or any ordinary I/O, validation, or verification failure after jour
 destinations and the previous manifest. A journal left by process interruption is replayed
 idempotently before the next install, update, verify-installed, or uninstall command. Backup hashes
 are checked before recovery, and a failed recovery retains the journal and backups instead of
-guessing.
+guessing. The same pass deletes the service's own abandoned temporary files - a killed process
+leaves one whose rename never ran - once they are old enough that no transaction could still be
+writing them.
 
 Uninstall removes only sections, managed blocks, and XML nodes owned by the selected installation
 ID. It deletes a shared file only when no non-KeyboardStudio content remains. After uninstall, it
@@ -565,6 +614,10 @@ The Linux user-variant panel shows:
 - host capability and desktop-discovery status;
 - project status: not installed, installed, update available, externally modified, broken, or base
   unavailable;
+- what it found, one row each: a row that names a key selects that key on the keyboard, and a key
+  named by a finding that blocks the variant is marked on the keyboard as well;
+- before writing anything, a confirmation naming every key that cannot be written in full and what
+  each one costs, whenever there is one;
 - actions: Generate bundle, Install, Update, Verify installed, Uninstall, and Open output folder.
 
 Install, update, and uninstall always require an explicit action and show the exact paths to be

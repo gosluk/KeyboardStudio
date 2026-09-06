@@ -3,6 +3,7 @@
         xmlns:controls="using:KeyboardStudio.App.Controls"
         x:Class="KeyboardStudio.App.MainWindow"
         Title="{Binding WindowTitle}"
+        Icon="/Assets/KeyboardStudio.png"
         Width="1400"
         Height="820"
         MinWidth="980"
@@ -14,159 +15,214 @@
     <KeyBinding Gesture="Ctrl+Shift+S" Command="{Binding SaveAsCommand}" />
   </Window.KeyBindings>
 
-  <DockPanel>
-    <Menu DockPanel.Dock="Top">
-      <MenuItem Header="_File">
-        <MenuItem Header="_New" Command="{Binding NewCommand}" />
-        <MenuItem Header="_Open…" Command="{Binding OpenCommand}" />
-        <Separator />
-        <MenuItem Header="_Import layout…" Command="{Binding ImportLayoutCommand}" />
-        <MenuItem Header="Import _from file…" Command="{Binding ImportFromFileCommand}" />
-        <Separator />
-        <MenuItem Header="_Save" Command="{Binding SaveCommand}" />
-        <MenuItem Header="Save _As…" Command="{Binding SaveAsCommand}" />
-      </MenuItem>
-    </Menu>
+  <DockPanel Background="{DynamicResource WorkspaceSurfaceBrush}">
+    <Grid RowDefinitions="Auto,*" ColumnDefinitions="*,360" Margin="12,10,12,12" ColumnSpacing="10" RowSpacing="10">
+      <!-- One header row: identity and the document menu on the left, what the editor is
+           showing on the right. The document label lives in the window title now, and the
+           keyboard's own toolbar moved up here, so the keyboard card holds nothing but keys. -->
+      <Grid Grid.ColumnSpan="2"
+            ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto"
+            ColumnSpacing="9"
+            MinHeight="48"
+            TabIndex="0">
+        <Border Grid.ColumnSpan="7"
+                Classes="app-chrome"
+                IsHitTestVisible="False" />
 
-    <Grid RowDefinitions="Auto,*" ColumnDefinitions="*,360" Margin="10,6,10,10" ColumnSpacing="8" RowSpacing="6">
-      <StackPanel Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="8">
-        <TextBlock Classes="app-title" Text="KeyboardStudio" />
-        <TextBlock Classes="muted" Text="{Binding DocumentStatus}" FontSize="12" />
-        <Border VerticalAlignment="Center"
-                Padding="7,1"
-                CornerRadius="9"
-                Background="#1FB45309"
-                IsVisible="{Binding IsDirty}">
-          <TextBlock Text="Unsaved changes"
-                     FontSize="11"
-                     Foreground="{DynamicResource WarningForegroundBrush}" />
+        <!-- The brand mark is the File trigger. A logo that does nothing beside a small icon that
+             does the work is two targets for one job; this is the one. -->
+        <Button Grid.Column="0"
+                Classes="brand-mark"
+                Margin="7,6,0,6"
+                AutomationProperties.Name="File"
+                ToolTip.Tip="File menu">
+          <Image Source="/Assets/KeyboardStudio.png"
+                 Width="30"
+                 Height="30"
+                 Stretch="Uniform" />
+          <Button.Flyout>
+            <MenuFlyout Placement="BottomEdgeAlignedLeft">
+              <MenuItem Header="_New" Command="{Binding NewCommand}" InputGesture="Ctrl+N" />
+              <!-- Ctrl+N keeps the geometry already open; these are how a different one is asked
+                   for, now that changing geometry no longer replaces the document by itself. -->
+              <MenuItem Header="New _geometry" ItemsSource="{Binding NewDocumentOptions}">
+                <MenuItem.ItemContainerTheme>
+                  <!-- BasedOn is not optional: a ControlTheme replaces the whole theme, and the
+                       one it replaces is where a MenuItem's template comes from. Without it the
+                       items are built, bound, and drawn at zero size — an empty submenu. -->
+                  <ControlTheme TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+                    <Setter Property="Header" Value="{Binding Name}" />
+                    <Setter Property="Command" Value="{Binding Command}" />
+                    <Setter Property="AutomationProperties.Name" Value="{Binding Name}" />
+                  </ControlTheme>
+                </MenuItem.ItemContainerTheme>
+              </MenuItem>
+              <MenuItem Header="_Open…" Command="{Binding OpenCommand}" InputGesture="Ctrl+O" />
+              <Separator />
+              <MenuItem Header="_Import layout…" Command="{Binding ImportLayoutCommand}" />
+              <MenuItem Header="Import _from file…" Command="{Binding ImportFromFileCommand}" />
+              <Separator />
+              <MenuItem Header="_Save" Command="{Binding SaveCommand}" InputGesture="Ctrl+S" />
+              <MenuItem Header="Save _As…" Command="{Binding SaveAsCommand}" InputGesture="Ctrl+Shift+S" />
+            </MenuFlyout>
+          </Button.Flyout>
+        </Button>
+
+        <!-- The title bar names the open document; the whole path stays one hover away rather
+             than taking the width of the header to say the same thing. -->
+        <TextBlock Grid.Column="1"
+                   Classes="app-title"
+                   Text="KeyboardStudio"
+                   ToolTip.Tip="{Binding DocumentPath}" />
+
+        <Border Grid.Column="2" Classes="badge warning" IsVisible="{Binding IsDirty}">
+          <TextBlock Text="Unsaved changes" />
         </Border>
-        <TextBlock Classes="muted"
+
+        <TextBlock Grid.Column="3"
+                   Classes="muted"
                    Text="{Binding ImportStatus}"
                    VerticalAlignment="Center"
                    TextTrimming="CharacterEllipsis"
-                   FontSize="12"
                    IsVisible="{Binding HasImportStatus}" />
-      </StackPanel>
 
-      <Grid Grid.Row="1" Grid.Column="0" RowDefinitions="Auto,*" RowSpacing="8">
-        <Border Classes="card" VerticalAlignment="Top">
-          <Grid RowDefinitions="Auto,Auto" RowSpacing="8">
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-              <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                <TextBlock Classes="section-title" Text="Keyboard" />
-                <Border VerticalAlignment="Center"
-                        Padding="7,1"
-                        CornerRadius="9"
-                        Background="{DynamicResource BadgeBackgroundBrush}">
-                  <TextBlock Text="{Binding Editor.TemplateName}"
-                             FontSize="11"
-                             Foreground="{DynamicResource MutedForegroundBrush}" />
-                </Border>
-              </StackPanel>
+        <!-- Geometry and layer describe the same one thing the keyboard below is showing, so they
+             sit in the chrome that already names it rather than in a strip of their own. -->
+        <Border Grid.Column="4" Classes="badge">
+          <TextBlock Text="{Binding Editor.TemplateName}" />
+        </Border>
 
-              <!-- Wraps to a second line instead of clipping once the window is narrow. -->
-              <WrapPanel Grid.Column="1" HorizontalAlignment="Right">
-                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,14,2">
-                  <TextBlock Classes="field-label" Text="Layer" />
-                  <ComboBox ItemsSource="{Binding Editor.Layers}"
-                            SelectedItem="{Binding Editor.ActiveLayerOption}"
-                            Width="130">
-                    <ComboBox.ItemTemplate>
-                      <DataTemplate>
-                        <TextBlock Text="{Binding Label}" />
-                      </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                  </ComboBox>
-                  <TextBlock Classes="muted"
-                             Text="{Binding Editor.LayerSummary}"
-                             FontSize="12" />
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,2">
-                  <TextBlock Classes="field-label" Text="New from" />
-                  <ComboBox ItemsSource="{Binding Templates}"
-                            SelectedItem="{Binding SelectedTemplate}"
-                            Width="140">
-                    <ComboBox.ItemTemplate>
-                      <DataTemplate>
-                        <TextBlock Text="{Binding Name}" />
-                      </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                  </ComboBox>
-                  <Button Content="Create"
-                          Command="{Binding NewCommand}"
-                          ToolTip.Tip="Replace the current project with a new one built from the selected template" />
-                  <Button Content="Import…"
-                          Command="{Binding ImportLayoutCommand}"
-                          ToolTip.Tip="Start from a layout this host already has installed" />
-                </StackPanel>
-              </WrapPanel>
-            </Grid>
+        <StackPanel Grid.Column="5"
+                    Orientation="Horizontal"
+                    Spacing="6"
+                    VerticalAlignment="Center">
+          <TextBlock Classes="field-label" Text="Layer" />
+          <ComboBox ItemsSource="{Binding Editor.Layers}"
+                    SelectedItem="{Binding Editor.ActiveLayerOption}"
+                    Width="130">
+            <ComboBox.ItemTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding Label}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <TextBlock Classes="muted" Text="{Binding Editor.LayerSummary}" />
+        </StackPanel>
 
-            <Border Grid.Row="1"
-                    Padding="9"
-                    Background="{DynamicResource KeyboardBezelBrush}"
-                    BorderBrush="{DynamicResource KeyboardBezelBorderBrush}"
-                    BorderThickness="1"
-                    CornerRadius="10"
-                    ClipToBounds="True">
-              <Viewbox Stretch="Uniform" StretchDirection="Both">
-                <ItemsControl ItemsSource="{Binding Editor.Keys}"
-                              Width="{Binding Editor.KeyboardWidth}"
-                              Height="{Binding Editor.KeyboardHeight}"
-                              UseLayoutRounding="False"
-                              RenderOptions.EdgeMode="Antialias">
-                  <ItemsControl.ItemContainerTheme>
-                    <ControlTheme TargetType="ContentPresenter">
-                      <Setter Property="Canvas.Left" Value="{Binding Left}" />
-                      <Setter Property="Canvas.Top" Value="{Binding Top}" />
-                    </ControlTheme>
-                  </ItemsControl.ItemContainerTheme>
-                  <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                      <Canvas />
-                    </ItemsPanelTemplate>
-                  </ItemsControl.ItemsPanel>
+        <Button Grid.Column="6"
+                Classes="quiet icon"
+                Margin="0,0,7,0"
+                AutomationProperties.Name="Appearance"
+                ToolTip.Tip="{Binding Appearance.Summary}">
+          <PathIcon Data="{StaticResource AppearanceIconGeometry}" Width="16" Height="16" />
+          <Button.Flyout>
+            <Flyout Placement="BottomEdgeAlignedRight">
+              <StackPanel Spacing="6" MinWidth="200">
+                <TextBlock Classes="section-title" Text="Appearance" />
+                <ItemsControl ItemsSource="{Binding Appearance.Options}">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                      <controls:KeyControl KeyId="{Binding KeyId}"
-                                           KeyName="{Binding KeyName}"
-                                           DefaultAssignment="{Binding DefaultAssignment}"
-                                           ShiftAssignment="{Binding ShiftAssignment}"
-                                           AltGrAssignment="{Binding AltGrAssignment}"
-                                           ShiftAltGrAssignment="{Binding ShiftAltGrAssignment}"
-                                           IsDefaultActive="{Binding IsDefaultActive}"
-                                           IsShiftActive="{Binding IsShiftActive}"
-                                           IsAltGrActive="{Binding IsAltGrActive}"
-                                           IsShiftAltGrActive="{Binding IsShiftAltGrActive}"
-                                           IsSelected="{Binding IsSelected}"
-                                           IsUnmapped="{Binding IsUnmapped}"
-                                           HasError="{Binding HasError}"
-                                           SelectCommand="{Binding SelectCommand}"
-                                           Width="{Binding Width}"
-                                           Height="{Binding Height}" />
+                      <RadioButton GroupName="ApplicationTheme"
+                                   IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                   AutomationProperties.Name="{Binding Name}">
+                        <StackPanel Spacing="1">
+                          <TextBlock Text="{Binding Name}" />
+                          <TextBlock Classes="muted" Text="{Binding Description}" />
+                        </StackPanel>
+                      </RadioButton>
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
-              </Viewbox>
-            </Border>
-          </Grid>
+                <TextBlock Classes="warning"
+                           Text="{Binding Appearance.Warning}"
+                           TextWrapping="Wrap"
+                           MaxWidth="240"
+                           IsVisible="{Binding Appearance.HasWarning}" />
+              </StackPanel>
+            </Flyout>
+          </Button.Flyout>
+        </Button>
+      </Grid>
+
+      <!-- The keyboard takes the room; diagnostics take what they need and no more. -->
+      <Grid Grid.Row="1" Grid.Column="0" RowDefinitions="*,Auto" RowSpacing="8" TabIndex="1">
+        <!-- Top-aligned in a star row: the keyboard is as large as its own aspect ratio allows and
+             no larger, and gives way rather than pushing diagnostics off a short window. -->
+        <Border Classes="card" VerticalAlignment="Top">
+          <Viewbox Stretch="Uniform" StretchDirection="Both">
+            <ItemsControl ItemsSource="{Binding Editor.Keys}"
+                          Width="{Binding Editor.KeyboardWidth}"
+                          Height="{Binding Editor.KeyboardHeight}"
+                          UseLayoutRounding="False"
+                          RenderOptions.EdgeMode="Antialias">
+              <ItemsControl.ItemContainerTheme>
+                <ControlTheme TargetType="ContentPresenter">
+                  <Setter Property="Canvas.Left" Value="{Binding Left}" />
+                  <Setter Property="Canvas.Top" Value="{Binding Top}" />
+                </ControlTheme>
+              </ItemsControl.ItemContainerTheme>
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <Canvas />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <controls:KeyControl KeyId="{Binding KeyId}"
+                                       KeyName="{Binding KeyName}"
+                                       DefaultAssignment="{Binding DefaultAssignment}"
+                                       ShiftAssignment="{Binding ShiftAssignment}"
+                                       AltGrAssignment="{Binding AltGrAssignment}"
+                                       ShiftAltGrAssignment="{Binding ShiftAltGrAssignment}"
+                                       IsDefaultActive="{Binding IsDefaultActive}"
+                                       IsShiftActive="{Binding IsShiftActive}"
+                                       IsAltGrActive="{Binding IsAltGrActive}"
+                                       IsShiftAltGrActive="{Binding IsShiftAltGrActive}"
+                                       IsSelected="{Binding IsSelected}"
+                                       IsUnmapped="{Binding IsUnmapped}"
+                                       HasError="{Binding HasError}"
+                                       SelectCommand="{Binding SelectCommand}"
+                                       Width="{Binding Width}"
+                                       Height="{Binding Height}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </Viewbox>
         </Border>
 
-        <Border Grid.Row="1" Classes="card">
-          <Grid RowDefinitions="Auto,*" RowSpacing="6">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Classes="section-title" Text="Diagnostics" />
-              <TextBlock Classes="muted" Text="{Binding Diagnostics.Summary}" FontSize="12" />
-            </StackPanel>
-            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+        <!-- A clean document is the normal case, so the panel is absent rather than present and
+             empty: a disabled strip saying "No diagnostics" holds a row of the column in order to
+             report nothing. When there is something to say it appears, collapsed to one line, and
+             opens itself on an error. -->
+        <Border Grid.Row="1"
+                Classes="card subtle"
+                Padding="4,2"
+                TabIndex="3"
+                IsVisible="{Binding Diagnostics.HasIssues}">
+          <Expander Classes="flat"
+                    HorizontalAlignment="Stretch"
+                    IsExpanded="{Binding Diagnostics.IsExpanded, Mode=TwoWay}"
+                    AutomationProperties.Name="Diagnostics">
+            <Expander.Header>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Classes="section-title" Text="Diagnostics" />
+                <TextBlock Classes="muted" Text="{Binding Diagnostics.Summary}" />
+              </StackPanel>
+            </Expander.Header>
+            <!-- Findings run past the fold as often as not, so the list ends by fading rather
+                 than by a cut through the middle of a row. -->
+            <ScrollViewer MaxHeight="220"
+                          VerticalScrollBarVisibility="Auto"
+                          controls:ScrollFade.Edge="24">
               <ItemsControl ItemsSource="{Binding Diagnostics.Items}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
-                    <Button Command="{Binding SelectCommand}"
+                    <Button Classes="quiet diagnostic-row"
+                            Classes.actionable="{Binding HasKey}"
+                            Command="{Binding SelectCommand}"
                             HorizontalAlignment="Stretch"
                             HorizontalContentAlignment="Stretch"
-                            Padding="8,4"
+                            Padding="8,5"
                             Margin="0,1">
                       <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="7">
                         <TextBlock Text="{Binding Severity}" FontWeight="SemiBold" FontSize="12" />
@@ -177,21 +233,28 @@
                                    FontSize="12" />
                         <TextBlock Grid.Column="3"
                                    Classes="muted"
-                                   Text="{Binding KeyAssociation}"
-                                   FontSize="11" />
+                                   Text="{Binding KeyAssociation}" />
                       </Grid>
                     </Button>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
             </ScrollViewer>
-          </Grid>
+          </Expander>
         </Border>
       </Grid>
 
-      <ScrollViewer Grid.Row="1" Grid.Column="1" VerticalScrollBarVisibility="Auto" Padding="0,0,4,0">
+      <!-- The inspector is taller than any window it is shown in, so both its ends are usually
+           clipped; they fade into the workspace instead of stopping against the header and the
+           bottom edge mid-control. -->
+      <ScrollViewer Grid.Row="1"
+                    Grid.Column="1"
+                    TabIndex="2"
+                    VerticalScrollBarVisibility="Auto"
+                    Padding="0,0,4,0"
+                    controls:ScrollFade.Edge="24">
         <StackPanel Spacing="8">
-          <Border Classes="card">
+          <Border Classes="card subtle">
             <StackPanel Spacing="5">
               <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="7">
                 <TextBlock Classes="section-title" Text="Selected key" />
@@ -215,46 +278,99 @@
               <ItemsControl ItemsSource="{Binding Editor.LayerMappings}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
-                    <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="96,*,Auto" ColumnSpacing="6" Margin="0,1">
-                      <TextBlock Classes="field-label" Text="{Binding Label}" />
-                      <TextBox Grid.Column="1"
+                    <!-- A layer produces a character or a functional key, so the row carries the
+                         kind beside the value and swaps the editor to match. Both kinds have always
+                         been in the model and both arrive from imports; a lone text box could only
+                         show one of them, and silently overwrote the other.
+
+                         Two lines rather than one because the panel is a fixed 360, and a layer
+                         name, a kind, an editor and Clear abreast leave the editor too narrow to
+                         read a key name in. -->
+                    <Grid RowDefinitions="Auto,Auto,Auto,Auto"
+                          ColumnDefinitions="Auto,*,Auto"
+                          ColumnSpacing="6"
+                          Margin="0,0,0,6">
+                      <TextBlock Grid.ColumnSpan="3"
+                                 Classes="field-label"
+                                 Text="{Binding Label}"
+                                 Margin="0,0,0,2" />
+
+                      <ComboBox Grid.Row="1"
+                                Width="124"
+                                ItemsSource="{Binding Kinds}"
+                                SelectedItem="{Binding KindOption, Mode=TwoWay}"
+                                AutomationProperties.Name="Output kind">
+                        <ComboBox.ItemTemplate>
+                          <DataTemplate>
+                            <TextBlock Text="{Binding Label}" />
+                          </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                      </ComboBox>
+
+                      <TextBox Grid.Row="1"
+                               Grid.Column="1"
                                Text="{Binding Output, Mode=TwoWay}"
-                               PlaceholderText="No output" />
-                      <Button Grid.Column="2"
+                               PlaceholderText="Type a character"
+                               IsVisible="{Binding IsCharacter}"
+                               AutomationProperties.Name="Character" />
+
+                      <ComboBox Grid.Row="1"
+                                Grid.Column="1"
+                                HorizontalAlignment="Stretch"
+                                ItemsSource="{Binding SpecialKeys}"
+                                SelectedItem="{Binding SpecialKey, Mode=TwoWay}"
+                                PlaceholderText="Choose a key"
+                                IsVisible="{Binding IsSpecialKey}"
+                                AutomationProperties.Name="Key">
+                        <ComboBox.ItemTemplate>
+                          <DataTemplate>
+                            <TextBlock Text="{Binding Label}" />
+                          </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                      </ComboBox>
+
+                      <Button Grid.Row="1"
+                              Grid.Column="2"
+                              Classes="quiet"
                               Content="Clear"
                               Command="{Binding ClearCommand}" />
-                      <TextBlock Grid.Row="1"
-                                 Grid.Column="1"
+
+                      <TextBlock Grid.Row="2"
+                                 Grid.ColumnSpan="3"
+                                 Classes="danger"
                                  Text="{Binding ValidationMessage}"
-                                 Foreground="{DynamicResource DangerForegroundBrush}"
-                                 FontSize="11"
+                                 FontSize="12"
                                  TextWrapping="Wrap"
                                  IsVisible="{Binding HasValidationError}" />
+
+                      <!-- Advisory, never blocking: what a build target will not accept, said where
+                           the choice is made rather than only at build time. -->
+                      <TextBlock Grid.Row="3"
+                                 Grid.ColumnSpan="3"
+                                 Classes="muted"
+                                 Text="{Binding CapabilityWarning}"
+                                 FontSize="12"
+                                 TextWrapping="Wrap"
+                                 IsVisible="{Binding HasCapabilityWarning}" />
                     </Grid>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
               <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,3,0,0">
-                <Button Content="Clear all outputs" Command="{Binding Editor.ClearAllOutputsCommand}" />
-                <Button Content="Unmap logical key" Command="{Binding Editor.UnmapLogicalKeyCommand}" />
+                <Button Classes="quiet" Content="Clear all outputs" Command="{Binding Editor.ClearAllOutputsCommand}" />
+                <Button Classes="quiet" Content="Unmap logical key" Command="{Binding Editor.UnmapLogicalKeyCommand}" />
               </StackPanel>
             </StackPanel>
           </Border>
 
-          <Border Classes="card">
+          <Border Classes="card subtle">
             <StackPanel Spacing="6">
               <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                 <TextBlock Classes="section-title" Text="Build" />
                 <!-- With a single visible target there is nothing to choose, so the target name
                      shows as a badge and the selector below is collapsed. -->
-                <Border VerticalAlignment="Center"
-                        Padding="7,1"
-                        CornerRadius="9"
-                        Background="{DynamicResource BadgeBackgroundBrush}"
-                        IsVisible="{Binding !Build.IsTargetSelectorVisible}">
-                  <TextBlock Text="{Binding Build.SelectedTarget.DisplayName}"
-                             FontSize="11"
-                             Foreground="{DynamicResource MutedForegroundBrush}" />
+                <Border Classes="badge" IsVisible="{Binding !Build.IsTargetSelectorVisible}">
+                  <TextBlock Text="{Binding Build.SelectedTarget.DisplayName}" />
                 </Border>
               </StackPanel>
               <Grid ColumnDefinitions="96,*"
@@ -302,7 +418,7 @@
                 </ItemsControl>
               </Grid>
               <StackPanel Orientation="Horizontal" Spacing="6">
-                <Button Content="Build" Command="{Binding Build.BuildCommand}" />
+                <Button Classes="primary" Content="Build" Command="{Binding Build.BuildCommand}" />
                 <Button Content="Cancel" Command="{Binding Build.CancelBuildCommand}" />
                 <TextBlock Classes="muted" Text="{Binding Build.Status}" TextWrapping="Wrap" FontSize="12" />
               </StackPanel>
@@ -319,24 +435,34 @@
               <ItemsControl ItemsSource="{Binding Build.Problems}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
-                    <Border Padding="8,6"
-                            Margin="0,1"
-                            BorderThickness="1"
-                            BorderBrush="{DynamicResource DangerForegroundBrush}"
-                            CornerRadius="5">
-                      <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" ColumnSpacing="6">
-                        <TextBlock Text="{Binding Category}" FontWeight="SemiBold" FontSize="12" />
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5">
-                          <TextBlock Text="{Binding Severity}" FontSize="12" />
-                          <TextBlock Classes="mono" Text="{Binding Code}" VerticalAlignment="Center" />
-                        </StackPanel>
-                        <TextBlock Grid.Row="1"
-                                   Grid.ColumnSpan="2"
-                                   Text="{Binding Message}"
-                                   TextWrapping="Wrap"
-                                   FontSize="12" />
-                      </Grid>
-                    </Border>
+                    <Button Classes="quiet diagnostic-row"
+                            Classes.actionable="{Binding HasKey}"
+                            Command="{Binding SelectCommand}"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Stretch"
+                            Padding="0"
+                            Margin="0,1">
+                      <Border Classes="problem">
+                        <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                          <TextBlock Text="{Binding Category}" FontWeight="SemiBold" FontSize="12" />
+                          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5">
+                            <TextBlock Text="{Binding Severity}" FontSize="12" />
+                            <TextBlock Classes="mono" Text="{Binding Code}" VerticalAlignment="Center" />
+                          </StackPanel>
+                          <TextBlock Grid.Row="1"
+                                     Text="{Binding Message}"
+                                     TextWrapping="Wrap"
+                                     FontSize="12" />
+                          <Border Grid.Row="1"
+                                  Grid.Column="1"
+                                  Classes="badge warning"
+                                  VerticalAlignment="Bottom"
+                                  IsVisible="{Binding HasKey}">
+                            <TextBlock Text="{Binding KeyAssociation}" />
+                          </Border>
+                        </Grid>
+                      </Border>
+                    </Button>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
@@ -356,17 +482,21 @@
                   </ComboBox.ItemTemplate>
                 </ComboBox>
                 <Button Grid.Column="1"
+                        Classes="quiet"
                         Content="Inspect"
                         Command="{Binding Build.InspectGeneratedFileCommand}" />
               </Grid>
               <WrapPanel Orientation="Horizontal">
-                <Button Content="Open output"
+                <Button Classes="quiet"
+                        Content="Open output"
                         Margin="0,0,6,3"
                         Command="{Binding Build.OpenOutputDirectoryCommand}" />
-                <Button Content="Copy build log"
+                <Button Classes="quiet"
+                        Content="Copy build log"
                         Margin="0,0,6,3"
                         Command="{Binding Build.CopyBuildLogCommand}" />
-                <Button Content="Copy artifact path"
+                <Button Classes="quiet"
+                        Content="Copy artifact path"
                         Margin="0,0,0,3"
                         Command="{Binding Build.CopyArtifactPathCommand}" />
               </WrapPanel>
@@ -377,20 +507,20 @@
             </StackPanel>
           </Border>
 
-          <Border Classes="card" IsVisible="{Binding LinuxVariant.IsVisible}">
+          <Border Classes="card subtle" IsVisible="{Binding LinuxVariant.IsVisible}">
             <StackPanel Spacing="7">
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
                 <TextBlock Classes="section-title" Text="Linux user variant" />
                 <TextBlock Grid.Column="1"
                            Text="{Binding LinuxVariant.Status}"
-                           FontSize="11"
+                           FontSize="12"
                            FontWeight="SemiBold" />
               </Grid>
 
               <TextBlock Text="Augments the imported system layout in your user XKB directory. It never edits /usr/share or activates a layout."
                          Classes="muted"
                          TextWrapping="Wrap"
-                         FontSize="11" />
+                         FontSize="12" />
 
               <Grid ColumnDefinitions="96,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="6" RowSpacing="4">
                 <TextBlock Classes="field-label" Text="Base" />
@@ -423,47 +553,80 @@
               <TextBlock Text="{Binding LinuxVariant.CapabilityText}"
                          Classes="muted"
                          TextWrapping="Wrap"
-                         FontSize="11" />
+                         FontSize="12" />
               <TextBlock Text="{Binding LinuxVariant.PathsText}"
                          Classes="mono"
                          TextWrapping="Wrap"
-                         FontSize="10" />
-              <TextBlock Text="{Binding LinuxVariant.DiagnosticsText}"
-                         Foreground="{DynamicResource WarningForegroundBrush}"
-                         TextWrapping="Wrap"
-                         FontSize="11"
-                         IsVisible="{Binding LinuxVariant.HasDiagnostics}" />
+                         FontSize="12" />
+              <ItemsControl ItemsSource="{Binding LinuxVariant.Diagnostics}"
+                            IsVisible="{Binding LinuxVariant.HasDiagnostics}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Button Classes="quiet diagnostic-row"
+                            Classes.actionable="{Binding HasKey}"
+                            Command="{Binding SelectCommand}"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Stretch"
+                            Padding="6,4"
+                            Margin="0,1">
+                      <StackPanel Spacing="2">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <TextBlock Classes="mono"
+                                     Text="{Binding Code}"
+                                     FontSize="12"
+                                     VerticalAlignment="Center" />
+                          <Border Classes="badge warning"
+                                  IsVisible="{Binding HasKey}"
+                                  VerticalAlignment="Center">
+                            <TextBlock Text="{Binding KeyAssociation}" />
+                          </Border>
+                        </StackPanel>
+                        <TextBlock Classes.warning="{Binding !IsError}"
+                                   Classes.danger="{Binding IsError}"
+                                   Text="{Binding Message}"
+                                   TextWrapping="Wrap"
+                                   FontSize="12" />
+                      </StackPanel>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
 
               <WrapPanel Orientation="Horizontal">
-                <Button Content="Refresh"
+                <Button Classes="quiet"
+                        Content="Refresh"
                         Margin="0,0,6,4"
                         Command="{Binding LinuxVariant.RefreshCommand}" />
                 <Button Content="Generate bundle"
                         Margin="0,0,6,4"
                         Command="{Binding LinuxVariant.GenerateCommand}" />
-                <Button Content="Install"
+                <Button Classes="primary"
+                        Content="Install"
                         Margin="0,0,6,4"
                         Command="{Binding LinuxVariant.InstallCommand}" />
                 <Button Content="Update"
                         Margin="0,0,6,4"
                         Command="{Binding LinuxVariant.UpdateCommand}" />
-                <Button Content="Verify installed"
+                <Button Classes="quiet"
+                        Content="Verify installed"
                         Margin="0,0,6,4"
                         Command="{Binding LinuxVariant.VerifyInstalledCommand}" />
-                <Button Content="Uninstall"
+                <Button Classes="destructive"
+                        Content="Uninstall"
                         Margin="0,0,6,4"
                         Command="{Binding LinuxVariant.UninstallCommand}" />
                 <Button Content="Cancel"
                         Margin="0,0,6,4"
                         Command="{Binding LinuxVariant.CancelCommand}" />
-                <Button Content="Open bundle"
+                <Button Classes="quiet"
+                        Content="Open bundle"
                         Margin="0,0,0,4"
                         Command="{Binding LinuxVariant.OpenOutputCommand}" />
               </WrapPanel>
               <TextBlock Text="{Binding LinuxVariant.GeneratedBundlePath}"
                          Classes="mono"
                          TextWrapping="Wrap"
-                         FontSize="10"
+                         FontSize="12"
                          IsVisible="{Binding LinuxVariant.HasGeneratedBundle}" />
             </StackPanel>
           </Border>

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using KeyboardStudio.Linux;
 using Xunit;
 
@@ -29,6 +30,61 @@ public sealed class XkbUserInstallServiceTests
         Assert.False(File.Exists(Path.Combine(scope.Paths.KeyboardStudioStateRoot, "journal.json")));
         Assert.False(Directory.Exists(Path.Combine(scope.Paths.KeyboardStudioStateRoot, "backups")));
         Assert.Single(result.Manifest!.Installations);
+    }
+
+    [Fact]
+    [Trait("Category", "Integration")]
+    public void InstallOrUpdateAsync_OnASingleThreadedUiContext_CompletesWithoutDeadlocking()
+    {
+        // A desktop host runs the workflow on one pumped thread, so every await inside the service
+        // resumes there. Blocking that thread for work whose own continuation is queued behind the
+        // block hangs the application mid-transaction. The suite's default context is backed by the
+        // thread pool and cannot expose that, so the UI thread is modelled explicitly here.
+        using var scope = new TemporaryXdgScope();
+        var service = new XkbUserInstallService(new RecordingVerifier());
+        var metadata = Polish();
+        using var finished = new ManualResetEventSlim(false);
+        XkbUserInstallResult? result = null;
+        Exception? failure = null;
+
+        var pump = new PumpedSynchronizationContext();
+        var thread = new Thread(() =>
+        {
+            SynchronizationContext.SetSynchronizationContext(pump);
+            pump.Post(
+                async _ =>
+                {
+                    try
+                    {
+                        result = await service.InstallOrUpdateAsync(
+                            Bundle(metadata, "x"), metadata, scope.Paths, Capability(scope.Paths));
+                    }
+                    catch (Exception exception)
+                    {
+                        failure = exception;
+                    }
+                    finally
+                    {
+                        pump.Complete();
+                        finished.Set();
+                    }
+                },
+                null);
+            pump.Run();
+        })
+        {
+            IsBackground = true,
+            Name = "ui"
+        };
+        thread.Start();
+
+        Assert.True(
+            finished.Wait(TimeSpan.FromSeconds(30)),
+            "The installation deadlocked instead of completing on the pumped thread.");
+        Assert.Null(failure);
+        Assert.True(result!.Success);
+        Assert.True(File.Exists(Path.Combine(scope.Paths.UserXkbRoot, "symbols", "keyboardstudio")));
+        Assert.False(File.Exists(Path.Combine(scope.Paths.KeyboardStudioStateRoot, "journal.json")));
     }
 
     [Fact]
@@ -493,6 +549,86 @@ public sealed class XkbUserInstallServiceTests
         Assert.False(Directory.Exists(scope.Root));
     }
 
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task InstallOrUpdateAsync_AfterTheHostLocalStateWasDeleted_RewritesItsOwnInstalledFiles()
+    {
+        // Deleting the state directory is how someone tries to reset a stuck installation. The
+        // files it described are still live, so a rebuilt project has to install straight over
+        // them instead of refusing them as content it no longer recognizes.
+        using var scope = new TemporaryXdgScope();
+        var service = new XkbUserInstallService(new RecordingVerifier());
+        var metadata = Polish();
+        Assert.True((await service.InstallOrUpdateAsync(
+            Bundle(metadata, "x"), metadata, scope.Paths, Capability(scope.Paths))).Success);
+        Directory.Delete(scope.Paths.KeyboardStudioStateRoot, recursive: true);
+
+        var result = await service.InstallOrUpdateAsync(
+            Bundle(metadata, "y"), metadata, scope.Paths, Capability(scope.Paths));
+
+        Assert.True(result.Success);
+        Assert.Equal(XkbUserInstallCommand.Install, result.Command);
+        var central = await File.ReadAllTextAsync(
+            Path.Combine(scope.Paths.UserXkbRoot, "symbols", "keyboardstudio"));
+        Assert.Contains("symbols[Group1] = [ y, Y ]", central);
+        Assert.DoesNotContain("symbols[Group1] = [ x, X ]", central);
+        Assert.Equal(
+            1,
+            central.Split($"BEGIN KeyboardStudio {metadata.ProjectInstallationId}").Length - 1);
+        Assert.Single(result.Manifest!.Installations);
+        Assert.True(File.Exists(
+            Path.Combine(scope.Paths.KeyboardStudioStateRoot, "installations.json")));
+    }
+
+    [Fact]
+    [Trait("Category", "Integration")]
+    [Trait("Category", "ErrorPath")]
+    public async Task InstallOrUpdateAsync_WhenAForeignFileHoldsTheAppOwnedPath_StillRefusesIt()
+    {
+        using var scope = new TemporaryXdgScope();
+        var symbols = Path.Combine(scope.Paths.UserXkbRoot, "symbols");
+        Directory.CreateDirectory(symbols);
+        var central = Path.Combine(symbols, "keyboardstudio");
+        await File.WriteAllTextAsync(central, "// someone else's file\n");
+        var metadata = Polish();
+
+        var result = await new XkbUserInstallService(new RecordingVerifier()).InstallOrUpdateAsync(
+            Bundle(metadata, "x"), metadata, scope.Paths, Capability(scope.Paths));
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Code == "KSP004");
+        Assert.Equal("// someone else's file\n", await File.ReadAllTextAsync(central));
+    }
+
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task InstallOrUpdateAsync_ClearsAbandonedTemporaryFilesButNotOneStillInFlight()
+    {
+        using var scope = new TemporaryXdgScope();
+        var service = new XkbUserInstallService(new RecordingVerifier());
+        var metadata = Polish();
+        Assert.True((await service.InstallOrUpdateAsync(
+            Bundle(metadata, "x"), metadata, scope.Paths, Capability(scope.Paths))).Success);
+        var symbols = Path.Combine(scope.Paths.UserXkbRoot, "symbols");
+        var abandoned = Path.Combine(symbols, $"keyboardstudio.keyboardstudio-{Guid.NewGuid():N}.tmp");
+        var inFlight = Path.Combine(symbols, $"keyboardstudio.keyboardstudio-{Guid.NewGuid():N}.tmp");
+        var unrelated = Path.Combine(symbols, "notes.tmp");
+        foreach (var path in new[] { abandoned, inFlight, unrelated })
+        {
+            await File.WriteAllTextAsync(path, "partial");
+        }
+
+        File.SetLastWriteTimeUtc(abandoned, DateTime.UtcNow.AddHours(-1));
+        File.SetLastWriteTimeUtc(unrelated, DateTime.UtcNow.AddHours(-1));
+
+        Assert.True((await service.InstallOrUpdateAsync(
+            Bundle(metadata, "y"), metadata, scope.Paths, Capability(scope.Paths))).Success);
+
+        Assert.False(File.Exists(abandoned));
+        Assert.True(File.Exists(inFlight));
+        Assert.True(File.Exists(unrelated));
+    }
+
     private static XkbGeneratedUserBundle Bundle(XkbUserVariantMetadata metadata, string symbol) =>
         XkbUserBundleGenerator.Generate(
         [
@@ -551,6 +687,24 @@ public sealed class XkbUserInstallServiceTests
                 Directory.Delete(Root, recursive: true);
             }
         }
+    }
+
+    /// <summary>Models a UI thread: continuations run only while the owning thread pumps them.</summary>
+    private sealed class PumpedSynchronizationContext : SynchronizationContext
+    {
+        private readonly BlockingCollection<(SendOrPostCallback Callback, object? State)> _queue = [];
+
+        public override void Post(SendOrPostCallback d, object? state) => _queue.Add((d, state));
+
+        public void Run()
+        {
+            foreach (var (callback, state) in _queue.GetConsumingEnumerable())
+            {
+                callback(state);
+            }
+        }
+
+        public void Complete() => _queue.CompleteAdding();
     }
 
     private sealed class RecordingVerifier : IXkbUserBundleVerifier

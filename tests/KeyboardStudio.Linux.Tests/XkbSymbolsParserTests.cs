@@ -102,7 +102,7 @@ public sealed class XkbSymbolsParserTests
         var key = Assert.IsType<XkbKeyStatement>(file.Sections[0].Statements[0]);
         Assert.Equal(["grave", "asciitilde"], key.Keysyms);
 
-        var diagnostic = Assert.Single(file.Diagnostics);
+        var diagnostic = Assert.Single(file.Sections[0].Diagnostics);
         Assert.Equal(LayoutImportDiagnosticCodes.AlternateGroupsIgnored, diagnostic.Code);
         Assert.Equal(ValidationSeverity.Warning, diagnostic.Severity);
         Assert.Contains("<TLDE>", diagnostic.Message, StringComparison.Ordinal);
@@ -120,7 +120,9 @@ public sealed class XkbSymbolsParserTests
             """);
 
         Assert.Equal(["grave"], Assert.IsType<XkbKeyStatement>(file.Sections[0].Statements[0]).Keysyms);
-        Assert.Equal(LayoutImportDiagnosticCodes.AlternateGroupsIgnored, Assert.Single(file.Diagnostics).Code);
+        Assert.Equal(
+            LayoutImportDiagnosticCodes.AlternateGroupsIgnored,
+            Assert.Single(file.Sections[0].Diagnostics).Code);
     }
 
     [Fact]
@@ -135,7 +137,7 @@ public sealed class XkbSymbolsParserTests
             };
             """);
 
-        var diagnostic = Assert.Single(file.Diagnostics);
+        var diagnostic = Assert.Single(file.Sections[0].Diagnostics);
         Assert.Equal(LayoutImportDiagnosticCodes.UnsupportedConstructIgnored, diagnostic.Code);
         Assert.Equal(ValidationSeverity.Warning, diagnostic.Severity);
         Assert.Equal("<SPCE>", diagnostic.SourceKeyName);
@@ -243,7 +245,7 @@ public sealed class XkbSymbolsParserTests
             ["<AD01>", "<AD02>"],
             file.Sections[0].Statements.OfType<XkbKeyStatement>().Select(key => key.KeyName));
 
-        var diagnostic = Assert.Single(file.Diagnostics);
+        var diagnostic = Assert.Single(file.Sections[0].Diagnostics);
         Assert.Equal(LayoutImportDiagnosticCodes.UnrecognizedStatementSkipped, diagnostic.Code);
         Assert.Equal(ValidationSeverity.Info, diagnostic.Severity);
     }
@@ -364,5 +366,35 @@ public sealed class XkbSymbolsParserTests
         var include = Assert.IsType<XkbIncludeStatement>(Assert.Single(section.Statements));
         Assert.Equal(XkbMergeMode.Augment, include.Merge);
         Assert.Equal("us(basic)", include.Specification);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Parse_ForAKeyThatDeclaresItsType_KeepsTheTypeOfTheFirstGroup()
+    {
+        // The type changes no output, so the model has no place for it — but it is the only thing
+        // that makes a fifth level reachable, so writing this key back out needs it.
+        var section = ParseSingleSection(
+            """
+                key <AE11> {[ ssharp, question, backslash, questiondown, U1E9E ], type[group1]="FOUR_LEVEL_PLUS_LOCK" };
+                key <AE12> {[ dead_acute, dead_grave ]};
+                key <FK01> { type="CTRL+ALT", symbols[Group1] = [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, XF86_Switch_VT_1 ] };
+                key <AD01> {[ q, Q ], type[group2]="ALPHABETIC" };
+            """);
+
+        var keys = section.Statements.OfType<XkbKeyStatement>()
+            .ToDictionary(statement => statement.KeyName, StringComparer.Ordinal);
+        Assert.Equal("FOUR_LEVEL_PLUS_LOCK", keys["<AE11>"].KeyType);
+        Assert.Null(keys["<AE12>"].KeyType);
+        Assert.Equal("CTRL+ALT", keys["<FK01>"].KeyType);
+        Assert.Equal(
+            ["NoSymbol", "NoSymbol", "NoSymbol", "NoSymbol", "XF86_Switch_VT_1"],
+            keys["<FK01>"].Keysyms);
+
+        // A type for a group the model does not hold describes a layout it never imports.
+        Assert.Null(keys["<AD01>"].KeyType);
+        Assert.DoesNotContain(
+            section.Diagnostics,
+            diagnostic => diagnostic.Code == LayoutImportDiagnosticCodes.UnrecognizedStatementSkipped);
     }
 }

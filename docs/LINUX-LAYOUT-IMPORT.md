@@ -297,7 +297,22 @@ does not own.
 
 A layout with no `<variantList>` yields one descriptor with `VariantId = null`, which resolves to the
 file's `default` section. Layouts present in `symbols/` but absent from the registry are still
-listed, with the file name as the display name and a `KSI010` informational diagnostic.
+listed, with the file name as the display name and a `KSI010` informational diagnostic — provided
+they are layouts at all.
+
+Most of `symbols/` is not. Thirty of the 133 files a stock xkeyboard-config ships there have no
+registry entry, and all but the user's own are components — `pc`, `latin`, `level3`, `capslock`,
+`keypad`, `altwin` — meant to be merged into a layout rather than chosen as one. Offering them put
+`altwin` between Albanian and Armenian in a list of countries and gave the user entries that import
+three keys.
+
+What separates the two is in the data: a layout sets `name[Group1]`, the name the desktop shows for
+the group it defines, and a component never does — a component that named a group would be naming
+every layout it is merged into. `XkbLayoutImportSource` reads the file's own default section for
+that statement and follows no includes, because `latin` would otherwise inherit "English (US)" from
+the `us` section it composes and is a component all the same. A layout the user wrote themselves
+survives the test: it has to name its group for the desktop to offer it, so the file that works
+outside this application is the file this application lists.
 
 ### 3.3.1 As built
 
@@ -444,10 +459,40 @@ test holds both at zero. `pl(basic)` resolves through `pl -> latin -> kpdl -> le
 named `Polish`, with `<AE01>` coming from `latin` and `<AD01>` won by `pl`.
 
 One thing the corpus shows that matters for 3.9: `<LSGT>` is defined in 103 of the 199 files, but
-not in `latin` and so not in `pl(basic)`. Layout files describe alphanumeric keys, while `<LSGT>`
-usually arrives from the `pc` component, which import does not compose. Template selection cannot
-rely on `<LSGT>` presence alone and will need the registry country hint to carry more weight than
-3.9 currently assumes.
+not in `latin` and so not in `pl(basic)` itself. Layout files describe alphanumeric keys, while
+`<LSGT>` usually arrives from the `pc` component. Template selection therefore cannot rely on
+`<LSGT>` being present — once the base is composed it always is — and reads only a definition the
+layout wrote for itself.
+
+### 3.5.1 The common base
+
+A symbols file is not a keyboard. `pl` writes the two dozen keys that make a layout Polish; Escape,
+the function row, the modifiers, the editing block, the arrows and the keypad come from `pc`, which
+`rules/evdev` prepends with its fallback rule `pc+%l%(v)` for every model and layout. Resolving the
+layout file alone therefore yields a board where more than half the keys carry no output at all —
+not a partial import of Polish but a misreading of how layouts are written.
+
+`IXkbSymbolsResolver.ResolveLayout` composes the same thing: `XkbCommonBase.FileName` first, then
+the requested section on top of it under `override`, so the layout wins wherever the two collide.
+`Resolve` composes nothing and stays available for a caller asking about the file itself. A root
+that does not ship a base contributes nothing and raises no finding — the base is an inference made
+on the layout's behalf, not something the layout asked for.
+
+Each resolved key records `FromCommonBase`, because the base is identical for every layout and so
+says nothing about any one of them. Three decisions read it:
+
+- template selection ignores a `<LSGT>` that only the base defines (3.9);
+- a base key no template has — the Japanese and Korean keys, the fake keys carrying modifier maps —
+  is left out without counting as skipped or raising `KSI033`;
+- a level or an output lost inside a base key is not reported. The function row's fifth level is a
+  console switch no import can hold, and reporting it against each layout in turn would say the same
+  thing 12 times and bury the findings that describe the layout.
+
+`pl(basic)` resolves to 105 keys with this composition, against 50 without it.
+
+Parser findings belong to the section that raised them rather than to the file, for the same reason:
+`keypad` is read whole and only `keypad(x11)` contributes, so the overlay sections no layout
+composes must not report losses against a layout that never merged them.
 
 ### 3.6 Level to layer mapping
 
@@ -588,16 +633,19 @@ neither may reach one at all.
 
 `XkbTemplateSelector` picks the geometry:
 
-- resolved keys include `<LSGT>` -> `iso-105`;
+- the layout writes `<LSGT>` itself -> `iso-105`;
 - else every country the registry lists for the layout is an ANSI country -> `ansi-104`;
 - otherwise -> `iso-105`.
 
-ISO is the default rather than ANSI because `<LSGT>` is only a partial signal: the key is normally
-contributed by the `pc` component, which import does not compose, so most ISO layouts never write it
-and would fall through to the wrong board. Suggesting ISO costs an ANSI layout one key it does not
-have; suggesting ANSI costs an ISO layout the key beside its left shift. The country hint is what
-actually earns a layout the ANSI board, and every country it serves has to prefer ANSI before it is
-offered — a layout shared between the US and Europe gets the board that can represent both.
+A `<LSGT>` inherited from the common base is not read as a signal. The base writes it for every
+layout there is, so honouring it would suggest ISO for all of them.
+
+ISO is the default rather than ANSI because `<LSGT>` is only a partial signal: most ISO layouts
+never write it themselves and would fall through to the wrong board. Suggesting ISO costs an ANSI
+layout one key it does not have; suggesting ANSI costs an ISO layout the key beside its left shift.
+The country hint is what actually earns a layout the ANSI board, and every country it serves has to
+prefer ANSI before it is offered — a layout shared between the US and Europe gets the board that can
+represent both.
 
 The result is a *suggestion*. The import dialog shows it and lets the user override, because the
 registry does not record physical geometry and the heuristic will occasionally be wrong.
@@ -821,6 +869,13 @@ and the user needs to see which keys were dropped before an import replaces thei
 "Replace mappings in current project" keeps the existing geometry, target profiles, and file path,
 mutating only `KeyboardLayout` — the common case of "start from Polish and change three keys".
 
+The list is ordered by the name on the row, not by the identifier behind it. The two disagree often:
+`af` is Dari, `al` is Albanian, `am` is Armenian, `ancient` is Ancient. Ordering on the code shows
+the user a column of language names in no order they can follow, so the layouts sort by display name
+and the variants under each sort the same way, behind the layout's own entry — which leads whatever
+it is called, because it is what the bare code means. The comparison is
+`InvariantCultureIgnoreCase`, so the order is the same on every host that runs the application.
+
 ViewModels — `LayoutImportViewModel`, `ImportableLayoutViewModel`, `LayoutImportReportViewModel` —
 depend on `ILayoutImportCatalog` only. Both entry points route through the existing
 `ConfirmDocumentReplacementAsync` dirty-document flow, and mutations go through `KeyboardEditor` so
@@ -856,10 +911,12 @@ fallback chain against a fake catalog.
 ### 8.1 As built
 
 The vendored fixtures are not small. `symbols/us`, `pl`, `de` and `fr` are copied whole, along with
-`latin`, `level3`, `keypad`, `kpdl` and `nbsp`, which are the files their sections reach; a trimmed
-symbols file would no longer be the thing upstream ships, which is the only reason to vendor one.
-`scripts/vendor-xkb-fixtures.py` computes the include closure and lifts the four registry entries out
-of `rules/evdev.xml` unchanged, and writes a `PROVENANCE.md` recording the version they came from.
+`latin`, `level3`, `keypad`, `kpdl` and `nbsp`, which are the files their sections reach, and `pc`
+and `srvr_ctrl`, which every import composes underneath the layout; a trimmed symbols file would no
+longer be the thing upstream ships, which is the only reason to vendor one.
+`scripts/vendor-xkb-fixtures.py` computes the include closure from the common base and the pinned
+layouts together, lifts the registry entries out of `rules/evdev.xml` unchanged, and writes a
+`PROVENANCE.md` recording the version they came from.
 
 Eight imports are pinned rather than four: each layout's default section plus one variant that
 composes differently — `us(intl)` for dead keys on the base layer, `pl(qwertz)` for a second

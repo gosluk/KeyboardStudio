@@ -14,10 +14,15 @@ namespace KeyboardStudio.Linux;
 /// <param name="ShortDescription">The registry's short description, usually a language tag.</param>
 /// <param name="Languages">ISO 639 codes the entry serves.</param>
 /// <param name="Countries">ISO 3166 codes the entry serves.</param>
+/// <param name="HasExplicitDescription">
+/// Whether <paramref name="DisplayName"/> came from a registry <c>&lt;description&gt;</c>, rather
+/// than being synthesized from the layout and variant identifiers.
+/// </param>
 public sealed record XkbRegistryEntry(
     string LayoutId,
     string? VariantId,
     string DisplayName,
     string? ShortDescription,
     IReadOnlyList<string> Languages,
-    IReadOnlyList<string> Countries);
+    IReadOnlyList<string> Countries,
+    bool HasExplicitDescription = true);

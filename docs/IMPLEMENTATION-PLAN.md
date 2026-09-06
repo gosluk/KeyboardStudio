@@ -6,8 +6,9 @@ This document is the executable implementation plan for KeyboardStudio. The comp
 the solution, Avalonia editor, versioned project persistence, validation, Windows semantic translation,
 deterministic native source generation, the MSVC/WDK compile/link pipeline, structural artifact
 verification, a verified Linux XKB output backend, and the target-aware build user experience. The
-MVP, integration CI, Linux-focused interface, and installed-layout import are complete. The next
-planned work is a safe import-derived per-user XKB variant workflow.
+MVP, integration CI, Linux-focused interface, installed-layout import, and the safe import-derived
+per-user XKB variant workflow are complete. The next planned work is explicit application theming,
+local appearance settings, and a simplified startup shell.
 
 The goal is to move from that bootstrap state to a usable first release that can:
 
@@ -25,7 +26,7 @@ The plan intentionally keeps installation/registry registration, dead keys, liga
 
 ## 2. Current baseline
 
-The current Phase 13-complete baseline provides:
+The current Phase 14-complete baseline provides:
 
 - `KeyboardStudio.slnx`, using the modern XML solution format and targeting .NET 10;
 - `KeyboardStudio.App` using Avalonia;
@@ -45,9 +46,11 @@ The current Phase 13-complete baseline provides:
 - a Linux layout catalog/importer with managed parsing, include resolution, fidelity diagnostics,
   host-layout detection, and persisted import provenance;
 - an embedded fully mapped `us-basic` seed and a Linux-focused target visibility policy;
+- a derived per-user XKB variant workflow with immutable baselines, safe bundle generation,
+  capability gating, transactional installation, recovery, verification, and uninstall;
 - completed managed, Linux integration, Windows native integration, packaging, and MVP release gates.
 
-Phases 0-13 are complete. The Windows path generates real `KBDTABLES` source, compiles x64
+Phases 0-14 are complete. The Windows path generates real `KBDTABLES` source, compiles x64
 DLLs through a discovered MSVC/Windows SDK toolchain, and verifies the resulting artifact beyond the
 linker exit code. `BuildOrchestrator` now validates once and resolves one `IBuildBackend` for the
 selected target. The Linux path materializes an XKB symbols component directly, performs managed
@@ -149,6 +152,9 @@ Phase 13 Linux focus and layout import
    |
    v
 Phase 14 Import-derived per-user XKB variants
+   |
+   v
+Phase 15 Application themes and startup shell
 ```
 
 Phase 13 narrows the shipping user interface to the Linux target and removes the empty-keyboard
@@ -159,6 +165,13 @@ Phase 14 builds on the completed importer and XKB backend. It preserves the stan
 adds an immutable import baseline and neutral diff, generates a user-root bundle that remains tied to
 the original layout, and introduces explicit transactional installation. Detailed operational design
 lives in [`LINUX-USER-XKB-VARIANTS.md`](LINUX-USER-XKB-VARIANTS.md); decisions in AD-029 to AD-032.
+
+Phase 15 adds White, Gray, and Black application themes, local appearance persistence, an accessible
+icon-based application header, and an explicit current-layout startup boundary. It does not alter
+the keyboard domain or project schema. Detailed architecture lives in
+[`THEMING.md`](THEMING.md), ordered work in
+[`THEMING-IMPLEMENTATION-PLAN.md`](THEMING-IMPLEMENTATION-PLAN.md), and decisions in AD-033 to
+AD-037.
 
 The Linux phase follows Windows artifact verification so the completed Windows path remains intact,
 but precedes build UX so target selection is designed once for both outputs. Linux integration coverage
@@ -2185,6 +2198,79 @@ desktop-discovery limitations.
 
 ---
 
+# Phase 15 — Application themes and startup shell
+
+## Objective
+
+Provide explicit White, Gray, and Black themes; persist the selected theme as local application
+state; apply it before the first window; make the detected current layout the normal fresh-window
+editing path; and simplify the application header and supporting UX.
+
+This phase is governed by [`THEMING.md`](THEMING.md). The detailed production changes, tests, exit
+criteria, commit strategy, and phase-specific risks are in
+[`THEMING-IMPLEMENTATION-PLAN.md`](THEMING-IMPLEMENTATION-PLAN.md).
+
+### P15.1 Approve architecture, token contract, and UX acceptance criteria
+
+Review the application-settings boundary, custom-variant inheritance, semantic resource contract,
+startup loader, header/menu behavior, committed UX refinements, and explicit non-goals. No production
+C# or XAML changes begin before this gate is complete.
+
+### P15.2 Add resilient local application-settings persistence
+
+Add an application-owned, versioned JSON settings store with injected local-data path resolution,
+stable theme identifiers, Gray defaults, tolerant reads, and atomic writes. Keep it independent from
+`.kbdproj` persistence and test it only against isolated temporary paths.
+
+### P15.3 Add the theme runtime and first-frame restoration
+
+Map the neutral White, Gray, and Black choices to custom Avalonia variants, load the saved preference
+in the composition root, and apply it before constructing `MainWindow`.
+
+### P15.4 Implement the three semantic resource dictionaries
+
+Define one complete token contract across White, Gray, and Black; move application colors and
+shadows behind `DynamicResource`; style all windows, dialogs, menus, inputs, states, cards, and
+keycaps; and add automated resource-contract coverage.
+
+### P15.5 Add theme selection and rebuild the application header
+
+Add an appearance ViewModel with immediate apply/save behavior. Move File commands to an accessible
+vector icon beside `KeyboardStudio`, add an accessible Appearance trigger, preserve shortcuts, and
+show a concise document label with the full path in a tooltip.
+
+### P15.6 Extract current-layout startup and remove Create from the normal path
+
+Move host detection/import behind `IStartupLayoutLoader`, retain document adoption and the untouched
+guard in `MainWindowViewModel`, add explicit loading/success/fallback states, and remove the permanent
+`New from / Create` toolbar group. Keep explicit New/template commands in the File menu.
+
+### P15.7 Apply the committed UX and accessibility refinements
+
+Collapse empty Diagnostics, auto-expand errors, establish action hierarchy, improve overly small
+text and targets, make status presentation semantic, and reduce secondary-card weight without
+introducing the deferred inspector, zoom, recent-files, or window-state features.
+
+### P15.8 Close automated and visual verification
+
+Run application/unit/golden, Release build, packaging, and startup gates on applicable Linux and
+Windows runners. Complete the three-theme surface/state/scaling matrix, keyboard navigation and
+accessible-name checks, documentation closure, and the one-top-level-C#-type audit.
+
+## Acceptance criteria
+
+- White, Gray, and Black switch every application surface immediately and restore before first
+  window construction;
+- appearance settings never dirty or modify a keyboard project;
+- missing or damaged settings and unavailable host imports cannot prevent startup;
+- a supported Linux fresh window settles on the active host layout without pressing **Create**;
+- a late startup result never overwrites user work;
+- the File icon beside `KeyboardStudio` retains every current document command and shortcut;
+- all three palettes satisfy the shared resource contract and accessibility review;
+- existing document, import, build, integration, and packaging gates remain green.
+
+---
+
 ## 5. Cross-cutting technical work
 
 ### 5.1 Logging
@@ -2370,6 +2456,18 @@ Result:
 - verify complete staged and installed XKB roots;
 - explicitly install, update, recover, and uninstall user-owned variants without system writes.
 
+### Milestone G — Themed and direct-to-edit application shell
+
+Includes phase 15.
+
+Result:
+
+- explicit White, Gray, and Black application themes;
+- a saved per-user appearance preference applied before the first window;
+- a compact accessible application header;
+- a fresh window that edits the active host layout where supported, with populated seed fallback;
+- clearer diagnostics and action hierarchy.
+
 ---
 
 ## 8. Recommended commit strategy
@@ -2551,22 +2649,20 @@ The architecture should not block these features, but MVP code should not pay th
 
 ## 12. Immediate next implementation order
 
-Phases 0-13 are complete. The recommended next work is:
+Phases 0-14 are complete. The recommended next work is Phase 15 in dependency order:
 
-1. **Persist the immutable derivation baseline and stable project identity (P14.1).** This is the
-   enabling data contract; migrate old documents without pretending they have a baseline.
-2. **Implement and test neutral diffing plus Linux derived translation (P14.2).** End with a typed,
-   changed-keys-only model and explicit rejection of lossy changed keys.
-3. **Generate the staged central symbols, language bridges, registry overlay, and bundle manifest
-   (P14.3).** Still no live user-directory writes.
-4. **Probe the host and compile the entire proposed behavior (P14.4).** Prove the custom, base, and
-   unrelated variants all survive the overlay.
-5. **Build pure ownership-aware merge plans and host-local state (P14.5).** Reviewable plans precede
-   mutation.
-6. **Add the transactional installer and recovery path (P14.6).** Land install/update/verify/uninstall
-   together so no write-only feature ships without cleanup.
-7. **Expose the explicit workflow and capability states in the UI (P14.7).**
-8. **Close with compatibility, transaction-failure, and end-to-end coverage (P14.8).**
-
-P14.1-P14.4 are independently useful as safe bundle generation and verification. Live installation
-does not become available until P14.5 and P14.6 are both complete.
+1. **Review and approve the theme/settings/startup architecture (P15.1).** No production changes
+   precede the boundary and token-contract decision.
+2. **Implement local application settings (P15.2).** Establish resilient storage independently from
+   Avalonia resources and project persistence.
+3. **Apply the saved variant before window construction (P15.3).** End with a testable runtime seam
+   before changing palettes.
+4. **Implement and validate the three resource dictionaries (P15.4).** Complete the semantic token
+   contract before rearranging the main window.
+5. **Add appearance selection and the compact application header (P15.5).** Preserve document
+   commands, shortcuts, and accessibility.
+6. **Extract startup loading and remove Create from the normal path (P15.6).** Preserve the seed,
+   non-blocking startup, and untouched-document guard.
+7. **Apply the bounded UX refinements (P15.7).** Do not absorb deferred information-architecture
+   features.
+8. **Close automated, packaging, visual, scaling, and accessibility verification (P15.8).**

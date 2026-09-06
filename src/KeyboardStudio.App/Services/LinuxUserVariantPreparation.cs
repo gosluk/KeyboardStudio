@@ -11,6 +11,18 @@ public sealed record LinuxUserVariantPreparation(
     XkbInstallationManifest? InstallationManifest,
     IReadOnlyList<XkbDiagnostic> Diagnostics)
 {
+    /// <summary>
+    /// Keys this bundle writes incompletely, and what each one costs. Empty for a variant that
+    /// carries everything.
+    /// </summary>
+    /// <remarks>
+    /// The bundle already contains them, because knowing whether they can be written at all means
+    /// writing them. Nothing may reach the filesystem until the user has been shown this list and
+    /// agreed to it — <see cref="LinuxUserVariantViewModel"/> is what asks, and it asks before
+    /// every generate, install, and update.
+    /// </remarks>
+    public IReadOnlyList<XkbDiagnostic> AcceptedLoss { get; init; } = [];
+
     public bool CanGenerate => Bundle is not null;
 
     public bool CanManage => Bundle is not null &&

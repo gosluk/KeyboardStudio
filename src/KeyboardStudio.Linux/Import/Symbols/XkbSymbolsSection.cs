@@ -1,3 +1,5 @@
+using KeyboardStudio.Core;
+
 namespace KeyboardStudio.Linux;
 
 /// <summary>
@@ -12,9 +14,16 @@ namespace KeyboardStudio.Linux;
 /// <param name="IsPartial">Whether the section defines only some of the keyboard, as most do.</param>
 /// <param name="IsHidden">Whether the section is an implementation detail not offered to users.</param>
 /// <param name="Statements">The section's statements, in source order, which merges depend on.</param>
+/// <param name="Diagnostics">
+/// What was dropped while reading this section. Findings belong to the section rather than the file
+/// because a file holds sections no layout composes: <c>keypad</c> is read whole and only
+/// <c>keypad(x11)</c> contributes, so its unused overlay sections must not report losses against a
+/// layout that never merged them.
+/// </param>
 public sealed record XkbSymbolsSection(
     string Name,
     bool IsDefault,
     bool IsPartial,
     bool IsHidden,
-    IReadOnlyList<XkbSymbolsStatement> Statements);
+    IReadOnlyList<XkbSymbolsStatement> Statements,
+    IReadOnlyList<LayoutImportDiagnostic> Diagnostics);

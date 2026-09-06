@@ -13,6 +13,8 @@ public sealed class BuildViewModel : ObservableObject
     private readonly ITargetBuildService _buildService;
     private readonly IBuildInteractionService _interactionService;
     private readonly Action? _profileChanged;
+    private readonly Action<string> _selectKey;
+    private readonly Action _problemKeysChanged;
     private readonly Dictionary<BuildTarget, IReadOnlyList<BuildProfileSettingViewModel>> _profiles;
     private BuildTargetOptionViewModel _selectedTarget;
     private IReadOnlyList<BuildProfileSettingViewModel> _profileSettings;
@@ -35,12 +37,17 @@ public sealed class BuildViewModel : ObservableObject
         IBuildInteractionService? interactionService = null,
         IReadOnlyDictionary<string, ProjectTargetProfile>? targetProfiles = null,
         Action? profileChanged = null,
-        IBuildTargetVisibilityPolicy? visibilityPolicy = null)
+        IBuildTargetVisibilityPolicy? visibilityPolicy = null,
+        Action<string>? selectKey = null,
+        Action? problemKeysChanged = null)
     {
         _projectProvider = projectProvider ?? throw new ArgumentNullException(nameof(projectProvider));
         _buildService = buildService ?? throw new ArgumentNullException(nameof(buildService));
         _interactionService = interactionService ?? new NoOpBuildInteractionService();
         _profileChanged = profileChanged;
+        _selectKey = selectKey ?? (_ => { });
+        _problemKeysChanged = problemKeysChanged ?? (() => { });
+
         BuildTargetOptionViewModel[] allTargets =
         [
             new(BuildTarget.WindowsX64, "Windows x64"),
@@ -482,6 +489,15 @@ public sealed class BuildViewModel : ObservableObject
         CopyBuildLogCommand.NotifyCanExecuteChanged();
     }
 
+    /// <summary>
+    /// The keys the current problems name, for the editor to mark. Errors only: the panel lists
+    /// warnings and notes too, and marking a key red for a note would say something false about it.
+    /// </summary>
+    public IReadOnlyList<string> ProblemKeyIds => [.. Problems
+        .Where(problem => problem.HasKey && problem.Severity == BuildDiagnosticSeverity.Error)
+        .Select(problem => problem.KeyId!)
+        .Distinct(StringComparer.Ordinal)];
+
     private void SetProblems(IEnumerable<BuildProblemViewModel> problems)
     {
         Problems.Clear();
@@ -489,9 +505,12 @@ public sealed class BuildViewModel : ObservableObject
         {
             Problems.Add(problem);
         }
+
+        OnPropertyChanged(nameof(ProblemKeyIds));
+        _problemKeysChanged();
     }
 
-    private static IEnumerable<BuildProblemViewModel> CreateReadinessProblems(BuildReadiness readiness)
+    private IEnumerable<BuildProblemViewModel> CreateReadinessProblems(BuildReadiness readiness)
     {
         foreach (var issue in readiness.CommonIssues)
         {
@@ -499,7 +518,8 @@ public sealed class BuildViewModel : ObservableObject
                 BuildProblemKind.ProjectValidation,
                 issue.Severity,
                 issue.Code,
-                issue.Message);
+                issue.Message,
+                issue.KeyId);
         }
 
         foreach (var issue in readiness.TargetIssues)
@@ -508,7 +528,8 @@ public sealed class BuildViewModel : ObservableObject
                 BuildProblemKind.TargetCompatibility,
                 issue.Severity,
                 issue.Code,
-                issue.Message);
+                issue.Message,
+                issue.KeyId);
         }
 
         foreach (var diagnostic in readiness.Environment.Diagnostics)
@@ -534,7 +555,7 @@ public sealed class BuildViewModel : ObservableObject
         }
     }
 
-    private static IEnumerable<BuildProblemViewModel> CreateResultProblems(KeyboardBuildResult? result)
+    private IEnumerable<BuildProblemViewModel> CreateResultProblems(KeyboardBuildResult? result)
     {
         if (result is null)
         {
@@ -547,7 +568,7 @@ public sealed class BuildViewModel : ObservableObject
                        issue.Code is "KSL001" or "KSL002" or "TARGET_OUTPUT" or "TARGET_PROFILE"
                 ? BuildProblemKind.TargetCompatibility
                 : BuildProblemKind.ProjectValidation;
-            yield return CreateProblem(kind, issue.Severity, issue.Code, issue.Message);
+            yield return CreateProblem(kind, issue.Severity, issue.Code, issue.Message, issue.KeyId);
         }
 
         foreach (var diagnostic in result.Artifact?.Diagnostics ?? [])
@@ -556,7 +577,8 @@ public sealed class BuildViewModel : ObservableObject
                 ClassifyArtifactDiagnostic(diagnostic.Code),
                 diagnostic.Severity,
                 diagnostic.Code,
-                diagnostic.Message);
+                diagnostic.Message,
+                diagnostic.KeyId);
         }
     }
 
@@ -572,14 +594,14 @@ public sealed class BuildViewModel : ObservableObject
             _ => BuildProblemKind.CompilerOrLinker
         };
 
-    private static BuildProblemViewModel CreateProblem(
+    private BuildProblemViewModel CreateProblem(
         BuildProblemKind kind,
         ValidationSeverity severity,
         string code,
-        string message) =>
-        new(
+        string message,
+        string? keyId = null) =>
+        CreateProblem(
             kind,
-            GetCategory(kind),
             severity switch
             {
                 ValidationSeverity.Info => BuildDiagnosticSeverity.Info,
@@ -587,14 +609,25 @@ public sealed class BuildViewModel : ObservableObject
                 _ => BuildDiagnosticSeverity.Error
             },
             code,
-            message);
+            message,
+            keyId);
 
-    private static BuildProblemViewModel CreateProblem(
+    private BuildProblemViewModel CreateProblem(
         BuildProblemKind kind,
         BuildDiagnosticSeverity severity,
         string code,
-        string message) =>
-        new(kind, GetCategory(kind), severity, code, message);
+        string message,
+        string? keyId = null) =>
+        new(kind, GetCategory(kind), severity, code, message, keyId)
+        {
+            SelectCommand = new RelayCommand(() =>
+            {
+                if (keyId is not null)
+                {
+                    _selectKey(keyId);
+                }
+            })
+        };
 
     private static string GetCategory(BuildProblemKind kind) =>
         kind switch

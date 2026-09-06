@@ -1,3 +1,4 @@
+using System.Text;
 using KeyboardStudio.Core;
 
 namespace KeyboardStudio.Linux;
@@ -12,6 +13,12 @@ namespace KeyboardStudio.Linux;
 /// </summary>
 public sealed class XkbLayoutImportSource : ILayoutImportSource
 {
+    /// <summary>
+    /// Reads the files the registry does not describe, to tell a layout from a component.
+    /// Listing is single-threaded, so one parser serves the whole pass.
+    /// </summary>
+    private readonly XkbSymbolsParser _parser = new();
+
     private readonly IXkbFileSystem _fileSystem;
     private readonly IXkbDataRootLocator _dataRootLocator;
     private readonly IXkbLayoutRegistryReader _registryReader;
@@ -81,41 +88,38 @@ public sealed class XkbLayoutImportSource : ILayoutImportSource
 
         var descriptors = new List<ImportableLayoutDescriptor>(symbolsByLayout.Count);
         var described = new HashSet<string>(StringComparer.Ordinal);
-        var listed = new HashSet<(string LayoutId, string? VariantId)>();
+        var registryEntries = ReadMergedRegistry(roots, cancellationToken);
 
-        foreach (var root in roots)
+        foreach (var entry in registryEntries)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            foreach (var entry in ReadRegistry(root))
+            // The registry describes layouts no root implements — `custom` is one the
+            // distribution ships for the user to write themselves. Listing an entry that
+            // cannot be imported only offers the user a dead end.
+            if (!symbolsByLayout.TryGetValue(entry.LayoutId, out var symbols))
             {
-                // The registry describes layouts no root implements — `custom` is one the
-                // distribution ships for the user to write themselves. Listing an entry that
-                // cannot be imported only offers the user a dead end.
-                if (!symbolsByLayout.TryGetValue(entry.LayoutId, out var symbols) ||
-                    !listed.Add((entry.LayoutId, entry.VariantId)))
-                {
-                    continue;
-                }
-
-                described.Add(entry.LayoutId);
-
-                descriptors.Add(new ImportableLayoutDescriptor(
-                    Id,
-                    entry.LayoutId,
-                    entry.VariantId,
-                    entry.DisplayName,
-                    entry.ShortDescription,
-                    entry.Languages,
-                    entry.Countries,
-                    symbols.Origin,
-                    symbols.Path));
+                continue;
             }
+
+            described.Add(entry.LayoutId);
+
+            descriptors.Add(new ImportableLayoutDescriptor(
+                Id,
+                entry.LayoutId,
+                entry.VariantId,
+                entry.DisplayName,
+                entry.ShortDescription,
+                entry.Languages,
+                entry.Countries,
+                symbols.Origin,
+                symbols.Path));
         }
 
         foreach (var (layoutId, symbols) in symbolsByLayout)
         {
-            if (described.Contains(layoutId) || !listed.Add((layoutId, null)))
+            if (described.Contains(layoutId) ||
+                !NamesAKeyboardGroup(symbols.Path))
             {
                 continue;
             }
@@ -145,6 +149,45 @@ public sealed class XkbLayoutImportSource : ILayoutImportSource
         return Task.FromResult<IReadOnlyList<ImportableLayoutDescriptor>>(descriptors);
     }
 
+    /// <summary>
+    /// Whether a symbols file the registry says nothing about is a layout in its own right.
+    /// </summary>
+    /// <remarks>
+    /// Most of <c>symbols/</c> is not layouts. Two thirds of the files a distribution ships there
+    /// are components — <c>pc</c>, <c>latin</c>, <c>level3</c>, <c>capslock</c>, <c>keypad</c> —
+    /// meant to be merged into a layout rather than chosen as one, and listing them puts
+    /// <c>altwin</c> between Albanian and Armenian in a list of countries.
+    ///
+    /// What separates the two is in the data: a layout sets <c>name[Group1]</c>, which is the name
+    /// the desktop shows for the group it defines. A component never does, because a component that
+    /// named a group would be naming every layout it is merged into. The test reads the file's own
+    /// default section and follows no includes: <c>latin</c> would inherit "English (US)" from the
+    /// <c>us</c> section it composes, and is a component all the same.
+    ///
+    /// The user's own layouts survive this. A layout dropped into an XKB root without a registry
+    /// entry still has to name its group for the desktop to offer it, so the file that works
+    /// outside this application is the file this application lists.
+    /// </remarks>
+    private bool NamesAKeyboardGroup(string path)
+    {
+        XkbSymbolsFile parsed;
+        try
+        {
+            using var stream = _fileSystem.OpenRead(path);
+            using var reader = new StreamReader(stream, Encoding.UTF8);
+            parsed = _parser.Parse(path, reader.ReadToEnd());
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // A file that cannot be read cannot be imported either, so it is not offered.
+            return false;
+        }
+
+        return parsed.DefaultSection?.Statements
+            .OfType<XkbNameStatement>()
+            .Any(name => name.Group == 1) == true;
+    }
+
     /// <inheritdoc />
     public Task<LayoutImportResult> ImportAsync(
         ImportableLayoutReference reference,
@@ -159,7 +202,7 @@ public sealed class XkbLayoutImportSource : ILayoutImportSource
         // A null variant means the file's own default section, which is a section flagged `default`
         // and almost never one named it. Passing the word through as a section name would look for
         // a section no symbols file has.
-        var symbols = _symbolsResolver.Resolve(reference.LayoutId, reference.VariantId);
+        var symbols = _symbolsResolver.ResolveLayout(reference.LayoutId, reference.VariantId);
         if (symbols is null)
         {
             return Task.FromResult(LayoutImportResult.Failed(new LayoutImportReport(
@@ -211,22 +254,74 @@ public sealed class XkbLayoutImportSource : ILayoutImportSource
         ImportableLayoutReference reference,
         CancellationToken cancellationToken)
     {
-        foreach (var root in _dataRootLocator.Locate())
+        return ReadMergedRegistry(_dataRootLocator.Locate(), cancellationToken)
+            .FirstOrDefault(entry =>
+                string.Equals(entry.LayoutId, reference.LayoutId, StringComparison.Ordinal) &&
+                string.Equals(entry.VariantId, reference.VariantId, StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// Merges registry overlays in root-precedence order. A user registry that adds a variant to
+    /// an existing layout normally repeats only the layout name; its missing presentation metadata
+    /// comes from the system registry without surrendering the user entry's precedence.
+    /// </summary>
+    private IReadOnlyList<XkbRegistryEntry> ReadMergedRegistry(
+        IReadOnlyList<XkbDataRoot> roots,
+        CancellationToken cancellationToken)
+    {
+        var entries = new Dictionary<(string LayoutId, string? VariantId), XkbRegistryEntry>();
+        var order = new List<(string LayoutId, string? VariantId)>();
+
+        foreach (var root in roots)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             foreach (var entry in ReadRegistry(root))
             {
-                if (string.Equals(entry.LayoutId, reference.LayoutId, StringComparison.Ordinal) &&
-                    string.Equals(entry.VariantId, reference.VariantId, StringComparison.Ordinal))
+                var key = (entry.LayoutId, entry.VariantId);
+                if (entries.TryGetValue(key, out var primary))
                 {
-                    return entry;
+                    entries[key] = FillMissingMetadata(primary, entry);
+                }
+                else
+                {
+                    entries.Add(key, entry);
+                    order.Add(key);
                 }
             }
         }
 
-        return null;
+        // A custom variant in a minimal user overlay inherited no language or country within that
+        // file. Do the same inheritance again after its base entry has been enriched from the
+        // lower-precedence system registry.
+        foreach (var key in order)
+        {
+            var entry = entries[key];
+            if (entry.VariantId is not null &&
+                entries.TryGetValue((entry.LayoutId, null), out var layout))
+            {
+                entries[key] = entry with
+                {
+                    Languages = entry.Languages.Count > 0 ? entry.Languages : layout.Languages,
+                    Countries = entry.Countries.Count > 0 ? entry.Countries : layout.Countries
+                };
+            }
+        }
+
+        return [.. order.Select(key => entries[key])];
     }
+
+    private static XkbRegistryEntry FillMissingMetadata(
+        XkbRegistryEntry primary,
+        XkbRegistryEntry fallback) =>
+        primary with
+        {
+            DisplayName = primary.HasExplicitDescription ? primary.DisplayName : fallback.DisplayName,
+            HasExplicitDescription = primary.HasExplicitDescription || fallback.HasExplicitDescription,
+            ShortDescription = primary.ShortDescription ?? fallback.ShortDescription,
+            Languages = primary.Languages.Count > 0 ? primary.Languages : fallback.Languages,
+            Countries = primary.Countries.Count > 0 ? primary.Countries : fallback.Countries
+        };
 
     /// <summary>
     /// Reads one root's registry, treating a malformed one as absent. A distribution shipping a

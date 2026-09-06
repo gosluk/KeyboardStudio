@@ -1,6 +1,8 @@
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using KeyboardStudio.Core;
+using KeyboardStudio.Linux;
 using KeyboardStudio.Persistence;
 
 namespace KeyboardStudio.App;
@@ -12,15 +14,17 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
     private readonly Func<string> _outputDirectoryProvider;
     private readonly Func<(string VariantId, string Description)> _metadataProvider;
     private readonly Action<string, string> _metadataChanged;
+    private readonly Action<string> _selectKey;
+    private readonly Action _problemKeysChanged;
     private readonly ILinuxUserVariantWorkflowService _workflow;
     private readonly ILinuxUserVariantInteractionService _interaction;
     private LinuxUserVariantPreparation? _preparation;
+    private LinuxUserVariantPreparation? _lastInspection;
     private string _variantId = string.Empty;
     private string _displayName = string.Empty;
     private string _statusText = "Import a system layout to enable user variants.";
     private string _capabilityText = string.Empty;
     private string _pathsText = string.Empty;
-    private string _diagnosticsText = string.Empty;
     private string? _generatedBundlePath;
     private bool _isBusy;
     private bool _hasUserEditedMetadata;
@@ -34,13 +38,17 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
         ILinuxUserVariantWorkflowService workflow,
         ILinuxUserVariantInteractionService? interaction = null,
         Func<(string VariantId, string Description)>? metadataProvider = null,
-        Action<string, string>? metadataChanged = null)
+        Action<string, string>? metadataChanged = null,
+        Action<string>? selectKey = null,
+        Action? problemKeysChanged = null)
     {
         _projectProvider = projectProvider ?? throw new ArgumentNullException(nameof(projectProvider));
         _derivationProvider = derivationProvider ?? throw new ArgumentNullException(nameof(derivationProvider));
         _outputDirectoryProvider = outputDirectoryProvider ?? throw new ArgumentNullException(nameof(outputDirectoryProvider));
         _metadataProvider = metadataProvider ?? (() => (string.Empty, string.Empty));
         _metadataChanged = metadataChanged ?? ((_, _) => { });
+        _selectKey = selectKey ?? (_ => { });
+        _problemKeysChanged = problemKeysChanged ?? (() => { });
         _workflow = workflow ?? throw new ArgumentNullException(nameof(workflow));
         _interaction = interaction ?? new NoOpLinuxUserVariantInteractionService();
 
@@ -95,8 +103,11 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
         }
     }
 
+    // The last inspection outlives the plan an edit invalidates: neither what this host can do nor
+    // what is installed changes because a key was remapped, so reading the dropped plan here would
+    // report "Unavailable" for a variant that is installed and fine. StatusText carries the staleness.
     public LinuxUserVariantStatus Status =>
-        _preparation?.Status ?? LinuxUserVariantStatus.Unavailable;
+        _lastInspection?.Status ?? LinuxUserVariantStatus.Unavailable;
 
     public bool CanEditVariantId => !_installedIdentityLocked;
 
@@ -118,19 +129,27 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
         private set => SetProperty(ref _pathsText, value);
     }
 
-    public string DiagnosticsText
-    {
-        get => _diagnosticsText;
-        private set
-        {
-            if (SetProperty(ref _diagnosticsText, value))
-            {
-                OnPropertyChanged(nameof(HasDiagnostics));
-            }
-        }
-    }
+    /// <summary>
+    /// What the last inspection or operation reported, one row each. A row that names a key can be
+    /// clicked to go to it, which is the difference between a message about a key and a way to
+    /// reach the key it is about.
+    /// </summary>
+    public ObservableCollection<DiagnosticViewModel> Diagnostics { get; } = [];
 
-    public bool HasDiagnostics => DiagnosticsText.Length > 0;
+    /// <summary>The same findings as one block of text, for hosts that show them that way.</summary>
+    public string DiagnosticsText => string.Join(
+        Environment.NewLine,
+        Diagnostics.Select(diagnostic => diagnostic.Code.Length == 0
+            ? diagnostic.Message
+            : $"{diagnostic.Code}: {diagnostic.Message}"));
+
+    public bool HasDiagnostics => Diagnostics.Count > 0;
+
+    /// <summary>The keys these findings name, for the editor to mark. Errors only.</summary>
+    public IReadOnlyList<string> ProblemKeyIds => [.. Diagnostics
+        .Where(diagnostic => diagnostic.HasKey && diagnostic.IsError)
+        .Select(diagnostic => diagnostic.KeyId!)
+        .Distinct(StringComparer.Ordinal)];
 
     public string? GeneratedBundlePath
     {
@@ -181,6 +200,7 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
         _hasUserEditedMetadata = false;
         _installedIdentityLocked = false;
         _preparation = null;
+        _lastInspection = null;
         GeneratedBundlePath = null;
         var derivation = _derivationProvider();
         var project = _projectProvider();
@@ -212,7 +232,7 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
             : "Checking this host's per-user XKB support…";
         CapabilityText = string.Empty;
         PathsText = string.Empty;
-        DiagnosticsText = string.Empty;
+        SetDiagnostics([]);
         NotifyCommandStates();
     }
 
@@ -264,7 +284,14 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
         {
             _preparation = null;
             StatusText = $"Could not inspect the user variant: {exception.Message}";
-            DiagnosticsText = exception.Message;
+            SetDiagnostics([
+                new DiagnosticViewModel(
+                    ValidationSeverity.Error,
+                    string.Empty,
+                    exception.Message,
+                    null,
+                    _selectKey)
+            ]);
         }
         finally
         {
@@ -275,7 +302,8 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
     private async Task GenerateAsync(CancellationToken cancellationToken)
     {
         var preparation = await PrepareForActionAsync(cancellationToken);
-        if (preparation?.CanGenerate != true)
+        if (preparation?.CanGenerate != true ||
+            !await ConfirmAcceptedLossAsync(preparation, "Generate bundle"))
         {
             return;
         }
@@ -289,24 +317,57 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
     }
 
     private Task InstallAsync(CancellationToken cancellationToken) =>
-        RunLiveOperationAsync("Install", _workflow.InstallOrUpdateAsync, cancellationToken);
+        RunLiveOperationAsync(
+            "Install",
+            AppliesToInstall,
+            _workflow.InstallOrUpdateAsync,
+            cancellationToken,
+            writesKeys: true);
 
     private Task UpdateAsync(CancellationToken cancellationToken) =>
-        RunLiveOperationAsync("Update", _workflow.InstallOrUpdateAsync, cancellationToken);
+        RunLiveOperationAsync(
+            "Update",
+            AppliesToUpdate,
+            _workflow.InstallOrUpdateAsync,
+            cancellationToken,
+            writesKeys: true);
 
     private Task VerifyInstalledAsync(CancellationToken cancellationToken) =>
-        RunLiveOperationAsync("Verify installed", _workflow.VerifyInstalledAsync, cancellationToken);
+        RunLiveOperationAsync(
+            "Verify installed", AppliesToInstalled, _workflow.VerifyInstalledAsync, cancellationToken);
 
     private Task UninstallAsync(CancellationToken cancellationToken) =>
-        RunLiveOperationAsync("Uninstall", _workflow.UninstallAsync, cancellationToken);
+        RunLiveOperationAsync(
+            "Uninstall", AppliesToInstalled, _workflow.UninstallAsync, cancellationToken);
 
+    /// <param name="writesKeys">
+    /// Whether this operation writes the generated keys. Verifying and uninstalling do not, so
+    /// they are not the place to ask about keys that cannot be written in full.
+    /// </param>
     private async Task RunLiveOperationAsync(
         string action,
+        Func<LinuxUserVariantPreparation, bool, bool> applies,
         Func<LinuxUserVariantPreparation, CancellationToken, Task<LinuxUserVariantOperationResult>> operation,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool writesKeys = false)
     {
+        // The button may have been enabled from an inspection older than the current mappings, so the
+        // plan is rebuilt first and the action has to still apply to the rebuilt one - judged without
+        // the leniency enablement allows - before a single live file is touched.
         var preparation = await PrepareForActionAsync(cancellationToken);
-        if (preparation is not { CanManage: true, Paths: not null })
+        if (preparation is null)
+        {
+            return;
+        }
+
+        if (preparation is not { CanManage: true, Paths: not null, Metadata: not null } ||
+            !applies(preparation, false))
+        {
+            StatusText = $"{action} no longer applies. {DescribeStatus(preparation.Status)}";
+            return;
+        }
+
+        if (writesKeys && !await ConfirmAcceptedLossAsync(preparation, action))
         {
             return;
         }
@@ -342,9 +403,11 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
         {
             var result = await operation();
             StatusText = result.Message;
-            DiagnosticsText = string.Join(
-                Environment.NewLine,
-                result.Diagnostics.Select(diagnostic => $"{diagnostic.Code}: {diagnostic.Message}"));
+
+            // An operation that failed reports why, and every one of those reasons stopped it.
+            SetDiagnostics(Describe(
+                result.Diagnostics,
+                result.Success ? ValidationSeverity.Warning : ValidationSeverity.Error));
             if (result.Success && result.OutputPath is not null)
             {
                 GeneratedBundlePath = result.OutputPath;
@@ -391,6 +454,7 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
     private void ApplyPreparation(LinuxUserVariantPreparation preparation)
     {
         _preparation = preparation;
+        _lastInspection = preparation;
         _installedIdentityLocked = preparation.IsInstalled;
         if (preparation.Metadata is not null)
         {
@@ -407,9 +471,10 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
         PathsText = preparation.Paths is null
             ? "No safe per-user XKB paths were resolved."
             : $"XKB: {preparation.Paths.UserXkbRoot}{Environment.NewLine}State: {preparation.Paths.KeyboardStudioStateRoot}";
-        DiagnosticsText = string.Join(
-            Environment.NewLine,
-            preparation.Diagnostics.Select(diagnostic => $"{diagnostic.Code}: {diagnostic.Message}"));
+        // An inspection that cannot produce a bundle is describing what blocks one.
+        SetDiagnostics(Describe(
+            preparation.Diagnostics,
+            preparation.CanGenerate ? ValidationSeverity.Warning : ValidationSeverity.Error));
         NotifyCommandStates();
     }
 
@@ -428,17 +493,86 @@ public sealed class LinuxUserVariantViewModel : ObservableObject
         !string.IsNullOrWhiteSpace(DisplayName) &&
         (_preparation is null || _preparation.CanGenerate);
 
-    private bool CanInstall() => !IsBusy &&
-        _preparation is { CanManage: true, Status: LinuxUserVariantStatus.NotInstalled };
+    private bool CanInstall() => CanRunLive(AppliesToInstall);
 
-    private bool CanUpdate() => !IsBusy &&
-        _preparation is { CanManage: true, Status: LinuxUserVariantStatus.UpdateAvailable };
+    private bool CanUpdate() => CanRunLive(AppliesToUpdate);
 
-    private bool CanVerifyInstalled() => !IsBusy &&
-        _preparation is { CanManage: true, IsInstalled: true };
+    private bool CanVerifyInstalled() => CanRunLive(AppliesToInstalled);
 
-    private bool CanUninstall() => !IsBusy &&
-        _preparation is { CanManage: true, IsInstalled: true };
+    private bool CanUninstall() => CanRunLive(AppliesToInstalled);
+
+    /// <summary>
+    /// Decides a live command from the last inspection, so an edit that drops the plan leaves the
+    /// actions this host is capable of reachable instead of dead until someone presses Refresh.
+    /// A dropped plan is passed on as staleness, which only widens what an action offers to do; the
+    /// action itself re-inspects and re-checks before writing anything.
+    /// </summary>
+    private bool CanRunLive(Func<LinuxUserVariantPreparation, bool, bool> applies) =>
+        !IsBusy && IsVisible &&
+        _lastInspection is { CanManage: true } inspection &&
+        applies(inspection, _preparation is null);
+
+    private static bool AppliesToInstall(LinuxUserVariantPreparation preparation, bool planIsStale) =>
+        preparation.Status is LinuxUserVariantStatus.NotInstalled;
+
+    // Editing an installed variant is what makes an update available, so a stale plan offers the
+    // update that the rebuild is expected to confirm. Externally modified and broken installations
+    // stay out of reach either way; they are never silently overwritten.
+    private static bool AppliesToUpdate(LinuxUserVariantPreparation preparation, bool planIsStale) =>
+        preparation.Status is LinuxUserVariantStatus.UpdateAvailable ||
+        (planIsStale && preparation.Status is LinuxUserVariantStatus.Installed);
+
+    private static bool AppliesToInstalled(LinuxUserVariantPreparation preparation, bool planIsStale) =>
+        preparation.IsInstalled;
+
+    /// <summary>
+    /// Asks before writing keys that cannot be written in full, and reports a refusal as the
+    /// cancellation it is. A variant that carries everything asks nothing.
+    /// </summary>
+    private async Task<bool> ConfirmAcceptedLossAsync(
+        LinuxUserVariantPreparation preparation,
+        string action)
+    {
+        if (preparation.AcceptedLoss.Count == 0)
+        {
+            return true;
+        }
+
+        var losses = preparation.AcceptedLoss.Select(loss => loss.Message).ToArray();
+        if (await _interaction.ConfirmIncompleteKeysAsync(action, losses))
+        {
+            return true;
+        }
+
+        StatusText = losses.Length == 1
+            ? $"{action} cancelled: one key cannot be written in full."
+            : $"{action} cancelled: {losses.Length} keys cannot be written in full.";
+        return false;
+    }
+
+    private IEnumerable<DiagnosticViewModel> Describe(
+        IReadOnlyList<XkbDiagnostic> diagnostics,
+        ValidationSeverity severity) =>
+        diagnostics.Select(diagnostic => new DiagnosticViewModel(
+            severity,
+            diagnostic.Code,
+            diagnostic.Message,
+            diagnostic.KeyId,
+            _selectKey));
+
+    private void SetDiagnostics(IEnumerable<DiagnosticViewModel> diagnostics)
+    {
+        Diagnostics.Clear();
+        foreach (var diagnostic in diagnostics)
+        {
+            Diagnostics.Add(diagnostic);
+        }
+
+        OnPropertyChanged(nameof(DiagnosticsText));
+        OnPropertyChanged(nameof(HasDiagnostics));
+        OnPropertyChanged(nameof(ProblemKeyIds));
+        _problemKeysChanged();
+    }
 
     private void NotifyCommandStates()
     {

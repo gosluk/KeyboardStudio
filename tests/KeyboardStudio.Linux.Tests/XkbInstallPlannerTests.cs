@@ -165,6 +165,38 @@ public sealed class XkbInstallPlannerTests
 
     [Fact]
     [Trait("Category", "Unit")]
+    public void PlanInstall_WhenTheManifestNoLongerRecordsTheProject_ReclaimsAndRewritesItsOwnedContent()
+    {
+        var metadata = Polish();
+        var install = XkbInstallPlanner.PlanInstall(
+            Bundle(metadata), metadata, Paths(), XkbInstallationManifest.Empty, [], VerifiedAt, "1.13.1").Plan!;
+        var current = Apply([], install.Operations);
+
+        var result = XkbInstallPlanner.PlanInstall(
+            Bundle(metadata, "y"),
+            metadata,
+            Paths(),
+            XkbInstallationManifest.Empty,
+            current,
+            VerifiedAt,
+            "1.13.1");
+
+        Assert.True(result.Success);
+        Assert.Equal(XkbInstallAction.Install, result.Plan!.Action);
+        var rewritten = Apply(current, result.Plan.Operations);
+        var central = Content(rewritten, "symbols/keyboardstudio");
+        Assert.Contains("symbols[Group1] = [ y, Y ]", central);
+        Assert.DoesNotContain("symbols[Group1] = [ x, X ]", central);
+        Assert.Equal(
+            1,
+            central.Split($"BEGIN KeyboardStudio {metadata.ProjectInstallationId}").Length - 1);
+        Assert.Single(result.Plan.UpdatedManifest.Installations);
+        Assert.True(result.Plan.UpdatedManifest.Files
+            .Single(file => file.RelativePath == "symbols/keyboardstudio").WasCreatedByKeyboardStudio);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
     [Trait("Category", "ErrorPath")]
     public void PlanUpdate_WhenManagedBlockWasExternallyEdited_RefusesOverwrite()
     {
@@ -272,12 +304,18 @@ public sealed class XkbInstallPlannerTests
         "keyboardstudio_dvorak",
         "Polish Dvorak - KeyboardStudio");
 
-    private static XkbGeneratedUserBundle Bundle(XkbUserVariantMetadata metadata) =>
+    private static XkbGeneratedUserBundle Bundle(
+        XkbUserVariantMetadata metadata,
+        string symbol = "x") =>
         XkbUserBundleGenerator.Generate(
         [
             new XkbUserVariantLayout(
                 metadata,
-                [new XkbUserVariantKeyMapping("KeyA", "<AC01>", XkbKeyType.Alphabetic, ["x", "X"])],
+                [new XkbUserVariantKeyMapping(
+                    "KeyA",
+                    "<AC01>",
+                    XkbKeyType.Alphabetic,
+                    [symbol, symbol.ToUpperInvariant()])],
                 UsesLevelThree: false)
         ]).Bundle!;
 

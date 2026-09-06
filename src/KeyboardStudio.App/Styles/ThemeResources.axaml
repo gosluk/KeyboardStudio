@@ -1,0 +1,669 @@
+<!--
+  The White, Gray, and Black palettes. This file is the whole application colour contract: every
+  theme-dependent colour, brush, and shadow the application draws is defined here and consumed
+  through DynamicResource, so no view can introduce a colour of its own.
+
+  The three dictionaries define exactly the same keys. ApplicationThemeTokens lists that required
+  set and a test holds all three dictionaries to it, because a missing key does not fail a build —
+  it falls back to an unrelated Fluent colour at runtime, in one state of one surface, where nobody
+  looks until a user does.
+-->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                xmlns:app="using:KeyboardStudio.App">
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="{x:Static app:ApplicationThemeVariants.White}">
+      <!-- Surfaces -->
+      <LinearGradientBrush x:Key="AppSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#FBFCFF" Offset="0" />
+        <GradientStop Color="#F2F5FA" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="WorkspaceSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#F6F9FD" Offset="0" />
+        <GradientStop Color="#E9EEF5" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="PanelSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#FFFFFF" Offset="0" />
+        <GradientStop Color="#F8FAFD" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="ElevatedSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#FFFFFF" Offset="0" />
+        <GradientStop Color="#F2F6FB" Offset="1" />
+      </LinearGradientBrush>
+
+      <!-- Borders -->
+      <SolidColorBrush x:Key="SubtleBorderBrush"    Color="#E7ECF3" />
+      <SolidColorBrush x:Key="AppBorderBrush"       Color="#D2DAE5" />
+      <SolidColorBrush x:Key="StrongBorderBrush"    Color="#A7B3C2" />
+      <SolidColorBrush x:Key="SelectedBorderBrush"  Color="#2C72E8" />
+      <SolidColorBrush x:Key="FocusBorderBrush"     Color="#1759C7" />
+
+      <!-- Foreground -->
+      <SolidColorBrush x:Key="PrimaryForegroundBrush"    Color="#17213A" />
+      <SolidColorBrush x:Key="SecondaryForegroundBrush"  Color="#5A667B" />
+      <SolidColorBrush x:Key="DisabledForegroundBrush"   Color="#9AA5B6" />
+      <SolidColorBrush x:Key="InverseForegroundBrush"    Color="#FFFFFF" />
+      <SolidColorBrush x:Key="LinkForegroundBrush"       Color="#1759C7" />
+      <SolidColorBrush x:Key="HeadingForegroundBrush"    Color="#111B31" />
+      <SolidColorBrush x:Key="MutedForegroundBrush"      Color="#68758A" />
+
+      <!-- Accent -->
+      <SolidColorBrush x:Key="AccentBrush"            Color="#2C72E8" />
+      <SolidColorBrush x:Key="AccentHoverBrush"       Color="#2165D5" />
+      <SolidColorBrush x:Key="AccentPressedBrush"     Color="#1854B8" />
+      <SolidColorBrush x:Key="AccentForegroundBrush"  Color="#FFFFFF" />
+
+      <!-- Status -->
+      <SolidColorBrush x:Key="SuccessSurfaceBrush"     Color="#E7F5EE" />
+      <SolidColorBrush x:Key="SuccessForegroundBrush"  Color="#14663C" />
+      <SolidColorBrush x:Key="SuccessBorderBrush"      Color="#98D0B3" />
+      <SolidColorBrush x:Key="WarningSurfaceBrush"     Color="#FCF1DF" />
+      <SolidColorBrush x:Key="WarningForegroundBrush"  Color="#8A5200" />
+      <SolidColorBrush x:Key="WarningBorderBrush"      Color="#E4BE7C" />
+      <SolidColorBrush x:Key="DangerSurfaceBrush"      Color="#FCE9E7" />
+      <SolidColorBrush x:Key="DangerForegroundBrush"   Color="#AE2318" />
+      <SolidColorBrush x:Key="DangerBorderBrush"       Color="#E8A099" />
+      <SolidColorBrush x:Key="InfoSurfaceBrush"        Color="#E9EFFD" />
+      <SolidColorBrush x:Key="InfoForegroundBrush"     Color="#1B4FCC" />
+      <SolidColorBrush x:Key="InfoBorderBrush"         Color="#A9C2F5" />
+
+      <!-- Cards -->
+      <LinearGradientBrush x:Key="CardBackgroundBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#FFFFFF" Offset="0" />
+        <GradientStop Color="#F7F9FC" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="CardBorderBrush" Color="#DEE5EE" />
+
+      <!-- Menus -->
+      <LinearGradientBrush x:Key="MenuSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#FFFFFF" Offset="0" />
+        <GradientStop Color="#F1F4F8" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="MenuBorderBrush"        Color="#C9D3DF" />
+      <SolidColorBrush x:Key="MenuForegroundBrush"    Color="#17213A" />
+      <SolidColorBrush x:Key="MenuHoverSurfaceBrush"  Color="#E8F0FC" />
+      <SolidColorBrush x:Key="MenuSeparatorBrush"     Color="#E2E8F0" />
+
+      <!-- Tooltips -->
+      <LinearGradientBrush x:Key="TooltipSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#FFFFFF" Offset="0" />
+        <GradientStop Color="#EEF2F7" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="TooltipBorderBrush"      Color="#BCC8D7" />
+      <SolidColorBrush x:Key="TooltipForegroundBrush"  Color="#17213A" />
+
+      <!-- Badges -->
+      <SolidColorBrush x:Key="BadgeBackgroundBrush"  Color="#EAEFF8" />
+      <SolidColorBrush x:Key="BadgeForegroundBrush"  Color="#46516B" />
+      <SolidColorBrush x:Key="BadgeBorderBrush"      Color="#DCE3EF" />
+
+      <!-- Inputs -->
+      <LinearGradientBrush x:Key="InputSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#FFFFFF" Offset="0" />
+        <GradientStop Color="#F7F9FC" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="InputBorderBrush"           Color="#B9C4D2" />
+      <SolidColorBrush x:Key="InputForegroundBrush"       Color="#17213A" />
+      <SolidColorBrush x:Key="InputPlaceholderBrush"      Color="#8995A8" />
+      <SolidColorBrush x:Key="InputFocusBorderBrush"      Color="#2C72E8" />
+      <SolidColorBrush x:Key="InputHoverSurfaceBrush"     Color="#FAFCFF" />
+      <SolidColorBrush x:Key="InputDisabledSurfaceBrush"  Color="#EEF2F6" />
+
+      <!-- Buttons -->
+      <LinearGradientBrush x:Key="ButtonSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#FFFFFF" Offset="0" />
+        <GradientStop Color="#FAFBFD" Offset="0.48" />
+        <GradientStop Color="#E8EDF4" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="ButtonHighlightBrush"                  Color="#E8FFFFFF" />
+      <SolidColorBrush x:Key="ButtonBorderBrush"                     Color="#ACB7C5" />
+      <SolidColorBrush x:Key="ButtonForegroundBrush"                 Color="#17213A" />
+      <LinearGradientBrush x:Key="ButtonHoverSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#FFFFFF" Offset="0" />
+        <GradientStop Color="#E2EBF7" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="ButtonPressedSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#D9E2ED" Offset="0" />
+        <GradientStop Color="#F4F7FA" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="ButtonDisabledSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#F5F7FA" Offset="0" />
+        <GradientStop Color="#E7EBF0" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="ButtonDisabledForegroundBrush"         Color="#A0AABA" />
+      <SolidColorBrush x:Key="ButtonDisabledBorderBrush"             Color="#D9E0E9" />
+      <SolidColorBrush x:Key="QuietButtonHoverSurfaceBrush"          Color="#E9F0FA" />
+      <LinearGradientBrush x:Key="DestructiveButtonSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#FFFFFF" Offset="0" />
+        <GradientStop Color="#F8ECEB" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="DestructiveButtonBorderBrush"          Color="#D98D85" />
+      <SolidColorBrush x:Key="DestructiveButtonForegroundBrush"      Color="#AE2318" />
+      <LinearGradientBrush x:Key="DestructiveButtonHoverSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#FFF8F7" Offset="0" />
+        <GradientStop Color="#F7DAD7" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="DestructiveButtonPressedSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#EDCAC6" Offset="0" />
+        <GradientStop Color="#FAE9E7" Offset="1" />
+      </LinearGradientBrush>
+      <BoxShadows x:Key="ButtonBoxShadow">0 2 5 0 #26384E68</BoxShadows>
+
+      <!-- Selection -->
+      <SolidColorBrush x:Key="SelectionSurfaceBrush"     Color="#DCE9FF" />
+      <SolidColorBrush x:Key="SelectionForegroundBrush"  Color="#16203A" />
+      <SolidColorBrush x:Key="SelectionBorderBrush"      Color="#2F6FEB" />
+
+      <!-- Diagnostics -->
+      <SolidColorBrush x:Key="DiagnosticSurfaceBrush"       Color="#FBFCFE" />
+      <SolidColorBrush x:Key="DiagnosticHoverSurfaceBrush"  Color="#EFF4FD" />
+      <SolidColorBrush x:Key="DiagnosticBorderBrush"        Color="#E4E9F2" />
+
+      <!-- Build problems -->
+      <SolidColorBrush x:Key="BuildProblemSurfaceBrush"     Color="#FCE9E7" />
+      <SolidColorBrush x:Key="BuildProblemBorderBrush"      Color="#E8A099" />
+      <SolidColorBrush x:Key="BuildProblemForegroundBrush"  Color="#AE2318" />
+
+      <!-- Document state -->
+      <SolidColorBrush x:Key="DirtyBadgeSurfaceBrush"       Color="#FCF1DF" />
+      <SolidColorBrush x:Key="DirtyBadgeForegroundBrush"    Color="#8A5200" />
+      <SolidColorBrush x:Key="DirtyBadgeBorderBrush"        Color="#E4BE7C" />
+      <SolidColorBrush x:Key="ImportStatusForegroundBrush"  Color="#57637C" />
+
+      <!-- Keyboard -->
+      <LinearGradientBrush x:Key="KeyboardBezelBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#F9FBFE" Offset="0" />
+        <GradientStop Color="#E3E9F0" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="KeyboardBezelBorderBrush" Color="#B8C3D0" />
+      <BoxShadows x:Key="KeyboardBezelBoxShadow">0 14 32 0 #3320354F</BoxShadows>
+      <LinearGradientBrush x:Key="KeyBaseBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#BCC6D1" Offset="0" />
+        <GradientStop Color="#929DAA" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="KeyFaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#FFFFFF" Offset="0" />
+        <GradientStop Color="#F8FAFC" Offset="0.46" />
+        <GradientStop Color="#DFE5EC" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="KeyTopHighlightBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#F2FFFFFF" Offset="0" />
+        <GradientStop Color="#18FFFFFF" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="KeyFaceHoverBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#FFFFFF" Offset="0" />
+        <GradientStop Color="#D8E7F9" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="KeyFacePressedBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#D5DFEA" Offset="0" />
+        <GradientStop Color="#F1F4F8" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="KeyBorderBrush"            Color="#929EAD" />
+      <SolidColorBrush x:Key="KeyLegendBrush"            Color="#17213A" />
+      <SolidColorBrush x:Key="KeyHintBrush"              Color="#728097" />
+      <LinearGradientBrush x:Key="KeyActiveLayerBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#EEF5FF" Offset="0" />
+        <GradientStop Color="#BFD5F8" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="KeyActiveLegendBrush" Color="#123C91" />
+      <LinearGradientBrush x:Key="KeySelectedFaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#F2F7FF" Offset="0" />
+        <GradientStop Color="#C5D9F8" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="KeySelectedBorderBrush" Color="#2C72E8" />
+      <BoxShadows x:Key="KeySelectedBoxShadow">0 0 9 1 #802C72E8</BoxShadows>
+      <LinearGradientBrush x:Key="KeyErrorFaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#FFF7F6" Offset="0" />
+        <GradientStop Color="#F1CBC7" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="KeyErrorBorderBrush" Color="#C33B30" />
+      <BoxShadows x:Key="KeyErrorBoxShadow">0 0 8 1 #70C33B30</BoxShadows>
+      <LinearGradientBrush x:Key="KeyUnmappedFaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#F2F5F8" Offset="0" />
+        <GradientStop Color="#DDE3EA" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="KeyUnmappedLegendBrush" Color="#8A96A8" />
+
+      <!-- Elevation -->
+      <BoxShadows x:Key="CardBoxShadow">0 3 10 0 #1C20364F</BoxShadows>
+      <BoxShadows x:Key="KeyBoxShadow">0 5 9 0 #4A53677F</BoxShadows>
+      <BoxShadows x:Key="ElevatedBoxShadow">0 12 28 0 #2B18314F</BoxShadows>
+    </ResourceDictionary>
+
+    <ResourceDictionary x:Key="{x:Static app:ApplicationThemeVariants.Gray}">
+      <!-- Surfaces -->
+      <LinearGradientBrush x:Key="AppSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#C8CED5" Offset="0" />
+        <GradientStop Color="#ABB3BD" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="WorkspaceSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#BEC5CD" Offset="0" />
+        <GradientStop Color="#A4ADB7" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="PanelSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#D7DBDF" Offset="0" />
+        <GradientStop Color="#BDC3CA" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="ElevatedSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#E2E5E8" Offset="0" />
+        <GradientStop Color="#C8CDD3" Offset="1" />
+      </LinearGradientBrush>
+
+      <!-- Borders -->
+      <SolidColorBrush x:Key="SubtleBorderBrush"    Color="#B6BEC7" />
+      <SolidColorBrush x:Key="AppBorderBrush"       Color="#929CA7" />
+      <SolidColorBrush x:Key="StrongBorderBrush"    Color="#707B87" />
+      <SolidColorBrush x:Key="SelectedBorderBrush"  Color="#246BD5" />
+      <SolidColorBrush x:Key="FocusBorderBrush"     Color="#154CA8" />
+
+      <!-- Foreground -->
+      <SolidColorBrush x:Key="PrimaryForegroundBrush"    Color="#151A20" />
+      <SolidColorBrush x:Key="SecondaryForegroundBrush"  Color="#414B56" />
+      <SolidColorBrush x:Key="DisabledForegroundBrush"   Color="#777F89" />
+      <SolidColorBrush x:Key="InverseForegroundBrush"    Color="#F7F9FB" />
+      <SolidColorBrush x:Key="LinkForegroundBrush"       Color="#154CA8" />
+      <SolidColorBrush x:Key="HeadingForegroundBrush"    Color="#10151A" />
+      <SolidColorBrush x:Key="MutedForegroundBrush"      Color="#4D5864" />
+
+      <!-- Accent -->
+      <SolidColorBrush x:Key="AccentBrush"            Color="#246BD5" />
+      <SolidColorBrush x:Key="AccentHoverBrush"       Color="#1C5FC5" />
+      <SolidColorBrush x:Key="AccentPressedBrush"     Color="#174EA7" />
+      <SolidColorBrush x:Key="AccentForegroundBrush"  Color="#FFFFFF" />
+
+      <!-- Status -->
+      <SolidColorBrush x:Key="SuccessSurfaceBrush"     Color="#C3D9CB" />
+      <SolidColorBrush x:Key="SuccessForegroundBrush"  Color="#0F5330" />
+      <SolidColorBrush x:Key="SuccessBorderBrush"      Color="#7BA88D" />
+      <SolidColorBrush x:Key="WarningSurfaceBrush"     Color="#E0CFAF" />
+      <SolidColorBrush x:Key="WarningForegroundBrush"  Color="#6B3F00" />
+      <SolidColorBrush x:Key="WarningBorderBrush"      Color="#B08A45" />
+      <SolidColorBrush x:Key="DangerSurfaceBrush"      Color="#E3C4C1" />
+      <SolidColorBrush x:Key="DangerForegroundBrush"   Color="#8E1C13" />
+      <SolidColorBrush x:Key="DangerBorderBrush"       Color="#B87069" />
+      <SolidColorBrush x:Key="InfoSurfaceBrush"        Color="#C6D2EC" />
+      <SolidColorBrush x:Key="InfoForegroundBrush"     Color="#14459E" />
+      <SolidColorBrush x:Key="InfoBorderBrush"         Color="#7C97CE" />
+
+      <!-- Cards -->
+      <LinearGradientBrush x:Key="CardBackgroundBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#D9DDE1" Offset="0" />
+        <GradientStop Color="#BBC2C9" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="CardBorderBrush" Color="#939DA8" />
+
+      <!-- Menus -->
+      <LinearGradientBrush x:Key="MenuSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#E0E3E6" Offset="0" />
+        <GradientStop Color="#C3C9CF" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="MenuBorderBrush"        Color="#89939E" />
+      <SolidColorBrush x:Key="MenuForegroundBrush"    Color="#151A20" />
+      <SolidColorBrush x:Key="MenuHoverSurfaceBrush"  Color="#B9C5D4" />
+      <SolidColorBrush x:Key="MenuSeparatorBrush"     Color="#A7B0BA" />
+
+      <!-- Tooltips -->
+      <LinearGradientBrush x:Key="TooltipSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#E8EAEC" Offset="0" />
+        <GradientStop Color="#C9CED4" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="TooltipBorderBrush"      Color="#7F8994" />
+      <SolidColorBrush x:Key="TooltipForegroundBrush"  Color="#151A20" />
+
+      <!-- Badges -->
+      <SolidColorBrush x:Key="BadgeBackgroundBrush"  Color="#B5BCC5" />
+      <SolidColorBrush x:Key="BadgeForegroundBrush"  Color="#2A323B" />
+      <SolidColorBrush x:Key="BadgeBorderBrush"      Color="#9AA2AC" />
+
+      <!-- Inputs -->
+      <LinearGradientBrush x:Key="InputSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#E9EBED" Offset="0" />
+        <GradientStop Color="#CDD2D7" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="InputBorderBrush"           Color="#838D98" />
+      <SolidColorBrush x:Key="InputForegroundBrush"       Color="#151A20" />
+      <SolidColorBrush x:Key="InputPlaceholderBrush"      Color="#68727D" />
+      <SolidColorBrush x:Key="InputFocusBorderBrush"      Color="#246BD5" />
+      <SolidColorBrush x:Key="InputHoverSurfaceBrush"     Color="#EEF0F2" />
+      <SolidColorBrush x:Key="InputDisabledSurfaceBrush"  Color="#BEC5CC" />
+
+      <!-- Buttons -->
+      <LinearGradientBrush x:Key="ButtonSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#E6E9EC" Offset="0" />
+        <GradientStop Color="#D6DADE" Offset="0.48" />
+        <GradientStop Color="#B7BEC6" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="ButtonHighlightBrush"                  Color="#9CFFFFFF" />
+      <SolidColorBrush x:Key="ButtonBorderBrush"                     Color="#7C8792" />
+      <SolidColorBrush x:Key="ButtonForegroundBrush"                 Color="#151A20" />
+      <LinearGradientBrush x:Key="ButtonHoverSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#F0F2F4" Offset="0" />
+        <GradientStop Color="#C4CBD2" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="ButtonPressedSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#AEB6BF" Offset="0" />
+        <GradientStop Color="#D5D9DD" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="ButtonDisabledSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#C8CDD2" Offset="0" />
+        <GradientStop Color="#B5BCC3" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="ButtonDisabledForegroundBrush"         Color="#747D87" />
+      <SolidColorBrush x:Key="ButtonDisabledBorderBrush"             Color="#A0A8B1" />
+      <SolidColorBrush x:Key="QuietButtonHoverSurfaceBrush"          Color="#B8C2CD" />
+      <LinearGradientBrush x:Key="DestructiveButtonSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#E4E1E1" Offset="0" />
+        <GradientStop Color="#C8B9B8" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="DestructiveButtonBorderBrush"          Color="#A85B52" />
+      <SolidColorBrush x:Key="DestructiveButtonForegroundBrush"      Color="#8E1C13" />
+      <LinearGradientBrush x:Key="DestructiveButtonHoverSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#EAD8D6" Offset="0" />
+        <GradientStop Color="#CBA9A5" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="DestructiveButtonPressedSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#BD9692" Offset="0" />
+        <GradientStop Color="#DBC2BF" Offset="1" />
+      </LinearGradientBrush>
+      <BoxShadows x:Key="ButtonBoxShadow">0 3 6 0 #4A3A424B</BoxShadows>
+
+      <!-- Selection -->
+      <SolidColorBrush x:Key="SelectionSurfaceBrush"     Color="#C3D2F0" />
+      <SolidColorBrush x:Key="SelectionForegroundBrush"  Color="#14181D" />
+      <SolidColorBrush x:Key="SelectionBorderBrush"      Color="#1F5FD8" />
+
+      <!-- Diagnostics -->
+      <SolidColorBrush x:Key="DiagnosticSurfaceBrush"       Color="#C6CBD1" />
+      <SolidColorBrush x:Key="DiagnosticHoverSurfaceBrush"  Color="#D6DBE0" />
+      <SolidColorBrush x:Key="DiagnosticBorderBrush"        Color="#A5ADB6" />
+
+      <!-- Build problems -->
+      <SolidColorBrush x:Key="BuildProblemSurfaceBrush"     Color="#E3C4C1" />
+      <SolidColorBrush x:Key="BuildProblemBorderBrush"      Color="#B87069" />
+      <SolidColorBrush x:Key="BuildProblemForegroundBrush"  Color="#8E1C13" />
+
+      <!-- Document state -->
+      <SolidColorBrush x:Key="DirtyBadgeSurfaceBrush"       Color="#E0CFAF" />
+      <SolidColorBrush x:Key="DirtyBadgeForegroundBrush"    Color="#6B3F00" />
+      <SolidColorBrush x:Key="DirtyBadgeBorderBrush"        Color="#B08A45" />
+      <SolidColorBrush x:Key="ImportStatusForegroundBrush"  Color="#414A55" />
+
+      <!-- Keyboard -->
+      <LinearGradientBrush x:Key="KeyboardBezelBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#C0C7CE" Offset="0" />
+        <GradientStop Color="#959EA8" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="KeyboardBezelBorderBrush" Color="#747E89" />
+      <BoxShadows x:Key="KeyboardBezelBoxShadow">0 16 34 0 #59343D47</BoxShadows>
+      <LinearGradientBrush x:Key="KeyBaseBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#747D87" Offset="0" />
+        <GradientStop Color="#555D66" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="KeyFaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#E1E4E7" Offset="0" />
+        <GradientStop Color="#D2D6DA" Offset="0.44" />
+        <GradientStop Color="#ADB5BD" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="KeyTopHighlightBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#B8FFFFFF" Offset="0" />
+        <GradientStop Color="#10FFFFFF" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="KeyFaceHoverBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#EEF1F3" Offset="0" />
+        <GradientStop Color="#BBC6D1" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="KeyFacePressedBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#A6AFB8" Offset="0" />
+        <GradientStop Color="#D1D6DA" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="KeyBorderBrush"            Color="#6D7782" />
+      <SolidColorBrush x:Key="KeyLegendBrush"            Color="#151A20" />
+      <SolidColorBrush x:Key="KeyHintBrush"              Color="#525D68" />
+      <LinearGradientBrush x:Key="KeyActiveLayerBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#D8E4F8" Offset="0" />
+        <GradientStop Color="#A5BBDE" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="KeyActiveLegendBrush" Color="#103A84" />
+      <LinearGradientBrush x:Key="KeySelectedFaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#DCE7F7" Offset="0" />
+        <GradientStop Color="#A9BEDD" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="KeySelectedBorderBrush" Color="#246BD5" />
+      <BoxShadows x:Key="KeySelectedBoxShadow">0 0 10 1 #99246BD5</BoxShadows>
+      <LinearGradientBrush x:Key="KeyErrorFaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#E6CFCC" Offset="0" />
+        <GradientStop Color="#BF9691" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="KeyErrorBorderBrush" Color="#982D25" />
+      <BoxShadows x:Key="KeyErrorBoxShadow">0 0 9 1 #85982D25</BoxShadows>
+      <LinearGradientBrush x:Key="KeyUnmappedFaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#C6CBD0" Offset="0" />
+        <GradientStop Color="#A5ADB5" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="KeyUnmappedLegendBrush" Color="#69737E" />
+
+      <!-- Elevation -->
+      <BoxShadows x:Key="CardBoxShadow">0 4 12 0 #3D3B444E</BoxShadows>
+      <BoxShadows x:Key="KeyBoxShadow">0 6 10 0 #75414A54</BoxShadows>
+      <BoxShadows x:Key="ElevatedBoxShadow">0 14 30 0 #66303943</BoxShadows>
+    </ResourceDictionary>
+
+    <ResourceDictionary x:Key="{x:Static app:ApplicationThemeVariants.Black}">
+      <!-- Surfaces -->
+      <LinearGradientBrush x:Key="AppSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#1B2026" Offset="0" />
+        <GradientStop Color="#0E1216" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="WorkspaceSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#181D22" Offset="0" />
+        <GradientStop Color="#0A0E12" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="PanelSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#232930" Offset="0" />
+        <GradientStop Color="#171C22" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="ElevatedSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#2D343C" Offset="0" />
+        <GradientStop Color="#1E242B" Offset="1" />
+      </LinearGradientBrush>
+
+      <!-- Borders -->
+      <SolidColorBrush x:Key="SubtleBorderBrush"    Color="#272E36" />
+      <SolidColorBrush x:Key="AppBorderBrush"       Color="#39424C" />
+      <SolidColorBrush x:Key="StrongBorderBrush"    Color="#535E6B" />
+      <SolidColorBrush x:Key="SelectedBorderBrush"  Color="#4187F5" />
+      <SolidColorBrush x:Key="FocusBorderBrush"     Color="#78ACFF" />
+
+      <!-- Foreground -->
+      <SolidColorBrush x:Key="PrimaryForegroundBrush"    Color="#F1F4F8" />
+      <SolidColorBrush x:Key="SecondaryForegroundBrush"  Color="#A8B2BE" />
+      <SolidColorBrush x:Key="DisabledForegroundBrush"   Color="#68727E" />
+      <SolidColorBrush x:Key="InverseForegroundBrush"    Color="#11161B" />
+      <SolidColorBrush x:Key="LinkForegroundBrush"       Color="#78ACFF" />
+      <SolidColorBrush x:Key="HeadingForegroundBrush"    Color="#F7F9FC" />
+      <SolidColorBrush x:Key="MutedForegroundBrush"      Color="#929DAA" />
+
+      <!-- Accent -->
+      <SolidColorBrush x:Key="AccentBrush"            Color="#3478E5" />
+      <SolidColorBrush x:Key="AccentHoverBrush"       Color="#478AF2" />
+      <SolidColorBrush x:Key="AccentPressedBrush"     Color="#285FB9" />
+      <SolidColorBrush x:Key="AccentForegroundBrush"  Color="#FFFFFF" />
+
+      <!-- Status -->
+      <SolidColorBrush x:Key="SuccessSurfaceBrush"     Color="#14301F" />
+      <SolidColorBrush x:Key="SuccessForegroundBrush"  Color="#6FD79B" />
+      <SolidColorBrush x:Key="SuccessBorderBrush"      Color="#2E6B47" />
+      <SolidColorBrush x:Key="WarningSurfaceBrush"     Color="#33260F" />
+      <SolidColorBrush x:Key="WarningForegroundBrush"  Color="#F0B44A" />
+      <SolidColorBrush x:Key="WarningBorderBrush"      Color="#7A5A22" />
+      <SolidColorBrush x:Key="DangerSurfaceBrush"      Color="#3A1D1D" />
+      <SolidColorBrush x:Key="DangerForegroundBrush"   Color="#FF8A82" />
+      <SolidColorBrush x:Key="DangerBorderBrush"       Color="#8A3B36" />
+      <SolidColorBrush x:Key="InfoSurfaceBrush"        Color="#16233A" />
+      <SolidColorBrush x:Key="InfoForegroundBrush"     Color="#7FB0FF" />
+      <SolidColorBrush x:Key="InfoBorderBrush"         Color="#2E4A7A" />
+
+      <!-- Cards -->
+      <LinearGradientBrush x:Key="CardBackgroundBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#242A31" Offset="0" />
+        <GradientStop Color="#171C21" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="CardBorderBrush" Color="#313A43" />
+
+      <!-- Menus -->
+      <LinearGradientBrush x:Key="MenuSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#2B3239" Offset="0" />
+        <GradientStop Color="#1B2026" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="MenuBorderBrush"        Color="#414B56" />
+      <SolidColorBrush x:Key="MenuForegroundBrush"    Color="#F1F4F8" />
+      <SolidColorBrush x:Key="MenuHoverSurfaceBrush"  Color="#303B48" />
+      <SolidColorBrush x:Key="MenuSeparatorBrush"     Color="#38414B" />
+
+      <!-- Tooltips -->
+      <LinearGradientBrush x:Key="TooltipSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#323A42" Offset="0" />
+        <GradientStop Color="#22282E" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="TooltipBorderBrush"      Color="#4A5561" />
+      <SolidColorBrush x:Key="TooltipForegroundBrush"  Color="#F1F4F8" />
+
+      <!-- Badges -->
+      <SolidColorBrush x:Key="BadgeBackgroundBrush"  Color="#262E38" />
+      <SolidColorBrush x:Key="BadgeForegroundBrush"  Color="#BAC4D0" />
+      <SolidColorBrush x:Key="BadgeBorderBrush"      Color="#333B45" />
+
+      <!-- Inputs -->
+      <LinearGradientBrush x:Key="InputSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#1B2127" Offset="0" />
+        <GradientStop Color="#11161B" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="InputBorderBrush"           Color="#46515C" />
+      <SolidColorBrush x:Key="InputForegroundBrush"       Color="#F1F4F8" />
+      <SolidColorBrush x:Key="InputPlaceholderBrush"      Color="#7D8895" />
+      <SolidColorBrush x:Key="InputFocusBorderBrush"      Color="#4187F5" />
+      <SolidColorBrush x:Key="InputHoverSurfaceBrush"     Color="#20272E" />
+      <SolidColorBrush x:Key="InputDisabledSurfaceBrush"  Color="#181D22" />
+
+      <!-- Buttons -->
+      <LinearGradientBrush x:Key="ButtonSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#394149" Offset="0" />
+        <GradientStop Color="#30373E" Offset="0.46" />
+        <GradientStop Color="#23292F" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="ButtonHighlightBrush"                  Color="#38FFFFFF" />
+      <SolidColorBrush x:Key="ButtonBorderBrush"                     Color="#505B67" />
+      <SolidColorBrush x:Key="ButtonForegroundBrush"                 Color="#F1F4F8" />
+      <LinearGradientBrush x:Key="ButtonHoverSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#46515B" Offset="0" />
+        <GradientStop Color="#2B333B" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="ButtonPressedSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#1B2127" Offset="0" />
+        <GradientStop Color="#30373E" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="ButtonDisabledSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#242A30" Offset="0" />
+        <GradientStop Color="#191E23" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="ButtonDisabledForegroundBrush"         Color="#626D79" />
+      <SolidColorBrush x:Key="ButtonDisabledBorderBrush"             Color="#303841" />
+      <SolidColorBrush x:Key="QuietButtonHoverSurfaceBrush"          Color="#2D3742" />
+      <LinearGradientBrush x:Key="DestructiveButtonSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#3A2524" Offset="0" />
+        <GradientStop Color="#251817" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="DestructiveButtonBorderBrush"          Color="#7A3833" />
+      <SolidColorBrush x:Key="DestructiveButtonForegroundBrush"      Color="#FF8A82" />
+      <LinearGradientBrush x:Key="DestructiveButtonHoverSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#4A2D2A" Offset="0" />
+        <GradientStop Color="#301B1A" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="DestructiveButtonPressedSurfaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#211312" Offset="0" />
+        <GradientStop Color="#36201E" Offset="1" />
+      </LinearGradientBrush>
+      <BoxShadows x:Key="ButtonBoxShadow">0 3 7 0 #B3000000</BoxShadows>
+
+      <!-- Selection -->
+      <SolidColorBrush x:Key="SelectionSurfaceBrush"     Color="#1D3457" />
+      <SolidColorBrush x:Key="SelectionForegroundBrush"  Color="#EDF1F6" />
+      <SolidColorBrush x:Key="SelectionBorderBrush"      Color="#5B9BFF" />
+
+      <!-- Diagnostics -->
+      <SolidColorBrush x:Key="DiagnosticSurfaceBrush"       Color="#171C22" />
+      <SolidColorBrush x:Key="DiagnosticHoverSurfaceBrush"  Color="#222A33" />
+      <SolidColorBrush x:Key="DiagnosticBorderBrush"        Color="#2C333C" />
+
+      <!-- Build problems -->
+      <SolidColorBrush x:Key="BuildProblemSurfaceBrush"     Color="#3A1D1D" />
+      <SolidColorBrush x:Key="BuildProblemBorderBrush"      Color="#8A3B36" />
+      <SolidColorBrush x:Key="BuildProblemForegroundBrush"  Color="#FF8A82" />
+
+      <!-- Document state -->
+      <SolidColorBrush x:Key="DirtyBadgeSurfaceBrush"       Color="#33260F" />
+      <SolidColorBrush x:Key="DirtyBadgeForegroundBrush"    Color="#F0B44A" />
+      <SolidColorBrush x:Key="DirtyBadgeBorderBrush"        Color="#7A5A22" />
+      <SolidColorBrush x:Key="ImportStatusForegroundBrush"  Color="#A3ADBA" />
+
+      <!-- Keyboard -->
+      <LinearGradientBrush x:Key="KeyboardBezelBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#1E242A" Offset="0" />
+        <GradientStop Color="#0C1014" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="KeyboardBezelBorderBrush" Color="#343D46" />
+      <BoxShadows x:Key="KeyboardBezelBoxShadow">0 18 38 0 #D9000000</BoxShadows>
+      <LinearGradientBrush x:Key="KeyBaseBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#171B20" Offset="0" />
+        <GradientStop Color="#050708" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="KeyFaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#50575F" Offset="0" />
+        <GradientStop Color="#41474E" Offset="0.44" />
+        <GradientStop Color="#2C3137" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="KeyTopHighlightBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#5CFFFFFF" Offset="0" />
+        <GradientStop Color="#08FFFFFF" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="KeyFaceHoverBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#626B75" Offset="0" />
+        <GradientStop Color="#39424B" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="KeyFacePressedBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#242A30" Offset="0" />
+        <GradientStop Color="#41484F" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="KeyBorderBrush"            Color="#68737F" />
+      <SolidColorBrush x:Key="KeyLegendBrush"            Color="#F1F4F8" />
+      <SolidColorBrush x:Key="KeyHintBrush"              Color="#A0AAB6" />
+      <LinearGradientBrush x:Key="KeyActiveLayerBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#345D94" Offset="0" />
+        <GradientStop Color="#1D3556" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="KeyActiveLegendBrush" Color="#C3DAFF" />
+      <LinearGradientBrush x:Key="KeySelectedFaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#365D91" Offset="0" />
+        <GradientStop Color="#1A304E" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="KeySelectedBorderBrush" Color="#4187F5" />
+      <BoxShadows x:Key="KeySelectedBoxShadow">0 0 12 1 #B34187F5</BoxShadows>
+      <LinearGradientBrush x:Key="KeyErrorFaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#63312E" Offset="0" />
+        <GradientStop Color="#341B1A" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="KeyErrorBorderBrush" Color="#FF766D" />
+      <BoxShadows x:Key="KeyErrorBoxShadow">0 0 11 1 #A6FF5F55</BoxShadows>
+      <LinearGradientBrush x:Key="KeyUnmappedFaceBrush" StartPoint="50%,0%" EndPoint="50%,100%">
+        <GradientStop Color="#343A41" Offset="0" />
+        <GradientStop Color="#22272D" Offset="1" />
+      </LinearGradientBrush>
+      <SolidColorBrush x:Key="KeyUnmappedLegendBrush" Color="#737E8A" />
+
+      <!-- Elevation -->
+      <BoxShadows x:Key="CardBoxShadow">0 5 14 0 #99000000</BoxShadows>
+      <BoxShadows x:Key="KeyBoxShadow">0 7 12 0 #D9000000</BoxShadows>
+      <BoxShadows x:Key="ElevatedBoxShadow">0 16 34 0 #E6000000</BoxShadows>
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>

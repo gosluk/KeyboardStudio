@@ -38,6 +38,59 @@ public sealed class XkbUserBundleWriterTests
 
     [Fact]
     [Trait("Category", "Unit")]
+    public async Task WriteAsync_OverAPreviousBundle_RemovesTheFilesThisOneNoLongerHas()
+    {
+        var output = Path.Combine(Path.GetTempPath(), $"keyboardstudio-bundle-{Guid.NewGuid():N}");
+        try
+        {
+            var writer = new XkbUserBundleWriter();
+            await writer.WriteAsync(Bundle("symbols/de"), output);
+            var superseded = Path.Combine(output, "xkb-user-bundle", "symbols", "de");
+            Assert.True(File.Exists(superseded));
+
+            var result = await writer.WriteAsync(Bundle("symbols/pl"), output);
+
+            Assert.False(File.Exists(superseded));
+            Assert.Equal(superseded, Assert.Single(result.RemovedPaths));
+            Assert.True(File.Exists(Path.Combine(result.BundleRoot, "symbols", "pl")));
+            Assert.True(File.Exists(Path.Combine(result.BundleRoot, "keyboardstudio-bundle.json")));
+        }
+        finally
+        {
+            if (Directory.Exists(output))
+            {
+                Directory.Delete(output, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task WriteAsync_IntoADirectoryThatIsNotAGeneratedBundle_LeavesItsContentAlone()
+    {
+        var output = Path.Combine(Path.GetTempPath(), $"keyboardstudio-bundle-{Guid.NewGuid():N}");
+        try
+        {
+            var foreign = Path.Combine(output, "xkb-user-bundle", "notes.txt");
+            Directory.CreateDirectory(Path.GetDirectoryName(foreign)!);
+            await File.WriteAllTextAsync(foreign, "mine\n");
+
+            var result = await new XkbUserBundleWriter().WriteAsync(Bundle("symbols/pl"), output);
+
+            Assert.Empty(result.RemovedPaths);
+            Assert.Equal("mine\n", await File.ReadAllTextAsync(foreign));
+        }
+        finally
+        {
+            if (Directory.Exists(output))
+            {
+                Directory.Delete(output, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
     [Trait("Category", "ErrorPath")]
     public async Task WriteAsync_WhenAPathTraversesOutOfTheBundle_RejectsIt()
     {
@@ -65,4 +118,13 @@ public sealed class XkbUserBundleWriterTests
         await Assert.ThrowsAsync<InvalidDataException>(
             () => new XkbUserBundleWriter().WriteAsync(bundle, output));
     }
+
+    private static XkbGeneratedUserBundle Bundle(string bridgePath) =>
+        new(
+        [
+            new XkbUserBundleFile("symbols/keyboardstudio", "symbols\n", "hash-a"),
+            new XkbUserBundleFile(bridgePath, "bridge\n", "hash-b"),
+            new XkbUserBundleFile("rules/evdev.xml", "registry\n", "hash-c"),
+            new XkbUserBundleFile("keyboardstudio-bundle.json", "{}\n", "hash-d")
+        ]);
 }

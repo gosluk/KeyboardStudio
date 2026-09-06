@@ -86,6 +86,12 @@ public static class XkbInstallPlanner
             return Failed(diagnostics);
         }
 
+        // Nothing in the manifest describes this project, so the file header and the ownership
+        // markers decide what may be rewritten: KeyboardStudio's own generated file and its own
+        // delimited block are reclaimed, which is what lets a rebuild install over state left by a
+        // lost or reset manifest. Whatever the manifest does record still has to match it, so an
+        // external edit to an installed variant is never silently overwritten.
+        var reclaim = existing is null;
         string centralContent;
         string centralBlockHash;
         var centralCreated = !central.Exists;
@@ -104,9 +110,10 @@ public static class XkbInstallPlanner
         {
             var centralRecord = manifest.Files.SingleOrDefault(file =>
                 string.Equals(file.RelativePath, CentralPath, StringComparison.Ordinal));
+            var recordMatches = centralRecord is not null &&
+                string.Equals(Hash(central.Content!), centralRecord.Sha256, StringComparison.Ordinal);
             if (!central.Content!.StartsWith(CentralHeader, StringComparison.Ordinal) ||
-                centralRecord is null ||
-                !string.Equals(Hash(central.Content), centralRecord.Sha256, StringComparison.Ordinal))
+                (centralRecord is null ? !reclaim : !recordMatches))
             {
                 diagnostics.Add(new XkbDiagnostic(
                     "KSP004",
@@ -119,7 +126,8 @@ public static class XkbInstallPlanner
                 metadata.ProjectInstallationId,
                 metadata.InternalSectionId,
                 stagedCentralBlock.Content!,
-                existing?.CentralBlockSha256);
+                existing?.CentralBlockSha256,
+                reclaim);
             if (!edit.Success)
             {
                 return Failed(edit.Diagnostics);
@@ -127,7 +135,8 @@ public static class XkbInstallPlanner
 
             centralContent = edit.Content!;
             centralBlockHash = edit.ManagedBlockSha256!;
-            centralCreated = centralRecord.WasCreatedByKeyboardStudio;
+            // The header proves KeyboardStudio generated the file it is reclaiming.
+            centralCreated = centralRecord?.WasCreatedByKeyboardStudio ?? true;
         }
 
         var bridgeEdit = XkbManagedBlockEditor.Upsert(
@@ -135,7 +144,8 @@ public static class XkbInstallPlanner
             metadata.ProjectInstallationId,
             metadata.PublicVariantId,
             stagedBridgeBlock.Content!,
-            existing?.BridgeBlockSha256);
+            existing?.BridgeBlockSha256,
+            reclaim);
         if (!bridgeEdit.Success)
         {
             return Failed(bridgeEdit.Diagnostics);
@@ -144,7 +154,8 @@ public static class XkbInstallPlanner
         var registryEdit = XkbRegistryDocumentMerger.Upsert(
             registry.Content,
             metadata,
-            existing?.RegistryEntrySha256);
+            existing?.RegistryEntrySha256,
+            reclaim);
         if (!registryEdit.Success)
         {
             return Failed(registryEdit.Diagnostics);

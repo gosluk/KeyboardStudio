@@ -77,6 +77,7 @@ public sealed class XkbRulesRegistryReaderTests
 
         var us = entries.Single(entry => entry is { LayoutId: "us", VariantId: null });
         Assert.Equal("English (US)", us.DisplayName);
+        Assert.True(us.HasExplicitDescription);
         Assert.Equal("en", us.ShortDescription);
         Assert.Equal(["eng"], us.Languages);
         Assert.Equal(["US"], us.Countries);
@@ -187,6 +188,7 @@ public sealed class XkbRulesRegistryReaderTests
         var entry = Assert.Single(ReaderOver(fileSystem).Read(Root));
 
         Assert.Equal("custom", entry.DisplayName);
+        Assert.False(entry.HasExplicitDescription);
         Assert.Null(entry.ShortDescription);
         Assert.Empty(entry.Languages);
     }

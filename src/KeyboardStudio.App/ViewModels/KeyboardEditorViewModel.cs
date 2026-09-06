@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using KeyboardStudio.Build;
 using KeyboardStudio.Core;
 
 namespace KeyboardStudio.App;
@@ -18,8 +19,28 @@ public sealed class KeyboardEditorViewModel : ObservableObject
     private static readonly IReadOnlyList<LogicalKey> EditableLogicalKeys =
         Enum.GetValues<LogicalKey>();
 
+    private static readonly IReadOnlyList<KeyOutputKindOptionViewModel> OutputKinds =
+    [
+        new(KeyOutputKind.None, "No output"),
+        new(KeyOutputKind.Character, "Character"),
+        new(KeyOutputKind.SpecialKey, "Key")
+    ];
+
+    private static readonly IReadOnlyList<LogicalKeyOptionViewModel> SpecialKeyOptions =
+        [.. Enum.GetValues<LogicalKey>()
+            .Where(key => key != LogicalKey.None)
+            .Select(key => new LogicalKeyOptionViewModel(key))];
+
     private readonly Action _documentChanged;
     private readonly KeyboardEditor _editor;
+
+    /// <summary>Keys the last validation pass reported an error on.</summary>
+    private readonly HashSet<string> _validationErrorKeys = new(StringComparer.Ordinal);
+
+    /// <summary>Keys a build or an installation reported a problem on.</summary>
+    private readonly HashSet<string> _reportedProblemKeys = new(StringComparer.Ordinal);
+    /// <summary>The targets this installation can build, which decide the advisory warnings.</summary>
+    private IReadOnlyCollection<BuildTarget> _buildTargets = [];
     private ModifierLayer _activeLayer;
     private IReadOnlyList<LayerMappingViewModel> _layerMappings = [];
     private KeyViewModel? _selectedKey;
@@ -91,6 +112,10 @@ public sealed class KeyboardEditorViewModel : ObservableObject
             }
             SelectedKey.Mapping = _editor.Project.Layout.Find(SelectedKey.KeyId);
             SelectedKey.Refresh(ActiveLayer);
+
+            // What a target will accept depends on which logical key this is, so the advisory
+            // warnings beside each layer are stale the moment the logical key changes.
+            RefreshMappingPanel();
             OnPropertyChanged();
         }
     }
@@ -179,13 +204,47 @@ public sealed class KeyboardEditorViewModel : ObservableObject
     {
         ArgumentNullException.ThrowIfNull(issues);
 
-        var errorKeyIds = issues
-            .Where(issue => issue.Severity == ValidationSeverity.Error && issue.KeyId is not null)
-            .Select(issue => issue.KeyId!)
-            .ToHashSet(StringComparer.Ordinal);
+        _validationErrorKeys.Clear();
+        foreach (var issue in issues)
+        {
+            if (issue.Severity == ValidationSeverity.Error && issue.KeyId is not null)
+            {
+                _validationErrorKeys.Add(issue.KeyId);
+            }
+        }
+
+        RefreshKeyErrors();
+    }
+
+    /// <summary>
+    /// Marks the keys named by findings from outside validation: a build that could not translate
+    /// a key, an installation that refused one.
+    /// </summary>
+    /// <remarks>
+    /// They are held apart from validation's own because the two run on different clocks.
+    /// Validation reruns on every edit, and folding a build's findings into it would erase them at
+    /// the next keystroke; keeping them separate lets a key stay marked until the panel that
+    /// marked it says otherwise.
+    /// </remarks>
+    public void ApplyReportedProblemKeys(IEnumerable<string> keyIds)
+    {
+        ArgumentNullException.ThrowIfNull(keyIds);
+
+        _reportedProblemKeys.Clear();
+        foreach (var keyId in keyIds)
+        {
+            _reportedProblemKeys.Add(keyId);
+        }
+
+        RefreshKeyErrors();
+    }
+
+    private void RefreshKeyErrors()
+    {
         foreach (var key in Keys)
         {
-            key.HasError = errorKeyIds.Contains(key.KeyId);
+            key.HasError = _validationErrorKeys.Contains(key.KeyId) ||
+                           _reportedProblemKeys.Contains(key.KeyId);
         }
     }
 
@@ -234,42 +293,58 @@ public sealed class KeyboardEditorViewModel : ObservableObject
         SelectedKey = key;
     }
 
+    /// <summary>
+    /// Tells the mapping panel which targets to warn about. Pushed in rather than read out, the way
+    /// build and installation problems already reach the keycaps, so the editor stays independent of
+    /// the panel that owns the targets.
+    /// </summary>
+    public void ApplyBuildTargets(IEnumerable<BuildTarget> targets)
+    {
+        ArgumentNullException.ThrowIfNull(targets);
+
+        _buildTargets = [.. targets];
+        RefreshMappingPanel();
+    }
+
     private void RefreshMappingPanel()
     {
         LayerMappings = Layers
             .Select(layer => new LayerMappingViewModel(
                 layer,
-                GetCharacterOutput(layer.Value),
-                UpdateOutput))
+                GetOutput(layer.Value),
+                OutputKinds,
+                SpecialKeyOptions,
+                UpdateOutput,
+                output => LayerOutputCapability.Describe(
+                    _buildTargets,
+                    SelectedLogicalKey,
+                    layer.Value,
+                    output)))
             .ToArray();
     }
 
-    private string GetCharacterOutput(ModifierLayer layer) =>
-        SelectedKey?.Mapping?.Outputs.TryGetValue(layer, out var output) == true &&
-        output is CharacterOutput characterOutput
-            ? characterOutput.Value
-            : string.Empty;
+    private KeyOutput? GetOutput(ModifierLayer layer) =>
+        SelectedKey?.Mapping?.Outputs.TryGetValue(layer, out var output) == true
+            ? output
+            : null;
 
-    private void UpdateOutput(ModifierLayer layer, string output)
+    private void UpdateOutput(ModifierLayer layer, KeyOutput? output)
     {
         if (SelectedKey is null)
         {
             return;
         }
 
-        if (string.IsNullOrEmpty(output))
+        var changed = output switch
         {
-            if (_editor.ClearMapping(SelectedKey.KeyId, layer))
-            {
-                _documentChanged();
-            }
-        }
-        else
+            CharacterOutput character => _editor.MapCharacter(SelectedKey.KeyId, layer, character.Value),
+            SpecialKeyOutput special => _editor.MapSpecialKey(SelectedKey.KeyId, layer, special.Key),
+            _ => _editor.ClearMapping(SelectedKey.KeyId, layer)
+        };
+
+        if (changed)
         {
-            if (_editor.MapCharacter(SelectedKey.KeyId, layer, output))
-            {
-                _documentChanged();
-            }
+            _documentChanged();
         }
 
         SelectedKey.Mapping = _editor.Project.Layout.Find(SelectedKey.KeyId);

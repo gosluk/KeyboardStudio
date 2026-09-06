@@ -39,7 +39,6 @@ public sealed class XkbSymbolsParser
     /// </summary>
     private static readonly HashSet<string> IgnoredKeyProperties = new(StringComparer.OrdinalIgnoreCase)
     {
-        "type",
         "virtualmods",
 
         // The abbreviation of the same property. XKB accepts both spellings and
@@ -83,6 +82,11 @@ public sealed class XkbSymbolsParser
         var sections = new List<XkbSymbolsSection>();
         var flags = new List<string>();
 
+        // Findings raised outside every section — a block this reader does not handle at all. They
+        // describe the file rather than any one layout in it, so they travel with the file.
+        var fileDiagnostics = new List<LayoutImportDiagnostic>();
+        var claimed = 0;
+
         while (Current.Kind != XkbSymbolsTokenKind.EndOfFile)
         {
             if (Current.Kind != XkbSymbolsTokenKind.Identifier)
@@ -96,7 +100,12 @@ public sealed class XkbSymbolsParser
             if (string.Equals(word, "xkb_symbols", StringComparison.Ordinal))
             {
                 Advance();
-                sections.Add(ParseSection(flags));
+
+                // Findings raised while reading a section are that section's; everything raised
+                // since the previous one closed is the file's.
+                fileDiagnostics.AddRange(_diagnostics.Skip(claimed));
+                sections.Add(ParseSection(flags, _diagnostics.Count));
+                claimed = _diagnostics.Count;
                 flags.Clear();
                 continue;
             }
@@ -118,10 +127,12 @@ public sealed class XkbSymbolsParser
             flags.Clear();
         }
 
-        return new XkbSymbolsFile(path, sections, [.. _diagnostics]);
+        fileDiagnostics.AddRange(_diagnostics.Skip(claimed));
+
+        return new XkbSymbolsFile(path, sections, [.. fileDiagnostics]);
     }
 
-    private XkbSymbolsSection ParseSection(List<string> flags)
+    private XkbSymbolsSection ParseSection(List<string> flags, int diagnosticsBefore)
     {
         var name = Current.Kind == XkbSymbolsTokenKind.QuotedString ? Current.Text : string.Empty;
         if (Current.Kind == XkbSymbolsTokenKind.QuotedString)
@@ -156,7 +167,8 @@ public sealed class XkbSymbolsParser
             flags.Contains("default", StringComparer.Ordinal),
             flags.Contains("partial", StringComparer.Ordinal),
             flags.Contains("hidden", StringComparer.Ordinal),
-            statements);
+            statements,
+            [.. _diagnostics.Skip(diagnosticsBefore)]);
     }
 
     private XkbSymbolsStatement? ParseStatement()
@@ -288,6 +300,7 @@ public sealed class XkbSymbolsParser
         SkipIf(XkbSymbolsTokenKind.KeyName);
 
         IReadOnlyList<string> keysyms = [];
+        string? keyType = null;
         var sawExtraGroup = false;
         var positionalGroup = 0;
 
@@ -354,6 +367,20 @@ public sealed class XkbSymbolsParser
                     continue;
                 }
 
+                // The type changes no output, so the editor never sees it — but it is the whole
+                // mechanism by which a level is reachable, so it is kept for anyone writing this
+                // key back out.
+                if (string.Equals(property, "type", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (group == 1 && Current.Kind == XkbSymbolsTokenKind.QuotedString)
+                    {
+                        keyType = Current.Text;
+                    }
+
+                    SkipKeyPropertyValue();
+                    continue;
+                }
+
                 if (UnsupportedKeyProperties.Contains(property))
                 {
                     Report(
@@ -390,7 +417,7 @@ public sealed class XkbSymbolsParser
                 keyName);
         }
 
-        return new XkbKeyStatement(merge, keyName, keysyms);
+        return new XkbKeyStatement(merge, keyName, keysyms, keyType);
     }
 
     /// <summary>
