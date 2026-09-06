@@ -78,6 +78,7 @@ public static class ApplicationThemeTokens
         "InputDisabledSurfaceBrush",
         // Buttons
         "ButtonSurfaceBrush",
+        "ButtonHighlightBrush",
         "ButtonBorderBrush",
         "ButtonForegroundBrush",
         "ButtonHoverSurfaceBrush",
@@ -91,6 +92,7 @@ public static class ApplicationThemeTokens
         "DestructiveButtonForegroundBrush",
         "DestructiveButtonHoverSurfaceBrush",
         "DestructiveButtonPressedSurfaceBrush",
+        "ButtonBoxShadow",
         // Selection
         "SelectionSurfaceBrush",
         "SelectionForegroundBrush",
@@ -111,7 +113,11 @@ public static class ApplicationThemeTokens
         // Keyboard
         "KeyboardBezelBrush",
         "KeyboardBezelBorderBrush",
+        "KeyboardInnerBorderBrush",
+        "KeyboardBezelBoxShadow",
+        "KeyBaseBrush",
         "KeyFaceBrush",
+        "KeyTopHighlightBrush",
         "KeyFaceHoverBrush",
         "KeyFacePressedBrush",
         "KeyBorderBrush",
@@ -121,8 +127,12 @@ public static class ApplicationThemeTokens
         "KeyActiveLegendBrush",
         "KeySelectedFaceBrush",
         "KeySelectedBorderBrush",
+        "KeySelectedBoxShadow",
         "KeyErrorFaceBrush",
         "KeyErrorBorderBrush",
+        "KeyErrorBoxShadow",
+        "KeyUnmappedFaceBrush",
+        "KeyUnmappedLegendBrush",
         // Elevation
         "CardBoxShadow",
         "KeyBoxShadow",

@@ -14,14 +14,28 @@
     <KeyBinding Gesture="Ctrl+Shift+S" Command="{Binding SaveAsCommand}" />
   </Window.KeyBindings>
 
-  <DockPanel>
-    <Grid RowDefinitions="Auto,*" ColumnDefinitions="*,360" Margin="10,8,10,10" ColumnSpacing="8" RowSpacing="8">
+  <DockPanel Background="{DynamicResource WorkspaceSurfaceBrush}">
+    <Grid RowDefinitions="Auto,*" ColumnDefinitions="*,360" Margin="12,10,12,12" ColumnSpacing="10" RowSpacing="10">
       <!-- One header row: identity, the document menu, what is open, and appearance. The standalone
            menu bar is gone; its commands live behind the File trigger beside the title. -->
-      <Grid Grid.ColumnSpan="2" ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto" ColumnSpacing="8" TabIndex="0">
-        <TextBlock Classes="app-title" Text="KeyboardStudio" />
+      <Grid Grid.ColumnSpan="2"
+            ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto"
+            ColumnSpacing="9"
+            MinHeight="48"
+            TabIndex="0">
+        <Border Grid.ColumnSpan="7"
+                Classes="app-chrome"
+                IsHitTestVisible="False" />
 
-        <Button Grid.Column="1"
+        <Border Grid.Column="0"
+                Classes="brand-mark"
+                Margin="7,6,0,6">
+          <TextBlock Text="K" />
+        </Border>
+
+        <TextBlock Grid.Column="1" Classes="app-title" Text="KeyboardStudio" />
+
+        <Button Grid.Column="2"
                 Classes="quiet icon"
                 AutomationProperties.Name="File"
                 ToolTip.Tip="File menu">
@@ -56,26 +70,27 @@
 
         <!-- The label stays short; the whole path is one hover away rather than the width of the
              header. -->
-        <TextBlock Grid.Column="2"
+        <TextBlock Grid.Column="3"
                    Classes="muted"
                    Text="{Binding DocumentStatus}"
                    TextTrimming="CharacterEllipsis"
                    MaxWidth="320"
                    ToolTip.Tip="{Binding DocumentPath}" />
 
-        <Border Grid.Column="3" Classes="badge warning" IsVisible="{Binding IsDirty}">
+        <Border Grid.Column="4" Classes="badge warning" IsVisible="{Binding IsDirty}">
           <TextBlock Text="Unsaved changes" />
         </Border>
 
-        <TextBlock Grid.Column="4"
+        <TextBlock Grid.Column="5"
                    Classes="muted"
                    Text="{Binding ImportStatus}"
                    VerticalAlignment="Center"
                    TextTrimming="CharacterEllipsis"
                    IsVisible="{Binding HasImportStatus}" />
 
-        <Button Grid.Column="5"
+        <Button Grid.Column="6"
                 Classes="quiet icon"
+                Margin="0,0,7,0"
                 AutomationProperties.Name="Appearance"
                 ToolTip.Tip="Appearance">
           <PathIcon Data="{StaticResource AppearanceIconGeometry}" Width="15" Height="15" />
@@ -143,7 +158,8 @@
             </Grid>
 
             <Border Grid.Row="1" Classes="bezel">
-              <Viewbox Stretch="Uniform" StretchDirection="Both">
+              <Border Classes="keyboard-inner">
+                <Viewbox Stretch="Uniform" StretchDirection="Both">
                 <ItemsControl ItemsSource="{Binding Editor.Keys}"
                               Width="{Binding Editor.KeyboardWidth}"
                               Height="{Binding Editor.KeyboardHeight}"
@@ -181,7 +197,8 @@
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
-              </Viewbox>
+                </Viewbox>
+              </Border>
             </Border>
           </Grid>
         </Border>

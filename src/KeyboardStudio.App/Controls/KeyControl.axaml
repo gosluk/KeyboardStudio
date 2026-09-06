@@ -12,35 +12,152 @@
       <Setter Property="VerticalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
       <Setter Property="VerticalContentAlignment" Value="Stretch" />
-      <Setter Property="Padding" Value="3" />
-      <Setter Property="CornerRadius" Value="5" />
+      <Setter Property="Padding" Value="4" />
+      <Setter Property="CornerRadius" Value="7" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="Background" Value="{DynamicResource KeyFaceBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource KeyBorderBrush}" />
       <Setter Property="Foreground" Value="{DynamicResource KeyLegendBrush}" />
       <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.1" />
+          <BrushTransition Property="BorderBrush" Duration="0:0:0.1" />
+        </Transitions>
+      </Setter>
       <Setter Property="Template">
         <ControlTemplate>
-          <Border Name="PART_Face"
-                  Background="{TemplateBinding Background}"
-                  BorderBrush="{TemplateBinding BorderBrush}"
-                  BorderThickness="{TemplateBinding BorderThickness}"
-                  CornerRadius="{TemplateBinding CornerRadius}"
-                  Padding="{TemplateBinding Padding}"
-                  BoxShadow="{DynamicResource KeyBoxShadow}">
-            <ContentPresenter Content="{TemplateBinding Content}"
-                              HorizontalContentAlignment="Stretch"
-                              VerticalContentAlignment="Stretch" />
-          </Border>
+          <Grid Margin="1,1,1,0">
+            <!-- The lower shell stays put while the face travels. That small independent skirt is
+                 what makes the cap read as a physical object rather than a rounded rectangle. -->
+            <Border Name="PART_KeyBase"
+                    Margin="0,2,0,0"
+                    Background="{DynamicResource KeyBaseBrush}"
+                    BorderBrush="{DynamicResource KeyBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="7"
+                    BoxShadow="{DynamicResource KeyBoxShadow}">
+              <Border.Transitions>
+                <Transitions>
+                  <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.1" />
+                </Transitions>
+              </Border.Transitions>
+            </Border>
+
+            <Border Name="PART_Face"
+                    Margin="0,0,0,2"
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Padding="{TemplateBinding Padding}"
+                    RenderTransform="translateY(0px)">
+              <Border.Transitions>
+                <Transitions>
+                  <BrushTransition Property="Background" Duration="0:0:0.1" />
+                  <BrushTransition Property="BorderBrush" Duration="0:0:0.1" />
+                  <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.075" />
+                </Transitions>
+              </Border.Transitions>
+              <Grid>
+                <Border Name="PART_TopHighlight"
+                        Height="1"
+                        Margin="3,1,3,0"
+                        VerticalAlignment="Top"
+                        Background="{DynamicResource KeyTopHighlightBrush}"
+                        CornerRadius="4"
+                        IsHitTestVisible="False" />
+                <ContentPresenter Content="{TemplateBinding Content}"
+                                  HorizontalContentAlignment="Stretch"
+                                  VerticalContentAlignment="Stretch" />
+              </Grid>
+            </Border>
+
+            <!-- State rings never participate in layout, so selection and validation do not make
+                 a cap's legend jump by a pixel. Error keeps its corner marker when selected. -->
+            <Border Name="PART_StateRing"
+                    BorderBrush="Transparent"
+                    BorderThickness="2"
+                    CornerRadius="8"
+                    Opacity="0"
+                    IsHitTestVisible="False">
+              <Border.Transitions>
+                <Transitions>
+                  <DoubleTransition Property="Opacity" Duration="0:0:0.1" />
+                  <BrushTransition Property="BorderBrush" Duration="0:0:0.1" />
+                  <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.1" />
+                </Transitions>
+              </Border.Transitions>
+            </Border>
+            <Border Name="PART_ErrorMarker"
+                    Width="9"
+                    Height="3"
+                    Margin="0,0,2,3"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom"
+                    Background="{DynamicResource KeyErrorBorderBrush}"
+                    CornerRadius="2"
+                    Opacity="0"
+                    IsHitTestVisible="False" />
+          </Grid>
         </ControlTemplate>
       </Setter>
+
+      <Style Selector="^:pointerover">
+        <Setter Property="Background" Value="{DynamicResource KeyFaceHoverBrush}" />
+      </Style>
+      <Style Selector="^:pointerover /template/ Border#PART_Face">
+        <Setter Property="RenderTransform" Value="translateY(-1px)" />
+      </Style>
+      <Style Selector="^:pressed">
+        <Setter Property="Background" Value="{DynamicResource KeyFacePressedBrush}" />
+      </Style>
+      <Style Selector="^:pressed /template/ Border#PART_Face">
+        <Setter Property="RenderTransform" Value="translateY(2px)" />
+      </Style>
+      <Style Selector="^:pressed /template/ Border#PART_TopHighlight">
+        <Setter Property="Opacity" Value="0.35" />
+      </Style>
+      <Style Selector="^:pressed /template/ Border#PART_KeyBase">
+        <Setter Property="BoxShadow" Value="none" />
+      </Style>
+
+      <Style Selector="^.unmapped">
+        <Setter Property="Background" Value="{DynamicResource KeyUnmappedFaceBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource KeyUnmappedLegendBrush}" />
+      </Style>
+      <Style Selector="^.error">
+        <Setter Property="Background" Value="{DynamicResource KeyErrorFaceBrush}" />
+      </Style>
+      <Style Selector="^.error /template/ Border#PART_StateRing">
+        <Setter Property="BorderBrush" Value="{DynamicResource KeyErrorBorderBrush}" />
+        <Setter Property="BoxShadow" Value="{DynamicResource KeyErrorBoxShadow}" />
+        <Setter Property="Opacity" Value="1" />
+      </Style>
+      <Style Selector="^.error /template/ Border#PART_ErrorMarker">
+        <Setter Property="Opacity" Value="1" />
+      </Style>
+      <Style Selector="^.selected">
+        <Setter Property="Background" Value="{DynamicResource KeySelectedFaceBrush}" />
+      </Style>
+      <Style Selector="^.selected /template/ Border#PART_StateRing">
+        <Setter Property="BorderBrush" Value="{DynamicResource KeySelectedBorderBrush}" />
+        <Setter Property="BoxShadow" Value="{DynamicResource KeySelectedBoxShadow}" />
+        <Setter Property="Opacity" Value="1" />
+      </Style>
+      <Style Selector="^:focus-visible /template/ Border#PART_StateRing">
+        <Setter Property="BorderBrush" Value="{DynamicResource FocusBorderBrush}" />
+        <Setter Property="BoxShadow" Value="{DynamicResource KeySelectedBoxShadow}" />
+        <Setter Property="Opacity" Value="1" />
+      </Style>
     </ControlTheme>
   </UserControl.Resources>
 
   <UserControl.Styles>
     <Style Selector="TextBlock.key-assignment">
-      <Setter Property="Foreground" Value="{DynamicResource KeyLegendBrush}" />
-      <Setter Property="FontSize" Value="9.5" />
+      <Setter Property="Foreground" Value="{DynamicResource KeyHintBrush}" />
+      <Setter Property="FontSize" Value="10" />
+      <Setter Property="FontWeight" Value="Medium" />
       <Setter Property="HorizontalAlignment" Value="Center" />
       <Setter Property="VerticalAlignment" Value="Center" />
       <Setter Property="TextAlignment" Value="Center" />
@@ -50,36 +167,66 @@
       <Setter Property="CornerRadius" Value="3" />
       <Setter Property="Margin" Value="1" />
     </Style>
+    <Style Selector="Border.layer-slot.tooltip-slot">
+      <Setter Property="Background" Value="{DynamicResource KeyFaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource KeyBorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Padding" Value="8" />
+    </Style>
     <Style Selector="Border.layer-slot.active">
       <Setter Property="Background" Value="{DynamicResource KeyActiveLayerBrush}" />
     </Style>
     <Style Selector="Border.layer-slot.active TextBlock.key-assignment">
       <Setter Property="Foreground" Value="{DynamicResource KeyActiveLegendBrush}" />
-      <Setter Property="FontSize" Value="11" />
-      <Setter Property="FontWeight" Value="Bold" />
+      <Setter Property="FontSize" Value="11.5" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <!-- The board answers one question at a time: what this key sends on the active layer. The
+         complete four-layer matrix remains in the tooltip, where it has room to be useful. -->
+    <Style Selector="Border.layer-slot.face-slot">
+      <Setter Property="Opacity" Value="0" />
+    </Style>
+    <Style Selector="Border.layer-slot.face-slot.shift-slot">
+      <Setter Property="Grid.Row" Value="0" />
+      <Setter Property="Grid.Column" Value="0" />
+    </Style>
+    <Style Selector="Border.layer-slot.face-slot.shift-altgr-slot">
+      <Setter Property="Grid.Row" Value="0" />
+      <Setter Property="Grid.Column" Value="1" />
+    </Style>
+    <Style Selector="Border.layer-slot.face-slot.default-slot">
+      <Setter Property="Grid.Row" Value="1" />
+      <Setter Property="Grid.Column" Value="0" />
+    </Style>
+    <Style Selector="Border.layer-slot.face-slot.altgr-slot">
+      <Setter Property="Grid.Row" Value="1" />
+      <Setter Property="Grid.Column" Value="1" />
+    </Style>
+    <Style Selector="Border.layer-slot.face-slot.active">
+      <Setter Property="Grid.Row" Value="0" />
+      <Setter Property="Grid.Column" Value="0" />
+      <Setter Property="Grid.RowSpan" Value="2" />
+      <Setter Property="Grid.ColumnSpan" Value="2" />
+      <Setter Property="Panel.ZIndex" Value="1" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Opacity" Value="1" />
+      <Setter Property="Margin" Value="1" />
+    </Style>
+    <Style Selector="Border.layer-slot.face-slot.active TextBlock.key-assignment">
+      <Setter Property="Foreground" Value="{DynamicResource KeyLegendBrush}" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
     <Style Selector="TextBlock.key-name">
       <Setter Property="Foreground" Value="{DynamicResource KeyHintBrush}" />
-      <Setter Property="FontSize" Value="8" />
+      <Setter Property="FontSize" Value="8.5" />
       <Setter Property="HorizontalAlignment" Value="Center" />
       <Setter Property="TextAlignment" Value="Center" />
       <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     </Style>
-    <Style Selector="Button.key-face:pointerover">
-      <Setter Property="Background" Value="{DynamicResource KeyFaceHoverBrush}" />
-    </Style>
-    <Style Selector="Button.key-face:pressed">
-      <Setter Property="Background" Value="{DynamicResource KeyFacePressedBrush}" />
-    </Style>
-    <Style Selector="Button.key-face.error, Button.key-face.error:pointerover">
-      <Setter Property="Background" Value="{DynamicResource KeyErrorFaceBrush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource KeyErrorBorderBrush}" />
-      <Setter Property="BorderThickness" Value="2" />
-    </Style>
-    <Style Selector="Button.key-face.selected, Button.key-face.selected:pointerover">
-      <Setter Property="Background" Value="{DynamicResource KeySelectedFaceBrush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource KeySelectedBorderBrush}" />
-      <Setter Property="BorderThickness" Value="2" />
+    <Style Selector="Button.key-face.unmapped TextBlock.key-assignment,
+                     Button.key-face.unmapped TextBlock.key-name">
+      <Setter Property="Foreground" Value="{DynamicResource KeyUnmappedLegendBrush}" />
     </Style>
   </UserControl.Styles>
 
@@ -90,17 +237,14 @@
           Classes.error="{Binding HasError, ElementName=Root}"
           Command="{Binding SelectCommand, ElementName=Root}">
     <ToolTip.Tip>
-      <Grid Width="300"
+      <Grid Width="270"
             ColumnDefinitions="*,*"
             RowDefinitions="*,*"
             ColumnSpacing="6"
             RowSpacing="6">
-        <Border Classes="layer-slot"
+        <Border Classes="layer-slot tooltip-slot"
                 Classes.active="{Binding IsShiftActive, ElementName=Root}"
-                Background="{DynamicResource KeyFaceBrush}"
-                BorderBrush="{DynamicResource KeyBorderBrush}"
-                BorderThickness="1"
-                Padding="8">
+                Margin="0,0,3,3">
           <StackPanel Spacing="4">
             <TextBlock Text="Shift"
                        Foreground="{DynamicResource KeyHintBrush}"
@@ -113,12 +257,9 @@
         </Border>
 
         <Border Grid.Column="1"
-                Classes="layer-slot"
+                Classes="layer-slot tooltip-slot"
                 Classes.active="{Binding IsShiftAltGrActive, ElementName=Root}"
-                Background="{DynamicResource KeyFaceBrush}"
-                BorderBrush="{DynamicResource KeyBorderBrush}"
-                BorderThickness="1"
-                Padding="8">
+                Margin="3,0,0,3">
           <StackPanel Spacing="4">
             <TextBlock Text="Shift + AltGr"
                        Foreground="{DynamicResource KeyHintBrush}"
@@ -131,12 +272,9 @@
         </Border>
 
         <Border Grid.Row="1"
-                Classes="layer-slot"
+                Classes="layer-slot tooltip-slot"
                 Classes.active="{Binding IsDefaultActive, ElementName=Root}"
-                Background="{DynamicResource KeyFaceBrush}"
-                BorderBrush="{DynamicResource KeyBorderBrush}"
-                BorderThickness="1"
-                Padding="8">
+                Margin="0,3,3,0">
           <StackPanel Spacing="4">
             <TextBlock Text="Default"
                        Foreground="{DynamicResource KeyHintBrush}"
@@ -150,12 +288,9 @@
 
         <Border Grid.Row="1"
                 Grid.Column="1"
-                Classes="layer-slot"
+                Classes="layer-slot tooltip-slot"
                 Classes.active="{Binding IsAltGrActive, ElementName=Root}"
-                Background="{DynamicResource KeyFaceBrush}"
-                BorderBrush="{DynamicResource KeyBorderBrush}"
-                BorderThickness="1"
-                Padding="8">
+                Margin="3,3,0,0">
           <StackPanel Spacing="4">
             <TextBlock Text="AltGr"
                        Foreground="{DynamicResource KeyHintBrush}"
@@ -172,51 +307,23 @@
       <!-- The positions mirror the supplied keycap: unshifted assignments are on bottom,
            shifted assignments above, and AltGr assignments occupy the right column. -->
       <Grid ColumnDefinitions="*,*" RowDefinitions="*,*">
-        <Border Classes="layer-slot"
+        <Border Classes="layer-slot face-slot shift-slot"
                 Classes.active="{Binding IsShiftActive, ElementName=Root}">
-          <ToolTip.Tip>
-            <TextBlock Text="{Binding ShiftAssignment, ElementName=Root}"
-                       TextWrapping="NoWrap"
-                       TextTrimming="None"
-                       Margin="2,0" />
-          </ToolTip.Tip>
           <TextBlock Classes="key-assignment"
                      Text="{Binding ShiftAssignment, ElementName=Root}" />
         </Border>
-        <Border Grid.Column="1"
-                Classes="layer-slot"
+        <Border Classes="layer-slot face-slot shift-altgr-slot"
                 Classes.active="{Binding IsShiftAltGrActive, ElementName=Root}">
-          <ToolTip.Tip>
-            <TextBlock Text="{Binding ShiftAltGrAssignment, ElementName=Root}"
-                       TextWrapping="NoWrap"
-                       TextTrimming="None"
-                       Margin="2,0" />
-          </ToolTip.Tip>
           <TextBlock Classes="key-assignment"
                      Text="{Binding ShiftAltGrAssignment, ElementName=Root}" />
         </Border>
-        <Border Grid.Row="1"
-                Classes="layer-slot"
+        <Border Classes="layer-slot face-slot default-slot"
                 Classes.active="{Binding IsDefaultActive, ElementName=Root}">
-          <ToolTip.Tip>
-            <TextBlock Text="{Binding DefaultAssignment, ElementName=Root}"
-                       TextWrapping="NoWrap"
-                       TextTrimming="None"
-                       Margin="2,0" />
-          </ToolTip.Tip>
           <TextBlock Classes="key-assignment"
                      Text="{Binding DefaultAssignment, ElementName=Root}" />
         </Border>
-        <Border Grid.Row="1"
-                Grid.Column="1"
-                Classes="layer-slot"
+        <Border Classes="layer-slot face-slot altgr-slot"
                 Classes.active="{Binding IsAltGrActive, ElementName=Root}">
-          <ToolTip.Tip>
-            <TextBlock Text="{Binding AltGrAssignment, ElementName=Root}"
-                       TextWrapping="NoWrap"
-                       TextTrimming="None"
-                       Margin="2,0" />
-          </ToolTip.Tip>
           <TextBlock Classes="key-assignment"
                      Text="{Binding AltGrAssignment, ElementName=Root}" />
         </Border>

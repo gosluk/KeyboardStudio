@@ -51,16 +51,16 @@ public sealed class ThemeResourceContractTests
     [Trait("Category", "Unit")]
     public void EveryThemeGivesEachTokenItsOwnValue()
     {
-        // The dictionaries share their keys, not their values: a token that resolved to the same
-        // colour in all three would mean one palette had quietly borrowed another's.
+        // The dictionaries share their keys, not their values: reusing any token value across two
+        // palettes means one theme has quietly borrowed another's rendering decision.
         var values = ThemeDictionaryValues();
 
-        var identical = ApplicationThemeTokens.Required
-            .Where(token => values.Values.Select(theme => theme[token]).Distinct(StringComparer.Ordinal).Count() == 1)
+        var reused = ApplicationThemeTokens.Required
             .Where(token => token is not "AccentForegroundBrush")
+            .Where(token => values.Values.Select(theme => theme[token]).Distinct(StringComparer.Ordinal).Count() != values.Count)
             .ToList();
 
-        Assert.Empty(identical);
+        Assert.Empty(reused);
     }
 
     private static Dictionary<string, List<string>> ThemeDictionaries() =>
@@ -82,7 +82,7 @@ public sealed class ThemeResourceContractTests
             foreach (var entry in dictionary.Elements())
             {
                 var key = entry.Attribute(Xaml + "Key")!.Value;
-                entries[key] = entry.Attribute("Color")?.Value ?? entry.Value.Trim();
+                Assert.True(entries.TryAdd(key, CanonicalResourceValue(entry)), $"{variant} defines {key} more than once.");
             }
 
             result.Add(variant, entries);
@@ -90,4 +90,24 @@ public sealed class ThemeResourceContractTests
 
         return result;
     }
+
+    private static string CanonicalResourceValue(XElement entry) =>
+        CanonicalElement(entry, omitResourceKey: true);
+
+    private static string CanonicalElement(XElement element, bool omitResourceKey = false)
+    {
+        var attributes = element.Attributes()
+            .Where(attribute => !omitResourceKey || attribute.Name != Xaml + "Key")
+            .OrderBy(attribute => attribute.Name.NamespaceName, StringComparer.Ordinal)
+            .ThenBy(attribute => attribute.Name.LocalName, StringComparer.Ordinal)
+            .Select(attribute => $"{attribute.Name}={NormalizeWhitespace(attribute.Value)}");
+
+        var text = NormalizeWhitespace(string.Concat(element.Nodes().OfType<XText>().Select(node => node.Value)));
+        var children = element.Elements().Select(child => CanonicalElement(child));
+
+        return $"{element.Name}[{string.Join(";", attributes)}]{{{text}}}({string.Join(",", children)})";
+    }
+
+    private static string NormalizeWhitespace(string value) =>
+        string.Join(' ', value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 }
