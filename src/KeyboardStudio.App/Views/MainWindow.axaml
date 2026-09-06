@@ -3,6 +3,7 @@
         xmlns:controls="using:KeyboardStudio.App.Controls"
         x:Class="KeyboardStudio.App.MainWindow"
         Title="{Binding WindowTitle}"
+        Icon="/Assets/KeyboardStudio.png"
         Width="1400"
         Height="820"
         MinWidth="980"
@@ -33,9 +34,12 @@
         <Button Grid.Column="0"
                 Classes="brand-mark"
                 Margin="7,6,0,6"
-                Content="K"
                 AutomationProperties.Name="File"
                 ToolTip.Tip="File menu">
+          <Image Source="/Assets/KeyboardStudio.png"
+                 Width="30"
+                 Height="30"
+                 Stretch="Uniform" />
           <Button.Flyout>
             <MenuFlyout Placement="BottomEdgeAlignedLeft">
               <MenuItem Header="_New" Command="{Binding NewCommand}" InputGesture="Ctrl+N" />

@@ -37,7 +37,25 @@ public sealed class MainWindowHeaderTests
         var mark = header[trigger];
         Assert.Equal(Avalonia + "Button", mark.Name);
         Assert.Equal("brand-mark", (string?)mark.Attribute("Classes"));
-        Assert.Equal("K", (string?)mark.Attribute("Content"));
+
+        var icon = Assert.Single(mark.Elements(Avalonia + "Image"));
+        Assert.Equal("/Assets/KeyboardStudio.png", (string?)icon.Attribute("Source"));
+        Assert.Equal("30", (string?)icon.Attribute("Width"));
+        Assert.Equal("30", (string?)icon.Attribute("Height"));
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void TheNativeWindowAndFileTriggerShareTheBrandIcon()
+    {
+        var window = MainWindow();
+        var markIcon = HeaderChildren().Single(IsFileTrigger)
+            .Elements(Avalonia + "Image").Single();
+
+        Assert.Equal("/Assets/KeyboardStudio.png", (string?)window.Attribute("Icon"));
+        Assert.Equal(
+            (string?)window.Attribute("Icon"),
+            (string?)markIcon.Attribute("Source"));
     }
 
     [Fact]
