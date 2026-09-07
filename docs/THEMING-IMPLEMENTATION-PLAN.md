@@ -98,7 +98,7 @@ whereas this file contains host-local application preferences.
 
 ### Exit criteria
 
-- Settings behavior is deterministic on Linux and Windows.
+- Settings behavior is deterministic across hosts.
 - No test reads or writes the real user profile.
 - `.kbdproj` serialization is byte-for-byte unaffected for identical project input.
 
@@ -339,7 +339,7 @@ dotnet build KeyboardStudio.slnx -c Release
 dotnet test KeyboardStudio.slnx -c Release --no-build --filter "Category=Unit|Category=Golden"
 ```
 
-Also run the existing Linux and Windows packaging/startup gates on their applicable runners. Theme
+Also run the existing packaging/startup gates. Theme
 work is application-wide and must not be treated as Linux-only.
 
 ### Manual visual matrix
@@ -350,7 +350,7 @@ Verify:
 - main window and every dialog, menu, tooltip, and popup;
 - minimum and normal window sizes;
 - 100%, 150%, and 200% scaling;
-- Linux and Windows packages;
+- the packaged Linux application;
 - normal, hover, pressed, focus, disabled, selected, warning, error, and success states;
 - keyboard-only selection of all document and appearance commands;
 - no first-frame theme flash;

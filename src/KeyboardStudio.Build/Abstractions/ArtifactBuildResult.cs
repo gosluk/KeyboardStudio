@@ -6,7 +6,6 @@ public sealed record ArtifactBuildResult(
     IReadOnlyList<BuildArtifactDiagnostic> Diagnostics,
     string RawLog = "",
     string? LogPath = null,
-    string? WorkspacePath = null,
     string? ManifestPath = null,
     string? ArtifactSha256 = null,
     object? BackendDetails = null,

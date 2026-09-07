@@ -22,7 +22,7 @@ Two related problems are addressed:
    starting point for editing;
 2. there is no way to start from an existing layout, so every layout must be typed key by key.
 
-The proposal covers the Linux/XKB source only. The abstractions are target-neutral so a Windows
+The proposal covers the Linux/XKB source only. The abstractions are target-neutral so another
 source (`kbdutool` disassembly, `KLC` files, registry-installed DLLs) can be added later without
 reshaping the editor.
 
@@ -333,7 +333,7 @@ Four resolution rules were settled while implementing section 3.2:
 - Roots that resolve to the same path appear once, first occurrence winning. `XKB_CONFIG_ROOT` set
   to `/usr/share/X11/xkb` is common, and without this every layout in it would be listed twice.
 - A host with no root at all yields an empty list, not an error. That is the ordinary state on
-  Windows and in containers without X11 data.
+  containers and other hosts without X11 data.
 
 For section 3.3, the reader emits the bare layout as an entry with `VariantId = null` alongside one
 entry per variant, since the layout itself is importable and resolves to the symbols file's
@@ -706,7 +706,7 @@ Fixing the empty-keyboard problem does not need the parser, and should ship befo
 
 **Guaranteed baseline.** A `us-basic` seed project is embedded in `KeyboardStudio.Core` next to the
 existing geometry templates and becomes the content of a new document. This works on every host,
-including Windows, macOS, and Linux boxes with no XKB data, and removes the empty-keyboard state
+including macOS and Linux boxes with no XKB data, and removes the empty-keyboard state
 unconditionally.
 
 **Host-aware improvement (Linux).** On startup the application resolves the host's configured layout
@@ -983,8 +983,9 @@ Recorded in [`DECISIONS.md`](DECISIONS.md).
   the host's configured layout is imported over it on Linux when it can be resolved from the
   environment or `/etc` configuration files, without spawning a process.
 
-[AD-024](DECISIONS.md) — hiding the Windows target in the UI — belongs to the same phase but is not
-an import decision; see architecture section 2.6.
+[AD-024](DECISIONS.md) — target visibility in the UI — belongs to the same phase but is not an
+import decision. It has since been superseded by
+[AD-042](DECISIONS.md#ad-042---the-windows-target-is-removed-rather-than-hidden).
 
 ---
 
@@ -995,7 +996,7 @@ an import decision; see architecture section 2.6.
   remain outside the domain model;
 - groups 2-4, key types, `modifier_map`, virtual modifiers, and XKB actions;
 - geometry import: physical layout still comes from `iso-105` / `ansi-104` templates;
-- importing Windows KLC files or installed layout DLLs; the Core abstraction admits them later.
+- importing non-XKB layout formats; the Core abstraction admits them later.
 
 ---
 

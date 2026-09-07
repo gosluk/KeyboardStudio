@@ -20,4 +20,4 @@ Layout import is defined here but implemented elsewhere. A layout is named only 
 source/layout/variant strings, so the parsers and tables that understand a platform's layout files
 stay in that platform's assembly and Core acquires none of its vocabulary.
 
-This project must not reference Avalonia, Windows APIs, WDK/MSVC types, or platform-specific UI services.
+This project must not reference Avalonia, platform keyboard APIs, or platform-specific UI services.

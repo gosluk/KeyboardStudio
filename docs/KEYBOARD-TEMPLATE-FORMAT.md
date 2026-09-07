@@ -28,7 +28,7 @@ Each item in `keys` contains:
 | Field | Type | Meaning |
 | --- | --- | --- |
 | `id` | string | Stable physical key ID used to connect the template to project mappings. |
-| `scanCode` | integer 0-255 | Base Windows Scan 1 make-code byte. |
+| `scanCode` | integer 0-255 | Base Scan Code Set 1 make-code byte. |
 | `extended` | boolean, optional | Whether the key uses the template's prefixed/extended physical identity. Defaults to `false`. |
 | `x` | number >= 0 | Left coordinate in normalized keyboard units. |
 | `y` | number >= 0 | Top coordinate in normalized keyboard units. |
@@ -37,7 +37,7 @@ Each item in `keys` contains:
 
 Coordinates are **not pixels**. A normal key is generally `1 x 1`; wider keys use values such as `1.25`, `1.5`, `1.75`, `2`, `2.75`, or `6.25`. The renderer later scales these logical units to the available Avalonia surface while preserving proportions.
 
-For standard E0-prefixed Windows keys, the template stores the low make-code byte and sets `extended` to `true`. Scan-code assignments are based on [Microsoft's Windows keyboard input table](https://learn.microsoft.com/windows/win32/inputdev/about-keyboard-input). Pause is an E1-prefixed special case in Windows. Schema v1 normalizes Pause as `scanCode: 0x45` plus `extended: true` so its physical identity remains distinct from Num Lock (`0x45`, non-extended). Exact E0/E1 source-generation behavior belongs to the Windows semantic/build layer rather than the physical geometry format.
+For standard E0-prefixed keys, the template stores the low make-code byte and sets `extended` to `true`. Pause is an E1-prefixed special case. Schema v1 normalizes Pause as `scanCode: 0x45` plus `extended: true` so its physical identity remains distinct from Num Lock (`0x45`, non-extended). Exact E0/E1 handling belongs to a target's translation layer rather than to the physical geometry format.
 
 ## Stable physical IDs
 
@@ -128,6 +128,6 @@ Template JSON must not contain:
 - logical-key remapping state;
 - validation state;
 - dirty/editor state;
-- Windows build metadata.
+- target build metadata.
 
 Those belong to project/domain or platform-specific layers, not to physical keyboard geometry.

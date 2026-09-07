@@ -8,7 +8,7 @@ The core project is UI-framework independent. Avalonia objects must not be refer
 
 ## AD-002 - Platform-neutral project model
 
-A `.kbdproj` describes physical keys, logical mappings and modifier outputs without serializing Windows `KBDTABLES` or other native structures.
+A `.kbdproj` describes physical keys, logical mappings and modifier outputs without serializing any target's native structures.
 
 ## AD-003 - JSON project persistence
 
@@ -18,13 +18,17 @@ Projects use versioned JSON with a dedicated `.kbdproj` extension. `schemaVersio
 
 Standard keyboard geometry is stored in reusable templates such as ISO-105 and ANSI-104. Projects reference a template rather than duplicating geometry.
 
-## AD-005 - Native Windows source is generated directly
+## AD-005 - Layout source is generated directly
 
-KeyboardStudio is intended to generate native Windows keyboard layout source rather than using MSKLC as a required build dependency.
+KeyboardStudio generates layout source itself rather than depending on a vendor authoring tool.
 
-## AD-006 - Source generation and compilation are separate
+## AD-006 - Generation and materialization are separate
 
-`WindowsCSourceGenerator` can be tested without MSVC/WDK. `INativeCompiler` owns actual native process execution.
+Generators produce deterministic text and are testable without any host tooling. Writing and
+verifying the artifact is a separate stage owned by the backend.
+
+*Superseded in part by [AD-042](#ad-042---the-windows-target-is-removed-rather-than-hidden), which
+removed the compilation stage along with the Windows backend.*
 
 ## AD-007 - Initial modifier scope is intentionally limited
 
@@ -37,14 +41,13 @@ ViewModels orchestrate UI state but do not directly mutate arbitrary nested proj
 ## AD-009 - General and target metadata are separate
 
 `ProjectMetadata` contains only cross-platform information: display name, description, user-managed
-project version, and language/locale. Windows layout identity is represented by
-`WindowsLayoutMetadata` in `KeyboardStudio.Windows`; Linux layout/section identity is represented by
-`XkbLayoutMetadata` in the planned `KeyboardStudio.Linux`. Neither belongs in `KeyboardStudio.Core`.
+project version, and language/locale. Linux layout/section identity is represented by
+`XkbLayoutMetadata` in `KeyboardStudio.Linux`, which does not belong in `KeyboardStudio.Core`.
 
 Persistence DTOs must not solve target metadata by making `KeyboardStudio.Persistence` depend on a
 platform backend or by putting backend fields into the core aggregate. The current
 `IKeyboardProjectStore` transports only the platform-neutral `KeyboardProject`; target-specific
-document/settings persistence must be introduced through a boundary that can preserve both profiles
+document/settings persistence must be introduced through a boundary that can carry a target profile
 without reversing dependency direction.
 
 ## AD-010 - Persistence DTOs own the wire contract
@@ -65,37 +68,20 @@ Project schema migrations live in `KeyboardStudio.Persistence` and operate on `J
 
 Each `IProjectMigration` advances exactly one schema version. The pipeline applies registered migrations in order, stamps `schemaVersion` after each successful step, and fails explicitly when a required step is missing. Schema version 1 remains the first version, so no synthetic v0 migration is introduced.
 
-## AD-013 - Windows semantic translation is explicit and complete before generation
+## AD-013 - Removed with the Windows backend
 
-`WindowsLayoutTranslator` converts every supported logical key through an explicit mapping to a
-Windows virtual key. It produces separate normal and extended scan-code collections, an eight-state
-Windows modifier-number table, and typed character rows before any C source is generated.
+*Recorded the Windows virtual-key and modifier-number translation. Removed by
+[AD-042](#ad-042---the-windows-target-is-removed-rather-than-hidden).*
 
-AltGr uses the Windows Ctrl+Alt bit relationship. Scan-only logical keys do not participate in the
-character table. The v1 character model supports BMP values that fit one native `WCHAR`; non-BMP
-characters and layer-specific special-key remaps are rejected with structured diagnostics until
-ligature or broader special-key support is implemented.
+## AD-014 - Removed with the Windows backend
 
-## AD-014 - Native Windows source mirrors the minimal WDK keyboard-layout ABI
+*Recorded the generated WDK keyboard-layout ABI subset. Removed by
+[AD-042](#ad-042---the-windows-target-is-removed-rather-than-hidden).*
 
-The Windows generator produces a deterministic four-file set named `keyboard.c`, `keyboard.h`,
-`keyboard.def`, and `keyboard.rc`. The stable generic names simplify the compiler working directory;
-layout identity belongs in generated comments, module/resource metadata, and the eventual DLL name.
+## AD-015 - Removed with the Windows backend
 
-The C translation unit uses numeric virtual-key and UTF-16 values with WDK flags and sentinel rows.
-Optional dead-key, ligature, and locale-specific structures remain explicit null/zero `KBDTABLES`
-fields until their semantic models exist. Source files contain no generated timestamps or host paths.
-
-## AD-015 - Native builds use discovered tools and isolated disposable workspaces
-
-Windows toolchain discovery prefers the active Visual Studio developer environment, then `vswhere`
-for MSVC and the Windows Kits registry for the SDK/WDK. A resolved environment contains exact tool,
-include, library, architecture, and version data; no repository-relative compiler paths are assumed.
-
-Every native build writes generated files, objects, outputs, and logs below a unique workspace. The
-default cleanup policy removes successful-build intermediates but retains the DLL and raw log, while
-failed and cancelled builds retain their diagnostic workspace. Callers may retain all files or delete
-failed workspaces explicitly through `BuildCleanupPolicy`.
+*Recorded native toolchain discovery and disposable build workspaces. Removed by
+[AD-042](#ad-042---the-windows-target-is-removed-rather-than-hidden).*
 
 ## AD-016 - Build orchestration resolves one backend by artifact target
 
@@ -103,10 +89,10 @@ failed workspaces explicitly through `BuildCleanupPolicy`.
 `BuildOptions.Target`. The selected backend owns target compatibility validation, generation,
 materialization, verification, and its environment status.
 
-Windows backends retain `IArtifactGenerator`, `IBuildEnvironment`, and `INativeCompiler` as internal
-collaborators. The Linux XKB backend writes its generated text as the final artifact and must not use a
-no-op native compiler. Results and UI stages use target-neutral artifact terminology at the backend
-boundary.
+A backend owns whatever collaborators its target needs; `KeyboardStudio.Build` holds only what every
+target would share. The Linux XKB backend writes its generated text as the final artifact and must
+not introduce a no-op compilation stage to look like one that compiles. Results and UI stages use
+target-neutral artifact terminology at the backend boundary.
 
 ## AD-017 - The Linux artifact is an XKB v1 symbols component
 
@@ -122,10 +108,10 @@ that verification. Normal build and test workflows never install or activate the
 ## AD-018 - Platform physical identities are mapped from stable template key IDs
 
 `(PhysicalKeyboard.Id, PhysicalKey.Id)` is the shared physical identity at translation boundaries.
-The Windows backend consumes the template's scan-code data, while the Linux backend uses explicit
+The Linux backend uses explicit
 ISO-105/ANSI-104 tables to map stable key IDs to XKB symbolic names such as `<AC01>` and `<LSGT>`.
 
-XKB names must not be inferred from Windows scan codes or stored in Core. Unknown template/key pairs
+XKB names must not be inferred from scan codes or stored in Core. Unknown template/key pairs
 fail with structured, key-linked target diagnostics.
 
 ## AD-019 - Layout import is a target-neutral Core contract with platform sources
@@ -135,8 +121,8 @@ source/layout/variant identifiers. Every XKB parser, resolver, and table lives i
 `KeyboardStudio.Linux/Import/`, and ViewModels see only the catalog.
 
 Import produces a `KeyboardProject`, so the contract belongs in Core; naming layouts by opaque strings
-keeps Core free of XKB vocabulary under AD-002 and architecture 2.1. A future Windows `.klc` or
-installed-DLL source implements the same interface without reshaping the editor.
+keeps Core free of XKB vocabulary under AD-002 and architecture 2.1. A future source for another
+layout format implements the same interface without reshaping the editor.
 
 The `KSI` diagnostic codes are declared in Core too, unlike the `KSL` codes that belong to
 `KeyboardStudio.Linux`. What import loses is a property of the domain model rather than of a file
@@ -203,22 +189,12 @@ assembly; the tests that used it now compile `tests/Shared/TestProjectFactory.cs
 deliberately not the seed — a fixture that tracked the seed would make seed edits break unrelated
 tests.
 
-## AD-024 - Target visibility is presentation-only and reversible
+## AD-024 - Superseded by AD-042
 
-The shipping UI exposes `LinuxXkb` and hides `WindowsX64`. Hiding is enforced solely by
-`IBuildTargetVisibilityPolicy` in the application layer.
-
-`KeyboardStudio.Windows` stays referenced, registered, and tested; `BuildTarget.WindowsX64` stays in
-the enum; and `windowsX64` stays a persisted profile discriminator so existing documents round-trip
-their Windows profile unedited. `BuildOrchestrator` and `IBuildBackendResolver` are unchanged, so
-AD-016 single-target dispatch still resolves whichever target it is given — the UI simply never asks
-for the hidden one. `KEYBOARDSTUDIO_TARGETS=all` restores the full selector for development and for
-tests. Visibility is never expressed by deleting profiles, mutating `BuildOptions`, or skipping
-validation, so the Windows path cannot rot while it is hidden.
-
-The policy filters the target list only. Profiles are still constructed for every target, so
-`ExportTargetProfiles` keeps returning both entries whatever is on screen, and a policy that hid
-everything falls back to the full list rather than producing a Build card with nothing to build.
+*Recorded the presentation-only policy that hid the Windows target while keeping its backend
+registered and tested. Superseded by
+[AD-042](#ad-042---the-windows-target-is-removed-rather-than-hidden), which removed the target
+instead of hiding it, and with it the visibility policy.*
 
 ## AD-025 - Import previews by importing, and commits in two ways
 
@@ -523,3 +499,31 @@ would drop the user's own layouts, which are the ones this application exists to
 
 Ordering by identifier showed Dari above Albanian and Chinese below English — the column the user
 scans is the name, and the code that explains the order is not in it.
+
+## AD-042 - The Windows target is removed rather than hidden
+
+KeyboardStudio generates Linux XKB layouts only. `KeyboardStudio.Windows`, the MSVC toolchain
+discovery, the PE/export verifier, the build workspace, the reproducibility checker, and the JSON
+build manifest are deleted rather than kept behind a flag.
+
+AD-024 kept the Windows path registered and tested on the argument that hiding is reversible and
+that a hidden path cannot rot. What that cost was visible in every layer that had to stay bilingual:
+`LayerOutputCapability` advised on rules for a target the user could not select, `BuildProfileKeys`
+carried four settings nothing edited, the editor kept per-target profiles it never showed, and CI
+spent its only paid runner proving a target the product did not ship. The reversibility was real but
+it was never exercised, so the whole apparatus was carrying the cost of an option nobody took.
+
+What survives the removal is the seam, not the target. `BuildTarget`, `IBuildBackend`,
+`IBuildBackendResolver`, and `BuildOrchestrator` stay exactly as AD-016 defines them, with one
+registered target. That boundary is what keeps XKB vocabulary out of Core and the view models
+(AD-002, architecture 2.1), which is worth having with one target and would have to be rebuilt from
+nothing if a second one ever arrives.
+
+`KeyboardStudio.Build` keeps only what is genuinely target-neutral. `IProcessRunner` stays because
+XKB verification and the install-capability probe use it; everything that knew about compilers,
+linkers, or PE files went with the backend.
+
+The document format loses its `windowsX64` target profile. An older `.kbdproj` still opens — an
+unrecognised target discriminator is ignored — but it is not re-emitted on save, so resaving an old
+document drops the Windows build settings it was carrying. That is accepted: keeping them alive would
+mean the format still describes a target the application cannot build.

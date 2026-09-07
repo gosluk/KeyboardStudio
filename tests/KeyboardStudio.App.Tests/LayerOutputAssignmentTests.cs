@@ -207,27 +207,11 @@ public sealed class LayerOutputAssignmentTests
 
     [Fact]
     [Trait("Category", "Unit")]
-    public void AWindowsOnlyLimitationIsNamedButTheAssignmentIsStillMade()
+    public void ACharacterOnAScanOnlyKeyCarriesNoWarningWhenXkbIsTheTarget()
     {
+        // XKB will type a character from any key, so an assignment the editor once had to caveat
+        // is now simply built. The row must stay quiet rather than keep warning out of habit.
         var (model, editor, key) = Create();
-        editor.ApplyBuildTargets([BuildTarget.WindowsX64]);
-        editor.SelectedLogicalKey = LogicalKey.ArrowUp;
-
-        var row = Row(editor, ModifierLayer.Default);
-        row.Output = "q";
-
-        Assert.True(row.HasCapabilityWarning);
-        Assert.Contains("Windows", row.CapabilityWarning!, StringComparison.Ordinal);
-
-        // Advisory, not a block: the document keeps what the user asked for.
-        Assert.Equal(new CharacterOutput("q"), Stored(model, key.KeyId, ModifierLayer.Default));
-    }
-
-    [Fact]
-    [Trait("Category", "Unit")]
-    public void TheSameAssignmentCarriesNoWarningWhenOnlyXkbIsBeingBuilt()
-    {
-        var (_, editor, _) = Create();
         editor.ApplyBuildTargets([BuildTarget.LinuxXkb]);
         editor.SelectedLogicalKey = LogicalKey.ArrowUp;
 
@@ -235,21 +219,6 @@ public sealed class LayerOutputAssignmentTests
         row.Output = "q";
 
         Assert.False(row.HasCapabilityWarning);
-    }
-
-    [Fact]
-    [Trait("Category", "Unit")]
-    public void WarningsFollowTheLogicalKeyRatherThanStickingToTheRow()
-    {
-        var (_, editor, _) = Create();
-        editor.ApplyBuildTargets([BuildTarget.WindowsX64]);
-        editor.SelectedLogicalKey = LogicalKey.ArrowUp;
-        Row(editor, ModifierLayer.Default).Output = "q";
-
-        Assert.True(Row(editor, ModifierLayer.Default).HasCapabilityWarning);
-
-        editor.SelectedLogicalKey = LogicalKey.Q;
-
-        Assert.False(Row(editor, ModifierLayer.Default).HasCapabilityWarning);
+        Assert.Equal(new CharacterOutput("q"), Stored(model, key.KeyId, ModifierLayer.Default));
     }
 }

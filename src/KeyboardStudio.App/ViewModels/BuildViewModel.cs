@@ -37,7 +37,6 @@ public sealed class BuildViewModel : ObservableObject
         IBuildInteractionService? interactionService = null,
         IReadOnlyDictionary<string, ProjectTargetProfile>? targetProfiles = null,
         Action? profileChanged = null,
-        IBuildTargetVisibilityPolicy? visibilityPolicy = null,
         Action<string>? selectKey = null,
         Action? problemKeysChanged = null)
     {
@@ -48,20 +47,7 @@ public sealed class BuildViewModel : ObservableObject
         _selectKey = selectKey ?? (_ => { });
         _problemKeysChanged = problemKeysChanged ?? (() => { });
 
-        BuildTargetOptionViewModel[] allTargets =
-        [
-            new(BuildTarget.WindowsX64, "Windows x64"),
-            new(BuildTarget.LinuxXkb, "Linux XKB")
-        ];
-        var policy = visibilityPolicy ?? new EnvironmentBuildTargetVisibilityPolicy();
-        var visibleTargets = Array.FindAll(allTargets, option => policy.IsVisible(option.Target));
-
-        // A policy that hides everything would leave a Build card that cannot build anything.
-        // Fall back to the full list rather than presenting dead UI.
-        Targets = visibleTargets.Length > 0 ? visibleTargets : allTargets;
-
-        // Profiles are built for every target, visible or not: a hidden target keeps its settings so
-        // ExportTargetProfiles still round-trips a document authored on a Windows-enabled build.
+        Targets = [new BuildTargetOptionViewModel(BuildTarget.LinuxXkb, "Linux XKB")];
         _profiles = CreateProfiles();
         _selectedTarget = Targets[0];
         _profileSettings = _profiles[_selectedTarget.Target];
@@ -229,9 +215,6 @@ public sealed class BuildViewModel : ObservableObject
     public IReadOnlyDictionary<string, ProjectTargetProfile> ExportTargetProfiles() =>
         new Dictionary<string, ProjectTargetProfile>(StringComparer.Ordinal)
         {
-            [BuildProfileTargetIds.WindowsX64] = CreateTargetProfile(
-                BuildProfileTargetIds.WindowsX64,
-                BuildTarget.WindowsX64),
             [BuildProfileTargetIds.LinuxXkb] = CreateTargetProfile(
                 BuildProfileTargetIds.LinuxXkb,
                 BuildTarget.LinuxXkb)
@@ -244,7 +227,6 @@ public sealed class BuildViewModel : ObservableObject
         try
         {
             ResetProfiles();
-            ApplyTargetProfile(targetProfiles, BuildProfileTargetIds.WindowsX64, BuildTarget.WindowsX64);
             ApplyTargetProfile(targetProfiles, BuildProfileTargetIds.LinuxXkb, BuildTarget.LinuxXkb);
         }
         finally
@@ -261,9 +243,6 @@ public sealed class BuildViewModel : ObservableObject
         var profiles = CreateProfiles();
         return new Dictionary<string, ProjectTargetProfile>(StringComparer.Ordinal)
         {
-            [BuildProfileTargetIds.WindowsX64] = new(
-                BuildProfileTargetIds.WindowsX64,
-                ToSettings(profiles[BuildTarget.WindowsX64])),
             [BuildProfileTargetIds.LinuxXkb] = new(
                 BuildProfileTargetIds.LinuxXkb,
                 ToSettings(profiles[BuildTarget.LinuxXkb]))
@@ -684,7 +663,6 @@ public sealed class BuildViewModel : ObservableObject
     private static Dictionary<BuildTarget, IReadOnlyList<BuildProfileSettingViewModel>> CreateProfiles() =>
         new Dictionary<BuildTarget, IReadOnlyList<BuildProfileSettingViewModel>>
         {
-            [BuildTarget.WindowsX64] = CreateWindowsProfile(),
             [BuildTarget.LinuxXkb] =
             [
                 new(BuildProfileKeys.LayoutId, "Layout ID", "keyboardstudio"),
@@ -694,14 +672,6 @@ public sealed class BuildViewModel : ObservableObject
                 new(BuildProfileKeys.UserVariantDescription, "User variant name", string.Empty, isVisible: false)
             ]
         };
-
-    private static IReadOnlyList<BuildProfileSettingViewModel> CreateWindowsProfile() =>
-    [
-        new(BuildProfileKeys.LayoutId, "Layout ID", "keyboardstudio"),
-        new(BuildProfileKeys.LayoutName, "Layout name", "KeyboardStudio layout"),
-        new(BuildProfileKeys.FileVersion, "File version", "1.0.0.0"),
-        new(BuildProfileKeys.CompanyName, "Company", "KeyboardStudio")
-    ];
 
     private sealed class DirectProgress<T> : IProgress<T>
     {

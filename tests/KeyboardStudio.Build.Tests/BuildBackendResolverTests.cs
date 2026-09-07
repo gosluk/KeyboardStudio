@@ -2,7 +2,7 @@ using KeyboardStudio.Build;
 using KeyboardStudio.Core;
 using Xunit;
 
-namespace KeyboardStudio.Windows.Tests;
+namespace KeyboardStudio.Build.Tests;
 
 public sealed class BuildBackendResolverTests
 {
@@ -10,10 +10,10 @@ public sealed class BuildBackendResolverTests
     [Trait("Category", "Unit")]
     public void Resolve_ReturnsTheOnlyBackendForTarget()
     {
-        var backend = new StubBackend(BuildTarget.WindowsX64);
+        var backend = new StubBackend(BuildTarget.LinuxXkb);
         var resolver = new BuildBackendResolver([backend]);
 
-        Assert.Same(backend, resolver.Resolve(BuildTarget.WindowsX64));
+        Assert.Same(backend, resolver.Resolve(BuildTarget.LinuxXkb));
     }
 
     [Fact]
@@ -21,9 +21,18 @@ public sealed class BuildBackendResolverTests
     public void Constructor_WhenTargetHasMultipleBackends_Throws()
     {
         Assert.Throws<ArgumentException>(() => new BuildBackendResolver([
-            new StubBackend(BuildTarget.WindowsX64),
-            new StubBackend(BuildTarget.WindowsX64)
+            new StubBackend(BuildTarget.LinuxXkb),
+            new StubBackend(BuildTarget.LinuxXkb)
         ]));
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void Resolve_WhenNoBackendSupportsTarget_Throws()
+    {
+        var resolver = new BuildBackendResolver([]);
+
+        Assert.Throws<InvalidOperationException>(() => resolver.Resolve(BuildTarget.LinuxXkb));
     }
 
     private sealed class StubBackend(BuildTarget target) : IBuildBackend

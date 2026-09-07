@@ -19,7 +19,7 @@ public sealed class BuildViewModelTests
 
         Assert.Equal("Linux XKB", viewModel.SelectedTarget.DisplayName);
         Assert.Contains(viewModel.ProfileSettings, setting => setting.Key == BuildProfileKeys.SectionId);
-        Assert.DoesNotContain(viewModel.ProfileSettings, setting => setting.Key == BuildProfileKeys.FileVersion);
+        Assert.Contains(viewModel.ProfileSettings, setting => setting.Key == BuildProfileKeys.Description);
         Assert.Equal("Linux XKB is available.", viewModel.EnvironmentStatus);
     }
 
@@ -45,42 +45,36 @@ public sealed class BuildViewModelTests
 
     [Fact]
     [Trait("Category", "Unit")]
-    public void BuildCommand_WhenSelectedTargetHasErrors_DisablesOnlyThatTarget()
+    public void BuildCommand_WhenTheSelectedTargetHasErrors_IsDisabledAndNamesThem()
     {
         var service = new RecordingBuildService
         {
             ReadinessFactory = target => CreateReadiness(
                 target,
-                target == BuildTarget.WindowsX64
-                    ? [new ValidationIssue(ValidationSeverity.Error, "KSW001", "Unsupported mapping.")]
-                    : [])
+                [new ValidationIssue(ValidationSeverity.Error, "KSL003", "Unsupported mapping.")])
         };
-        var viewModel = CreateViewModel(service, visibilityPolicy: AllTargetsVisible);
+        var viewModel = CreateViewModel(service);
 
         Assert.False(viewModel.BuildCommand.CanExecute(null));
         Assert.Contains(viewModel.Problems, problem =>
             problem.Kind == BuildProblemKind.TargetCompatibility);
-
-        viewModel.SelectedTarget = viewModel.Targets.Single(option => option.Target == BuildTarget.LinuxXkb);
-
-        Assert.True(viewModel.BuildCommand.CanExecute(null));
     }
 
     [Fact]
     [Trait("Category", "Unit")]
-    public void BuildCommand_WhenRequiredWindowsToolsAreUnavailable_IsDisabled()
+    public void BuildCommand_WhenTheEnvironmentIsUnavailable_IsDisabled()
     {
         var service = new RecordingBuildService
         {
             ReadinessFactory = target => new BuildReadiness(
-                new BuildEnvironmentStatus(false, "MSVC unavailable.", [], [target]),
+                new BuildEnvironmentStatus(false, "Required tooling is unavailable.", [], [target]),
                 [],
                 [])
         };
         var viewModel = CreateViewModel(service);
 
         Assert.False(viewModel.BuildCommand.CanExecute(null));
-        Assert.Equal("MSVC unavailable.", viewModel.EnvironmentStatus);
+        Assert.Equal("Required tooling is unavailable.", viewModel.EnvironmentStatus);
         Assert.Contains(viewModel.Problems, problem =>
             problem.Kind == BuildProblemKind.MissingRequiredToolchain);
     }
@@ -92,11 +86,11 @@ public sealed class BuildViewModelTests
     {
         var profiles = new Dictionary<string, ProjectTargetProfile>(StringComparer.Ordinal)
         {
-            [BuildProfileTargetIds.WindowsX64] = new(
-                BuildProfileTargetIds.WindowsX64,
+            ["legacyTarget"] = new(
+                "legacyTarget",
                 new Dictionary<string, string>(StringComparer.Ordinal)
                 {
-                    [BuildProfileKeys.LayoutId] = "custom-windows"
+                    [BuildProfileKeys.LayoutId] = "custom-legacy"
                 })
         };
         var viewModel = new BuildViewModel(
@@ -200,7 +194,6 @@ public sealed class BuildViewModelTests
         await viewModel.BuildCommand.ExecuteAsync(null);
 
         Assert.Equal(service.ReportedStages, viewModel.Stages.Select(stage => stage.Name));
-        Assert.DoesNotContain(viewModel.Stages, stage => stage.Name == BuildStageNames.Compiling);
         Assert.All(viewModel.Stages, stage => Assert.Equal(BuildStageState.Completed, stage.State));
     }
 
@@ -300,7 +293,7 @@ public sealed class BuildViewModelTests
 
     [Fact]
     [Trait("Category", "Unit")]
-    public void Targets_UnderTheShippedPolicy_OfferLinuxAloneAndReplaceTheSelectorWithABadge()
+    public void Targets_OfferLinuxAloneAndReplaceTheSelectorWithABadge()
     {
         var viewModel = CreateViewModel(new RecordingBuildService());
 
@@ -308,79 +301,6 @@ public sealed class BuildViewModelTests
         Assert.Equal(BuildTarget.LinuxXkb, viewModel.SelectedTarget.Target);
         Assert.False(viewModel.IsTargetSelectorVisible);
     }
-
-    [Fact]
-    [Trait("Category", "Unit")]
-    public void Targets_WithTheDeveloperOverride_OfferBothTargetsAndTheSelector()
-    {
-        var viewModel = CreateViewModel(
-            new RecordingBuildService(),
-            visibilityPolicy: AllTargetsVisible);
-
-        Assert.Equal(
-            [BuildTarget.WindowsX64, BuildTarget.LinuxXkb],
-            viewModel.Targets.Select(option => option.Target));
-        Assert.True(viewModel.IsTargetSelectorVisible);
-    }
-
-    [Fact]
-    [Trait("Category", "Unit")]
-    [Trait("Category", "ErrorPath")]
-    public void Targets_WhenThePolicyHidesEverything_FallBackToTheFullListRatherThanADeadCard()
-    {
-        var viewModel = CreateViewModel(
-            new RecordingBuildService(),
-            visibilityPolicy: new HiddenBuildTargetVisibilityPolicy());
-
-        Assert.Equal(
-            [BuildTarget.WindowsX64, BuildTarget.LinuxXkb],
-            viewModel.Targets.Select(option => option.Target));
-    }
-
-    [Fact]
-    [Trait("Category", "Unit")]
-    public void TargetProfiles_WhenWindowsIsHidden_RoundTripUnedited()
-    {
-        // A document authored on a Windows-enabled build must survive a save on a Linux-only build:
-        // hiding a target from the selector must not drop its profile.
-        var authored = new Dictionary<string, ProjectTargetProfile>(StringComparer.Ordinal)
-        {
-            [BuildProfileTargetIds.WindowsX64] = new(
-                BuildProfileTargetIds.WindowsX64,
-                new Dictionary<string, string>(StringComparer.Ordinal)
-                {
-                    [BuildProfileKeys.LayoutId] = "authored-on-windows",
-                    [BuildProfileKeys.LayoutName] = "Authored layout",
-                    [BuildProfileKeys.FileVersion] = "2.0.0.0",
-                    [BuildProfileKeys.CompanyName] = "Contoso"
-                }),
-            [BuildProfileTargetIds.LinuxXkb] = new(
-                BuildProfileTargetIds.LinuxXkb,
-                new Dictionary<string, string>(StringComparer.Ordinal)
-                {
-                    [BuildProfileKeys.LayoutId] = "authored-on-linux",
-                    [BuildProfileKeys.SectionId] = "basic",
-                    [BuildProfileKeys.Description] = "Authored layout"
-                })
-        };
-        var viewModel = new BuildViewModel(
-            CreateProject,
-            new RecordingBuildService(),
-            targetProfiles: authored);
-
-        Assert.False(viewModel.IsTargetSelectorVisible);
-        var exported = viewModel.ExportTargetProfiles();
-        Assert.Equal(
-            authored[BuildProfileTargetIds.WindowsX64].Settings,
-            exported[BuildProfileTargetIds.WindowsX64].Settings);
-        Assert.Equal(
-            authored[BuildProfileTargetIds.LinuxXkb].Settings,
-            exported[BuildProfileTargetIds.LinuxXkb].Settings);
-    }
-
-    private static IBuildTargetVisibilityPolicy AllTargetsVisible { get; } =
-        new EnvironmentBuildTargetVisibilityPolicy(
-            EnvironmentBuildTargetVisibilityPolicy.AllTargetsValue);
 
     [Fact]
     [Trait("Category", "Unit")]
@@ -431,9 +351,8 @@ public sealed class BuildViewModelTests
 
     private static BuildViewModel CreateViewModel(
         ITargetBuildService service,
-        IBuildInteractionService? interactionService = null,
-        IBuildTargetVisibilityPolicy? visibilityPolicy = null) =>
-        new(CreateProject, service, interactionService, visibilityPolicy: visibilityPolicy);
+        IBuildInteractionService? interactionService = null) =>
+        new(CreateProject, service, interactionService);
 
     private static KeyboardProject CreateProject() => new()
     {
@@ -447,11 +366,6 @@ public sealed class BuildViewModelTests
         Keyboard = new PhysicalKeyboard { Id = "test", Keys = [] },
         Layout = new KeyboardLayout()
     };
-
-    private sealed class HiddenBuildTargetVisibilityPolicy : IBuildTargetVisibilityPolicy
-    {
-        public bool IsVisible(BuildTarget target) => false;
-    }
 
     private sealed class RecordingBuildService : ITargetBuildService
     {

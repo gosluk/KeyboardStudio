@@ -4,7 +4,6 @@ using CommunityToolkit.Mvvm.Input;
 using KeyboardStudio.Core;
 using KeyboardStudio.Persistence;
 using KeyboardStudio.Linux;
-using KeyboardStudio.Windows;
 
 namespace KeyboardStudio.App;
 
@@ -53,7 +52,6 @@ public sealed class MainWindowViewModel : ObservableObject
             interactionService,
             CreateDefaultValidator(),
             new EmbeddedSeedProjectSource(),
-            new EnvironmentBuildTargetVisibilityPolicy(),
             appearance: appearance)
     {
     }
@@ -77,22 +75,7 @@ public sealed class MainWindowViewModel : ObservableObject
         IKeyboardTemplateProvider templateProvider,
         IProjectInteractionService interactionService,
         IKeyboardProjectValidator validator,
-        ISeedProjectSource seedProjectSource)
-        : this(
-            templateProvider,
-            interactionService,
-            validator,
-            seedProjectSource,
-            new EnvironmentBuildTargetVisibilityPolicy())
-    {
-    }
-
-    public MainWindowViewModel(
-        IKeyboardTemplateProvider templateProvider,
-        IProjectInteractionService interactionService,
-        IKeyboardProjectValidator validator,
         ISeedProjectSource seedProjectSource,
-        IBuildTargetVisibilityPolicy buildTargetVisibility,
         ILayoutImportCatalog? importCatalog = null,
         IHostLayoutProbe? hostLayoutProbe = null,
         ILinuxUserVariantWorkflowService? linuxUserVariantWorkflow = null,
@@ -103,7 +86,6 @@ public sealed class MainWindowViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(interactionService);
         ArgumentNullException.ThrowIfNull(validator);
         ArgumentNullException.ThrowIfNull(seedProjectSource);
-        ArgumentNullException.ThrowIfNull(buildTargetVisibility);
 
         _templateProvider = templateProvider;
         _importCatalog = importCatalog ?? HostLayoutImportCatalog.Create(templateProvider);
@@ -131,7 +113,6 @@ public sealed class MainWindowViewModel : ObservableObject
             interactionService as IBuildInteractionService,
             _documentService.CurrentTargetProfiles,
             BuildProfileChanged,
-            buildTargetVisibility,
             SelectKey,
             RefreshProblemKeys);
         _editor.ApplyBuildTargets(Build.Targets.Select(target => target.Target));

@@ -29,9 +29,8 @@ Release archives include application version and runtime identifier:
 
 ```text
 KeyboardStudio-0.1.0-linux-x64.tar.gz
-KeyboardStudio-0.1.0-win-x64.zip
 ```
 
-Before changing the application version, update release notes and validate both native packages.
+Before changing the application version, update release notes and validate the published package.
 Before changing either schema, update `PROJECT-FORMAT.md`, migration tests, and error handling for
 older and future files.

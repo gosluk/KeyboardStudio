@@ -48,7 +48,6 @@ public sealed class LinuxXkbBuildBackendTests
             Assert.NotNull(result.Artifact);
             Assert.True(File.Exists(result.Artifact.ArtifactPath));
             Assert.True(File.Exists(result.Artifact.ManifestPath));
-            Assert.Null(result.Compilation);
             var details = Assert.IsType<XkbBuildDetails>(result.Artifact.BackendDetails);
             var generatedFile = Assert.Single(result.Artifact.GeneratedFiles!);
             Assert.Equal(details.GeneratedSymbols.Content, generatedFile.Content);

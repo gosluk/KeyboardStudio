@@ -11,15 +11,17 @@ public sealed class KeyboardProjectDocumentStoreTests
 {
     [Fact]
     [Trait("Category", "Unit")]
-    public async Task SaveAndLoad_PreservesWindowsAndLinuxProfiles()
+    public async Task SaveAndLoad_PreservesEveryProfileIncludingUnknownDiscriminators()
     {
         var document = new KeyboardProjectDocument(
             TestProjectFactory.Create(),
             new Dictionary<string, ProjectTargetProfile>(StringComparer.Ordinal)
             {
-                ["windows"] = new("windows", new Dictionary<string, string>
+                // The store is a transport: a discriminator it does not know must survive it,
+                // so a document written by a newer build is not silently truncated on load.
+                ["futureTarget"] = new("futureTarget", new Dictionary<string, string>
                 {
-                    ["layoutId"] = "kbd-demo"
+                    ["layoutId"] = "future-demo"
                 }),
                 ["linuxXkb"] = new("linuxXkb", new Dictionary<string, string>
                 {
@@ -35,7 +37,7 @@ public sealed class KeyboardProjectDocumentStoreTests
         var loaded = await store.LoadAsync(stream);
 
         Assert.Equal(document.Project.Metadata.Name, loaded.Project.Metadata.Name);
-        Assert.Equal("kbd-demo", loaded.TargetProfiles["windows"].Settings["layoutId"]);
+        Assert.Equal("future-demo", loaded.TargetProfiles["futureTarget"].Settings["layoutId"]);
         Assert.Equal("basic", loaded.TargetProfiles["linuxXkb"].Settings["sectionId"]);
     }
 

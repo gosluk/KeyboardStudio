@@ -1,33 +1,26 @@
 using KeyboardStudio.Build;
 using KeyboardStudio.Core;
 using KeyboardStudio.Linux;
-using KeyboardStudio.Windows;
 
 namespace KeyboardStudio.App;
 
 public sealed class TargetBuildService : ITargetBuildService
 {
     private readonly IKeyboardProjectValidator _commonValidator;
-    private readonly IBuildEnvironment _windowsEnvironment;
 
     public TargetBuildService()
-        : this(new KeyboardProjectValidator(), new WindowsBuildEnvironment())
+        : this(new KeyboardProjectValidator())
     {
     }
 
-    public TargetBuildService(
-        IKeyboardProjectValidator commonValidator,
-        IBuildEnvironment windowsEnvironment)
+    public TargetBuildService(IKeyboardProjectValidator commonValidator)
     {
         _commonValidator = commonValidator ?? throw new ArgumentNullException(nameof(commonValidator));
-        _windowsEnvironment = windowsEnvironment ?? throw new ArgumentNullException(nameof(windowsEnvironment));
     }
 
     public BuildEnvironmentStatus GetEnvironmentStatus(BuildTarget target) =>
-        target == BuildTarget.LinuxXkb
-            ? new LinuxXkbBuildBackend(CreateXkbMetadata(
-                new Dictionary<string, string>(StringComparer.Ordinal))).GetStatus(target)
-            : _windowsEnvironment.GetStatus(target);
+        new LinuxXkbBuildBackend(CreateXkbMetadata(
+            new Dictionary<string, string>(StringComparer.Ordinal))).GetStatus(target);
 
     public BuildReadiness GetReadiness(
         KeyboardProject project,
@@ -79,7 +72,8 @@ public sealed class TargetBuildService : ITargetBuildService
                     : new ArtifactBuildResult(false, null, environmentDiagnostics));
         }
 
-        var backend = CreateBackend(options.Target, profileSettings);
+        EnsureSupported(options.Target);
+        var backend = new LinuxXkbBuildBackend(CreateXkbMetadata(profileSettings));
         var orchestrator = new BuildOrchestrator(
             _commonValidator,
             new BuildBackendResolver([backend]));
@@ -88,12 +82,10 @@ public sealed class TargetBuildService : ITargetBuildService
             return await orchestrator.BuildAsync(project, options, progress, cancellationToken);
         }
         catch (Exception exception) when (
-            exception is WindowsTranslationException or ArgumentException or InvalidOperationException)
+            exception is ArgumentException or InvalidOperationException)
         {
             progress?.Report(new BuildStageProgress(
-                options.Target == BuildTarget.LinuxXkb
-                    ? BuildStageNames.GeneratingXkb
-                    : BuildStageNames.Generating,
+                BuildStageNames.GeneratingXkb,
                 BuildStageState.Failed));
             progress?.Report(new BuildStageProgress(BuildStageNames.Failed, BuildStageState.Failed));
             return new KeyboardBuildResult(
@@ -124,35 +116,13 @@ public sealed class TargetBuildService : ITargetBuildService
                 outputError));
         }
 
-        if (target == BuildTarget.WindowsX64)
-        {
-            issues.AddRange(new WindowsCompatibilityValidationRule().Validate(project));
-            var version = GetSetting(settings, BuildProfileKeys.FileVersion, "1.0.0.0");
-            if (!Version.TryParse(version, out var parsedVersion) ||
-                parsedVersion.Major > ushort.MaxValue ||
-                parsedVersion.Minor > ushort.MaxValue ||
-                parsedVersion.Build > ushort.MaxValue ||
-                parsedVersion.Revision > ushort.MaxValue)
-            {
-                issues.Add(new ValidationIssue(
-                    ValidationSeverity.Error,
-                    "TARGET_PROFILE",
-                    "Windows file version must contain two to four numeric parts between 0 and 65535."));
-            }
-        }
-        else if (target == BuildTarget.LinuxXkb)
-        {
-            var translation = new XkbLayoutTranslator().Translate(project, CreateXkbMetadata(settings));
-            issues.AddRange(translation.Diagnostics.Select(diagnostic => new ValidationIssue(
-                ValidationSeverity.Error,
-                diagnostic.Code,
-                diagnostic.Message,
-                diagnostic.KeyId)));
-        }
-        else
-        {
-            throw new ArgumentOutOfRangeException(nameof(target), target, "Unsupported build target.");
-        }
+        EnsureSupported(target);
+        var translation = new XkbLayoutTranslator().Translate(project, CreateXkbMetadata(settings));
+        issues.AddRange(translation.Diagnostics.Select(diagnostic => new ValidationIssue(
+            ValidationSeverity.Error,
+            diagnostic.Code,
+            diagnostic.Message,
+            diagnostic.KeyId)));
 
         return issues;
     }
@@ -179,27 +149,12 @@ public sealed class TargetBuildService : ITargetBuildService
         }
     }
 
-    private IBuildBackend CreateBackend(
-        BuildTarget target,
-        IReadOnlyDictionary<string, string> settings) =>
-        target switch
-        {
-            BuildTarget.WindowsX64 => CreateWindowsBackend(settings),
-            BuildTarget.LinuxXkb => new LinuxXkbBuildBackend(CreateXkbMetadata(settings)),
-            _ => throw new ArgumentOutOfRangeException(nameof(target), target, "Unsupported build target.")
-        };
-
-    private WindowsBuildBackend CreateWindowsBackend(IReadOnlyDictionary<string, string> settings)
+    private static void EnsureSupported(BuildTarget target)
     {
-        var metadata = new WindowsLayoutMetadata(
-            GetSetting(settings, BuildProfileKeys.LayoutId, "keyboardstudio"),
-            GetSetting(settings, BuildProfileKeys.LayoutName, "KeyboardStudio layout"),
-            GetSetting(settings, BuildProfileKeys.FileVersion, "1.0.0.0"),
-            GetSetting(settings, BuildProfileKeys.CompanyName, "KeyboardStudio"));
-        return new WindowsBuildBackend(
-            new WindowsArtifactGenerator(metadata),
-            _windowsEnvironment,
-            new MsvcKeyboardCompiler(_windowsEnvironment, new ProcessRunner()));
+        if (target != BuildTarget.LinuxXkb)
+        {
+            throw new ArgumentOutOfRangeException(nameof(target), target, "Unsupported build target.");
+        }
     }
 
     private static XkbLayoutMetadata CreateXkbMetadata(IReadOnlyDictionary<string, string> settings) =>

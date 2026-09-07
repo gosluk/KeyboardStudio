@@ -63,54 +63,11 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 
 **Phase status:** 5/5 work items complete. Phase complete.
 
-## Phase 5 — Windows semantic translation
+## Phases 5-8 — Removed with the Windows target
 
-- [x] **P5.1** Define Windows virtual-key model
-- [x] **P5.2** Define scan-code mapping model
-- [x] **P5.3** Define modifier model
-- [x] **P5.4** Define character table rows
-- [x] **P5.5** Special/non-character keys
-- [x] **P5.6** Unsupported mapping detection
-
-**Phase status:** 6/6 work items complete. Phase complete.
-
-## Phase 6 — Real Windows `KBDTABLES` source generation
-
-- [x] **P6.1** Establish reference fixture
-- [x] **P6.2** Generate source file set
-- [x] **P6.3** Generate scan-code tables
-- [x] **P6.4** Generate key names
-- [x] **P6.5** Generate modifier tables
-- [x] **P6.6** Generate character tables
-- [x] **P6.7** Generate `KBDTABLES`
-- [x] **P6.8** Generate `KbdLayerDescriptor`
-- [x] **P6.9** Generate `.def` and resource metadata
-- [x] **P6.10** Golden-file tests
-
-**Phase status:** 10/10 work items complete. Phase complete.
-
-## Phase 7 — MSVC/WDK compiler integration
-
-- [x] **P7.1** Implement build-environment detection
-- [x] **P7.2** Resolve compiler environment
-- [x] **P7.3** Build working directory
-- [x] **P7.4** Implement process runner
-- [x] **P7.5** Compile generated C
-- [x] **P7.6** Link keyboard-layout DLL
-- [x] **P7.7** Build logs
-- [x] **P7.8** Cancellation and cleanup
-
-**Phase status:** 8/8 work items complete. Phase complete.
-
-## Phase 8 — Artifact verification
-
-- [x] **P8.1** PE verification
-- [x] **P8.2** Export verification
-- [x] **P8.3** Load-level smoke test
-- [x] **P8.4** Generated/source manifest
-- [x] **P8.5** Reproducibility check
-
-**Phase status:** 5/5 work items complete. Phase complete.
+Windows semantic translation, `KBDTABLES` source generation, MSVC/WDK compiler integration, and
+PE/export artifact verification were completed and then removed. See
+[AD-042](DECISIONS.md#ad-042---the-windows-target-is-removed-rather-than-hidden).
 
 ## Phase 9 — Support for Linux XKB Layout File Generation
 
@@ -136,14 +93,10 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 
 **Phase status:** 5/5 work items complete. Phase complete.
 
-## Phase 11 — Windows integration CI
+## Phase 11 — Removed with the Windows target
 
-- [x] **P11.1** Add Windows runner
-- [x] **P11.2** Separate fast and native tests
-- [x] **P11.3** Artifact retention on failure
-- [x] **P11.4** Test representative fixtures
-
-**Phase status:** 4/4 work items complete. Phase complete.
+The hosted Windows CI job and its native fixtures were removed along with the backend they proved.
+See [AD-042](DECISIONS.md#ad-042---the-windows-target-is-removed-rather-than-hidden).
 
 ## Phase 12 — MVP stabilization and release readiness
 
@@ -201,8 +154,11 @@ Legend: `[x]` complete, `[ ]` not yet complete.
 
 ## Progress summary
 
-- Completed work items: **110**
-- Total planned work items: **110**
-- Overall checklist progress: **110/110**
+- Completed work items: **77**
+- Total planned work items: **77**
+- Overall checklist progress: **77/77**
+
+33 further work items were completed and then removed with the Windows target; see
+[AD-042](DECISIONS.md#ad-042---the-windows-target-is-removed-rather-than-hidden).
 
 The checklist records work-item completion only. Phase-level acceptance criteria and test gates in `IMPLEMENTATION-PLAN.md` still apply before a phase is considered complete.

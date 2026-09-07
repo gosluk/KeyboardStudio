@@ -21,18 +21,14 @@ internal static class TestMainWindow
             new EmptySeedProjectSource());
 
     /// <summary>
-    /// Creates a view model that offers every build target, as a developer build started with
-    /// <c>KEYBOARDSTUDIO_TARGETS=all</c> does. Tests that drive the Windows target through the UI
-    /// need this: the shipped policy hides it.
+    /// Creates a view model on the shipped seed and template set, using the validator this suite
+    /// composes rather than the application's default one.
     /// </summary>
-    public static MainWindowViewModel WithAllBuildTargets(
-        IProjectInteractionService interactionService) =>
+    public static MainWindowViewModel Create(IProjectInteractionService interactionService) =>
         new(new KeyboardTemplateProvider(),
             interactionService,
             CreateValidator(),
-            new EmbeddedSeedProjectSource(),
-            new EnvironmentBuildTargetVisibilityPolicy(
-                EnvironmentBuildTargetVisibilityPolicy.AllTargetsValue));
+            new EmbeddedSeedProjectSource());
 
     /// <summary>
     /// Creates a view model whose import catalog is the one supplied, rather than whatever the
@@ -46,8 +42,6 @@ internal static class TestMainWindow
             interactionService,
             CreateValidator(),
             new EmbeddedSeedProjectSource(),
-            new EnvironmentBuildTargetVisibilityPolicy(
-                EnvironmentBuildTargetVisibilityPolicy.AllTargetsValue),
             catalog,
             hostLayoutProbe ?? new FakeHostLayoutProbe(null),
             new SilentLinuxUserVariantWorkflowService());
