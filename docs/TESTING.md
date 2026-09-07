@@ -59,45 +59,21 @@ a container, already has. The runner image ships `buildah`, `fuse-overlayfs`, `s
 subordinate UID/GID range instead, so a job that genuinely needs an ad hoc container can build and
 run one rootless without nesting privilege — see `github-runner/README.md`.
 
-Windows integration and packaging share one `windows-latest` job, the only one that cannot move to
-the pool: it needs MSVC, the Windows SDK, and a Windows loader. Running them together stops the two
-repeating the same checkout, SDK setup and restore on separate runners, and means an artifact is
-only ever produced from a tree whose tests have passed. The job proves that Visual Studio contains
-the MSVC x64 tools and that a Windows 10/11 SDK is registered before it restores and builds the
-complete solution. It then runs the platform-neutral suites and the categorized native test, which
-compiles generated source, verifies the DLL structure and export, and performs a load-level smoke
-test. A missing Windows toolchain is a CI failure, never a silent native-test skip.
+Every job in this workflow runs on the self-hosted pool. There is no hosted, quota-limited runner
+left in it, so nothing needs a change-detection gate to stay affordable and `mvp-release-gate`
+depends on all three build jobs unconditionally: a `skipped` result is a failure, not an excuse.
 
-`windows-latest` is the one hosted (non-pool, quota-limited) runner this workflow still uses, so a
-`detect-changes` job gates it: it diffs the push or PR against its base commit and only runs
-`windows` when the change touches `src/KeyboardStudio.Windows/`,
-`tests/KeyboardStudio.Windows.Tests/`, `docs/WINDOWS-BUILD.md`, `docs/WINDOWS-KBDTABLES-REFERENCE.md`,
-or the workflow file itself. `mvp-release-gate` treats a `skipped` result for `windows` the same as
-`success`; only `failure`/`cancelled` blocks the gate. `detect-changes` defaults to running the job
-(`windows=true`) whenever it cannot resolve a base commit to diff against — a new branch's first
-push, or a force-push — rather than risk silently skipping it.
+Test doubles are held to the same standard as production code — `FakeXkbFileSystem` models a POSIX
+filesystem explicitly rather than deferring to `Path`, so its behaviour is a stated contract rather
+than an accident of the host.
 
-This is a narrower gate than "anything that could affect the win-x64 build": the job also re-runs
-the platform-neutral suites and packages the whole app for win-x64 (see below), so a change confined
-to `src/KeyboardStudio.Core` or `src/KeyboardStudio.App` that happens to break Windows packaging, or
-turns out not to be as platform-neutral as its category claims, will not be caught until a
-Windows-path change next triggers this job — not on the commit that introduced the break.
+Failed XKB integration artifacts remain under `TestResults/xkb-integration` and are uploaded on
+failure. They contain the generated symbols text and the verifier's output. Successful runs retain
+nothing.
 
-The platform-neutral suites run on both the self-hosted pool and the Windows job, which is not
-duplication: it is the only check that they are platform-neutral at all. It matters most for the
-XKB backend, because the shipped product offers the Linux target on every host it runs on, so a
-Windows user authoring an XKB layout is exercising it. Test doubles are held to the same standard —
-`FakeXkbFileSystem` models a POSIX filesystem on every host rather than deferring to `Path`, whose
-separator would otherwise make every import test Linux-only.
-Failed Windows native workspaces remain under `TestResults/windows-integration` and are uploaded for
-seven days. They contain generated C and headers, per-tool compiler/resource/linker logs, the
-combined build log, and `native-build-diagnostics.json`. Successful workspaces are deleted by the
-test and are never uploaded.
-
-The native matrix compiles four project-level fixtures: simple ANSI US-like letters, an ANSI AltGr
-Unicode mapping, an ISO-105 layout using the extra ISO key, and a special-key layout containing both
-ordinary and extended scan codes. Every fixture must produce a structurally valid x64 DLL exporting
-`KbdLayerDescriptor`, pass the matching-host load check, and reproduce byte-for-byte.
+The XKB matrix compiles project-level fixtures covering ANSI US-like letters, an ANSI AltGr Unicode
+mapping, and an ISO-105 layout using the extra ISO key. Every fixture must produce a symbols component
+that `xkbcli` accepts and that is byte-for-byte reproducible.
 
 ## Test categories and facets
 
@@ -107,24 +83,20 @@ explicitly:
 
 | Category | Purpose | Runner |
 | --- | --- | --- |
-| `Unit` | Fast tests with no native tool dependency | Linux and Windows |
-| `Golden` | Deterministic source/reference comparisons | Linux and Windows |
-| `XkbIntegration` | Generated XKB compilation with `xkbcli` | Ubuntu with XKB packages |
-| `WindowsIntegration` | Generated DLL compilation and verification with MSVC | Windows with Visual Studio and Windows SDK |
+| `Unit` | Fast tests with no external tool dependency | Any |
+| `Golden` | Deterministic source/reference comparisons | Any |
+| `XkbIntegration` | Generated XKB compilation with `xkbcli` | Linux with XKB packages |
 | `ErrorPath` | Cross-project release failure-path facet; also retains its primary category | Any runner required by the primary category |
-| `LinuxHost` | Facet for tests whose subject is a Linux host's own filesystem; also retains its primary category | Excluded from the Windows job |
+| `LinuxHost` | Facet for tests whose subject is a Linux host's own filesystem; also retains its primary category | Any Linux runner |
 
-The platform-neutral gate is `Category=Unit|Category=Golden`. Native categories are invoked in
-dedicated steps so missing tools cannot turn into an accidental fast-test pass.
+The tool-independent gate is `Category=Unit|Category=Golden`. Categories that need external tools are
+invoked in dedicated steps so a missing tool cannot turn into an accidental fast-test pass.
 
-The Windows job runs `(Category=Unit|Category=Golden)&Category!=LinuxHost`. The excluded facet is
-for tests whose subject is a Linux host's own filesystem — where an XKB database is installed, and
-what the XDG base directories resolve to. Generating an XKB layout travels to any host and is
-asserted there; importing one does not, because it reads a database the host has installed and a
-Windows host has none, so both import sources correctly report themselves unavailable. Marking
-those tests is what keeps the rest of the suite meaningful on Windows: the alternative is
-contorting production code into path forms no XKB tool would write, purely so an assertion holds
-on a platform the feature never runs on.
+`LinuxHost` marks tests whose subject is the host's own filesystem — where an XKB database is
+installed, and what the XDG base directories resolve to. It is kept as a distinct facet because those
+tests assert against a real installed system rather than a fixture, so a failure in them means
+something different from a failure in a unit test: the host is not configured as expected, not that
+the code is wrong.
 
 Run the MVP error-path matrix directly with:
 
@@ -133,8 +105,7 @@ dotnet test KeyboardStudio.slnx --filter "Category=ErrorPath"
 ```
 
 The matrix covers invalid and future-schema project documents, missing target profiles, unsupported
-target mappings, absent Windows tooling, compiler failures, missing/rejecting XKB verification,
-unwritable output, and cancellation.
+target mappings, missing and rejecting XKB verification, unwritable output, and cancellation.
 
 ## Test method naming
 
@@ -176,15 +147,6 @@ Tests for persistence, translation, and source generation should avoid dependenc
 - machine-specific paths;
 - collection ordering that is not part of the contract;
 - operating-system behavior in platform-neutral test suites.
-
-Windows-native integration tests use the `WindowsIntegration` category. They detect the toolchain and
-return without invoking native tools when it is unavailable, allowing the same suite to run on Linux.
-A configured Windows runner exercises the real generated-source-to-DLL path.
-
-PE structure and export parsing use synthetic fixtures and run on every host. The load-level smoke
-test is reported as not run unless the test process is Windows and matches the artifact architecture.
-Reproducibility unit tests compare source dictionaries and binary hashes without MSVC; the native
-integration path can enable `BuildOptions.VerifyReproducibility` on a configured Windows runner.
 
 Linux XKB integration tests use the `XkbIntegration` category. A dedicated Ubuntu runner provides
 the pinned `xkbcli` and packaged `xkeyboard-config`, then compiles an ISO AltGr/Unicode fixture and an ANSI two-level
@@ -230,11 +192,12 @@ for a defect.
 ## Test project boundaries
 
 - `KeyboardStudio.Core.Tests` covers platform-neutral domain, editing, validation, and persistence-facing behavior.
-- `KeyboardStudio.Windows.Tests` covers Windows translation and source generation without requiring native compilation unless explicitly categorized.
+- `KeyboardStudio.Build.Tests` covers target-neutral orchestration — backend resolution, the
+  validation and cancellation contract, and the shared process runner — against stub backends.
 - `KeyboardStudio.Linux.Tests` covers physical key-name mapping, keysym/level translation,
   deterministic symbols generation, manifests, verifier behavior, golden files, and categorized
   `xkbcli` integration.
-- Native toolchain and artifact tests must not make the Ubuntu platform-neutral test gate Windows-dependent.
+- Tests that need an external tool must not make the tool-independent gate depend on it.
 
 ## Analyzer exception for test names
 

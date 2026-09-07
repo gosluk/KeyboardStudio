@@ -3,8 +3,8 @@
 ## 1. Purpose
 
 KeyboardStudio is a cross-platform keyboard-layout editor written with Avalonia. The editor owns a
-platform-neutral keyboard project model. Platform backends translate that model into either a native
-Windows keyboard-layout DLL or a Linux XKB symbols component.
+platform-neutral keyboard project model. A platform backend translates that model into a Linux XKB
+symbols component.
 
 The first version focuses on five capabilities:
 
@@ -12,13 +12,13 @@ The first version focuses on five capabilities:
 2. starting from an existing layout rather than from an empty one;
 3. editing key mappings;
 4. saving and loading a project;
-5. selecting an artifact target and producing a Windows DLL or Linux XKB layout file.
+5. producing a Linux XKB layout file.
 
 Everything not required by those capabilities is intentionally excluded from the first implementation.
 
-Both backends, the non-empty/current-layout startup path, the Linux-focused target policy, the
-per-user XKB variant workflow, and the White/Gray/Black appearance and application shell are
-implemented and tested. Sections 2.6, 10.4, 13, and 18 describe that current architecture.
+The backend, the non-empty/current-layout startup path, the per-user XKB variant workflow, and the
+White/Gray/Black appearance and application shell are implemented and tested. Sections 9.4, 12, and
+17 describe that current architecture.
 
 ---
 
@@ -29,9 +29,7 @@ implemented and tested. Sections 2.6, 10.4, 13, and 18 describe that current arc
 `KeyboardStudio.Core` must not reference:
 
 - Avalonia;
-- Windows APIs;
-- Windows SDK or WDK types;
-- MSVC;
+- platform keyboard APIs;
 - XKB key names, keysyms, or libxkbcommon types;
 - filesystem UI abstractions;
 - installer or registry APIs.
@@ -40,9 +38,8 @@ The core represents what a keyboard layout means, not how a specific operating s
 
 ### 2.2 Platform translation at the boundary
 
-Windows structures such as scan-code mappings, virtual keys, modifier tables and `KBDTABLES` are generated only in `KeyboardStudio.Windows`.
 XKB symbolic key names, keysyms, levels, types, and symbols-component syntax are generated only in
-the implemented `KeyboardStudio.Linux` backend.
+the `KeyboardStudio.Linux` backend. No target-specific structure reaches the core or the editor.
 
 The editor thinks in terms of:
 
@@ -62,33 +59,27 @@ compiles those generated files according to the target's actual delivery format.
                                 |
                                 v
                       Select one BuildTarget
-                         /              \
-                        v                v
-             Windows backend       Linux XKB backend
-             translate to          translate to
-             Windows model         XKB model
-                   |                    |
-                   v                    v
-             generate C/.def/.rc   generate symbols text
-                   |                    |
-                   v                    v
-             compile and link      write final artifact
-                   |                    |
-                   v                    v
-             verify PE/export      verify with xkbcli
-                   |                    |
-                   v                    v
-               <id>.dll          symbols/<layout-id>
+                                |
+                                v
+                        Linux XKB backend
+                        translate to
+                        XKB model
+                                |
+                                v
+                        generate symbols text
+                                |
+                                v
+                        write final artifact
+                                |
+                                v
+                        verify with xkbcli
+                                |
+                                v
+                        symbols/<layout-id>
 ```
 
-This keeps both generators deterministic and unit-testable without requiring MSVC or `xkbcli`.
-`INativeCompiler` remains a Windows-backend collaborator; Linux does not use a fake compiler stage.
-
-The Phase 6 generator emits the WDK-native `VSC_VK`, `VSC_LPWSTR`, `VK_TO_BIT`, `MODIFIERS`,
-`VK_TO_WCHARS<n>`, `VK_TO_WCHAR_TABLE`, and `KBDTABLES` structures. The exported
-`KbdLayerDescriptor` returns that descriptor, while `.def` and `.rc` companions provide the DLL
-export and deterministic version metadata. See
-[`WINDOWS-KBDTABLES-REFERENCE.md`](WINDOWS-KBDTABLES-REFERENCE.md) for the supported ABI subset.
+This keeps generation deterministic and unit-testable without requiring `xkbcli`. Verification is a
+separate, optional stage rather than a precondition of generating anything.
 
 The Linux generator emits classic XKB text format v1 as an `xkb_symbols` component. The
 component composes with normal host keycodes/types/compat data, making it more portable than a
@@ -102,45 +93,22 @@ ViewModels should not directly mutate arbitrary nested domain objects. Editing o
 
 The same project can be built repeatedly for different targets, but one invocation resolves exactly
 one backend from `BuildOptions.Target`. Common validation runs before dispatch; target validation and
-artifact stages run only inside the selected backend. This prevents an unavailable Windows toolchain
-from blocking XKB generation and prevents Linux tools from affecting Windows builds.
+artifact stages run only inside the selected backend. This keeps a missing optional verification
+tool from blocking generation, and leaves room for a second target without reworking dispatch.
 
+### 2.6 One target today, without collapsing the seam
 
-### 2.6 Target visibility is a presentation policy, not a capability change
+`BuildTarget` currently has one member, `LinuxXkb`. The dispatch machinery around it —
+`BuildOrchestrator`, `IBuildBackendResolver`, `BuildOptions.Target`, per-target profiles — is
+deliberately kept rather than inlined.
 
-*Implemented by P13.2.*
+The seam is what keeps target-specific concerns out of the core and the editor: `IBuildBackend` is
+the only place a target's tooling, verification, and artifact shape are allowed to appear. Collapsing
+it would push XKB details up into the view models, which section 2.1 forbids for a reason that
+outlives any one target.
 
-The editor exposes the Linux XKB target and hides the Windows target. Hiding is enforced by one
-presentation-layer policy object, `IBuildTargetVisibilityPolicy`, and nowhere else.
-
-```text
-BuildTarget.LinuxXkb    visible    default and only selectable target
-BuildTarget.WindowsX64  hidden     backend registered, resolvable, fully tested
-```
-
-The rules that keep this reversible:
-
-- `KeyboardStudio.Windows`, `WindowsBuildBackend`, and their tests stay in the solution, stay
-  referenced by the application, and stay green in CI. Hiding is not deletion;
-- `BuildTarget.WindowsX64` remains in the enum and `windowsX64` remains a persisted target-profile
-  discriminator, so existing `.kbdproj` documents keep round-tripping their Windows profile
-  untouched even though no UI edits it;
-- `BuildOrchestrator` and `IBuildBackendResolver` are unchanged. Single-target dispatch (2.5) still
-  resolves whichever target it is given; the UI simply never asks for the hidden one;
-- when exactly one target is visible, the target selector is not rendered at all rather than rendered
-  with one entry, and the visible target's identity moves to a badge on the build panel;
-- `KEYBOARDSTUDIO_TARGETS=all` restores the full selector for development and for the Windows
-  integration tests, which drive the ViewModel rather than the window.
-
-Visibility must never be expressed by deleting profiles, mutating `BuildOptions`, or short-circuiting
-validation. A hidden target is a target the user cannot select, not a target the application has
-forgotten how to build.
-
-`BuildViewModel` builds a profile for every target, visible or not, so `ExportTargetProfiles` keeps
-returning both entries and hiding a target cannot silently drop its settings on the next save. A
-policy that hid every target would leave a Build card that cannot build anything, so the view model
-falls back to the full target list in that case rather than rendering dead UI.
-
+When exactly one target is registered, the target selector is not rendered at all rather than
+rendered with one entry, and the target's identity moves to a badge on the build panel.
 
 ---
 
@@ -153,13 +121,12 @@ src/
   KeyboardStudio.App/
   KeyboardStudio.Core/
   KeyboardStudio.Persistence/
-  KeyboardStudio.Windows/
   KeyboardStudio.Linux/
   KeyboardStudio.Build/
 
 tests/
   KeyboardStudio.Core.Tests/
-  KeyboardStudio.Windows.Tests/
+  KeyboardStudio.Build.Tests/
   KeyboardStudio.Linux.Tests/
   KeyboardStudio.App.Tests/
 
@@ -175,17 +142,16 @@ KeyboardStudio.App (composition root)
  |- KeyboardStudio.Core
  |- KeyboardStudio.Persistence -> Core
  |- KeyboardStudio.Build       -> Core
- |- KeyboardStudio.Windows     -> Build + Core
  `- KeyboardStudio.Linux       -> Build + Core
 ```
 
 The application is the composition root and may reference concrete backends to register them. Its
-ViewModels depend on build abstractions, not Windows or Linux generator types. Platform and UI
-concerns point inward; Core never references them.
+ViewModels depend on build abstractions, not backend generator types. Platform and UI concerns point
+inward; Core never references them.
 
 The same split applies to layout import: `KeyboardStudio.Core/Layouts/Import/` owns the neutral
 contract and `KeyboardStudio.Linux/Import/` owns every XKB-specific parser, resolver, and table. See
-section 13.
+section 12.
 
 ---
 
@@ -277,7 +243,7 @@ public enum ModifierLayer
 }
 ```
 
-Additional Windows modifier combinations can be added later without exposing Windows-specific modifier bits to the editor.
+Additional modifier combinations can be added later without exposing target-specific modifier bits to the editor.
 
 ### 4.4 Key mappings
 
@@ -390,13 +356,9 @@ MainWindowViewModel
      `- Report -> LayoutImportReportViewModel
 ```
 
-ViewModels must not depend on Windows- or XKB-specific generator classes. Concrete backends are
-registered at the application composition root and reached through `ITargetBuildService`. The build
-panel keeps one editable profile per target so switching targets never discards the other target's
-settings.
-
-Once target visibility (2.6) is in place, the panel renders no target selector while only one target
-is visible, and keeps the hidden target's profile in memory and in the saved document, unedited.
+ViewModels must not depend on XKB-specific generator classes. Concrete backends are registered at the
+application composition root and reached through `ITargetBuildService`. The build panel keeps one
+editable profile per target, and renders no target selector while only one target exists (2.6).
 
 Before enabling Build, the service returns one readiness snapshot containing common validation,
 selected-target validation, profile/output validation, and environment availability. Common errors
@@ -503,7 +465,7 @@ ImportLayoutDialog
 ```
 
 The dialog reuses `KeyControl` and the existing geometry rendering for its preview, so an import is
-seen before it is committed. Import is lossy (13.4), which makes previewing the fidelity report
+seen before it is committed. Import is lossy (12.4), which makes previewing the fidelity report
 before replacement a correctness requirement rather than a nicety.
 
 `LayoutImportViewModel` depends only on `ILayoutImportCatalog`. It must not reference
@@ -548,22 +510,22 @@ KeyboardProjectDocument
  |- documentSchemaVersion
  |- project -> KeyboardProject (Core schemaVersion)
  |- targets
- |   |- windowsX64 -> Windows build settings
  |   `- linuxXkb   -> XKB build settings
  `- importProvenance   (absent unless the document began as an import)
 ```
 
-`ProjectDocumentService` owns current path and dirty state. `BuildViewModel` exports both editable
-profiles through stable discriminators before a save and reapplies them after open/new. A missing
-known profile receives safe defaults; opening a legacy direct Core project remains supported.
+`ProjectDocumentService` owns current path and dirty state. `BuildViewModel` exports the editable
+profile through a stable discriminator before a save and reapplies it after open/new. A missing known
+profile receives safe defaults; opening a legacy direct Core project remains supported. Profile
+discriminators the application does not recognise are ignored on load and are not re-emitted on
+save.
 
 See [PROJECT-FORMAT.md](PROJECT-FORMAT.md).
 
 `KeyboardProject` remains the platform-neutral aggregate. The application/document boundary adds a
-versioned envelope for optional target profiles such as `WindowsLayoutMetadata` and `XkbLayoutMetadata`.
-Profiles are persisted with stable target discriminators without adding their fields to
-`ProjectMetadata` or making Core reference a platform backend. One project may retain profiles for
-both targets; `BuildOptions.Target` selects which one is consumed.
+versioned envelope for optional target profiles such as `XkbLayoutMetadata`. Profiles are persisted
+with stable target discriminators without adding their fields to `ProjectMetadata` or making Core
+reference a platform backend. `BuildOptions.Target` selects which profile is consumed.
 
 ---
 
@@ -590,59 +552,13 @@ Initial validation rules:
 
 After common validation, only the selected backend runs its compatibility rules:
 
-- Windows metadata, logical-key support, scan codes, and generated identifiers;
 - Linux XKB metadata, template-key coverage, keysym support, and generated identifiers.
 
 A validation issue may include `KeyId` so the UI can highlight the problematic key.
 
 ---
 
-## 9. Windows backend
-
-The Windows backend translates the platform-neutral model into an internal Windows model.
-
-```text
-KeyboardProject
-      |
-      v
-WindowsLayoutTranslator
-      |
-      v
-WindowsKeyboardLayout
-      |
-      v
-WindowsCSourceGenerator
-```
-
-Windows semantic model:
-
-```csharp
-public sealed record WindowsKeyboardLayout
-{
-    public required IReadOnlyList<VscToVkMapping> VscToVkMappings { get; init; }
-    public required IReadOnlyList<ExtendedVscToVkMapping> ExtendedVscToVkMappings { get; init; }
-    public required WindowsModifierTable Modifiers { get; init; }
-    public required WindowsCharacterTable Characters { get; init; }
-}
-```
-
-The model has an explicit `LogicalKey` to `WindowsVirtualKey` translation, distinct normal and extended
-scan-code collections, Windows Ctrl+Alt semantics for AltGr, and typed character rows. Scan-only keys
-are represented only in scan-code tables. Translation failures carry structured, key-linked
-diagnostics. The Windows model is never exposed to Avalonia or serialized into `.kbdproj`.
-
-The generated source ultimately describes the native Windows keyboard tables and exposes the keyboard-table descriptor expected by Windows. See [WINDOWS-BUILD.md](WINDOWS-BUILD.md).
-
-After linking, the Windows path parses the PE headers and named export directory on every host. It
-requires the x64 machine, the DLL characteristic, and the exact undecorated
-`KbdLayerDescriptor` export. A matching-architecture Windows process additionally loads the module,
-resolves the export, and frees it without registering or installing the layout. Only then does
-orchestration write the versioned source/toolchain/artifact manifest. An opt-in reproducibility run
-generates and compiles twice, comparing source exactly and DLLs by SHA-256.
-
----
-
-## 10. Linux XKB backend
+## 9. Linux XKB backend
 
 The Linux backend translates the platform-neutral model into a typed XKB symbols model before
 emitting text.
@@ -673,17 +589,17 @@ key name, optional key type, and up to four keysyms. Core layers map to XKB leve
 | `AltGr` | 3 | LevelThree |
 | `ShiftAltGr` | 4 | Shift+LevelThree |
 
-### 10.1 Physical key translation
+### 9.1 Physical key translation
 
 The common identity is `(PhysicalKeyboard.Id, PhysicalKey.Id)`. The Linux backend maps that pair to
 standard XKB key names such as `<AE01>`, `<AC01>`, `<LSGT>`, and `<KPEN>`. It must not infer XKB
-identity from `PhysicalKey.ScanCode`: that field currently supports the Windows set-1 translation and
-does not encode the XKB key-name convention.
+identity from `PhysicalKey.ScanCode`: that field carries a set-1 scan code and does not encode the
+XKB key-name convention.
 
 Explicit ISO-105 and ANSI-104 maps make international and keypad differences reviewable. Missing
 pairs produce key-linked target diagnostics.
 
-### 10.2 Symbols format
+### 9.2 Symbols format
 
 The final artifact is a classic XKB text format v1 `xkb_symbols` component stored as
 `symbols/<layout-id>`. V1 is selected for interoperability with both X11 tooling and Wayland clients.
@@ -695,7 +611,7 @@ standard keycodes, types, compatibility data, and rules. The generator does not 
 system XKB database. Automatic installation and activation are outside the build boundary. See
 [`LINUX-XKB.md`](LINUX-XKB.md).
 
-### 10.3 Verification
+### 9.3 Verification
 
 Managed validation always checks identifiers, key coverage, keysyms, and output structure. When
 available, `xkbcli compile-keymap` verifies the generated component in an isolated include root
@@ -703,7 +619,7 @@ combined with the system defaults. Versions 1.9 and newer add `--test`; older ve
 discard the emitted full keymap. The verifier is mandatory in Linux integration CI but optional for
 local generation, so XKB text can be produced on any supported host.
 
-### 10.4 Import-derived per-user variants
+### 9.4 Import-derived per-user variants
 
 The per-user variant path composes the implemented import and generation capabilities but is not a
 mode of the existing standalone build. It begins only with a system-origin import and keeps the
@@ -756,12 +672,12 @@ using libxkbregistry merge user `evdev.xml` entries reliably. The complete contr
 
 ---
 
-## 11. Build orchestration
+## 10. Build orchestration
 
-### 11.1 Target dispatch
+### 10.1 Target dispatch
 
-The former fixed `IArtifactGenerator` + `IBuildEnvironment` + `INativeCompiler` constructor modeled
-only the Windows pipeline. Those collaborators now live behind a target backend:
+Target-specific generation, tooling, and verification live behind one backend interface rather than
+in the orchestrator:
 
 ```csharp
 public interface IBuildBackend
@@ -781,58 +697,32 @@ runs compatibility validation and reports its own stages.
 
 | Target | Backend path | Required tools | Verification | Final artifact |
 |---|---|---|---|---|
-| `WindowsX64` | C generation -> compile -> link | MSVC + Windows SDK/WDK | PE/export verifier | `<layout-id>.dll` |
 | `LinuxXkb` | symbols generation -> write | none | `xkbcli` when available; required in CI | `symbols/<layout-id>` |
 
-This is single-target dispatch, not host dispatch. A Linux XKB artifact may be generated on Windows or
-macOS because it is deterministic text. A Windows DLL requires the supported Windows toolchain.
+This is single-target dispatch, not host dispatch. The XKB artifact is deterministic text, so
+generation itself needs no host tooling; only the optional external verification stage does.
 
-### 11.2 Target profiles
+### 10.2 Target profiles
 
 `BuildOptions.Target` chooses the output kind. The associated profile supplies backend metadata:
 
 ```text
-WindowsX64 -> WindowsLayoutMetadata
-LinuxXkb   -> XkbLayoutMetadata
+LinuxXkb -> XkbLayoutMetadata
 ```
 
-Profiles belong to the application/project-document boundary, remain separate from Core metadata,
-and may coexist for one project. Changing the target does not mutate key mappings.
+Profiles belong to the application/project-document boundary and remain separate from Core metadata.
+Changing the target does not mutate key mappings.
 
-### 11.3 Windows build collaborators
+### 10.3 Shared build collaborators
 
-The Windows backend retains the existing abstractions internally:
+`KeyboardStudio.Build` keeps only what is target-neutral: the orchestrator, the backend resolver, the
+stage/diagnostic vocabulary, and `IProcessRunner` — a cancellable, argument-list wrapper for invoking
+external tools, used by the XKB verification and install-capability probes.
 
-```csharp
-public interface IBuildEnvironment
-{
-    bool CanBuild(BuildTarget target);
-    BuildEnvironmentStatus GetStatus(BuildTarget target);
-    ResolvedBuildEnvironment? Resolve(BuildTarget target);
-}
+Anything that knows a target's file formats, tooling, or verification rules belongs in that target's
+project, behind `IBuildBackend`.
 
-public interface IArtifactGenerator
-{
-    Task<GeneratedArtifact> GenerateAsync(
-        KeyboardProject project,
-        BuildOptions options,
-        CancellationToken cancellationToken = default);
-}
-
-public interface INativeCompiler
-{
-    Task<CompilationResult> CompileAsync(
-        GeneratedArtifact artifact,
-        BuildOptions options,
-        CancellationToken cancellationToken);
-}
-```
-
-Windows environment resolution prefers an active developer environment and supported Visual
-Studio/Windows Kits discovery. Compilation uses a unique workspace, argument-list process execution,
-parsed diagnostics, and a retained raw log.
-
-### 11.4 Target-neutral results and stages
+### 10.4 Target-neutral results and stages
 
 At the orchestration/UI boundary, result names describe an artifact rather than assuming compilation.
 `KeyboardBuildResult.Artifact` contains:
@@ -841,35 +731,34 @@ At the orchestration/UI boundary, result names describe an artifact rather than 
 Success and artifact path
 Common and target diagnostics
 Raw/verifier log and retained log path
-Manifest and workspace paths
+Manifest path
 Artifact SHA-256
 Typed backend details
 ```
 
-Compiler messages remain in a detailed Windows `CompilationResult` below the backend and are exposed
-through a compatibility accessor. XKB verifier messages map to the target-neutral diagnostic envelope
-without being mislabeled as compiler output.
+XKB verifier messages map to the target-neutral diagnostic envelope rather than being presented as
+compiler output.
 
 Backends report named stage transitions through `IProgress<BuildStageProgress>`. The application
-renders exactly those reports: Windows emits generation, compilation, linking, and verification;
-Linux emits XKB generation, artifact writing, and verification. The orchestrator owns common
-validation and the terminal completed, failed, or cancelled state. Cancellation flows from the build
-panel to generators and native/external processes through the invocation token.
+renders exactly those reports: Linux emits XKB generation, artifact writing, and verification. The
+orchestrator owns common validation and the terminal completed, failed, or cancelled state.
+Cancellation flows from the build panel to generators and external processes through the invocation
+token.
 
-`ArtifactBuildResult.GeneratedFiles` carries the deterministic generated C companions or XKB text
-independently of workspace cleanup. The UI can inspect those snapshots, open the selected output
+`ArtifactBuildResult.GeneratedFiles` carries the deterministic generated XKB text. The UI can inspect
+those snapshots, open the selected output
 directory, and copy the combined structured diagnostics/raw log or canonical artifact path through
 `IBuildInteractionService`; platform shell and clipboard APIs stay out of the ViewModel.
 
 The build panel normalizes readiness issues, backend diagnostics, and generation exceptions into
 seven user-facing problem kinds: project validation, target compatibility, source generation,
-missing required toolchain, optional verifier unavailable, compiler/linker, and artifact
+missing required toolchain, optional verifier unavailable, external tool failure, and artifact
 verification. Codes and original messages remain visible. `KSL004` produces an unverified-success
 presentation rather than failure when external verification is optional.
 
 ---
 
-## 12. Keyboard templates
+## 11. Keyboard templates
 
 Physical geometry is supplied as reusable templates rather than duplicated into every project.
 
@@ -886,7 +775,7 @@ key IDs to native physical identities.
 
 ---
 
-## 13. Layout import
+## 12. Layout import
 
 *Adopted design, built by Phase 13, which is complete: the neutral contract, the seed, the whole XKB
 pipeline, the fidelity report, provenance, the startup import, and the coverage that grades them —
@@ -897,7 +786,7 @@ A new document must never open as bare geometry with zero mappings. Import suppl
 either from an embedded seed or from a layout already installed on the host. Full design detail lives
 in [`LINUX-LAYOUT-IMPORT.md`](LINUX-LAYOUT-IMPORT.md).
 
-### 13.1 Neutral contract, platform sources
+### 12.1 Neutral contract, platform sources
 
 Import yields a `KeyboardProject`, which is a Core concept, so the contract lives in Core and names a
 layout only by opaque identifiers. Core acquires no XKB vocabulary.
@@ -921,10 +810,10 @@ public interface ILayoutImportSource
 
 `ILayoutImportCatalog` aggregates the registered sources and is the only import type the ViewModels
 see, mirroring how `IBuildBackendResolver` keeps backends out of `BuildViewModel`. The Linux source is
-registered at the composition root. A future Windows `.klc` or installed-DLL source implements the
-same interface without reshaping the editor.
+registered at the composition root. A future source for another layout format implements the same
+interface without reshaping the editor.
 
-### 13.2 Seed project
+### 12.2 Seed project
 
 A `us-basic` seed project is the content of every new document. It is host-independent, so the
 empty-keyboard state cannot occur on any platform, including hosts with no XKB data at all.
@@ -950,7 +839,7 @@ The seed's geometry is generated from `templates/iso-105.json` by
 `scripts/generate-us-basic-seed.py`, and a test asserts the two agree key-for-key. Without that
 guard the repository would carry two copies of the same keyboard, free to disagree.
 
-### 13.3 Linux XKB import pipeline
+### 12.3 Linux XKB import pipeline
 
 ```text
 ordered XKB data roots
@@ -1078,7 +967,7 @@ A phonetic layout is where this shows: `am(phonetic)` writes both `<LatQ>` and `
 takes effect. Adding both instead produces a document with two mappings for one key, which the
 editor's own validation refuses.
 
-### 13.4 Import is lossy and reports its losses
+### 12.4 Import is lossy and reports its losses
 
 The domain model has no dead keys, no groups beyond the first, and no levels beyond four. Import does
 not fail on them; it drops them and says so, because a starting point that is 95% correct is more
@@ -1104,7 +993,7 @@ because import loss is a property of the domain model rather than of one platfor
 which is also why their wording names no format. This is the one place the import diagnostics differ
 from the `KSL` build diagnostics, which belong to the backend that raises them.
 
-### 13.5 Provenance and round-tripping
+### 12.5 Provenance and round-tripping
 
 Import provenance is editor bookkeeping rather than layout semantics, so it lives in the document
 envelope alongside target profiles, not in `ProjectMetadata`:
@@ -1143,7 +1032,7 @@ The dialog imports but never commits. Selecting a layout imports it immediately 
 result — a fidelity report the user cannot see until after they commit is a report they cannot act
 on — and what to do with the document is decided by `MainWindowViewModel`, where the document lives.
 
-### 13.6 Startup
+### 12.6 Startup
 
 The seed project loads first so the first frame never waits on the filesystem. On Linux the host's
 configured layout is then resolved and imported asynchronously, replacing the seed only while the
@@ -1168,7 +1057,7 @@ pre-filled.
 
 ---
 
-## 14. Testing strategy
+## 13. Testing strategy
 
 ### KeyboardStudio.Core.Tests
 
@@ -1181,24 +1070,16 @@ Test:
 - template/domain transformations;
 - persistence-independent editing behavior.
 
-### KeyboardStudio.Windows.Tests
+### KeyboardStudio.Build.Tests
 
-Test:
+Test the target-neutral pipeline against stub backends, so the contract stays provable without any
+host toolchain:
 
-- scan-code to virtual-key translation;
-- modifier translation;
-- generated character tables;
-- Unicode output mappings;
-- deterministic source generation;
-- representative golden/source snapshots;
-- native compilation and PE/export verification in Windows integration tests;
-- representative ANSI letters, AltGr Unicode, ISO physical-key, and extended/special-key native fixtures.
-
-The hosted Windows integration boundary resolves a real MSVC/Windows SDK installation and compiles
-all four fixtures through the production orchestrator. It requires PE structure, machine type,
-`KbdLayerDescriptor` export, matching-host load, and reproducibility verification. Failed workspaces
-are the diagnostic handoff boundary: generated inputs, per-tool logs, and the intermediate native
-diagnostic manifest are retained by CI without retaining successful DLLs indefinitely.
+- backend resolution, including duplicate and missing target registrations;
+- that common validation errors stop a build before it reaches a backend, and that non-blocking
+  severities do not;
+- the terminal stage sequence, including the cancelled path;
+- the shared external-process runner, including cancellation.
 
 ### KeyboardStudio.Linux.Tests
 
@@ -1226,9 +1107,8 @@ Test:
 Test target selection, backend resolution, target-specific command enablement, dynamic stage
 presentation, cancellation, and result/error presentation without referencing concrete generators.
 
-Also test target visibility as behavior rather than markup: with the default policy the target
-selector is absent, the Linux profile is the edited one, and a loaded Windows profile survives a
-save/reload unedited; with `KEYBOARDSTUDIO_TARGETS=all` both targets are selectable again.
+Also test target presentation as behavior rather than markup: with one registered target the target
+selector is absent and the XKB profile is the edited one.
 
 Layout import is tested against a fake `ILayoutImportCatalog`: catalog listing and filtering, variant
 selection, geometry override, fidelity presentation, import-as-new versus replace-mappings, the
@@ -1236,7 +1116,7 @@ unsaved-changes confirmation path, and the startup seed and host-import fallback
 
 ---
 
-## 15. Initial MVP boundary
+## 14. Initial MVP boundary
 
 ### Included
 
@@ -1249,13 +1129,11 @@ unsaved-changes confirmation path, and the startup seed and host-import fallback
 - Unicode character outputs;
 - save/load `.kbdproj` and target profiles;
 - common and target-specific validation;
-- native Windows source generation and DLL compilation;
 - deterministic Linux XKB v1 symbols generation;
-- structural/tool verification for both artifact paths.
+- structural and optional external tool verification of the generated artifact.
 
 ### Excluded
 
-- Windows installation and registry registration;
 - automatic XKB installation, desktop registration, or activation;
 - dead keys;
 - chained dead keys;
@@ -1273,24 +1151,22 @@ The list above is the completed MVP boundary. Phase 14 adds only explicit, trans
 remain excluded.
 
 Import is deliberately included in the boundary while dead keys are not, which is why import is
-specified as lossy: it drops what the model cannot hold and reports each loss (13.4).
+specified as lossy: it drops what the model cannot hold and reports each loss (12.4).
 
 The domain model should remain extensible enough to add these later without complicating the first implementation.
 
 ---
 
-## 16. Critical abstractions
+## 15. Critical abstractions
 
 ```text
 IKeyboardProjectStore
 IKeyboardProjectValidator
 IBuildBackendResolver
 IBuildBackend
-IArtifactGenerator             (backend-internal generation)
-INativeCompiler                (Windows backend only)
+IProcessRunner                 (shared external-tool invocation)
 ILayoutImportCatalog           (the only import type ViewModels see)
 ILayoutImportSource            (one per platform layout source)
-IBuildTargetVisibilityPolicy   (presentation-only target exposure)
 IApplicationSettingsStore      (host-local application preferences)
 IApplicationThemeService       (neutral theme choice to Avalonia variant)
 IStartupLayoutLoader           (host detection/import without document mutation)
@@ -1300,7 +1176,7 @@ These boundaries protect the editor from persistence and platform-specific imple
 
 ---
 
-## 17. Architectural summary
+## 16. Architectural summary
 
 ```text
 KeyboardStudio.App (composition + target-aware UI)
@@ -1313,16 +1189,15 @@ KeyboardStudio.App (composition + target-aware UI)
  +--> KeyboardStudio.Persistence --> KeyboardStudio.Core
  |
  +--> KeyboardStudio.Build --> common validation --> backend resolver
- |                                               /          \
- |                                    (UI-hidden)          (UI-visible)
- |                                              v            v
- |                              KeyboardStudio.Windows   KeyboardStudio.Linux
- |                              C/.def/.rc generation    XKB symbols generation
- |                              MSVC compile/link        artifact writer
- |                              PE/export verification  xkbcli verification
- |                                      |                     |
- |                                      v                     v
- |                                  <id>.dll          symbols/<layout-id>
+ |                                                        |
+ |                                                        v
+ |                                              KeyboardStudio.Linux
+ |                                              XKB symbols generation
+ |                                              artifact writer
+ |                                              xkbcli verification
+ |                                                        |
+ |                                                        v
+ |                                              symbols/<layout-id>
  |
  `--> KeyboardStudio.Core
       KeyboardProject -> PhysicalKeyboard + KeyboardLayout + ProjectMetadata
@@ -1330,7 +1205,7 @@ KeyboardStudio.App (composition + target-aware UI)
 
 ---
 
-## 18. Application themes, local settings, and startup shell
+## 17. Application themes, local settings, and startup shell
 
 An application-owned appearance and startup layer sits above the dependency direction described
 above without changing it. Theme choice is host-local presentation state, not keyboard domain state

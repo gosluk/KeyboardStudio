@@ -1,6 +1,5 @@
 using KeyboardStudio.Build;
 using KeyboardStudio.Core;
-using KeyboardStudio.Windows;
 
 namespace KeyboardStudio.App;
 
@@ -10,14 +9,13 @@ namespace KeyboardStudio.App;
 /// </summary>
 /// <remarks>
 /// This steers rather than forbids. What a key may produce is a property of the build target, not of
-/// the key: XKB will take a character on any key, Windows v1 will not, and the visible targets differ
-/// by host. Blocking the control would forbid on one platform what another fully supports, and would
-/// leave imported layouts — which routinely contain exactly these combinations — visible but
-/// uneditable. So the assignment is always allowed and the cost of it is named instead.
+/// the key. Blocking the control would leave imported layouts — which routinely contain exactly
+/// these combinations — visible but uneditable. So the assignment is always allowed and the cost of
+/// it is named instead.
 ///
-/// The verdicts mirror <see cref="WindowsCompatibilityValidationRule"/> and
-/// <see cref="KeyboardStudio.Linux.XkbKeysymMapper"/>, which remain the authority at build time.
-/// This is the same judgement moved earlier, to the moment the choice is made.
+/// The verdicts mirror <see cref="KeyboardStudio.Linux.XkbKeysymMapper"/>, which remains the
+/// authority at build time. This is the same judgement moved earlier, to the moment the choice is
+/// made.
 /// </remarks>
 public static class LayerOutputCapability
 {
@@ -42,7 +40,6 @@ public static class LayerOutputCapability
         {
             var warning = target switch
             {
-                BuildTarget.WindowsX64 => DescribeWindows(logicalKey, layer, output),
                 BuildTarget.LinuxXkb => DescribeXkb(output),
                 _ => null
             };
@@ -54,54 +51,6 @@ public static class LayerOutputCapability
         }
 
         return null;
-    }
-
-    private static string? DescribeWindows(LogicalKey logicalKey, ModifierLayer layer, KeyOutput output)
-    {
-        if (logicalKey == LogicalKey.None)
-        {
-            return "Windows needs this key to have a logical key before it can produce anything.";
-        }
-
-        return output switch
-        {
-            CharacterOutput character => DescribeWindowsCharacter(logicalKey, character),
-            SpecialKeyOutput special => DescribeWindowsSpecialKey(logicalKey, layer, special),
-            _ => null
-        };
-    }
-
-    private static string? DescribeWindowsCharacter(LogicalKey logicalKey, CharacterOutput character)
-    {
-        if (!WindowsLogicalKeyClassifier.ProducesCharacters(logicalKey))
-        {
-            return $"Windows cannot type a character from the {new LogicalKeyOptionViewModel(logicalKey).Label} key.";
-        }
-
-        return character.Value.EnumerateRunes().First().IsBmp
-            ? null
-            : "Windows needs ligature support for this character.";
-    }
-
-    private static string? DescribeWindowsSpecialKey(
-        LogicalKey logicalKey,
-        ModifierLayer layer,
-        SpecialKeyOutput special)
-    {
-        if (special.Key == LogicalKey.None)
-        {
-            return null;
-        }
-
-        // Windows v1 can only express a functional key as the key being itself on its base layer.
-        // Anything else is a per-layer remap the format has no room for.
-        var isKeyBeingItself = layer == ModifierLayer.Default &&
-                               special.Key == logicalKey &&
-                               !WindowsLogicalKeyClassifier.ProducesCharacters(logicalKey);
-
-        return isKeyBeingItself
-            ? null
-            : "Windows cannot build a functional key on this layer.";
     }
 
     private static string? DescribeXkb(KeyOutput output) =>

@@ -3,22 +3,20 @@
 ## 1. Purpose
 
 This document is the executable implementation plan for KeyboardStudio. The completed phases provide
-the solution, Avalonia editor, versioned project persistence, validation, Windows semantic translation,
-deterministic native source generation, the MSVC/WDK compile/link pipeline, structural artifact
-verification, a verified Linux XKB output backend, and the target-aware build user experience. The
-MVP, integration CI, Linux-focused interface, installed-layout import, and the safe import-derived
-per-user XKB variant workflow are complete. The next planned work is explicit application theming,
-local appearance settings, and a simplified startup shell.
+the solution, Avalonia editor, versioned project persistence, validation, a verified Linux XKB output
+backend, and the build user experience. The MVP, integration CI, installed-layout import, and the safe
+import-derived per-user XKB variant workflow are complete. The next planned work is explicit
+application theming, local appearance settings, and a simplified startup shell.
 
 The goal is to move from that bootstrap state to a usable first release that can:
 
 1. display realistic ISO/ANSI physical keyboard templates;
 2. edit key mappings for `Default`, `Shift`, `AltGr`, and `Shift+AltGr`;
 3. create, save, load, and validate `.kbdproj` projects;
-4. translate the platform-neutral project into either Windows keyboard tables or Linux XKB symbols;
-5. compile Windows tables into a native keyboard-layout DLL or materialize a portable XKB layout file;
-6. expose target selection and the build process from the Avalonia application with useful diagnostics;
-7. verify both artifact paths through automated tests and platform integration CI.
+4. translate the platform-neutral project into Linux XKB symbols;
+5. materialize a portable XKB layout file;
+6. expose the build process from the Avalonia application with useful diagnostics;
+7. verify the artifact path through automated tests and integration CI.
 
 The plan intentionally keeps installation/registry registration, dead keys, ligatures, macros, IMEs, and runtime remapping outside the first release.
 
@@ -32,29 +30,26 @@ The current Phase 14-complete baseline provides:
 - `KeyboardStudio.App` using Avalonia;
 - `KeyboardStudio.Core` with keyboard/project domain objects, editing, templates, and validation;
 - `KeyboardStudio.Persistence` with versioned DTO-based JSON persistence and migrations;
-- `KeyboardStudio.Build` with orchestration, isolated workspaces, process execution, MSVC/SDK
-  discovery, PE/export/load verification, manifests, and opt-in reproducibility checks;
-- `KeyboardStudio.Windows` with semantic translation and deterministic `KBDTABLES` source generation;
+- `KeyboardStudio.Build` with orchestration, backend resolution, and external process execution;
 - `KeyboardStudio.Linux` with typed XKB translation, deterministic v1 symbols generation, manifests,
   managed verification, and optional `xkbcli` compilation;
 - complete ISO-105 and ANSI-104 templates;
-- Core, Windows, Linux, and App test projects;
+- Core, Build, Linux, and App test projects;
 - Linux-hosted restore/build/test validation;
 - an Avalonia editor with project lifecycle, mapping controls, and diagnostics;
-- a target-aware build panel with per-target profiles, preflight gating, backend-reported stages,
-  cancellation, generated-source/output actions, and categorized result presentation.
+- a build panel with a target profile, preflight gating, backend-reported stages, cancellation,
+  generated-source/output actions, and categorized result presentation.
 - a Linux layout catalog/importer with managed parsing, include resolution, fidelity diagnostics,
   host-layout detection, and persisted import provenance;
-- an embedded fully mapped `us-basic` seed and a Linux-focused target visibility policy;
+- an embedded fully mapped `us-basic` seed;
 - a derived per-user XKB variant workflow with immutable baselines, safe bundle generation,
   capability gating, transactional installation, recovery, verification, and uninstall;
-- completed managed, Linux integration, Windows native integration, packaging, and MVP release gates.
+- completed managed, XKB integration, packaging, and MVP release gates.
 
-Phases 0-14 are complete. The Windows path generates real `KBDTABLES` source, compiles x64
-DLLs through a discovered MSVC/Windows SDK toolchain, and verifies the resulting artifact beyond the
-linker exit code. `BuildOrchestrator` now validates once and resolves one `IBuildBackend` for the
+Phases 0-14 are complete. `BuildOrchestrator` validates once and resolves one `IBuildBackend` for the
 selected target. The Linux path materializes an XKB symbols component directly, performs managed
-validation everywhere, and compiles it with `xkbcli` when available without probing MSVC.
+validation everywhere, and compiles it with `xkbcli` when available, probing for no build tooling of
+its own.
 
 ---
 
@@ -65,15 +60,12 @@ validation everywhere, and compiles it with `xkbcli` when available without prob
 `KeyboardStudio.Core` must never acquire references to:
 
 - Avalonia;
-- Win32 APIs;
-- WDK headers;
-- `kbd.h` structures;
-- MSVC command-line details;
+- platform keyboard APIs;
 - XKB key names, keysyms, libxkbcommon APIs, or XKB installation paths;
-- registry installation code.
+- system installation code.
 
-Windows-specific knowledge belongs in `KeyboardStudio.Windows`, XKB-specific knowledge belongs in
-`KeyboardStudio.Linux`, and shared orchestration/tool execution belongs in `KeyboardStudio.Build`.
+XKB-specific knowledge belongs in `KeyboardStudio.Linux`, and shared orchestration/tool execution
+belongs in `KeyboardStudio.Build`.
 
 ### 3.2 Prefer deterministic transformations
 
@@ -85,7 +77,7 @@ KeyboardProject
     -> selected target backend
     -> target intermediate model
     -> generated artifact files
-    -> optional compiler or verifier invocation
+    -> optional verifier invocation
     -> build result
 ```
 
@@ -101,8 +93,8 @@ Version 1 supports only direct character outputs and special logical keys across
 
 ### 3.5 Preserve readable generated artifacts
 
-Generated Windows C and Linux XKB text are debugging and review surfaces. They should be
-human-readable, stable, and easy to compare against the authoritative platform formats.
+Generated XKB text is a debugging and review surface. It should be human-readable, stable, and easy
+to compare against the authoritative platform format.
 
 ---
 
@@ -124,25 +116,16 @@ Phase 3  Editor interaction and project lifecycle
 Phase 4  Validation and diagnostics
    |
    v
-Phase 5  Windows semantic translation
-   |
-   v
-Phase 6  Real KBDTABLES source generation
-   |
-   v
-Phase 7  MSVC/WDK compiler integration
-   |
-   v
-Phase 8  Artifact verification
+Phases 5-8  (removed with the Windows target)
    |
    v
 Phase 9  Linux XKB layout file generation
    |
    v
-Phase 10 Target-aware build UX
+Phase 10 Build UX
    |
    v
-Phase 11 Windows integration CI
+Phase 11 (removed with the Windows target)
    |
    v
 Phase 12 MVP stabilization and release readiness
@@ -158,8 +141,9 @@ Phase 15 Application themes and startup shell
 ```
 
 Phase 13 narrows the shipping user interface to the Linux target and removes the empty-keyboard
-starting state. It deliberately hides rather than deletes the Windows path, so Phases 5-8 and 11 stay
-green and the target can be re-exposed by a policy change.
+starting state. It hid the second target behind a presentation policy; that target was later removed
+outright, and the policy with it. See
+[AD-042](DECISIONS.md#ad-042---the-windows-target-is-removed-rather-than-hidden).
 
 Phase 14 builds on the completed importer and XKB backend. It preserves the standalone generator,
 adds an immutable import baseline and neutral diff, generates a user-root bundle that remains tied to
@@ -173,11 +157,9 @@ the keyboard domain or project schema. Detailed architecture lives in
 [`THEMING-IMPLEMENTATION-PLAN.md`](THEMING-IMPLEMENTATION-PLAN.md), and decisions in AD-033 to
 AD-037.
 
-The Linux phase follows Windows artifact verification so the completed Windows path remains intact,
-but precedes build UX so target selection is designed once for both outputs. Linux integration coverage
-is part of Phase 9 because it runs on the existing Linux CI host; Windows native CI remains separate.
-Neither backend may force its key names, metadata, modifier bits, or toolchain concepts into the core
-project model.
+The Linux phase precedes build UX so target selection is designed once at the backend boundary rather
+than around one output. A backend may not force its key names, metadata, modifier bits, or toolchain
+concepts into the core project model.
 
 ---
 
@@ -207,7 +189,7 @@ KeyboardStudio.App/
   Controls/
   Services/
 
-KeyboardStudio.Windows/
+KeyboardStudio.Linux/
   Translation/
   Model/
   Generation/
@@ -215,7 +197,7 @@ KeyboardStudio.Windows/
 KeyboardStudio.Build/
   Abstractions/
   Orchestration/
-  Toolchains/
+  Processes/
 ```
 
 Do not over-fragment tiny types, but avoid maintaining major subsystems in single monolithic files.
@@ -233,9 +215,9 @@ Add/review:
 
 ### P0.3 Improve CI matrix structure
 
-Keep the existing Ubuntu build because it proves the core and Avalonia projects remain cross-platform.
+Keep the existing Linux build because it proves the core and Avalonia projects build cleanly.
 
-Prepare CI so a Windows job can later be added without duplicating common steps.
+Structure CI so a further job can be added later without duplicating common steps.
 
 ### P0.4 Establish test naming conventions
 
@@ -274,10 +256,11 @@ Make `.kbdproj` a durable project format that can safely evolve.
 - description;
 - project version;
 - language/locale metadata;
-- Windows layout identifier/name where applicable;
+- target layout identifier/name where applicable;
 - author metadata only if useful for generated resources.
 
-Separate general project metadata from Windows-only build metadata if a field has no cross-platform meaning.
+Separate general project metadata from target-only build metadata if a field has no cross-platform
+meaning.
 
 ### P1.2 Formalize schema versioning
 
@@ -600,7 +583,7 @@ A user can create a project, edit mappings visually, save it, reopen it, and con
 
 ## Objective
 
-Ensure invalid projects are caught before Windows source generation.
+Ensure invalid projects are caught before source generation.
 
 ## Work items
 
@@ -613,7 +596,7 @@ IKeyboardProjectValidationRule
   -> MetadataValidationRule
   -> PhysicalKeyboardValidationRule
   -> MappingValidationRule
-  -> WindowsCompatibilityValidationRule (Windows assembly)
+  -> target compatibility rules (backend assembly)
 ```
 
 Core rules must remain platform-neutral.
@@ -627,8 +610,8 @@ KSP001  duplicate physical key ID
 KSP002  invalid scan code
 KSM001  mapping refers to missing key
 KSM002  invalid character output
-KSW001  unsupported Windows logical-key mapping
-KSW002  unsupported Windows modifier combination
+KSL001  unsupported XKB key name
+KSL002  unsupported keysym for a character output
 ```
 
 Codes should be stable enough for tests and future CLI integration.
@@ -658,7 +641,7 @@ Clicking a key-related diagnostic should select/highlight that key.
 
 Run cheap project validation after meaningful edits with debouncing if needed.
 
-Do not invoke Windows source generation or native compilation on every edit.
+Do not invoke source generation or any external tool on every edit.
 
 ## Tests
 
@@ -674,372 +657,12 @@ The user can see why a project cannot be built and navigate from an error to the
 
 ---
 
-# Phase 5 — Windows semantic translation
-
-## Objective
-
-Translate the platform-neutral model into a complete Windows-specific intermediate representation before generating C.
-
-This phase is the start of the critical Windows compiler path.
-
-## Work items
-
-### P5.1 Define Windows virtual-key model
-
-Create an internal or public-to-Windows-assembly enum/value type representing the subset of Windows virtual keys required by v1.
-
-Mapping must be explicit:
-
-```text
-LogicalKey.A -> VK_A
-LogicalKey.Enter -> VK_RETURN
-LogicalKey.Space -> VK_SPACE
-...
-```
-
-No `Enum.Parse`/name coincidence shortcuts.
-
-### P5.2 Define scan-code mapping model
-
-Represent:
-
-```csharp
-VscToVkMapping
-ExtendedVscToVkMapping
-```
-
-Account for normal and extended scan-code tables separately where required by Windows.
-
-### P5.3 Define modifier model
-
-Represent Windows modifier bits and modifier-number states required for:
-
-- no modifiers;
-- Shift;
-- Ctrl;
-- Alt;
-- AltGr semantics;
-- Shift+AltGr.
-
-Although Core exposes only AltGr, Windows translation may need to model the Ctrl+Alt relationship used by Windows keyboard layouts.
-
-### P5.4 Define character table rows
-
-Create typed intermediate rows such as:
-
-```text
-WindowsCharacterMapping
-  VirtualKey
-  Attributes
-  Default
-  Shift
-  AltGr
-  ShiftAltGr
-```
-
-Choose the correct generated `VK_TO_WCHARS<n>` table width based on supported modifier states.
-
-### P5.5 Special/non-character keys
-
-Decide which logical keys require only scan-code -> virtual-key mapping and should not be included as printable character rows.
-
-### P5.6 Unsupported mapping detection
-
-Windows translation should fail with structured diagnostics rather than silently drop mappings.
-
-## Tests
-
-Create table-driven tests covering representative categories:
-
-- letters;
-- digits;
-- punctuation;
-- space;
-- Enter/Tab/Backspace;
-- AltGr Unicode output;
-- Shift+AltGr output;
-- extended keys;
-- unmapped output.
-
-## Acceptance criteria
-
-A valid `KeyboardProject` translates into a complete, deterministic Windows intermediate model with no C code involved.
-
----
-
-# Phase 6 — Real Windows `KBDTABLES` source generation
-
-## Objective
-
-Generate native C source equivalent in structure to a real WDK keyboard-layout implementation.
-
-## Work items
-
-### P6.1 Establish reference fixture
-
-Select one or more Microsoft sample keyboard layouts as structural references.
-
-Create notes mapping KeyboardStudio model concepts to Windows structures:
-
-```text
-Physical scan code       -> VSC_VK tables
-Modifier mapping         -> VK_TO_BIT + MODIFIERS
-Printable outputs        -> VK_TO_WCHARS<n>
-Character table groups   -> VK_TO_WCHAR_TABLE
-Layout descriptor        -> KBDTABLES
-Entry point               -> KbdLayerDescriptor
-```
-
-Do not copy unnecessary sample-specific data.
-
-### P6.2 Generate source file set
-
-Target a deterministic set such as:
-
-```text
-<layout>.c
-<layout>.h
-<layout>.def
-<layout>.rc
-```
-
-If fewer files are sufficient, document why.
-
-### P6.3 Generate scan-code tables
-
-Emit:
-
-- primary scan-code table;
-- E0 extended mappings if needed;
-- E1 mappings if needed;
-- sentinel rows expected by Windows structures.
-
-### P6.4 Generate key names
-
-Generate key name tables only where necessary for the layout and debugging/Windows behavior.
-
-Keep display names separate from logical mapping semantics.
-
-### P6.5 Generate modifier tables
-
-Emit:
-
-- `VK_TO_BIT` definitions;
-- modifier-number mapping;
-- invalid modifier states where appropriate;
-- AltGr layout flags.
-
-### P6.6 Generate character tables
-
-Emit correct `VK_TO_WCHARS<n>` rows.
-
-Requirements:
-
-- deterministic ordering;
-- escaped C literals or numeric Unicode values;
-- correct handling of no-output sentinel values;
-- explicit Unicode encoding policy;
-- no locale-dependent formatting.
-
-### P6.7 Generate `KBDTABLES`
-
-Populate all required fields for the supported MVP feature subset.
-
-Unused optional structures should be represented exactly as Windows expects, not guessed.
-
-### P6.8 Generate `KbdLayerDescriptor`
-
-Export the layout descriptor with the correct calling/export conventions required by the build.
-
-### P6.9 Generate `.def` and resource metadata
-
-Include exported function declaration and useful file/version metadata.
-
-### P6.10 Golden-file tests
-
-Maintain small readable golden fixtures under tests:
-
-```text
-tests/KeyboardStudio.Windows.Tests/Fixtures/
-  MinimalUs/
-  AltGrUnicode/
-  IsoExample/
-```
-
-Compare normalized generated output exactly.
-
-## Tests
-
-- deterministic generation;
-- C tables contain expected scan-code mappings;
-- modifier table matches expected state numbers;
-- Unicode code points are correct;
-- exported descriptor exists;
-- no generated source contains unstable timestamps/paths unless explicitly requested;
-- golden fixtures match expected source.
-
-## Acceptance criteria
-
-Generated C source is structurally valid for the Windows keyboard-layout ABI and ready to compile using the WDK/MSVC toolchain.
-
----
-
-# Phase 7 — MSVC/WDK compiler integration
-
-## Objective
-
-Turn generated source into a native keyboard-layout DLL.
-
-## Work items
-
-### P7.1 Implement build-environment detection
-
-Create a Windows implementation of `IBuildEnvironment` that detects:
-
-- Windows host;
-- Visual Studio Build Tools / MSVC;
-- Windows SDK/WDK headers and libraries;
-- required tools such as `cl.exe`, `link.exe`, and resource compiler if used;
-- supported target architectures.
-
-Return a structured status rather than a boolean-only failure.
-
-### P7.2 Resolve compiler environment
-
-Prefer supported discovery mechanisms rather than hard-coded paths.
-
-The resolved environment should expose:
-
-```text
-CompilerPath
-LinkerPath
-ResourceCompilerPath
-IncludePaths
-LibraryPaths
-ToolVersion
-SdkVersion
-```
-
-### P7.3 Build working directory
-
-Each build gets an isolated directory:
-
-```text
-<project-build-root>/
-  generated/
-  obj/
-  output/
-  logs/
-```
-
-Never compile in the source repository directory.
-
-### P7.4 Implement process runner
-
-Create a reusable process execution abstraction capturing:
-
-- executable;
-- arguments;
-- environment;
-- working directory;
-- stdout;
-- stderr;
-- exit code;
-- duration;
-- cancellation.
-
-Avoid shell string concatenation where argument-list APIs are available.
-
-### P7.5 Compile generated C
-
-Compile with the expected Windows headers and target architecture.
-
-Support x64. Other Windows architectures are outside the MVP scope.
-
-### P7.6 Link keyboard-layout DLL
-
-Produce a DLL exporting `KbdLayerDescriptor`.
-
-Use deterministic naming derived from validated project build metadata.
-
-### P7.7 Build logs
-
-Map tool output into `CompilerMessage` objects while preserving the raw log for troubleshooting.
-
-### P7.8 Cancellation and cleanup
-
-A cancelled build should terminate child processes and leave either a useful diagnostic folder or clean temporary files according to a documented policy.
-
-## Tests
-
-Unit tests:
-
-- environment detection parsing;
-- command construction;
-- process result mapping;
-- missing toolchain diagnostics.
-
-Windows integration tests:
-
-- compile a minimal generated layout;
-- output DLL exists;
-- compiler exits successfully;
-- known invalid source produces useful failure.
-
-## Acceptance criteria
-
-On a correctly configured Windows machine, `BuildOrchestrator` produces a native keyboard-layout DLL from a valid KeyboardStudio project.
-
----
-
-# Phase 8 — Artifact verification
-
-## Objective
-
-Do not treat linker success as proof that the output is a valid keyboard-layout artifact.
-
-## Work items
-
-### P8.1 PE verification
-
-After linking, verify:
-
-- file exists;
-- PE architecture matches requested target;
-- DLL characteristic is present;
-- expected export exists.
-
-### P8.2 Export verification
-
-Confirm `KbdLayerDescriptor` is exported under the expected name.
-
-### P8.3 Load-level smoke test
-
-On Windows CI, create a safe test helper that can load/inspect the DLL sufficiently to confirm the exported descriptor can be resolved.
-
-Do not install/register the keyboard layout as part of normal unit tests.
-
-### P8.4 Generated/source manifest
-
-Return a build manifest containing:
-
-```text
-Project name
-Build target
-Generated source files
-Compiler/toolchain versions
-Output DLL path
-Output hash
-Build timestamp (manifest only, not generated source)
-```
-
-### P8.5 Reproducibility check
-
-Where toolchain behavior permits, build the same project twice and compare generated source exactly and binary outputs as far as deterministic linker settings allow.
-
-## Acceptance criteria
-
-A successful build result means more than "link.exe returned 0"; the artifact passes structural verification.
+# Phases 5-8 — Removed with the Windows target
+
+Windows semantic translation, `KBDTABLES` source generation, the MSVC/WDK compile/link pipeline, and
+PE/export artifact verification were planned, delivered, and later removed. The plan text is dropped
+rather than kept as a record of a subsystem that no longer exists; the decision and its reasoning are
+in [AD-042](DECISIONS.md#ad-042---the-windows-target-is-removed-rather-than-hidden).
 
 ---
 
@@ -1047,20 +670,18 @@ A successful build result means more than "link.exe returned 0"; the artifact pa
 
 ## Objective
 
-Turn the same platform-neutral `KeyboardProject` used by the Windows backend into a deterministic,
-installable XKB symbols component. This phase also generalizes build dispatch so one build invocation
-selects either a Windows DLL backend or the Linux XKB backend without pretending that both targets
-have a native compiler.
+Turn the platform-neutral `KeyboardProject` into a deterministic, installable XKB symbols component.
+This phase also generalizes build dispatch so one build invocation resolves one backend, without
+assuming every target materializes its artifact the same way.
 
-Place this phase after Windows artifact verification and before build UX. The completed Windows path
-is therefore preserved, while target selection and target-specific settings exist before the GUI build
-workflow is finalized.
+Place this phase before build UX, so target selection and target-specific settings exist before the
+GUI build workflow is finalized.
 
 ## Work items
 
 ### P9.1 Generalize orchestration for heterogeneous artifact targets
 
-Add `LinuxXkb` to `BuildTarget` and replace the fixed generator/environment/compiler tuple in
+Add `LinuxXkb` to `BuildTarget` and replace the fixed generator/environment tuple in
 `BuildOrchestrator` with a target backend resolved from the selected target. The planned boundary is:
 
 ```csharp
@@ -1076,9 +697,8 @@ public interface IBuildBackend
 ```
 
 `BuildOrchestrator` continues to run platform-neutral validation once, resolves exactly one backend,
-and delegates the target-specific validation, generation, materialization, and verification stages.
-MSVC compilation remains an internal collaborator of the Windows backend. Do not introduce a no-op
-`INativeCompiler` for XKB merely to satisfy the current pipeline shape.
+and delegates the target-specific validation, generation, materialization, and verification stages. Do
+not introduce a no-op compilation stage for XKB merely to satisfy the current pipeline shape.
 
 ### P9.2 Add the Linux/XKB backend and target metadata
 
@@ -1096,12 +716,12 @@ tests/KeyboardStudio.Linux.Tests/
 
 `KeyboardStudio.Linux` references `KeyboardStudio.Core` and `KeyboardStudio.Build`; neither Core nor
 Persistence references the Linux backend. Define `XkbLayoutMetadata` for a sanitized layout ID,
-section/variant ID, and display description. Windows and XKB metadata are separate target profiles
-associated with a project document, not fields added to `ProjectMetadata`.
+section/variant ID, and display description. Target metadata is a profile associated with a project
+document, not fields added to `ProjectMetadata`.
 
-Extend the target-settings persistence boundary called for by AD-009 so a saved document can preserve
-both Windows and XKB profiles using stable target discriminators. The domain aggregate remains
-platform-neutral and usable without either profile.
+Extend the target-settings persistence boundary called for by AD-009 so a saved document preserves
+target profiles using stable discriminators. The domain aggregate remains platform-neutral and usable
+without any profile.
 
 ### P9.3 Map physical key identities to XKB key names
 
@@ -1170,8 +790,8 @@ Verifier/tool version when available
 Build timestamp (manifest only)
 ```
 
-Keep target-neutral result language (`ArtifactPath`, diagnostics, stages) even if Windows
-implementations continue to expose compiler-specific details below their backend boundary.
+Keep target-neutral result language (`ArtifactPath`, diagnostics, stages) even where a backend
+exposes tool-specific detail below its own boundary.
 
 ### P9.7 Validate generated layouts with `xkbcli`
 
@@ -1206,7 +826,7 @@ Cover:
 - BMP and supplementary-plane Unicode keysyms;
 - unsupported key/template diagnostics;
 - deterministic source and sanitized output names;
-- target resolution proving Windows and Linux builds select different backends.
+- target resolution proving a build selects the backend registered for its target.
 
 Keep representative golden files small and readable.
 
@@ -1218,21 +838,19 @@ least an ISO layout with AltGr Unicode output plus an ANSI two-level layout.
 
 ## Acceptance criteria
 
-- one `KeyboardProject` can be built as `WindowsX64` or `LinuxXkb` by changing only
-  the selected target/profile;
-- selecting `LinuxXkb` never probes MSVC or invokes `INativeCompiler`;
+- a `KeyboardProject` is built by resolving the backend registered for the selected target;
+- selecting `LinuxXkb` probes for no build toolchain of its own;
 - the generated XKB v1 symbols component is deterministic and contains all supported mappings;
-- representative artifacts compile successfully with `xkbcli` on Linux CI;
-- Windows build behavior and tests remain unchanged;
+- representative artifacts compile successfully with `xkbcli` on CI;
 - installation or activation of the XKB layout remains explicitly out of scope.
 
 ---
 
-# Phase 10 — Target-aware build user experience
+# Phase 10 — Build user experience
 
 ## Objective
 
-Expose both artifact backends cleanly in Avalonia.
+Expose the artifact backend cleanly in Avalonia.
 
 ## Work items
 
@@ -1240,7 +858,7 @@ Expose both artifact backends cleanly in Avalonia.
 
 Display:
 
-- selected target (`Windows x64` or `Linux XKB`);
+- selected target (`Linux XKB`);
 - settings for the selected target profile;
 - required tool/verifier availability;
 - validation status;
@@ -1255,7 +873,7 @@ Build is disabled when:
 
 - the project has blocking common or selected-target validation errors;
 - the selected backend cannot produce its artifact;
-- required Windows tools are unavailable for a Windows target;
+- a tool the selected backend requires is unavailable;
 - a build is already running.
 
 An unavailable optional XKB verifier is shown as a warning and does not make text generation depend on
@@ -1267,7 +885,6 @@ Show only stages reported by the selected backend:
 
 ```text
 Common:   Validating -> Generating -> Verifying -> Completed / Failed
-Windows:  Validating -> Generating -> Compiling -> Linking -> Verifying -> Completed / Failed
 Linux:    Validating -> Generating XKB -> Writing artifact -> Verifying (when available) -> Completed / Failed
 ```
 
@@ -1276,7 +893,7 @@ Linux:    Validating -> Generating XKB -> Writing artifact -> Verifying (when av
 Provide actions to:
 
 - open output directory;
-- inspect generated C or XKB text;
+- inspect the generated XKB text;
 - copy diagnostic/build log;
 - copy the canonical artifact path.
 
@@ -1289,7 +906,7 @@ Distinguish:
 - source-generation error;
 - missing required toolchain;
 - optional verifier unavailable;
-- compiler/linker error;
+- external tool error;
 - artifact verification error.
 
 ## Tests
@@ -1304,67 +921,16 @@ Distinguish:
 
 ## Acceptance criteria
 
-A user can select Windows DLL or Linux XKB output, build a valid project, and understand the resulting
-artifact and any failure without reading application source code.
+A user can build a valid project and understand the resulting artifact and any failure without
+reading application source code.
 
 ---
 
-# Phase 11 — Windows integration CI
+# Phase 11 — Removed with the Windows target
 
-## Objective
-
-Continuously prove that generated source actually compiles on Windows.
-
-## Work items
-
-### P11.1 Add Windows runner
-
-Extend GitHub Actions with a Windows job that:
-
-1. restores;
-2. builds .NET solution;
-3. runs all unit tests;
-4. locates the Windows build toolchain;
-5. builds one or more fixture keyboard DLLs;
-6. verifies exports/artifacts.
-
-### P11.2 Separate fast and native tests
-
-Use categories/traits:
-
-```text
-Unit
-Golden
-XkbIntegration
-WindowsIntegration
-```
-
-Linux runs all platform-neutral tests plus `XkbIntegration`. Windows runs all platform-neutral tests
-plus `WindowsIntegration`.
-
-### P11.3 Artifact retention on failure
-
-When native tests fail, upload:
-
-- generated C;
-- compiler logs;
-- linker logs;
-- intermediate diagnostic manifest.
-
-Avoid uploading successful artifacts indefinitely unless needed.
-
-### P11.4 Test representative fixtures
-
-At minimum:
-
-- simple US-like letters;
-- AltGr Unicode mapping;
-- ISO physical layout;
-- special keys/extended scan code fixture.
-
-## Acceptance criteria
-
-Every commit that changes Windows translation/generation is validated by a real Windows native compilation job.
+The hosted Windows integration CI job, its native fixtures, and its artifact-retention rules were
+removed with the backend they proved. See
+[AD-042](DECISIONS.md#ad-042---the-windows-target-is-removed-rather-than-hidden).
 
 ---
 
@@ -1387,8 +953,7 @@ New project
 -> save
 -> close/reopen
 -> validate
--> select Windows target -> build and verify DLL
--> select Linux XKB target -> generate and verify symbols component
+-> build and verify the XKB symbols component
 ```
 
 ### P12.2 Error-path testing
@@ -1399,8 +964,6 @@ Exercise:
 - unknown schema version;
 - missing target profile;
 - unsupported target mapping;
-- missing Windows toolchain;
-- compiler failure;
 - unavailable/failing XKB verifier;
 - unwritable output path;
 - cancelled build.
@@ -1411,15 +974,14 @@ Update:
 
 - README quick start;
 - project format and target-profile documentation;
-- Windows build prerequisites;
 - Linux XKB generation, verification, and safe manual installation guidance;
 - architecture diagrams if implementation diverged;
 - limitations section.
 
 ### P12.4 Packaging the Avalonia application
 
-Produce Windows and Linux desktop builds of KeyboardStudio. The Linux package must be able to generate
-XKB text without development tools; `xkbcli` is an optional local verifier.
+Produce a Linux desktop build of KeyboardStudio. The package must be able to generate XKB text
+without development tools; `xkbcli` is an optional local verifier.
 
 ### P12.5 Versioning
 
@@ -1436,23 +998,20 @@ KeyboardStudio app: 0.1.0
 
 The first MVP is complete only when all of the following are true:
 
-- application opens on supported Windows and Linux versions;
+- application opens on supported Linux versions;
 - ISO-105 and ANSI-104 render correctly;
 - four modifier layers can be edited;
 - project save/load and target profiles are reliable;
 - invalid projects produce actionable common and target-specific diagnostics;
-- a valid project produces real Windows `KBDTABLES` source;
-- Windows source compiles to a DLL with a supported toolchain;
-- the output DLL passes structural/export verification;
-- the same project produces a deterministic XKB v1 symbols component;
-- the generated XKB component passes `xkbcli` verification on Linux CI;
-- Linux and Windows integration CI are green;
+- a valid project produces a deterministic XKB v1 symbols component;
+- the generated XKB component passes `xkbcli` verification on CI;
+- integration CI is green;
 - documentation matches behavior.
 
 Implementation evidence and the remaining manual visual-release observations are tracked in
 [`MVP-RELEASE-CHECKLIST.md`](MVP-RELEASE-CHECKLIST.md). CI exposes one final **MVP release gate** that
-requires managed tests, Linux XKB integration, Windows native integration, and both self-contained
-desktop package jobs for the same commit.
+requires managed tests, XKB integration, and the self-contained desktop package job for the same
+commit.
 
 ---
 
@@ -1509,26 +1068,12 @@ Ships alone. No dependency on any other item in this phase.
 
 ### P13.2 Target visibility policy
 
-```text
-KeyboardStudio.App/Services/
-  IBuildTargetVisibilityPolicy.cs
-  EnvironmentBuildTargetVisibilityPolicy.cs
-```
-
-`BuildViewModel` filters `Targets` through the policy and exposes `IsTargetSelectorVisible`. When one
-target is visible the selector is not rendered and the target name moves to a badge on the Build
-card. `KEYBOARDSTUDIO_TARGETS=all` restores both.
-
-`EnvironmentBuildTargetVisibilityPolicy` has a second constructor taking the override value directly,
-so tests never mutate the process environment that xUnit shares across parallel collections.
-`MainWindowViewModel` gained a constructor overload that accepts the policy; the shorter overloads
-supply the environment-backed one. A policy that hid every target would leave a Build card with
-nothing to build, so `BuildViewModel` falls back to the full list in that case.
-
-Nothing is deleted. `KeyboardStudio.Windows` stays referenced and registered, `BuildTarget.WindowsX64`
-stays in the enum, the `windowsX64` profile stays populated and persisted, and Windows CI is
-untouched. Hidden profiles are still exported and reapplied by `ExportTargetProfiles` /
-`ApplyTargetProfiles`, so a document authored on a Windows-enabled build round-trips unedited.
+*Superseded.* This item added `IBuildTargetVisibilityPolicy` and
+`EnvironmentBuildTargetVisibilityPolicy` so the shipping UI offered one target while the second
+stayed registered and tested. The second target was later removed outright and the policy deleted
+with it; `BuildViewModel` still exposes `IsTargetSelectorVisible`, which is now simply false while one
+target is registered. See
+[AD-042](DECISIONS.md#ad-042---the-windows-target-is-removed-rather-than-hidden).
 
 Ships alone.
 
@@ -2001,8 +1546,7 @@ Fedora host.
 `KeyboardStudio.App.Tests`
 
 - new documents are non-empty and validate clean;
-- default policy hides the target selector and edits the Linux profile; a loaded Windows profile
-  survives save and reload unedited; `KEYBOARDSTUDIO_TARGETS=all` restores both targets;
+- the target selector is hidden and the Linux profile is the edited one;
 - catalog listing, filtering, variant and geometry selection, fidelity presentation;
 - import as new project versus replace mappings, including the unsaved-changes path;
 - startup fallback chain: env, then `00-keyboard.conf`, then `vconsole.conf`, then `us`, then seed on
@@ -2011,9 +1555,7 @@ Fedora host.
 ## Acceptance criteria
 
 - no user action produces a document with zero mappings;
-- the build panel shows no target selector and no Windows-specific field, while
-  `KeyboardStudio.Windows.Tests` and the Windows CI job remain green and unmodified;
-- a saved document authored before this phase reloads with its `windowsX64` profile byte-identical;
+- the build panel shows no target selector;
 - the import dialog lists the host's layouts and variants, grouped by user and system origin, and
   filters by name, ID, language, and country;
 - importing `pl(basic)` on a stock xkeyboard-config yields a validating project whose four layers
@@ -2253,8 +1795,7 @@ introducing the deferred inspector, zoom, recent-files, or window-state features
 
 ### P15.8 Close automated and visual verification
 
-Run application/unit/golden, Release build, packaging, and startup gates on applicable Linux and
-Windows runners. Complete the three-theme surface/state/scaling matrix, keyboard navigation and
+Run application/unit/golden, Release build, packaging, and startup gates. Complete the three-theme surface/state/scaling matrix, keyboard navigation and
 accessible-name checks, documentation closure, and the one-top-level-C#-type audit.
 
 ## Acceptance criteria
@@ -2353,9 +1894,7 @@ Cover:
 - validation;
 - DTO mapping;
 - template parsing;
-- Windows semantic translation;
 - XKB physical-key and keysym translation;
-- C generation helpers;
 - XKB symbols generation;
 - target backend resolution;
 - build command construction;
@@ -2363,7 +1902,7 @@ Cover:
 
 ### Golden/source tests
 
-Cover deterministic generated Windows source and Linux XKB symbols components.
+Cover deterministic generated Linux XKB symbols components.
 
 Golden fixtures should be few, representative, and intentionally reviewed when changed.
 
@@ -2372,10 +1911,7 @@ Golden fixtures should be few, representative, and intentionally reviewed when c
 Cover:
 
 - JSON files on disk;
-- generated XKB compilation with `xkbcli` on Linux;
-- Windows compiler/toolchain discovery;
-- generated C compilation;
-- DLL export verification.
+- generated XKB compilation with `xkbcli` on Linux.
 
 ### Manual exploratory tests
 
@@ -2384,8 +1920,7 @@ Cover:
 - keyboard editing ergonomics;
 - display scaling;
 - file dialogs;
-- toolchain setup failures;
-- Windows desktop behavior;
+- verifier setup failures;
 - Linux desktop behavior and manual XKB import guidance.
 
 ---
@@ -2402,30 +1937,14 @@ Result:
 - visual editing;
 - save/load;
 - diagnostics;
-- no real native DLL yet.
+- no generated artifact yet.
 
-### Milestone B — Native source correctness
+### Milestones B and C — Removed with the Windows target
 
-Includes phases 5-6.
+Covered phases 5-8. See
+[AD-042](DECISIONS.md#ad-042---the-windows-target-is-removed-rather-than-hidden).
 
-Result:
-
-- full Windows intermediate model;
-- real `KBDTABLES` C source;
-- strong golden tests;
-- compilation may still be external/manual.
-
-### Milestone C — Native build pipeline
-
-Includes phases 7-8.
-
-Result:
-
-- toolchain detection;
-- automated compile/link;
-- verified DLL artifact.
-
-### Milestone D — Multi-target artifacts
+### Milestone D — Backend-dispatched artifacts
 
 Includes phase 9.
 
@@ -2441,9 +1960,9 @@ Includes phases 10-12.
 
 Result:
 
-- target-aware GUI build workflow;
-- Windows CI;
-- stabilized Windows and Linux end-to-end application.
+- GUI build workflow;
+- integration CI;
+- stabilized end-to-end application.
 
 ### Milestone F — Safe per-user Linux augmentation
 
@@ -2482,24 +2001,16 @@ Add ISO-105 keyboard template
 Render keyboard using physical geometry
 Add project document service
 Add mapping validation rules
-Add Windows virtual-key translation
-Generate Windows modifier tables
-Generate VK_TO_WCHARS tables
-Generate KBDTABLES descriptor
-Detect MSVC/WDK toolchain
-Compile generated keyboard source
-Verify keyboard DLL exports
 Resolve build backend by selected target
 Map template keys to XKB key names
 Generate deterministic XKB symbols component
 Verify generated XKB with xkbcli
-Add Windows native build CI
 Persist an immutable import derivation baseline
 Generate a per-user XKB variant bundle
 Install a user XKB variant transactionally
 ```
 
-Avoid commits that mix UI redesign, persistence changes, and Windows ABI work unless they are inseparable.
+Avoid commits that mix UI redesign, persistence changes, and backend format work unless they are inseparable.
 
 ---
 
@@ -2520,24 +2031,27 @@ A work item is done when:
 
 ## 10. Risk register
 
-### Risk R1 — Windows keyboard ABI assumptions
+### Risk R1 — Target format assumptions
 
-**Risk:** generated tables compile but do not behave correctly in Windows.
+**Risk:** a generated artifact is accepted by its tooling but does not behave correctly in a live
+session.
 
-**Mitigation:** use Microsoft sample layouts as structural references, keep a typed intermediate model, add Windows integration fixtures, and verify incrementally rather than generating all structures at once.
+**Mitigation:** keep a typed intermediate model, hold generated output to golden fixtures, verify
+with the platform's own tool where one exists, and verify incrementally rather than generating every
+structure at once.
 
 ### Risk R2 — AltGr semantics
 
 **Risk:** treating AltGr as a simple independent modifier may produce incorrect Ctrl/Alt behavior.
 
-**Mitigation:** isolate modifier translation in each target backend. Test Windows modifier-number tables
+**Mitigation:** isolate modifier translation in each target backend. Test modifier tables
 against known layouts and XKB levels 3/4 against `xkbcli`-compiled fixtures.
 
 ### Risk R3 — Scan-code/virtual-key confusion
 
 **Risk:** mixing physical scan codes and logical virtual keys creates hard-to-debug layout errors.
 
-**Mitigation:** retain separate types/models and explicit translation tables; never store Windows VK values in `PhysicalKey`.
+**Mitigation:** retain separate types/models and explicit translation tables; never store a target's logical key values in `PhysicalKey`.
 
 ### Risk R4 — Persistence coupled to domain implementation
 
@@ -2545,11 +2059,12 @@ against known layouts and XKB levels 3/4 against `xkbcli`-compiled fixtures.
 
 **Mitigation:** persistence DTOs + schema migration pipeline.
 
-### Risk R5 — Toolchain discovery fragility
+### Risk R5 — External tool discovery fragility
 
-**Risk:** hard-coded Visual Studio/WDK paths fail across machines.
+**Risk:** hard-coded tool paths fail across machines and distributions.
 
-**Mitigation:** centralize discovery and test multiple installed-toolchain scenarios.
+**Mitigation:** centralize discovery, resolve from `PATH`, and treat an absent optional verifier as a
+warning rather than a build failure.
 
 ### Risk R6 — Generated source becomes unreadable
 
@@ -2563,27 +2078,30 @@ against known layouts and XKB levels 3/4 against `xkbcli`-compiled fixtures.
 
 **Mitigation:** keep mutations behind `KeyboardEditor`/document services and use ViewModels for orchestration only.
 
-### Risk R8 — Cross-platform editor accidentally becomes Windows-only
+### Risk R8 — Build tooling leaks into the editor
 
-**Risk:** build-toolchain code leaks into App startup or Core.
+**Risk:** build-toolchain code leaks into App startup or Core, so editing depends on tools a host may
+not have.
 
-**Mitigation:** keep Windows build services replaceable and expose unavailable build environment cleanly on non-Windows hosts.
+**Mitigation:** keep build services replaceable behind `IBuildBackend` and report an unavailable
+build environment cleanly instead of failing startup.
 
 ### Risk R9 — Physical key identity differs by platform
 
-**Risk:** treating a Windows scan code as an XKB key name produces incorrect ISO/ANSI mappings,
-especially for extended, keypad, and international keys.
+**Risk:** treating a scan code as an XKB key name produces incorrect ISO/ANSI mappings, especially
+for extended, keypad, and international keys.
 
 **Mitigation:** use stable template key IDs as the common identity and maintain explicit,
-backend-owned mappings to Windows scan codes and XKB symbolic key names. Reject unknown pairs.
+backend-owned mappings to XKB symbolic key names. Reject unknown pairs.
 
 ### Risk R10 — A compiler-shaped pipeline distorts text artifacts
 
-**Risk:** forcing XKB generation through `INativeCompiler` creates fake environments, misleading build
-states, and platform checks that prevent portable generation.
+**Risk:** forcing XKB generation through a compilation stage creates fake environments, misleading
+build states, and host checks that prevent portable generation.
 
-**Mitigation:** resolve an `IBuildBackend` by target. Each backend owns its stages; only Windows uses
-compile/link, while Linux materializes XKB text and optionally invokes a verifier.
+**Mitigation:** resolve an `IBuildBackend` by target. Each backend owns its own stages; the Linux
+backend materializes XKB text and optionally invokes a verifier, and adds no stage it does not
+actually perform.
 
 ### Risk R11 — Generated XKB changes the active desktop configuration
 
@@ -2631,11 +2149,10 @@ The following should be planned only after the direct-mapping workflow is stable
 - ligatures/multi-character output;
 - compose sequences;
 - locale-specific advanced behavior;
-- Windows installation/registry registration;
 - system-wide or X11 XKB installation;
 - automatic activation or direct mutation of desktop/session keyboard settings;
 - distribution packaging of generated layouts;
-- importing existing `.klc` projects;
+- importing non-XKB layout formats;
 - importing/decompiling layout DLLs;
 - custom physical keyboard template editor;
 - macros/scripts;

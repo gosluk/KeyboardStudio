@@ -4,10 +4,10 @@
 
 This document defines the implemented Phase 9 Linux artifact backend and its operational contract.
 
-The backend converts the same platform-neutral `KeyboardProject` used for Windows builds into a
-classic XKB text format v1 symbols component. That component is the final Linux artifact. It is not a
-native binary and does not need a compiler/linker step inside KeyboardStudio; libxkbcommon or X11
-tooling assembles it with the host's other XKB components when the layout is loaded.
+The backend converts the platform-neutral `KeyboardProject` into a classic XKB text format v1
+symbols component. That component is the final artifact. It is not a native binary and needs no
+compiler/linker step inside KeyboardStudio; libxkbcommon or X11 tooling assembles it with the host's
+other XKB components when the layout is loaded.
 
 The initial backend generates and verifies files. It does not install, register, activate, or remove
 a layout from a desktop session.
@@ -67,12 +67,11 @@ One build invocation selects exactly one target backend:
 
 | Target | Materialization | Final artifact |
 |---|---|---|
-| `WindowsX64` | generate C, compile, link | x64 keyboard-layout DLL |
 | `LinuxXkb` | generate and write XKB text | `symbols/<layout-id>` |
 
-Changing the target reuses the project metadata, physical template, logical mappings, and four output
-layers. It selects different target metadata, compatibility rules, translators, and artifact stages.
-No Windows compiler probing occurs for `LinuxXkb`.
+A target selects its own metadata, compatibility rules, translator, and artifact stages, while
+reusing the project metadata, physical template, logical mappings, and four output layers. `LinuxXkb`
+probes for no build tooling: `xkbcli` is an optional verifier, never a precondition of generating.
 
 ## Target metadata
 
@@ -82,14 +81,14 @@ No Windows compiler probing occurs for `LinuxXkb`.
 - section/variant ID, initially `basic` unless explicitly configured;
 - display description used for `name[Group1]`.
 
-It does not belong in `ProjectMetadata`. A project document may retain both `WindowsLayoutMetadata`
-and `XkbLayoutMetadata`, while the Core aggregate stays usable without either. Target profiles are
-persisted through the application/document settings boundary using stable target discriminators.
+It does not belong in `ProjectMetadata`. A project document retains `XkbLayoutMetadata` while the
+Core aggregate stays usable without it. Target profiles are persisted through the
+application/document settings boundary using stable target discriminators.
 
 ## Physical key identity
 
-XKB symbols refer to symbolic key names, not Windows set-1 scan codes. The Linux backend uses the
-stable template and physical key IDs as the translation key:
+XKB symbols refer to symbolic key names, not set-1 scan codes. The Linux backend uses the stable
+template and physical key IDs as the translation key:
 
 ```text
 (iso-105, KeyA)          -> <AC01>
@@ -119,8 +118,8 @@ uses an alphabetic type when the key's Caps Lock behavior requires it. If any ma
 4, the symbols section includes the standard Right-Alt LevelThree switch. Missing levels inside a
 required range are emitted as `NoSymbol`; trailing unused levels are omitted deterministically.
 
-AltGr remains platform-neutral in Core. Windows translates it to the Windows Ctrl+Alt relationship,
-while the XKB backend translates it to LevelThree. Neither representation leaks into the other.
+AltGr remains platform-neutral in Core; the XKB backend translates it to LevelThree. That
+representation does not leak back into the core model.
 
 ## Keysyms
 

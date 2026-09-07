@@ -51,7 +51,6 @@ Phase 15 does not include:
 - synchronizing preferences between machines;
 - reopening the most recently used project;
 - custom title bars or replacement window controls;
-- a Windows installed-layout importer;
 - changing keyboard geometry, layout-import semantics, build orchestration, or artifact formats;
 - a permanent navigation rail copied from the wireframes.
 
@@ -126,7 +125,6 @@ choice used by ViewModels and persistence. Only the theme service translates it 
 
 Typical locations are:
 
-- Windows: `%LOCALAPPDATA%\KeyboardStudio\settings.json`;
 - Linux: `${XDG_DATA_HOME:-$HOME/.local/share}/KeyboardStudio/settings.json`;
 - macOS, if supported later: `~/Library/Application Support/KeyboardStudio/settings.json`.
 
@@ -338,8 +336,8 @@ New-project creation becomes secondary document navigation:
 
 Changing the geometry selector must never silently replace the open project.
 
-The current host-layout source is Linux-specific. Windows continues to receive the populated seed
-until a Windows import source implements the existing neutral import contracts.
+The host-layout source is Linux-specific. A host with no readable XKB data receives the populated
+seed instead.
 
 ## 10. UX review and Phase 15 scope
 
@@ -367,7 +365,7 @@ These ideas are worthwhile but should be planned separately after Phase 15 is ev
 - persistence of window size, panel expansion, and other workspace state;
 - a recent-projects menu;
 - automated screenshot baselines;
-- a Windows installed-layout import source.
+- an import source for a non-XKB layout format.
 
 ## 11. Failure behavior
 
@@ -404,7 +402,7 @@ Release verification also includes a manual visual matrix:
 - main window plus every modal dialog, menu, tooltip, and popup;
 - minimum and normal window sizes;
 - 100%, 150%, and 200% display scaling;
-- Linux and Windows packages;
+- the packaged Linux application;
 - normal, hover, pressed, focus, disabled, selected, warning, error, and success states;
 - keyboard-only navigation and accessible names for icon-only controls.
 

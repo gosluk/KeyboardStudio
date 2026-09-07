@@ -11,7 +11,7 @@ The canonical structural contract is [`keyboard-template.schema.json`](keyboard-
 
 Geometry uses normalized keyboard units for `x`, `y`, `width`, and `height`. `unitWidth` and `unitGap` are reference rendering metrics in device-independent units; they are not stored pixel coordinates.
 
-Scan-code values use the Windows Scan 1 make-code identity documented in [Microsoft's keyboard input overview](https://learn.microsoft.com/windows/win32/inputdev/about-keyboard-input). The JSON stores the base byte in `scanCode`; E0-prefixed keys set `extended` to `true`. The Pause key is the v1 special case: its E1 sequence is normalized to base byte `0x45` with `extended: true`, keeping it distinct from Num Lock while the Windows translation layer retains responsibility for exact E1 handling.
+Scan-code values use the Scan Code Set 1 make-code identity. The JSON stores the base byte in `scanCode`; E0-prefixed keys set `extended` to `true`. The Pause key is the v1 special case: its E1 sequence is normalized to base byte `0x45` with `extended: true`, keeping it distinct from Num Lock while a target's translation layer retains responsibility for exact E1 handling.
 
 Stable IDs use familiar physical-key names (`KeyA`, `Digit1`, `Numpad1`, and so on). ANSI uses `Backslash` for scan code `0x2B`; ISO uses `IntlHash` for that scan identity and adds `IntlBackslash` at scan code `0x56`.
 

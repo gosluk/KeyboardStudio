@@ -25,47 +25,6 @@ env:
   BUILD_CONFIGURATION: Release
 
 jobs:
-  detect-changes:
-    name: Detect Windows-specific changes
-    # A separate job (rather than a workflow-level `paths:` filter) so only the Windows job is
-    # gated: managed-build, xkb-integration, and package-linux still run on every push/PR.
-    runs-on: [self-hosted, Linux, X64]
-    outputs:
-      windows: ${{ steps.filter.outputs.windows }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-
-      - name: Determine if Windows-specific paths changed
-        id: filter
-        run: |
-          set -euo pipefail
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE_SHA="${{ github.event.pull_request.base.sha }}"
-          else
-            BASE_SHA="${{ github.event.before }}"
-          fi
-
-          if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ] \
-            || ! git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
-            echo "No usable base commit (new branch or force-push); running the Windows job to be safe."
-            echo "windows=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          CHANGED_FILES="$(git diff --name-only "$BASE_SHA" "${{ github.sha }}")"
-          echo "Changed files:"
-          echo "$CHANGED_FILES"
-
-          if echo "$CHANGED_FILES" | grep -Eq '^(src/KeyboardStudio\.Windows/|tests/KeyboardStudio\.Windows\.Tests/|docs/WINDOWS-BUILD\.md$|docs/WINDOWS-KBDTABLES-REFERENCE\.md$|\.github/workflows/build\.yml$)'; then
-            echo "windows=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "windows=false" >> "$GITHUB_OUTPUT"
-          fi
-
   managed-build:
     name: Managed build (self-hosted Linux x64)
     # Prefer the repository's self-hosted pool. GitHub matches all three
@@ -203,138 +162,6 @@ jobs:
           path: artifacts/KeyboardStudio-${{ steps.version.outputs.value }}-linux-x64.tar.gz
           if-no-files-found: error
 
-  windows:
-    name: Windows integration and package
-    # The only job that cannot move to the self-hosted pool: it needs MSVC, the Windows SDK, and a
-    # Windows loader, and the pool is Linux. Integration and packaging share one runner because
-    # they otherwise repeat the same checkout, SDK setup and restore on two, and because an
-    # artifact is worth producing only from a tree whose tests have passed.
-    #
-    # Gated on detect-changes: a hosted Windows runner is the only paid/quota-limited runner in
-    # this workflow, so it only runs when Windows-specific paths change (see the filter above)
-    # instead of on every push/PR. This is a narrower gate than "anything that could affect the
-    # win-x64 build" — a Core-only change that happens to break Windows packaging will not be
-    # caught until a Windows-path change next runs this job. See docs/TESTING.md.
-    needs: detect-changes
-    if: needs.detect-changes.outputs.windows == 'true'
-    runs-on: windows-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v6
-        with:
-          dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
-
-      - name: Locate MSVC and Windows SDK
-        shell: pwsh
-        run: |
-          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-          if (-not (Test-Path $vswhere)) {
-            throw "vswhere.exe was not found at $vswhere."
-          }
-
-          $installation = & $vswhere -latest -products * `
-            -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
-            -property installationPath
-          if ([string]::IsNullOrWhiteSpace($installation)) {
-            throw "A Visual Studio installation with the MSVC x64 toolchain was not found."
-          }
-
-          $kitsRoot = Get-ItemPropertyValue `
-            -Path 'HKLM:\SOFTWARE\Microsoft\Windows Kits\Installed Roots' `
-            -Name KitsRoot10
-          if ([string]::IsNullOrWhiteSpace($kitsRoot) -or -not (Test-Path $kitsRoot)) {
-            throw "The Windows 10/11 SDK root was not found."
-          }
-
-          "MSVC installation: $installation" >> $env:GITHUB_STEP_SUMMARY
-          "Windows SDK root: $kitsRoot" >> $env:GITHUB_STEP_SUMMARY
-
-      - name: Restore
-        run: dotnet restore ${{ env.SOLUTION }}
-
-      - name: Build
-        run: dotnet build ${{ env.SOLUTION }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
-
-      # Nearly the filter the self-hosted job runs, and deliberately not a duplicate of it: it is
-      # the only check that the platform-neutral suites are actually platform-neutral. That matters
-      # for the XKB backend in particular, because the shipped product offers the Linux target on
-      # every host it runs on, so a Windows user really does generate XKB layouts.
-      #
-      # LinuxHost is excluded because importing is the half that does not travel: it reads a
-      # database the host has installed, and a Windows host has none.
-      - name: Test managed suites
-        run: dotnet test ${{ env.SOLUTION }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --verbosity normal --filter "(Category=Unit|Category=Golden)&Category!=LinuxHost"
-
-      - name: Compile and verify generated keyboard DLL
-        run: dotnet test tests/KeyboardStudio.Windows.Tests/KeyboardStudio.Windows.Tests.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --verbosity normal --filter "Category=WindowsIntegration"
-
-      - name: Retain failed Windows native diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: windows-integration-failures-${{ github.run_attempt }}
-          path: '**/TestResults/windows-integration/**'
-          if-no-files-found: ignore
-          retention-days: 7
-
-      - name: Restore Windows runtime
-        run: dotnet restore src/KeyboardStudio.App/KeyboardStudio.App.csproj --runtime win-x64
-
-      - name: Read application version
-        id: version
-        shell: pwsh
-        run: |
-          $version = dotnet msbuild src/KeyboardStudio.App/KeyboardStudio.App.csproj -getProperty:Version
-          "value=$version" >> $env:GITHUB_OUTPUT
-
-      - name: Publish self-contained app
-        run: >-
-          dotnet publish src/KeyboardStudio.App/KeyboardStudio.App.csproj
-          --configuration ${{ env.BUILD_CONFIGURATION }}
-          --runtime win-x64
-          --self-contained true
-          --no-restore
-          --output artifacts/KeyboardStudio-${{ steps.version.outputs.value }}-win-x64
-
-      - name: Smoke-test packaged app
-        shell: pwsh
-        run: |
-          $executable = 'artifacts/KeyboardStudio-${{ steps.version.outputs.value }}-win-x64/KeyboardStudio.exe'
-          $process = Start-Process -FilePath $executable -ArgumentList '--version' -Wait -PassThru
-          if ($process.ExitCode -ne 0) {
-            throw "Packaged application version check failed with exit code $($process.ExitCode)."
-          }
-
-      - name: Smoke-test desktop startup
-        shell: pwsh
-        run: |
-          $executable = 'artifacts/KeyboardStudio-${{ steps.version.outputs.value }}-win-x64/KeyboardStudio.exe'
-          $process = Start-Process -FilePath $executable -PassThru
-          Start-Sleep -Seconds 5
-          if ($process.HasExited) {
-            throw "Packaged application exited unexpectedly with code $($process.ExitCode)."
-          }
-          Stop-Process -Id $process.Id
-          $process.WaitForExit()
-
-      - name: Archive package
-        shell: pwsh
-        run: >-
-          Compress-Archive
-          -Path artifacts/KeyboardStudio-${{ steps.version.outputs.value }}-win-x64/*
-          -DestinationPath artifacts/KeyboardStudio-${{ steps.version.outputs.value }}-win-x64.zip
-
-      - name: Upload Windows package
-        uses: actions/upload-artifact@v7
-        with:
-          name: KeyboardStudio-${{ steps.version.outputs.value }}-win-x64
-          path: artifacts/KeyboardStudio-${{ steps.version.outputs.value }}-win-x64.zip
-          if-no-files-found: error
-
   mvp-release-gate:
     name: MVP release gate
     if: always()
@@ -342,7 +169,6 @@ jobs:
       - managed-build
       - xkb-integration
       - package-linux
-      - windows
     runs-on: [self-hosted, Linux, X64]
 
     steps:
@@ -351,7 +177,6 @@ jobs:
           MANAGED_RESULT: ${{ needs.managed-build.result }}
           XKB_RESULT: ${{ needs.xkb-integration.result }}
           LINUX_PACKAGE_RESULT: ${{ needs.package-linux.result }}
-          WINDOWS_RESULT: ${{ needs.windows.result }}
         run: |
           for result in \
             "$MANAGED_RESULT" \
@@ -363,11 +188,4 @@ jobs:
             fi
           done
 
-          # windows is gated on detect-changes and legitimately reports "skipped" when no
-          # Windows-specific paths changed; only failure/cancelled should block the gate.
-          if [ "$WINDOWS_RESULT" != "success" ] && [ "$WINDOWS_RESULT" != "skipped" ]; then
-            echo "Windows integration and package job finished with result: $WINDOWS_RESULT" >&2
-            exit 1
-          fi
-
-          echo "All managed, native integration, and packaging jobs passed (windows: $WINDOWS_RESULT)." >> "$GITHUB_STEP_SUMMARY"
+          echo "All managed, XKB integration, and packaging jobs passed." >> "$GITHUB_STEP_SUMMARY"

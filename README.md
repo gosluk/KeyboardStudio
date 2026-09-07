@@ -4,15 +4,8 @@ KeyboardStudio is a cross-platform desktop editor for creating custom keyboard l
 It displays an ISO-105 or ANSI-104 keyboard, lets you assign logical keys and outputs for four
 modifier layers, validates the result, and saves the work as a portable `.kbdproj` project.
 
-The application can generate:
-
-- portable Linux XKB symbols components, including optional user-scoped installation of variants
-  derived from an installed system layout; and
-- verified native Windows x64 keyboard-layout DLLs when the required Microsoft toolchain is
-  available.
-
-The current user interface is Linux-focused and shows the Linux XKB build target by default. The
-Windows backend remains available by starting KeyboardStudio with `KEYBOARDSTUDIO_TARGETS=all`.
+The application generates portable Linux XKB symbols components, including optional user-scoped
+installation of variants derived from an installed system layout.
 
 ## Screenshots
 
@@ -33,17 +26,16 @@ provide for the built application to **function**. A host can satisfy either one
 | To build | Requirement |
 |---|---|
 | The application, the libraries, and every test | A .NET 10 SDK, version 10.0.100 or a later 10.0 feature band, as pinned by [`global.json`](global.json). Every project targets `net10.0`. |
-| A published, self-contained application | The `win-x64` or `linux-x64` runtime identifier. See [docs/PACKAGING.md](docs/PACKAGING.md). |
-| A native Windows keyboard-layout DLL | Windows on x64, with the MSVC x64 toolchain (`cl.exe`, `link.exe` from `bin/Hostx64/x64`) and a Windows 10/11 SDK supplying `rc.exe`, the `ucrt`/`shared`/`um` headers, and the matching x64 libraries. Discovered through `VCToolsInstallDir`, `VSINSTALLDIR`, `vswhere.exe`, `WindowsSdkDir`, and `WindowsSDKVersion`. See [Windows build prerequisites](docs/WINDOWS-BUILD.md#prerequisites). |
-| A Linux XKB symbols component | Nothing beyond the SDK. `xkbcli compile-keymap` is optional locally, where it adds external compilation verification on top of the managed structural checks; Linux CI always requires it. |
+| A published, self-contained application | The `linux-x64` runtime identifier. See [docs/PACKAGING.md](docs/PACKAGING.md). |
+| A Linux XKB symbols component | Nothing beyond the SDK. `xkbcli compile-keymap` is optional locally, where it adds external compilation verification on top of the managed structural checks; CI always requires it. |
 
-Editing, persistence, validation, and Linux XKB generation need no native development toolchain.
+Editing, persistence, validation, and XKB generation need no native development toolchain.
 
 ### OS requirements to function
 
 | To use | Requirement |
 |---|---|
-| The editor itself | An x64 Windows or Linux desktop. |
+| The editor itself | An x64 Linux desktop. |
 | Startup on this host's current layout (Linux) | A readable canonical system XKB data root, normally `/usr/share/X11/xkb`. Without it the populated `us-basic` seed opens instead. |
 | Generating and exporting an XKB bundle | Nothing further. This stays available on every host below. |
 | Managed per-user installation — **Install**, **Update**, **Verify installed**, **Uninstall** | Every item in the list below. |
@@ -99,7 +91,7 @@ application, and starts it:
 ./scripts/run-app.sh
 ```
 
-To compile and start it manually on Windows or Linux:
+To compile and start it manually:
 
 ```bash
 dotnet restore KeyboardStudio.slnx
@@ -108,7 +100,7 @@ dotnet run --project src/KeyboardStudio.App/KeyboardStudio.App.csproj --no-build
 ```
 
 Set `KEYBOARDSTUDIO_CONFIGURATION=Release` when using the Bash launcher for a Release build. See
-[desktop packaging](docs/PACKAGING.md) for self-contained `win-x64` and `linux-x64` publishing.
+[desktop packaging](docs/PACKAGING.md) for self-contained `linux-x64` publishing.
 
 ## How to use KeyboardStudio
 
@@ -133,16 +125,12 @@ The choice is remembered locally and is not stored in the keyboard project.
 ## Scope and limitations
 
 KeyboardStudio supports ISO-105 and ANSI-104 geometry, four output layers, one Unicode scalar per
-character output, JSON project persistence, continuous validation, Linux XKB generation, and
-Windows x64 DLL generation. Linux artifacts receive managed structural verification and optional
-`xkbcli` compilation verification; Windows artifacts are checked for architecture, DLL properties,
-and the required `KbdLayerDescriptor` export.
+character output, JSON project persistence, continuous validation, and Linux XKB generation.
+Artifacts receive managed structural verification and optional `xkbcli` compilation verification.
 
-The current release does not support dead keys, chained dead keys, ligatures, macros, IMEs, runtime
-keyboard hooks, PowerToys-style remapping, or importing arbitrary existing Windows keyboard DLLs.
-Linux output is not a distribution package, Windows output requires an x64 Windows build host, and
-supplementary-plane Unicode output is not supported by the Windows backend. The repository does not
-include an application installer, updater, or signing pipeline.
+The current release does not support dead keys, chained dead keys, ligatures, macros, IMEs, or
+runtime keyboard hooks. Its output is an XKB symbols component, not a distribution package. The
+repository does not include an application installer, updater, or signing pipeline.
 
 ## Further documentation
 
@@ -151,12 +139,11 @@ include an application installer, updater, or signing pipeline.
 - [Linux layout import](docs/LINUX-LAYOUT-IMPORT.md)
 - [Linux XKB generation](docs/LINUX-XKB.md)
 - [Linux per-user XKB variants](docs/LINUX-USER-XKB-VARIANTS.md)
-- [Windows build prerequisites and pipeline](docs/WINDOWS-BUILD.md)
 - [Packaging](docs/PACKAGING.md)
 - [Testing](docs/TESTING.md)
 
 ## References
 
 - [Avalonia documentation](https://docs.avaloniaui.net/)
-- [Microsoft Windows keyboard-layout samples](https://github.com/microsoft/Windows-driver-samples/tree/main/input/layout)
 - [libxkbcommon XKB text format](https://xkbcommon.org/doc/current/keymap-text-format-v1-v2.html)
+- [xkeyboard-config](https://gitlab.freedesktop.org/xkeyboard-config/xkeyboard-config)

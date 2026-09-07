@@ -1,7 +1,7 @@
 using KeyboardStudio.Build;
 using Xunit;
 
-namespace KeyboardStudio.Windows.Tests;
+namespace KeyboardStudio.Build.Tests;
 
 public sealed class ProcessRunnerTests
 {
@@ -33,25 +33,15 @@ public sealed class ProcessRunnerTests
             () => new ProcessRunner().RunAsync(request, cancellation.Token));
     }
 
-    private static ProcessRequest CreateEchoRequest() => OperatingSystem.IsWindows()
-        ? new ProcessRequest(
-            "cmd.exe",
-            ["/d", "/c", "echo", "KeyboardStudio process runner"],
-            Environment.CurrentDirectory,
-            new Dictionary<string, string?>())
-        : new ProcessRequest(
+    private static ProcessRequest CreateEchoRequest() =>
+        new(
             "/bin/echo",
             ["KeyboardStudio process runner"],
             Environment.CurrentDirectory,
             new Dictionary<string, string?>());
 
-    private static ProcessRequest CreateLongRunningRequest() => OperatingSystem.IsWindows()
-        ? new ProcessRequest(
-            "ping.exe",
-            ["-n", "30", "127.0.0.1"],
-            Environment.CurrentDirectory,
-            new Dictionary<string, string?>())
-        : new ProcessRequest(
+    private static ProcessRequest CreateLongRunningRequest() =>
+        new(
             "/bin/sleep",
             ["30"],
             Environment.CurrentDirectory,

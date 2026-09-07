@@ -7,7 +7,7 @@
     <FileVersion>0.1.0.0</FileVersion>
     <ApplicationIcon>Assets/KeyboardStudio.ico</ApplicationIcon>
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
-    <RuntimeIdentifiers>win-x64;linux-x64</RuntimeIdentifiers>
+    <RuntimeIdentifiers>linux-x64</RuntimeIdentifiers>
     <PublishTrimmed>false</PublishTrimmed>
   </PropertyGroup>
   <ItemGroup>
@@ -23,7 +23,6 @@
     <ProjectReference Include="..\KeyboardStudio.Core\KeyboardStudio.Core.csproj" />
     <ProjectReference Include="..\KeyboardStudio.Persistence\KeyboardStudio.Persistence.csproj" />
     <ProjectReference Include="..\KeyboardStudio.Build\KeyboardStudio.Build.csproj" />
-    <ProjectReference Include="..\KeyboardStudio.Windows\KeyboardStudio.Windows.csproj" />
     <ProjectReference Include="..\KeyboardStudio.Linux\KeyboardStudio.Linux.csproj" />
   </ItemGroup>
 </Project>

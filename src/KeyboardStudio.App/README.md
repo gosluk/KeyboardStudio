@@ -43,7 +43,7 @@ The main editor loads ISO-105 and ANSI-104 through `IKeyboardTemplateProvider`. 
 
 `KeyboardEditorViewModel` owns selection, active-layer presentation, logical-key choices, and the four layer mapping rows. Core mutations return whether state changed; only successful changes call the document dirty callback. This avoids observing the mutable domain graph and prevents rejected or no-op edits from marking a document dirty.
 
-`DiagnosticsViewModel` presents the composed Core and Windows compatibility results ordered by severity. Key-associated error diagnostics drive `KeyControl` highlighting, and their commands navigate selection to the affected key. Successful mapping mutations rerun only the lightweight in-memory validation rules; native generation and compilation remain outside the edit path.
+`DiagnosticsViewModel` presents the composed Core and target compatibility results ordered by severity. Key-associated error diagnostics drive `KeyControl` highlighting, and their commands navigate selection to the affected key. Successful mapping mutations rerun only the lightweight in-memory validation rules; artifact generation remains outside the edit path.
 
 `IBuildTargetVisibilityPolicy` decides which build targets `BuildViewModel` offers, and is the only
 place that decision is made. The shipped `EnvironmentBuildTargetVisibilityPolicy` offers Linux XKB
@@ -59,4 +59,4 @@ target-profile settings so they round-trip with the project without becoming sta
 fields. XKB translation, verification, XML merging, and filesystem transactions remain in
 `KeyboardStudio.Linux`.
 
-Must not contain Windows keyboard-table generation logic.
+Must not contain target-specific layout generation logic.
